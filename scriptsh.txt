@@ -1,4 +1,4 @@
-init=cd037ee8fcc507354d54aefcbd33a5a3
+init=d8ffbf54875eabdb3e3a3704b67da189
 Sh62_shellina_box=82d7fbfa4c2f8d4126e569f7c7ee7f01
 Sh61_lnmp=3687ab11bca9c878b626beb41a9a006b
 Sh53_you_ku=43bd6beac1a222bba959a59eeb44217f
