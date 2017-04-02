@@ -34,14 +34,15 @@ owncloud_port=`nvram get owncloud_port`
 mysql_enable=`nvram get mysql_enable`
 http_username=`nvram get http_username`
 
-#lnmpfile3="$hiboyfile/kodexplorer.tgz"
-#lnmpfile4="$hiboyfile/phpmyadmin.tgz"
-#lnmpfile5="$hiboyfile/owncloud-8.0.14.tar.bz2"
-#lnmpfile6="$hiboyfile/wifidog_server.tgz"
-#nvram set lnmpfile3=$lnmpfile3
-#nvram set lnmpfile4=$lnmpfile4
-#nvram set lnmpfile5=$lnmpfile5
-#nvram set lnmpfile6=$lnmpfile6
+lnmpfile3="$hiboyfile/kodexplorer.tgz"
+lnmpfile33="$hiboyfile2/kodexplorer.tgz"
+lnmpfile4="$hiboyfile/phpmyadmin.tgz"
+lnmpfile44="$hiboyfile2/phpmyadmin.tgz"
+lnmpfile5="$hiboyfile/owncloud-8.0.14.tar.bz2"
+lnmpfile55="$hiboyfile2/owncloud-8.0.14.tar.bz2"
+lnmpfile6="$hiboyfile/wifidog_server.tgz"
+lnmpfile66="$hiboyfile2/wifidog_server.tgz"
+
 
 lnmp_check () {
 
@@ -210,7 +211,7 @@ if [ "$default_enable" = "1" ] || [ "$default_enable" = "2" ] ; then
 		if [ ! -f "/opt/www/default/tz.php" ] ; then
 			logger -t "【LNMP】" "找不到 tz.php, 下载程序文档, 需时1秒"
 			logger -t "【LNMP】" "下载地址:$hiboyfile/tz.php"
-			wgetcurl.sh /opt/www/default/tz.php "$hiboyfile/tzphp"
+			wgetcurl.sh /opt/www/default/tz.php "$hiboyfile/tzphp" "$hiboyfile2/tzphp"
 		fi
 	fi
 	if [ ! -d "/opt/www/default" ] ; then
@@ -221,9 +222,8 @@ if [ "$kodexplorer_enable" = "1" ] || [ "$kodexplorer_enable" = "2" ] ; then
 	if [ ! -d "/opt/www/kodexplorer/data" ] ; then
 		if [ ! -f "/opt/www/kodexplorer.tgz" ] ; then
 			logger -t "【LNMP】" "找不到 kodexplorer.tgz, 下载程序文档, 需时2分钟"
-			lnmpfile3=`nvram get lnmpfile3`
 			logger -t "【LNMP】" "下载地址:$lnmpfile3"
-			wgetcurl.sh /opt/www/kodexplorer.tgz "$lnmpfile3"
+			wgetcurl.sh /opt/www/kodexplorer.tgz "$lnmpfile3" "$lnmpfile33"
 		fi
 		logger -t "【LNMP】" "解压 kodexplorer 文档, 需时1分钟"
 		tar -xzvf /opt/www/kodexplorer.tgz -C /opt/www
@@ -239,9 +239,8 @@ if [ "$phpmyadmin_enable" = "1" ] || [ "$phpmyadmin_enable" = "2" ] ; then
 	if [ ! -d "/opt/www/phpmyadmin/libraries" ] ; then
 		if [ ! -f "/opt/www/phpmyadmin.tgz" ] ; then
 			logger -t "【LNMP】" "找不到 phpmyadmin.tgz, 下载程序文档, 需时2分钟"
-			lnmpfile4=`nvram get lnmpfile4`
 			logger -t "【LNMP】" "下载地址:$lnmpfile4"
-			wgetcurl.sh /opt/www/phpmyadmin.tgz "$lnmpfile4"
+			wgetcurl.sh /opt/www/phpmyadmin.tgz "$lnmpfile4" "$lnmpfile44"
 		fi
 		logger -t "【LNMP】" "解压 phpmyadmin 文档, 需时1分钟"
 		tar -xzvf /opt/www/phpmyadmin.tgz -C /opt/www
@@ -257,9 +256,8 @@ if [ "$wifidog_server_enable" = "1" ] || [ "$wifidog_server_enable" = "2" ] ; th
 	if [ ! -d "/opt/www/wifidog_server/auth" ] ; then
 		if [ ! -f "/opt/www/wifidog_server.tgz" ] ; then
 			logger -t "【LNMP】" "找不到 wifidog_server.tgz, 下载程序文档"
-			lnmpfile6=`nvram get lnmpfile6`
 			logger -t "【LNMP】" "下载地址:$lnmpfile6"
-			wgetcurl.sh /opt/www/wifidog_server.tgz "$lnmpfile6"
+			wgetcurl.sh /opt/www/wifidog_server.tgz "$lnmpfile6" "$lnmpfile66"
 		fi
 		logger -t "【LNMP】" "解压 wifidog_server 文档"
 		tar -xzvf /opt/www/wifidog_server.tgz -C /opt/www
@@ -268,7 +266,7 @@ if [ "$wifidog_server_enable" = "1" ] || [ "$wifidog_server_enable" = "2" ] ; th
 		logger -t "【LNMP】" "wifidog_server 停用, 因未找到 /opt/www/wifidog_server/auth"
 	else
 		chmod -R 777 /opt/www/wifidog_server/
-		[ ! -f "/opt/etc/nginx/xhost/wifidog_server.conf" ] && { wgetcurl.sh "/opt/etc/nginx/xhost/wifidog_server.conf" "$hiboyfile/wifidog_server.conf" ; }
+		[ ! -f "/opt/etc/nginx/xhost/wifidog_server.conf" ] && { wgetcurl.sh "/opt/etc/nginx/xhost/wifidog_server.conf" "$hiboyfile/wifidog_server.conf" "$hiboyfile2/wifidog_server.conf" ; }
 		cp -rf /opt/etc/nginx/xhost/wifidog_server.conf /opt/etc/nginx/vhost/wifidog_server.conf
 		logger -t "【LNMP】" "wifidog_server 路径:/opt/www/wifidog_server 端口:$wifidog_server_port"
 		sed -e "s/.*访问端口4.*/		listen	   "$wifidog_server_port"; "' # 访问端口4/g' -i /opt/etc/nginx/vhost/wifidog_server.conf
@@ -281,9 +279,8 @@ if [ "$owncloud_enable" = "1" ] || [ "$owncloud_enable" = "2" ] ; then
 	if [ ! -d "/opt/www/owncloud/config" ] ; then
 		if [ ! -f "/opt/www/owncloud-8.0.14.tar.bz2" ] ; then
 			logger -t "【LNMP】" "找不到 owncloud-8.0.14.tar.bz2, 下载程序文档, 需时3分钟"
-			lnmpfile5=`nvram get lnmpfile5`
 			logger -t "【LNMP】" "下载地址:$lnmpfile5"
-			wgetcurl.sh /opt/www/owncloud-8.0.14.tar.bz2 "$lnmpfile5"
+			wgetcurl.sh /opt/www/owncloud-8.0.14.tar.bz2 "$lnmpfile5" "$lnmpfile55"
 		fi
 		logger -t "【LNMP】" "解压 owncloud 文档, 需时5分钟"
 		tar -jxvf /opt/www/owncloud-8.0.14.tar.bz2 -C /opt/www

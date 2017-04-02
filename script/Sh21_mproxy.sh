@@ -87,7 +87,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【mproxy】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/mproxy "$hiboyfile/mproxy"
+	wgetcurl.sh /opt/bin/mproxy "$hiboyfile/mproxy" "$hiboyfile2/mproxy"
 	chmod 755 "/opt/bin/mproxy"
 else
 	logger -t "【mproxy】" "找到 $SVC_PATH"

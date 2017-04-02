@@ -113,9 +113,9 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【Wifidog】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/wifidog "$hiboyfile/wifidog"
+	wgetcurl.sh /opt/bin/wifidog "$hiboyfile/wifidog" "$hiboyfile2/wifidog"
 	chmod 755 "/opt/bin/wifidog"
-	wgetcurl.sh /opt/bin/wdctl "$hiboyfile/wdctl"
+	wgetcurl.sh /opt/bin/wdctl "$hiboyfile/wdctl" "$hiboyfile2/wdctl"
 	chmod 755 "/opt/bin/wdctl"
 else
 	logger -t "【wifidog】" "找到 $SVC_PATH"

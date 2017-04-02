@@ -92,11 +92,11 @@ fi
 mkdir -p /opt/softether
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【softether】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/softether/vpnserver "$hiboyfile/vpnserver"
+	wgetcurl.sh /opt/softether/vpnserver "$hiboyfile/vpnserver" "$hiboyfile2/vpnserver"
 	chmod 755 "/opt/softether/vpnserver"
-	wgetcurl.sh /opt/softether/vpncmd "$hiboyfile/vpncmd"
+	wgetcurl.sh /opt/softether/vpncmd "$hiboyfile/vpncmd" "$hiboyfile2/vpncmd"
 	chmod 755 "/opt/softether/vpncmd"
-	wgetcurl.sh /opt/softether/hamcore.se2 "$hiboyfile/hamcore.se2"
+	wgetcurl.sh /opt/softether/hamcore.se2 "$hiboyfile/hamcore.se2" "$hiboyfile2/hamcore.se2"
 	chmod 755 "/opt/softether/hamcore.se2"
 else
 	logger -t "【softether】" "找到 $SVC_PATH"

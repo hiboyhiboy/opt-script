@@ -73,7 +73,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ngrok】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/ngrokc "$hiboyfile/ngrokc"
+	wgetcurl.sh /opt/bin/ngrokc "$hiboyfile/ngrokc" "$hiboyfile2/ngrokc"
 	chmod 755 "/opt/bin/ngrokc"
 else
 	logger -t "【ngrok】" "找到 $SVC_PATH"

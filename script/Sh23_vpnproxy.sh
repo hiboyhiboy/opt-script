@@ -78,7 +78,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/nvpproxy.tar.gz "$hiboyfile/nvpproxy.tar.gz"
+	wgetcurl.sh /opt/bin/nvpproxy.tar.gz "$hiboyfile/nvpproxy.tar.gz" "$hiboyfile2/nvpproxy.tar.gz"
 	tar -xzvf /opt/bin/nvpproxy.tar.gz -C /opt/bin/
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【vpnproxy】" "解压不正常:/opt/bin/nvpproxy"

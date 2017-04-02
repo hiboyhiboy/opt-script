@@ -89,7 +89,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/ss-server "$hiboyfile/ss-server"
+	wgetcurl.sh /opt/bin/ss-server "$hiboyfile/ss-server" "$hiboyfile2/ss-server"
 	chmod 755 "/opt/bin/ss-server"
 else
 	logger -t "【SS_server】" "找到 $SVC_PATH"

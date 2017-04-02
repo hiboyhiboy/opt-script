@@ -117,7 +117,7 @@ xunleimd5="86f8c2c931687c4876bdd8ca5febe038"
 if [ ! -s "$SVC_PATH" ] || [ $portal_md5 != $xunleimd5 ] ; then
 	logger -t "【迅雷下载】" "找不到 $SVC_PATH ，安装 Xware1.0.31_mipsel_32_uclibc 程序"
 	Xware1="$hiboyfile/Xware1.0.31_mipsel_32_uclibc.tgz"
-	wgetcurl.sh "$xunleis_dir/xunlei/Xware1.tgz" $Xware1
+	wgetcurl.sh "$xunleis_dir/xunlei/Xware1.tgz" "$hiboyfile/Xware1.0.31_mipsel_32_uclibc.tgz" "$hiboyfile2/Xware1.0.31_mipsel_32_uclibc.tgz"
 	untar.sh "$xunleis_dir/xunlei/Xware1.tgz" "$xunleis_dir/xunlei" "$SVC_PATH"
 fi
 if [ ! -s "$SVC_PATH" ] ; then

@@ -14,8 +14,11 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mountopt)" ]  
 fi
 # /etc/storage/script/sh01_mountopt.sh
  opttmpfile="$hiboyfile/opttmpg7.tgz"
+ opttmpfile2="$hiboyfile2/opttmpg7.tgz"
  optupanfile="$hiboyfile/optupang7.tgz"
+ optupanfile3="$hiboyfile2/optupang7.tgz"
  optupanfile2="$hiboyfile/optg7.txt"
+ optupanfile4="$hiboyfile2/optg7.txt"
 # ss_opt_x 
 # 1 >>自动选择:SD→U盘→内存
 # 2 >>安装到内存:需要空余内存(10M+)
@@ -102,9 +105,9 @@ mkdir -p /opt/bin
 
 opt_file () {
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
-[ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$opttmpfile"; }
+[ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
 optPath="`grep ' /opt ' /proc/mounts | grep /dev`"
-[ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$optupanfile"; }
+[ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile3"; }
 logger -t "【opt】" "opt 下载完成，开始解压"
 tar -xzvf /opt/opt.tgz -C /opt
 
@@ -137,8 +140,8 @@ fi
 }
 
 upopt () {
-wgetcurl.sh "/tmp/opti.txt" "$optupanfile2"
-wgetcurl.sh "/tmp/lnmpi.txt" "$optupanfile2"
+wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+[ -s /tmp/opti.txt ] && cp -f /tmp/opti.txt /tmp/lnmpi.txt
 nvram set opto="`cat /opt/opti.txt`"
 nvram set optt="`cat /tmp/opti.txt`"
 nvram set lnmpo="`cat /opt/lnmp.txt`"

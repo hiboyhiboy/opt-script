@@ -95,7 +95,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【MentoHUST】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/mentohust "$hiboyfile/mentohust"
+	wgetcurl.sh /opt/bin/mentohust "$hiboyfile/mentohust" "$hiboyfile2/mentohust"
 	chmod 755 "/opt/bin/mentohust"
 else
 	logger -t "【MentoHUST】" "找到 $SVC_PATH"

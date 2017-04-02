@@ -12,7 +12,7 @@ eval $(md5sum `/usr/bin/find /etc/storage/script/ -perm '-u+x' -name '*.sh' | so
 file_t_check() {
 #获取最新script的sh*文件MD5
 rm -f /tmp/scriptsh.txt
-wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt"
+wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scriptsh.txt"
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
@@ -31,7 +31,7 @@ if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
 	MD5_ORI=`eval echo '$'$file_name"_o"`
 	if [ ! -s /etc/storage/script/$file_name.sh ] || [ "$MD5_TMP"x != "$MD5_ORI"x ] ; then
 		logger -t "【script】" "/etc/storage/script/$file_name.sh 脚本需要更新，自动下载！$hiboyscript/script/$file_name.sh"
-		wgetcurl.sh "/tmp/script/$file_name.sh" "$hiboyscript/script/$file_name.sh"
+		wgetcurl.sh "/tmp/script/$file_name.sh" "$hiboyscript/script/$file_name.sh" "$hiboyscript2/script/$file_name.sh"
 		eval $(md5sum /tmp/script/$file_name.sh | awk '{print "MD5_ORI="$1;}')
 		if [ -s /tmp/script/$file_name.sh ] && [ "$MD5_TMP"x = "$MD5_ORI"x ] ; then
 			logger -t "【script】" " 更新【$file_name.sh】，md5匹配，更新成功！"

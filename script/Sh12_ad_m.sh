@@ -8,6 +8,9 @@ nvramshow=`nvram showall | grep adm | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"
 [ -z $adm_enable ] && adm_enable=0 && nvram set adm_enable=0
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 
+adbmfile="$hiboyfile/7620adm.tgz"
+adbmfile2="$hiboyfile2/7620adm.tgz"
+
 TAG="AD_BYBY"		  # iptables tag
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`

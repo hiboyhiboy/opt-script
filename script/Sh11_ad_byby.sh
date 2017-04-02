@@ -8,6 +8,10 @@ nvramshow=`nvram showall | grep adbyby | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 
 
+adbybyfile="$hiboyfile/7620i.tar.gz"
+adbybyfile2="$hiboyfile2/7620i.tar.gz"
+
+
 TAG="AD_BYBY"		  # iptables tag
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
@@ -217,12 +221,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	fi
 	if [ ! -s "/tmp/bin/adbyby" ] ; then
 		logger -t "【Adbyby】" "开始下载http://update.adbyby.com/download/7620n.tar.gz"
-		wgetcurl.sh /tmp/7620n.tar.gz 'http://update.adbyby.com/download/7620n.tar.gz'
-		untar.sh /tmp/7620n.tar.gz /tmp /tmp/bin/adbyby
-	fi
-	if [ ! -s "/tmp/bin/adbyby" ] ; then
-		logger -t "【Adbyby】" "开始下载 7620n.tar.gz"
-		wgetcurl.sh /tmp/7620n.tar.gz $adbybyfile2 $adbybyfile
+		wgetcurl.sh /tmp/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'http://update.adbyby.com/download/7620n.tar.gz'
 		untar.sh /tmp/7620n.tar.gz /tmp /tmp/bin/adbyby
 	fi
 	if [ ! -s "/tmp/bin/adbyby" ] ; then
@@ -249,14 +248,18 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		mkdir -p /tmp/bin/data
 		logger -t "【Adbyby】" "下载规则失败, 强制 手动同步更新规则"
 		xwhyc_rules="$hiboyfile/video.txt"
+		xwhyc_rules3="$hiboyfile2/video.txt"
 		xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"
 		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 		wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules2
+		[ -f /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2
 		mv -f /tmp/bin/data/video.txt /tmp/bin/data/video_B.txt
 		xwhyc_rules="$hiboyfile/lazy.txt"
+		xwhyc_rules3="$hiboyfile2/lazy.txt"
 		xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
 		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 		wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules2
+		[ -f /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2
 		mv -f /tmp/bin/data/lazy.txt /tmp/bin/data/lazy_B.txt
 	fi
 	chmod 777 /tmp/bin/adbyby

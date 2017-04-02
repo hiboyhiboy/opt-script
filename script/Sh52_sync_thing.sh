@@ -98,7 +98,7 @@ mkdir -p "$upanPath/syncthing/Downloads"
 if [ ! -s "$SVC_PATH" ] && [ -d "$upanPath/syncthing/Downloads" ] ; then
 	logger -t "【syncthing】" "找不到 $SVC_PATH ，安装 syncthing 程序"
 	logger -t "【syncthing】" "开始下载 syncthing-linux-mipsle.tar.gz"
-	wgetcurl.sh "$upanPath/syncthing/Downloads/syncthing-linux-mipsle.tar.gz" "$hiboyfile/syncthing-linux-mipsle.tar.gz" "https://build.syncthing.net/job/syncthing/lastSuccessfulBuild/artifact/syncthing-linux-mipsle-v0.14.25+12-g53a7c7b.tar.gz"
+	wgetcurl.sh "$upanPath/syncthing/Downloads/syncthing-linux-mipsle.tar.gz" "$hiboyfile/syncthing-linux-mipsle.tar.gz" "$hiboyfile2/syncthing-linux-mipsle.tar.gz"
 	untar.sh "$upanPath/syncthing/Downloads/syncthing-linux-mipsle.tar.gz" "$upanPath/syncthing"
 	chmod -R 777  "$upanPath/syncthing/"
 	mv -f "$upanPath/syncthing/syncthing-linux-mipsle"* "$upanPath/syncthing/syncthing-linux-mipsle"

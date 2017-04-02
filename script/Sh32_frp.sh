@@ -91,7 +91,7 @@ do
 	fi
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【frp】" "找不到 $SVC_PATH 下载程序"
-		wgetcurl.sh /opt/bin/$action_frp "$hiboyfile/$action_frp"
+		wgetcurl.sh /opt/bin/$action_frp "$hiboyfile/$action_frp" "$hiboyfile2/$action_frp"
 		chmod 755 "/opt/bin/$action_frp"
 	else
 		logger -t "【frp】" "找到 $SVC_PATH"

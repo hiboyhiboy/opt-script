@@ -97,7 +97,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/client_linux_mips "$hiboyfile/client_linux_mips"
+	wgetcurl.sh /opt/bin/client_linux_mips "$hiboyfile/client_linux_mips" "$hiboyfile2/client_linux_mips"
 	chmod 755 "/opt/bin/client_linux_mips"
 else
 	logger -t "【kcptun】" "找到 $SVC_PATH"

@@ -113,7 +113,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH 下载程序"
 	lcd1="$hiboyfile/lcd.tgz"
 	logger -t "【相框显示】" "下载LCD文件 $lcd1"
-	wgetcurl.sh "/opt/lcd.tgz" $lcd1
+	wgetcurl.sh "/opt/lcd.tgz" "$hiboyfile/lcd.tgz" "$hiboyfile2/lcd.tgz"
 	untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
 	cp -f /opt/lcd4linux/lcd4linux.conf /etc/storage/display_lcd4linux_script.sh
 else
@@ -126,7 +126,7 @@ fi
 if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	lcd1="$hiboyfile/lcd.tgz"
 	logger -t "【相框显示】" "下载LCD文件 $lcd1"
-	wgetcurl.sh "/opt/lcd.tgz" $lcd1
+	wgetcurl.sh "/opt/lcd.tgz" "$hiboyfile/lcd.tgz" "$hiboyfile2/lcd.tgz"
 	untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
 	cp -f /opt/lcd4linux/lcd4linux.conf /etc/storage/display_lcd4linux_script.sh
 fi

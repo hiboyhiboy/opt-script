@@ -94,7 +94,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【tinyproxy】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/tinyproxy "$hiboyfile/tinyproxy"
+	wgetcurl.sh /opt/bin/tinyproxy "$hiboyfile/tinyproxy" "$hiboyfile2/tinyproxy"
 	chmod 755 "/opt/bin/tinyproxy"
 else
 	logger -t "【tinyproxy】" "找到 $SVC_PATH"

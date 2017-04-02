@@ -95,8 +95,8 @@ mv -f /opt/shadowsocks-manyuser /opt/shadowsocksr-manyuser
 if [ "$ssrserver_update" != "0" ] ; then
 logger -t "【SSR_server】" "SSR_server 检测更新"
 	rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb
-	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb "$hiboyfile/util.py"
-	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc "$hiboyfile/util_code.py"
+	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb "$hiboyfile/util.py" "$hiboyfile2/util.py"
+	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc "$hiboyfile/util_code.py" "$hiboyfile2/util_code.py"
 	A_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py`
 	B_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb`
 	C_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc`
@@ -119,7 +119,7 @@ logger -t "【SSR_server】" "SSR_server 检测更新"
 		logger -t "【SSR_server】" "SSR_server code需要更新"
 		logger -t "【SSR_server】" "下载:$hiboyfile/manyuser.zip"
 		rm -rf /opt/manyuser.zip
-		wgetcurl.sh /opt/manyuser.zip "$hiboyfile/manyuser.zip"
+		wgetcurl.sh /opt/manyuser.zip "$hiboyfile/manyuser.zip" "$hiboyfile2/manyuser.zip"
 		unzip -o /opt/manyuser.zip  -d /opt/
 		rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
 		cp -a /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py

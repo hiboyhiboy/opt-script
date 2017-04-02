@@ -9,6 +9,12 @@ nvramshow=`nvram showall | grep koolproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'
 [ -z $koolproxy_enable ] && koolproxy_enable=0 && nvram set koolproxy_enable=0
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 
+koolproxyfile="http://firmware.koolshare.cn/binary/KoolProxy/mipsel"
+koolproxyfile2="$hiboyfile/koolproxy"
+koolproxyfile22="$hiboyfile2/koolproxy"
+koolproxyfile3="$hiboyfile/7620koolproxy.tgz"
+koolproxyfile33="$hiboyfile2/7620koolproxy.tgz"
+
 TAG="AD_BYBY"		  # iptables tag
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
@@ -213,12 +219,16 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	fi
 	if [ ! -s "/tmp/7620koolproxy/data/version" ] ; then
 		logger -t "【koolproxy】" "开始下载 7620koolproxy.tgz"
-		wgetcurl.sh /tmp/7620koolproxy.tgz $koolproxyfile3
+		wgetcurl.sh /tmp/7620koolproxy.tgz $koolproxyfile3 $koolproxyfile33
 		untar.sh /tmp/7620koolproxy.tgz /tmp /tmp/7620koolproxy/data/version
 	fi
 	if [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "开始下载 koolproxy"
 		wgetcurl.sh /tmp/7620koolproxy/koolproxy $koolproxyfile $koolproxyfile2
+	fi
+	if [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
+		logger -t "【koolproxy】" "开始下载 koolproxy"
+		wgetcurl.sh /tmp/7620koolproxy/koolproxy $koolproxyfile22 $koolproxyfile
 	fi
 	if [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set koolproxy_status=00; eval "$scriptfilepath &"; exit 0; }

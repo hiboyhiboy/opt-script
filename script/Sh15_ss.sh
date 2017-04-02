@@ -337,7 +337,7 @@ if [ "$ss_type" = "1" ] ; then
 		if [ ! -s "/tmp/bin/ssr-redir" ] ; then
 			logger -t "【SSR】" "找不到 ssr-redir. tmp下载程序"
 			mkdir -p /tmp/bin
-			wgetcurl.sh "/tmp/bin/ssr-redir" "$hiboyfile/ssr-redir"
+			wgetcurl.sh "/tmp/bin/ssr-redir" "$hiboyfile/ssr-redir" "$hiboyfile2/ssr-redir"
 			chmod 777 "/tmp/bin/ssr-redir"
 		fi
 		mount --bind /tmp/bin/ssr-redir /usr/sbin/ss-redir
@@ -348,7 +348,7 @@ if [ "$ss_type" = "1" ] ; then
 		if [ ! -s "/tmp/bin/ssr-local" ] ; then
 			logger -t "【SSR】" "找不到 ssr-local. tmp下载程序"
 			mkdir -p /tmp/bin
-			wgetcurl.sh "/tmp/bin/ssr-local" "$hiboyfile/ssr-local"
+			wgetcurl.sh "/tmp/bin/ssr-local" "$hiboyfile/ssr-local" "$hiboyfile2/ssr-local"
 			chmod 777 "/tmp/bin/ssr-local"
 		fi
 		mount --bind /tmp/bin/ssr-local /usr/sbin/ss-local
@@ -1113,7 +1113,7 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 		wgetcurl.sh /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt
 		cat /tmp/ss/tmp_chnroute.txt > /tmp/ss/chnroute.txt
 		echo ""  >> /tmp/ss/chnroute.txt
-		wgetcurl.sh /tmp/ss/tmp_chnroute.txt "$hiboyfile/chnroute.txt"
+		wgetcurl.sh /tmp/ss/tmp_chnroute.txt "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt"
 		cat /tmp/ss/tmp_chnroute.txt >> /tmp/ss/chnroute.txt
 		[ ! -s /tmp/ss/chnroute.txt ] && logger -t "【SS】" "使用 固件内置chnroutes规则 列表...." && cat /etc/storage/china_ip_list.txt > /tmp/ss/chnroute.txt
 else
@@ -1132,7 +1132,7 @@ fi
 		logger -t "【SS】" "加速国内 dns 访问，模式:$ss_mode_x, pdnsd_all:$ss_pdnsd_all, 下载 accelerated-domains.china.conf"
 		DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="114.114.114.114"
-		wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/accelerated-domains.china.conf"
+		wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/accelerated-domains.china.conf" "$hiboyfile2/accelerated-domains.china.conf"
 		cat /tmp/ss/tmp_accelerated-domains.china.conf |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			sed -e "s|^\(server.*\)/[^/]*$|\1/$DNS_china|" > /tmp/ss/accelerated-domains.china.conf
@@ -1241,13 +1241,13 @@ if [ "$ss_run_ss_local" = "1" ] ; then
 fi
 if [ "$optssredir" = "1" ] ; then
 	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir"
+	wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
 	chmod 777 "/opt/bin/ss-redir"
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; nvram set ss_status=00 && nvram commit; eval "$scriptfilepath start &"; exit 1; }
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
 	logger -t "【SS】" "找不到 ss-local. opt 下载程序"
-	wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/ss-local"
+	wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/ss-local" "$hiboyfile2/ss-local"
 	chmod 777 "/opt/bin/ss-local"
 	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; nvram set ss_status=00 && nvram commit; eval "$scriptfilepath start &"; exit 1; }
 fi
