@@ -213,14 +213,14 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 		logger -t "【ADM】" "开始下载 7620adm.tgz"
 		wgetcurl.sh /tmp/7620adm.tgz $adbmfile $adbmfile2
 		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620adm/adm
-		if [ -d "/tmp/7620a" ] ; then
-			mv -f /tmp/7620a /tmp/7620adm
-		fi
 	fi
 	if [ ! -s "/tmp/7620adm/adm" ] ; then
 		logger -t "【ADM】" "开始下载 7620adm.tgz"
-		wgetcurl.sh /tmp/7620adm.tgz $adbmfile2 $adbmfile
-		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620adm/adm
+		wgetcurl.sh /tmp/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz"
+		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620a/adm
+		if [ -d "/tmp/7620a" ] ; then
+			mv -f /tmp/7620a /tmp/7620adm
+		fi
 	fi
 	if [ ! -s "/tmp/7620adm/adm" ] ; then
 		logger -t "【ADM】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adm_status=00; eval "$scriptfilepath &"; exit 0; }
