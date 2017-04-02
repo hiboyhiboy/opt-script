@@ -33,7 +33,7 @@ fi
 koolproxy_check () {
 
 A_restart=`nvram get koolproxy_status`
-B_restart="$koolproxy_enable$koolproxy_auto$koolproxy_update$koolproxy_update_hour$koolproxy_update_min$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$koolproxy_enable$ss_link_1$koolproxy_auto$koolproxy_update$koolproxy_update_hour$koolproxy_update_min$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set koolproxy_status=$B_restart
@@ -84,6 +84,8 @@ killall -9 sh_ad_kp_keey_k.sh
 rm -f /tmp/cron_adb.lock
 reb="1"
 runx="1"
+ss_link_1=${ss_link_1:-"www.163.com"}
+ss_link_2=${ss_link_2:-"www.google.com.hk"}
 while true; do
 [ ! -s "/tmp/7620koolproxy/koolproxy" ] && nvram set koolproxy_status=00 && { logger -t "【koolproxy】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
 if [ ! -f /tmp/cron_adb.lock ] ; then
@@ -93,14 +95,18 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		sleep 5
 		reboot
 	fi
-	baidu='http://gb.corp.163.com/gb/images/spacer.gif'
-	wgetcurl.sh /tmp/small_blank.gif $baidu
-	if [ ! -s /tmp/small_blank.gif ] && [ ! -f /tmp/cron_adb.lock ] ; then
-		restart_dhcpd
-		sleep 30
-		wgetcurl.sh /tmp/small_blank.gif $baidu
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
+	else
+		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check" != "200" ] && restart_dhcpd && sleep 3
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
-	if [ -s /tmp/small_blank.gif ] && [ ! -f /tmp/cron_adb.lock ] ; then
+	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
 		PIDS=$(ps - w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 

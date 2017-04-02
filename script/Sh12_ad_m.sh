@@ -32,7 +32,7 @@ fi
 adm_check () {
 
 A_restart=`nvram get adm_status`
-B_restart="$adm_enable$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adm_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adm_enable$ss_link_1$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adm_rules_script.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set adm_status=$B_restart
@@ -83,6 +83,8 @@ killall -9 sh_ad_m_keey_k.sh
 rm -f /tmp/cron_adb.lock
 reb="1"
 runx="1"
+ss_link_1=${ss_link_1:-"www.163.com"}
+ss_link_2=${ss_link_2:-"www.google.com.hk"}
 while true; do
 [ ! -s "/tmp/7620adm/adm" ] && nvram set adm_status=00 && { logger -t "【ADM】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
 if [ ! -f /tmp/cron_adb.lock ] ; then
@@ -92,14 +94,18 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		sleep 5
 		reboot
 	fi
-	baidu='http://gb.corp.163.com/gb/images/spacer.gif'
-	wgetcurl.sh /tmp/small_blank.gif $baidu
-	if [ ! -s /tmp/small_blank.gif ] && [ ! -f /tmp/cron_adb.lock ] ; then
-		restart_dhcpd
-		sleep 30
-		wgetcurl.sh /tmp/small_blank.gif $baidu
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
+	else
+		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check" != "200" ] && restart_dhcpd && sleep 3
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
-	if [ -s /tmp/small_blank.gif ] && [ ! -f /tmp/cron_adb.lock ] ; then
+	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
 		PIDS=$(ps - w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 

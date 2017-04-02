@@ -148,6 +148,8 @@ ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 
 ss_updatess=`nvram get ss_updatess`
 ss_updatess=${ss_updatess:-"0"}
+[ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
+[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 
 ##  bigandy modify 
 ##  1. 增加xbox的支持 （未实现，下一版本）
@@ -376,16 +378,20 @@ if [ "$ss_check" = "1" ] ; then
 			sleep 1
 			curltest=`which curl`
 			if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-				wget --continue --no-check-certificate -s -q -T 10 http://www.163.com
-				[ "$?" == "0" ] && check=200 || check=404
+				wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+				[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+				[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+				[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 			else
-				check=`curl -k -s -w "%{http_code}" "http://www.163.com" -o /dev/null`
+				check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+				[ "$check" != "200" ] && restart_dhcpd && sleep 3
+				[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			fi
 			if [ "$check" == "200" ] ; then
-				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 www.163.com 成功"
+				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 $ss_link_1 成功"
 				checkip=1
 			else
-				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 www.163.com 失败"
+				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 $ss_link_1 失败"
 				[ ${action_port:=1090} ] && [ $action_port == 1091 ] && Server=1090 || Server=1091
 				#加上切换标记
 				nvram set ss_working_port=$Server
@@ -1268,10 +1274,19 @@ echo "Debug: $DNS_Server"
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
 	sleep 1
-	resolveip=`/usr/bin/resolveip -4 -t 4 "www.163.com" | grep -v : | sed -n '1p'`
-	[ -z "$resolveip" ] && resolveip=`nslookup www.163.com | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":" | tail -n 1`
-if [ -z "$resolveip" ] ; then 
-	logger -t "【SS】" "连 www.163.com 的域名都解析不了, 你的网络能用？？"
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
+	else
+		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check" != "200" ] && restart_dhcpd && sleep 3
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+	fi
+if [ "$check" != "200" ] ; then 
+	logger -t "【SS】" "连 $ss_link_1 的域名都解析不了, 你的网络能用？？"
 	logger -t "【SS】" "SS 网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
 	clean_SS
 fi
@@ -1326,7 +1341,7 @@ eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}
 check_setting()
 {
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_server1$ss_server2$ss_s1_port$ss_s2_port$ss_s1_method$ss_s2_method$ss_s1_key$ss_s2_key$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage$ss_s2_usage$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$ss_xbox`nvram get wan0_dns |cut -d ' ' -f1`$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_server1$ss_server2$ss_s1_port$ss_s2_port$ss_s1_method$ss_s2_method$ss_s1_key$ss_s2_key$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage$ss_s2_usage$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$ss_xbox`nvram get wan0_dns |cut -d ' ' -f1`$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
@@ -1481,12 +1496,14 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 www.163.com
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 5; }
-	[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 www.163.com
+	wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
 	[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 else
-	check=`curl -k -s -w "%{http_code}" "www.163.com" -o /dev/null`
+	check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 fi
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] Internet have no problem."
@@ -1496,12 +1513,17 @@ else
 	restart_dhcpd
 fi
 
+
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 http://www.google.com.hk
-	[ "$?" == "0" ] && check=200 || check=404
+	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 else
-	check=`curl -k -s -w "%{http_code}" "http://www.google.com.hk" -o /dev/null`
+	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
@@ -1516,7 +1538,7 @@ sleep 5
 if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" ] ; then
 	port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 	if [ "$port" = 0 ] ; then
-		sleep 35
+		sleep 5
 	fi
 	port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 	if [ "$port" = 0 ] ; then
@@ -1528,10 +1550,14 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 fi
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 http://www.google.com.hk
-	[ "$?" == "0" ] && check=200 || check=404
+	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 else
-	check=`curl -k -s -w "%{http_code}" "http://www.google.com.hk" -o /dev/null`
+	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
@@ -1583,10 +1609,14 @@ restart_dhcpd
 sleep 5
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 http://www.google.com.hk
-	[ "$?" == "0" ] && check=200 || check=404
+	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 else
-	check=`curl -k -s -w "%{http_code}" "http://www.google.com.hk" -o /dev/null`
+	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
 if [ "$check" == "200" ] ; then
 	logger -t "【SS】" "[$LOGTIME] SS 服务器 `nvram get ss_working_port` 连接."

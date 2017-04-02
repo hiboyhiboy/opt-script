@@ -32,7 +32,7 @@ fi
 adbyby_check () {
 
 A_restart=`nvram get adbyby_status`
-B_restart="$adbyby_enable$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$ss_sub4$adbyby_whitehost_x$whitehost$lan_ipaddr$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adbyby_enable$ss_link_1$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$ss_sub4$adbyby_whitehost_x$whitehost$lan_ipaddr$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set adbyby_status=$B_restart
@@ -83,6 +83,8 @@ killall -9 sh_ad_byby_keey_k.sh
 rm -f /tmp/cron_adb.lock
 reb="1"
 runx="1"
+ss_link_1=${ss_link_1:-"www.163.com"}
+ss_link_2=${ss_link_2:-"www.google.com.hk"}
 while true; do
 [ ! -s "/tmp/bin/adbyby" ] && nvram set adbyby_status=00 && { logger -t "【Adbyby】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
 if [ ! -f /tmp/cron_adb.lock ] ; then
@@ -92,14 +94,18 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		sleep 5
 		reboot
 	fi
-	baidu='http://gb.corp.163.com/gb/images/spacer.gif'
-	wgetcurl.sh /tmp/small_blank.gif $baidu
-	if [ ! -s /tmp/small_blank.gif ] && [ ! -f /tmp/cron_adb.lock ] ; then
-		restart_dhcpd
-		sleep 30
-		wgetcurl.sh /tmp/small_blank.gif $baidu
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
+	else
+		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check" != "200" ] && restart_dhcpd && sleep 3
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
-	if [ -s /tmp/small_blank.gif ] && [ ! -f /tmp/cron_adb.lock ] ; then
+	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
 		PIDS=$(ps - w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 
