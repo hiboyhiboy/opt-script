@@ -34,7 +34,6 @@ if [ "$syncthing_enable" = "1" ] ; then
 		syncthing_close
 		syncthing_start
 	else
-		[ -z "`pidof syncthing`" ] || [ ! -s "$syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing" ] && nvram set syncthing_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22000 | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 			iptables -t filter -I INPUT -p tcp --dport 22000 -j ACCEPT &
@@ -50,10 +49,18 @@ fi
 
 syncthing_keep () {
 logger -t "【syncthing】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof syncthing\`" ] || [ ! -s "$syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing" ] && nvram set syncthing_status=00 && logger -t "【syncthing】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check # 【syncthing】
+OSC
+return
+fi
+
 while true; do
-	if [ -z "`pidof syncthing`" ] || [ ! -s "`which syncthing`" ] || [ ! -s "$syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing" ] ; then
+	if [ -z "`pidof syncthing`" ] || [ ! -s "$syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing" ] ; then
 		logger -t "【syncthing】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set syncthing_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 252
 done
@@ -61,6 +68,7 @@ done
 
 syncthing_close () {
 
+sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT &
 iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT &
 iptables -t filter -D INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT &
@@ -82,7 +90,7 @@ echo "$upanPath"
 if [ -z "$upanPath" ] ; then 
 	logger -t "【syncthing】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 	sleep 10
-	eval "$scriptfilepath &"
+	nvram set syncthing_status=00 && eval "$scriptfilepath &"
 	exit 0
 fi
 SVC_PATH="$upanPath/syncthing/syncthing-linux-mipsle/syncthing"

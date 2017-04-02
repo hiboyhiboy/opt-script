@@ -38,25 +38,36 @@ if [ "$meow_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		meow_close
 		meow_start
-	else
-		[ -z "$(ps - w | grep "$meow_path" | grep -v grep )" ] || [ ! -s "$meow_path" ] && nvram set meow_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
 
 meow_keep () {
 logger -t "【meow】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【meow】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "$meow_path" /tmp/ps | grep -v grep |wc -l\` # 【meow】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "$meow_path" ] ; then # 【meow】
+		logger -t "【meow】" "重新启动\$NUM" # 【meow】
+		nvram set meow_status=00 && eval "$scriptfilepath &" && sed -Ei '/【meow】|^$/d' /tmp/script/_opt_script_check # 【meow】
+	fi # 【meow】
+OSC
+return
+fi
+
 while true; do
 	NUM=`ps - w | grep "$meow_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$meow_path" ] ; then
 		logger -t "【meow】" "重新启动$NUM"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set meow_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 217
 done
 }
 
 meow_close () {
+sed -Ei '/【meow】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$meow_path" ] && eval $(ps - w | grep "$meow_path" | grep -v grep | awk '{print "kill "$1;}')
 killall meow meow_script.sh
 killall -9 meow meow_script.sh

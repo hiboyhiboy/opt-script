@@ -32,7 +32,6 @@ if [ "$softether_enable" = "1" ] ; then
 		softether_close
 		softether_start
 	else
-		[ -z "$(ps - w | grep "$softether_path" | grep -v grep )" ] || [ ! -s "$softether_path" ] && nvram set softether_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:500 | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 		logger -t "【softether】" "允许 500、4500、1701 udp端口通过防火墙"
@@ -46,11 +45,23 @@ fi
 
 softether_keep () {
 logger -t "【softether】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【softether】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "$softether_path" /tmp/ps | grep -v grep |wc -l\` # 【softether】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "$softether_path" ] ; then # 【softether】
+		logger -t "【softether】" "重新启动\$NUM" # 【softether】
+		nvram set softether_status=00 && eval "$scriptfilepath &" && sed -Ei '/【softether】|^$/d' /tmp/script/_opt_script_check # 【softether】
+	fi # 【softether】
+OSC
+return
+fi
+
 while true; do
 	NUM=`ps - w | grep "$softether_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$softether_path" ] ; then
 		logger -t "【softether】" "重新启动$NUM"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set softether_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 225
 done
@@ -58,6 +69,7 @@ done
 
 softether_close () {
 
+sed -Ei '/【softether】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -p udp --destination-port 500 -j ACCEPT
 iptables -D INPUT -p udp --destination-port 4500 -j ACCEPT
 iptables -D INPUT -p udp --destination-port 1701 -j ACCEPT

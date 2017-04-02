@@ -30,8 +30,6 @@ if [ "$ngrok_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		ngrok_close
 		ngrok_start
-	else
-		[ -z "`pidof ngrokc`" ] || [ ! -s "`which ngrokc`" ] && nvram set ngrok_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -39,16 +37,24 @@ fi
 ngrok_keep () {
 
 logger -t "【ngrok】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof ngrokc\`" ] || [ ! -s "`which ngrokc`" ] && nvram set ngrok_status=00 && logger -t "【ngrok】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check # 【ngrok】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof ngrokc`" ] || [ ! -s "`which ngrokc`" ] ; then
 		logger -t "【ngrok】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set ngrok_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 233
 done
 }
 
 ngrok_close () {
+sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
 killall ngrokc ngrok_script.sh
 killall -9 ngrokc ngrok_script.sh
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')

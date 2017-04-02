@@ -30,13 +30,6 @@ if [ "$frp_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		frp_close
 		frp_start
-	else
-		if [ "$frpc_enable" = "1" ] ; then
-			[ -z "`pidof frpc`" ] || [ ! -s "`which frpc`" ] && nvram set frp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
-		fi
-		if [ "$frps_enable" = "1" ] ; then
-			[ -z "`pidof frps`" ] || [ ! -s "`which frps`" ] && nvram set frp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
-		fi
 	fi
 fi
 }
@@ -44,17 +37,32 @@ fi
 frp_keep () {
 
 logger -t "【frp】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
+if [ "$frpc_enable" = "1" ] ; then
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof frpc\`" ] || [ ! -s "`which frpc`" ] && nvram set frp_status=00 && logger -t "【frp】" "重新启动frpc" && eval "$scriptfilepath &" && sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check # 【frp】
+OSC
+fi
+if [ "$frps_enable" = "1" ] ; then
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof frps\`" ] || [ ! -s "`which frps`" ] && nvram set frp_status=00 && logger -t "【frp】" "重新启动frps" && eval "$scriptfilepath &" && sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check # 【frp】
+OSC
+fi
+return
+fi
+
 while true; do
 if [ "$frpc_enable" = "1" ] ; then
 	if [ -z "`pidof frpc`" ] || [ ! -s "`which frpc`" ] ; then
 		logger -t "【frp】" "frpc重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set frp_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 fi
 if [ "$frps_enable" = "1" ] ; then
 	if [ -z "`pidof frps`" ] || [ ! -s "`which frps`" ] ; then
 		logger -t "【frp】" "frps重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set frp_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 fi
 	sleep 232
@@ -62,6 +70,7 @@ done
 }
 
 frp_close () {
+sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
 killall frpc frps frp_script.sh
 killall -9 frpc frps frp_script.sh
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
@@ -139,7 +148,7 @@ keep)
 	frp_keep
 	;;
 updatefrp)
-	[ "$frp_enable" = "1" ] && nvram set frp_status="updatefrp" && logger -t "【frp】" "重启" && { eval "$scriptfilepath start &"; exit 0; }
+	[ "$frp_enable" = "1" ] && nvram set frp_status="updatefrp" && logger -t "【frp】" "重启" && { nvram set frp_status=00 && eval "$scriptfilepath start &"; exit 0; }
 	[ "$frp_enable" != "1" ] && nvram set frpc_v="" && nvram set frps_v="" && logger -t "【frp】" "frpc、frps更新" && rm -rf /opt/bin/frpc /opt/bin/frps
 	;;
 *)

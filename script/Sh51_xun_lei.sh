@@ -29,9 +29,6 @@ if [ "$xunleis" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		xunlei_close
 		xunlei_start
-	else
-		running=$(ps - w | grep "/xunlei/lib/" | grep -v "grep" | wc -l)
-		[ $running -le 2 ] || [ ! -s "$xunleis_dir/xunlei/portal" ] && nvram set xunleis_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -59,6 +56,18 @@ logger -t "【迅雷下载】" "⑥: 1表示磁盘挂载检测成功, 0表示磁
 logger -t "【迅雷下载】" "如果出现错误可以手动启动, 输入以下命令测试"
 logger -t "【迅雷下载】" "export LD_LIBRARY_PATH=$xunleis_dir/xunlei/lib:/lib:/opt/lib ; cd $xunleis_dir/xunlei ; $xunleis_dir/xunlei/portal"
 logger -t "【迅雷下载】" "守护进程启动 $xunleis_dir/xunlei"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【迅雷下载】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "/xunlei/lib/" /tmp/ps | grep -v grep |wc -l\` # 【迅雷下载】
+	if [ "\$NUM" -le "2" ] || [ ! -s "$xunleis_dir/xunlei/portal" ] ; then # 【迅雷下载】
+		logger -t "【迅雷下载】" "重新启动\$NUM" # 【迅雷下载】
+		nvram set xunleis_status=00 && eval "$scriptfilepath &" && sed -Ei '/【迅雷下载】|^$/d' /tmp/script/_opt_script_check # 【迅雷下载】
+	fi # 【迅雷下载】
+OSC
+return
+fi
+
 while true; do
 	if [ ! -s "$xunleis_dir/xunlei/portal" ] ; then
 		logger -t "【迅雷下载】" "找不到文件 $xunleis_dir/xunlei/portal"
@@ -67,13 +76,14 @@ while true; do
 	running=$(ps - w | grep "/xunlei/lib/" | grep -v "grep" | wc -l)
 	if [ $running -le 2 ] ; then
 		logger -t "【迅雷下载】" "重新启动$running"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set xunleis_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 251
 done
 }
 
 xunlei_close () {
+sed -Ei '/【迅雷下载】|^$/d' /tmp/script/_opt_script_check
 killall ETMDaemon EmbedThunderManager vod_httpserver portal
 killall -9 ETMDaemon EmbedThunderManager vod_httpserver portal
 rm -f "/opt/etc/init.d/$scriptname"
@@ -93,7 +103,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	if [ -z "$upanPath" ] ; then 
 		logger -t "【迅雷下载】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 		sleep 10
-		eval "$scriptfilepath &"
+		nvram set xunleis_status=00 && eval "$scriptfilepath &"
 		exit 0
 	fi
 	xunleis_dir="$upanPath"

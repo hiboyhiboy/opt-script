@@ -30,7 +30,6 @@ if [ "$mproxy_enable" = "1" ] ; then
 		mproxy_close
 		mproxy_start
 	else
-		[ -z "`pidof mproxy`" ] || [ ! -s "`which mproxy`" ] && nvram set mproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v "^#" | grep "mproxy_port=" | sed 's/mproxy_port=//'`)
 		[ ! -z "$mproxyport" ] && port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$mproxyport | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ ! -z "$mproxyport" ] && [ "$port" = 0 ] ; then
@@ -43,10 +42,17 @@ fi
 
 mproxy_keep () {
 logger -t "【mproxy】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【mproxy】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof mproxy\`" ] || [ ! -s "`which mproxy`" ] && nvram set mproxy_status=00 && logger -t "【mproxy】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【mproxy】|^$/d' /tmp/script/_opt_script_check # 【mproxy】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof mproxy`" ] || [ ! -s "`which mproxy`" ] ; then
 		logger -t "【mproxy】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set mproxy_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 221
 done
@@ -54,6 +60,7 @@ done
 
 mproxy_close () {
 
+sed -Ei '/【mproxy】|^$/d' /tmp/script/_opt_script_check
 mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v "^#" | grep "mproxy_port=" | sed 's/mproxy_port=//'`)
 [ ! -z "$mproxyport" ] && iptables -D INPUT -p tcp --dport $mproxyport -j ACCEPT
 killall mproxy mproxy_script.sh

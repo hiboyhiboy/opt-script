@@ -25,6 +25,13 @@ fi
 
 kms_keep () {
 logger -t "【kms】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof vlmcsd\`" ] && logger -t "【kms】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check # 【kms】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof vlmcsd`" ] ; then
 		logger -t "【kms】" "重新启动"
@@ -35,6 +42,7 @@ done
 }
 
 kms_close () {
+sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf; restart_dhcpd;
 killall vlmcsd vlmcsdini_script.sh
 killall -9 vlmcsd vlmcsdini_script.sh

@@ -31,7 +31,6 @@ if [ "$tinyproxy_enable" = "1" ] ; then
 		tinyproxy_close
 		tinyproxy_start
 	else
-		[ -z "$(ps - w | grep "$tinyproxy_path" | grep -v grep )" ] || [ ! -s "$tinyproxy_path" ] &&  nvram set tinyproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 		[ ! -z "$tinyproxyport" ] && port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$tinyproxyport | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ ! -z "$tinyproxyport" ] && [ "$port" = 0 ] ; then
@@ -44,10 +43,22 @@ fi
 
 tinyproxy_keep () {
 logger -t "【tinyproxy】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【tinyproxy】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "$tinyproxy_path" /tmp/ps | grep -v grep |wc -l\` # 【tinyproxy】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "$tinyproxy_path" ] ; then # 【tinyproxy】
+		logger -t "【tinyproxy】" "重新启动\$NUM" # 【tinyproxy】
+		nvram set tinyproxy_status=00 && eval "$scriptfilepath &" && sed -Ei '/【tinyproxy】|^$/d' /tmp/script/_opt_script_check # 【tinyproxy】
+	fi # 【tinyproxy】
+OSC
+return
+fi
+
 while true; do
 	if [ -z "$(ps - w | grep "$tinyproxy_path" | grep -v grep )" ] || [ ! -s "$tinyproxy_path" ] ; then
 		logger -t "【tinyproxy】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set tinyproxy_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 222
 done
@@ -55,6 +66,7 @@ done
 
 tinyproxy_close () {
 
+sed -Ei '/【tinyproxy】|^$/d' /tmp/script/_opt_script_check
 tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 [ ! -z "$tinyproxyport" ] && iptables -D INPUT -p tcp --dport $tinyproxyport -j ACCEPT
 killall tinyproxy tinyproxy_script.sh

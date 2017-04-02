@@ -39,25 +39,36 @@ if [ "$cow_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		cow_close
 		cow_start
-	else
-		[ -z "$(ps - w | grep "$cow_path" | grep -v grep )" ] || [ ! -s "$cow_path" ] && nvram set cow_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
 
 cow_keep () {
 logger -t "【cow】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【cow】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "$cow_path" /tmp/ps | grep -v grep |wc -l\` # 【cow】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "$cow_path" ] ; then # 【cow】
+		logger -t "【cow】" "重新启动\$NUM" # 【cow】
+		nvram set cow_status=00 && eval "$scriptfilepath &" && sed -Ei '/【cow】|^$/d' /tmp/script/_opt_script_check # 【cow】
+	fi # 【cow】
+OSC
+return
+fi
+
 while true; do
 	NUM=`ps - w | grep "$cow_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$cow_path" ] ; then
 		logger -t "【cow】" "重新启动$NUM"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set cow_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 216
 done
 }
 
 cow_close () {
+sed -Ei '/【cow】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$cow_path" ] && eval $(ps - w | grep "$cow_path" | grep -v grep | awk '{print "kill "$1;}')
 killall cow cow_script.sh
 killall -9 cow cow_script.sh

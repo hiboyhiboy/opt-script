@@ -32,7 +32,6 @@ if [ "$vpnproxy_enable" = "1" ] ; then
 		vpnproxy_close
 		vpnproxy_start
 	else
-		[ -z "`pidof nvpproxy`" ] || [ ! -s "`which nvpproxy`" ] && nvram set vpnproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$vpnproxy_wan_port | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 		logger -t "【vpnproxy】" "允许 $vpnproxy_wan_port 端口通过防火墙"
@@ -44,10 +43,17 @@ fi
 
 vpnproxy_keep () {
 logger -t "【vpnproxy】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【vpnproxy】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof nvpproxy\`" ] || [ ! -s "`which nvpproxy`" ] && nvram set vpnproxy_status=00 && logger -t "【vpnproxy】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【vpnproxy】|^$/d' /tmp/script/_opt_script_check # 【vpnproxy】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof nvpproxy`" ] || [ ! -s "`which nvpproxy`" ] ; then
 		logger -t "【vpnproxy】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set vpnproxy_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 223
 done
@@ -55,6 +61,7 @@ done
 
 vpnproxy_close () {
 
+sed -Ei '/【vpnproxy】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -p tcp --dport $vpnproxy_wan_port -j ACCEPT
 killall nvpproxy
 killall -9 nvpproxy

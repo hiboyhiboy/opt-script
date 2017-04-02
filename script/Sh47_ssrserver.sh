@@ -29,25 +29,36 @@ if [ "$ssrserver_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		ssrserver_close
 		ssrserver_start
-	else
-		[ -z "`ps - w | grep manyuser/shadowsocks/server | grep -v grep `" ] || [ ! -s "`which python`" ] && nvram set ssrserver_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
 
 ssrserver_keep () {
 logger -t "【SSR_server】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "manyuser/shadowsocks/server" /tmp/ps | grep -v grep |wc -l\` # 【SSR_server】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "`which python`" ] ; then # 【SSR_server】
+		logger -t "【SSR_server】" "重新启动\$NUM" # 【SSR_server】
+		nvram set ssrserver_status=00 && eval "$scriptfilepath &" && sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check # 【SSR_server】
+	fi # 【SSR_server】
+OSC
+return
+fi
+
 while true; do
 	NUM=`ps - w | grep "manyuser/shadowsocks/server" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ "$NUM" -gt "1" ] || [ ! -s "`which python`" ] ; then
 		logger -t "【SSR_server】" "重新启动$NUM"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set ssrserver_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 247
 done
 }
 
 ssrserver_close () {
+sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check
 eval $(ps - w | grep "manyuser/shadowsocks/server" | grep -v grep | awk '{print "kill "$1;}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
 }
@@ -63,7 +74,7 @@ echo "$upanPath"
 if [ -z "$upanPath" ] ; then 
 	logger -t "【SSR_server】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 	sleep 10
-	eval "$scriptfilepath &"
+	nvram set ssrserver_status=00 && eval "$scriptfilepath &"
 	exit 0
 fi
 

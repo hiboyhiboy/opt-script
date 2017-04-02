@@ -39,8 +39,6 @@ if [ "$display_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		display_close
 		display_start
-	else
-		[ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && nvram set display_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -51,11 +49,19 @@ eval "$scriptfilepath getweather &"
 eval $(ps - w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1;}')
 eval "$scriptfilepath getaqidata &"
 logger -t "【相框显示】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof lcd4linux\`" ] || [ ! -s "`which lcd4linux`" ] && nvram set display_status=00 && logger -t "【相框显示】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check # 【相框显示】
+OSC
+
+fi
+
 runx="1"
 while true; do
-	if [ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] ; then
+	if [ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && [ ! -s /tmp/script/_opt_script_check ]; then
 		logger -t "【相框显示】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set display_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 180
 runx=`expr $runx + 1`
@@ -75,6 +81,7 @@ done
 }
 
 display_close () {
+sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
 killall lcd4linux getaqidata getweather displaykeep.sh
 killall -9 lcd4linux getaqidata getweather displaykeep.sh
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
@@ -91,7 +98,7 @@ echo "$upanPath"
 if [ -z "$upanPath" ] ; then 
 	logger -t "【相框显示】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 	sleep 10
-	eval "$scriptfilepath &"
+	nvram set display_status=00 && eval "$scriptfilepath &"
 	exit 0
 fi
 

@@ -35,7 +35,6 @@ if [ "$ssserver_enable" = "1" ] ; then
 		ssserver_close
 		ssserver_start
 	else
-		[ -z "`pidof ss-server`" ] || [ ! -s "`which ss-server`" ] && nvram set ssserver_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		if [ -n "`pidof ss-server`" ] && [ "$ssserver_enable" = "1" ] ; then
 			port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
 			if [ "$port" = 0 ] ; then
@@ -50,10 +49,17 @@ fi
 
 ssserver_keep () {
 logger -t "【SS_server】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【SS_server】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof ss-server\`" ] || [ ! -s "`which ss-server`" ] && nvram set ssserver_status=00 && logger -t "【SS_server】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【SS_server】|^$/d' /tmp/script/_opt_script_check # 【SS_server】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof ss-server`" ] || [ ! -s "`which ss-server`" ] ; then
 		logger -t "【SS_server】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set ssserver_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 224
 done
@@ -61,6 +67,7 @@ done
 
 ssserver_close () {
 
+sed -Ei '/【SS_server】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT &
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT &
 killall ss-server obfs-server >/dev/null 2>&1

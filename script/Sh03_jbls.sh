@@ -25,6 +25,13 @@ fi
 
 jbls_keep () {
 logger -t "【jbls】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof jblicsvr\`" ] && logger -t "【jbls】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check # 【jbls】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof jblicsvr`" ] ; then
 		logger -t "【jbls】" "重新启动"
@@ -35,6 +42,7 @@ done
 }
 
 jbls_close () {
+sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/txt-record=_jetbrains-license-server.lan/d' /etc/storage/dnsmasq/dnsmasq.conf
 killall jblicsvr jbls_script.sh
 killall -9 jblicsvr jbls_script.sh

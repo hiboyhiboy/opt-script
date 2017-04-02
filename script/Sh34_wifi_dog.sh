@@ -54,8 +54,6 @@ if [ "$wifidog_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		wifidog_close
 		wifidog_start
-	else
-		[ -z "`pidof wifidog`" ] || [ ! -s "`which wifidog`" ] && nvram set wifidog_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -63,16 +61,24 @@ fi
 wifidog_keep () {
 
 logger -t "【wifidog】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【wifidog】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof wifidog\`" ] || [ ! -s "`which wifidog`" ] && nvram set wifidog_status=00 && logger -t "【wifidog】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【wifidog】|^$/d' /tmp/script/_opt_script_check # 【wifidog】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof wifidog`" ] || [ ! -s "`which wifidog`" ] ; then
 		logger -t "【wifidog】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set wifidog_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 234
 done
 }
 
 wifidog_close () {
+sed -Ei '/【wifidog】|^$/d' /tmp/script/_opt_script_check
 echo "Stopping Wifidog ... "
 if $WD_DIR/wdctl status 2> /dev/null
 then

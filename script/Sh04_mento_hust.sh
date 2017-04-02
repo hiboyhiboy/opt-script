@@ -50,24 +50,30 @@ if [ "$mentohust_enable" = "1" ] ; then
 		rm -f /etc/storage/mentohust.conf
 		mentohust_close
 		mentohust_start
-	else
-		[ -z "`pidof mentohust`" ] || [ ! -s "$mentohust_path" ] && nvram set mentohust_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
 
 mentohust_keep () {
 logger -t "【mentohust】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【mentohust】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof mentohust\`" ] || [ ! -s "$mentohust_path" ] && nvram set mentohust_status=00 && logger -t "【mentohust】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【mentohust】|^$/d' /tmp/script/_opt_script_check # 【mentohust】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof mentohust`" ] || [ ! -s "$mentohust_path" ] ; then
 		logger -t "【mentohust】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set mentohust_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 104
 done
 }
 
 mentohust_close () {
+sed -Ei '/【mentohust】|^$/d' /tmp/script/_opt_script_check
 killall mentohust
 killall -9 mentohust
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')

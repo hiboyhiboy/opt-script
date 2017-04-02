@@ -47,7 +47,6 @@ if [ "$youku_enable" = "1" ] ; then
 		youku_close
 		youku_start
 	else
-		[ -z "`pidof ikuacc`" ] || [ ! -s "$hc_dir/youku/ikuacc" ] && nvram set youku_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:4466 | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 			logger -t "【路由宝】" " 允许 4466 tcp、udp端口通过防火墙"
@@ -64,16 +63,24 @@ logger -t "【路由宝】" "守护进程启动"
 sleep 20
 optimize
 wget -O - 'http://127.0.0.1:8908/peer/limit/network/set?upload_model='"$spd" > /dev/null 2>&1
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【路由宝】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof ikuacc\`" ] || [ ! -s "$hc_dir/youku/ikuacc" ] && nvram set youku_status=00 && logger -t "【路由宝】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【路由宝】|^$/d' /tmp/script/_opt_script_check # 【路由宝】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof ikuacc`" ] || [ ! -s "$hc_dir/youku/ikuacc" ] ; then
 		logger -t "【路由宝】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set youku_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 53
 done
 }
 
 youku_close () {
+sed -Ei '/【路由宝】|^$/d' /tmp/script/_opt_script_check
 killall ikuacc
 killall -9 ikuacc
 iptables -D INPUT -p tcp --dport 4466 -j ACCEPT &
@@ -111,7 +118,7 @@ if [ ! -s "$hc_dir/youku.test" ] ; then
 	if [ -z "$upanPath" ] ; then 
 		logger -t "【路由宝】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 		sleep 10
-		eval "$scriptfilepath &"
+		nvram set youku_status=00 && eval "$scriptfilepath &"
 		exit 0
 	fi
 	hc_dir="$upanPath" && nvram set youku_hc_dir="$hc_dir"

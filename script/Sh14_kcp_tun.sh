@@ -44,8 +44,6 @@ if [ "$kcptun_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		kcptun_close
 		kcptun_start
-	else
-		[ -z "$(ps - w | grep "$kcptun_path" | grep -v grep )" ] || [ ! -s "$kcptun_path" ] && nvram set kcptun_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 
@@ -54,11 +52,23 @@ fi
 kcptun_keep () {
 logger -t "【kcptun】" "守护进程启动"
 KCPNUM=$(echo `cat /etc/storage/kcptun_script.sh | grep -v "^#" | grep "KCPNUM=" | sed 's/KCPNUM=//'`)
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "$kcptun_path" /tmp/ps | grep -v grep |wc -l\` # 【kcptun】
+	if [ "\$NUM" -lt "$KCPNUM" ] || [ "\$NUM" -gt "$KCPNUM" ] || [ ! -s "$kcptun_path" ] ; then # 【kcptun】
+		logger -t "【kcptun】" "重新启动\$NUM" # 【kcptun】
+		nvram set kcptun_status=00 && eval "$scriptfilepath &" && sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check # 【kcptun】
+	fi # 【kcptun】
+OSC
+return
+fi
+
 while true; do
 	NUM=`ps - w | grep "$kcptun_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "$KCPNUM" ] || [ "$NUM" -gt "$KCPNUM" ] || [ ! -s "$kcptun_path" ] ; then
 		logger -t "【kcptun】" "重新启动$NUM"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set kcptun_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 214
 done
@@ -66,6 +76,7 @@ done
 
 kcptun_close () {
 
+sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$kcptun_path" ] && eval $(ps - w | grep "$kcptun_path" | grep -v grep | awk '{print "kill "$1}')
 killall client_linux_mips kcptun_script.sh sh_kcpkeep.sh
 killall -9 client_linux_mips kcptun_script.sh sh_kcpkeep.sh
@@ -168,7 +179,7 @@ keep)
 	kcptun_keep
 	;;
 updatekcptun)
-	[ "$kcptun_enable" = "1" ] && nvram set kcptun_status="updatekcptun" && logger -t "【kcptun】" "重启" && { eval "$scriptfilepath start &"; exit 0; }
+	[ "$kcptun_enable" = "1" ] && nvram set kcptun_status="updatekcptun" && logger -t "【kcptun】" "重启" && { nvram set kcptun_status=00 && eval "$scriptfilepath start &"; exit 0; }
 	[ "$kcptun_enable" != "1" ] && [ -f "$kcptun_path" ] && nvram set kcptun_v="" && logger -t "【kcptun】" "更新" && rm -rf $kcptun_path
 	;;
 *)

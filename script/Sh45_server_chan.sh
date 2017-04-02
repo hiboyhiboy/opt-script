@@ -30,26 +30,36 @@ if [ "$serverchan_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		serverchan_close
 		serverchan_start
-	else
-		[ -z "$(ps - w | grep "serverchan_scri" | grep -v grep )" ] || [ ! -s "`which curl`" ] && nvram set serverchan_status=04 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
 
 serverchan_keep () {
 logger -t "【微信推送】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【微信推送】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "/etc/storage/serverchan_script.sh" /tmp/ps | grep -v grep |wc -l\` # 【微信推送】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "/etc/storage/serverchan_script.sh" ] || [ ! -s "`which curl`" ] ; then # 【微信推送】
+		logger -t "【微信推送】" "重新启动\$NUM" # 【微信推送】
+		nvram set serverchan_status=04 && eval "$scriptfilepath &" && sed -Ei '/【微信推送】|^$/d' /tmp/script/_opt_script_check # 【微信推送】
+	fi # 【微信推送】
+OSC
+return
+fi
+
 while true; do
 	[ ! -s "`which curl`" ] && nvram set serverchan_status=03 && { logger -t "【微信推送】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
 	if [ -z "$(ps - w | grep "serverchan_scri" | grep -v grep )" ] ; then
 		logger -t "【微信推送】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set serverchan_status=01 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 245
 done
-
 }
 
 serverchan_close () {
+sed -Ei '/【微信推送】|^$/d' /tmp/script/_opt_script_check
 killall serverchan_script.sh
 killall -9 serverchan_script.sh
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')

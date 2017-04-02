@@ -33,7 +33,6 @@ if [ "$shellinabox_enable" = "1" ] ; then
 		shellinabox_close
 		shellinabox_start
 	else
-		[ -z "`pidof shellinaboxd`" ] || [ ! -s "`which shellinaboxd`" ] && nvram set shellinabox_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$shellinabox_port | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 			logger -t "【shellinabox】" "检测:找不到 ss-server 端口:$shellinabox_port 规则, 重新添加"
@@ -46,10 +45,17 @@ fi
 shellinabox_keep () {
 
 logger -t "【shellinabox】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【shellinabox】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof shellinaboxd\`" ] || [ ! -s "`which shellinaboxd`" ] && nvram set shellinabox_status=00 && logger -t "【shellinabox】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【shellinabox】|^$/d' /tmp/script/_opt_script_check # 【shellinabox】
+OSC
+return
+fi
 while true; do
 	if [ -z "`pidof shellinaboxd`" ] || [ ! -s "`which shellinaboxd`" ] ; then
 		logger -t "【shellinabox】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		{ nvram set shellinabox_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 sleep 262
 done
@@ -57,6 +63,7 @@ done
 
 shellinabox_close () {
 
+sed -Ei '/【shellinabox】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -p tcp --dport $shellinabox_port -j ACCEPT
 killall shellinaboxd
 killall -9 shellinaboxd
