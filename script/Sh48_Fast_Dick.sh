@@ -19,7 +19,7 @@ if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set FastDicks_status=$B_restart
 	needed_restart=1
 else
-n	eeded_restart=0
+	needed_restart=0
 fi
 if [ "$FastDick_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	running=$(ps - w | grep "FastDick" | grep -v "grep" | wc -l)
