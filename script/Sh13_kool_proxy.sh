@@ -276,7 +276,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	# 合并规则
 	cat /etc/storage/koolproxy_rules_script.sh | grep -v '^!' | grep -v "^$" > /tmp/7620koolproxy/user.txt
 	grep -v '^!' /tmp/7620koolproxy/user3adblocks.txt | grep -v "^$" >> /tmp/7620koolproxy/user.txt
-	ln -sf /tmp/7620koolproxy/data/user.txt /tmp/7620koolproxy/user.txt
+	ln -sf /tmp/7620koolproxy/user.txt /tmp/7620koolproxy/data/user.txt
 	cd /tmp/7620koolproxy/
 	# 更新规则
 	update_kp_rules
@@ -317,16 +317,16 @@ logger -t "【koolproxy】" "检测规则是否有更新"
 if [ ! -f /etc/storage/koolproxy_rules_list.sh ] ; then
 cat > "/etc/storage/koolproxy_rules_list.sh" <<-\KPR
 # 【可选多项，会占用内存：删除前面的#可生效，前面添加#停用规则】
-# 【1.dat为默认视频规则】【koolproxy.txt为普通规则】【add_rules.txt为每日比更新规则】
-# https://rules.ngrok.wang/1.dat
-# https://rules.ngrok.wang/koolproxy.txt
-# http://rules.ngrok.wang:5000/koolproxy.txt
-# http://rules.ngrok.wang:5000/1.dat
-http://entware.mirrors.ligux.com/koolproxy/1.dat
-http://entware.mirrors.ligux.com/koolproxy/add_rules.txt
-http://entware.mirrors.ligux.com/koolproxy/koolproxy.txt
-# 【koolproxy_wp.txt爪机浏览器规则】【filter_game.txt拯救室友规则】
+# 静态规则：
+http://koolshare.b0.upaiyun.com/rules/koolproxy.txt
+# 视频规则：
+http://koolshare.b0.upaiyun.com/rules/1.dat
+# 0day规则：
+http://koolshare.b0.upaiyun.com/rules/add_rules.txt
+# 爪机浏览器规则：
 https://coding.net/u/Carseason/p/koolproxy/git/raw/master/koolproxy_wp.txt
+# 拯救室友规则：
+#http://koolshare.b0.upaiyun.com/rules/filter_game.txt
 # http://entware.mirrors.ligux.com/koolproxy/filter_game.txt
 # 【adbyby规则翻译的koolproxy兼容规则 by <dsyo2008> http://koolshare.cn/thread-83553-1-1.html】
 # https://raw.githubusercontent.com/dsyo2008/lazy_for_koolproxy/master/lazy_kp.txt
