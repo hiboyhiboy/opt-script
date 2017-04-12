@@ -23,7 +23,7 @@ else
 fi
 if [ "$mproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof mproxy`" ] && logger -t "【mproxy】" "停止 mproxy" && mproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$mproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -65,7 +65,7 @@ mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v "^#" | grep "mpro
 [ ! -z "$mproxyport" ] && iptables -D INPUT -p tcp --dport $mproxyport -j ACCEPT
 killall mproxy mproxy_script.sh
 killall -9 mproxy mproxy_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 mproxy_start () {

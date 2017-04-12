@@ -25,7 +25,7 @@ else
 fi
 if [ "$softether_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$softether_path" | grep -v grep )" ] && logger -t "【softether】" "停止 softether" && softether_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$softether_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -74,10 +74,10 @@ iptables -D INPUT -p udp --destination-port 500 -j ACCEPT
 iptables -D INPUT -p udp --destination-port 4500 -j ACCEPT
 iptables -D INPUT -p udp --destination-port 1701 -j ACCEPT
 [ ! -z "$softether_path" ] && $softether_path stop
-[ ! -z "$softether_path" ] && eval $(ps - w | grep "$softether_path" | grep -v grep | awk '{print "kill "$1;}')
+[ ! -z "$softether_path" ] && eval $(ps - w | grep "$softether_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall vpnserver softether_script.sh
 killall -9 vpnserver softether_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 softether_start () {

@@ -24,7 +24,7 @@ else
 fi
 if [ "$ngrok_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "停止 ngrok" && ngrok_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ngrok_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -57,7 +57,7 @@ ngrok_close () {
 sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
 killall ngrokc ngrok_script.sh
 killall -9 ngrokc ngrok_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 ngrok_start () {

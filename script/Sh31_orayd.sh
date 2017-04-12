@@ -21,7 +21,7 @@ fi
 phddns_check () {
 if [ "$phddns" != "1" ] ; then
 	[ ! -z "`pidof oraysl`" ] && logger -t "【花生壳内网版】" "停止 oraysl" && phddns_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$phddns" = "1" ] ; then
 	if [ -z "`pidof oraysl`" ] || [ ! -s "`which oraysl`" ] ; then
@@ -100,7 +100,7 @@ done
 phddns_close () {
 killall oraynewph oraysl
 killall -9 oraynewph oraysl
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 phddns_start () {

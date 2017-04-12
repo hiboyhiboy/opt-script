@@ -14,8 +14,9 @@ fi
 kms_check () {
 if [ "$kms_enable" != "1" ] ; then
 	[ ! -z "`pidof vlmcsd`" ] && logger -t "【kms】" "停止 vlmcsd" && kms_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
+[ -z "`pidof vlmcsd`" ] && sleep 20
 if [ -z "`pidof vlmcsd`" ] && [ "$kms_enable" = "1" ] ; then
 	kms_close
 	kms_start
@@ -46,7 +47,7 @@ sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf; restart_dhcpd;
 killall vlmcsd vlmcsdini_script.sh
 killall -9 vlmcsd vlmcsdini_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 kms_start () {

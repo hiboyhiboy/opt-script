@@ -24,7 +24,7 @@ fi
 if [ "$FastDick_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	running=$(ps - w | grep "FastDick" | grep -v "grep" | wc -l)
 	[ $running -gt 1 ] && logger -t "【迅雷快鸟】" "停止 迅雷快鸟$running" && FastDick_clos
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$FastDick_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -43,7 +43,7 @@ FastDick_keep () {
 logger -t "【迅雷快鸟】" "守护进程启动"
 while true; do
 sleep 948
-eval $(ps - w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
 killall FastDick_script.sh
 killall -9 FastDick_script.sh
 /etc/storage/FastDick_script.sh &
@@ -53,8 +53,8 @@ done
 FastDick_close () {
 killall FastDick_script.sh
 killall -9 FastDick_script.sh
-eval $(ps - w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1;}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 
@@ -81,7 +81,7 @@ else
 	fi
 
 	SVC_PATH=/opt/bin/python
-	hash python 2>/dev/null || rm -rf /opt/bin/python
+	hash python 2>/dev/null || rm -rf /opt/bin/python /opt/opti.txt
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【迅雷快鸟】" "找不到 $SVC_PATH，安装 opt 程序"
 		/tmp/script/_mountopt optwget

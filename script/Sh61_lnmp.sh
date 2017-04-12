@@ -57,7 +57,7 @@ else
 fi
 if [ "$lnmp_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "停止 nginx+php+mysql 环境" && lnmp_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$lnmp_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -100,7 +100,7 @@ sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
 /opt/etc/init.d/S80nginx stop
 killall spawn-fcgi nginx php-cgi mysqld
 killall -9 spawn-fcgi nginx php-cgi mysqld
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 lnmp_start () {

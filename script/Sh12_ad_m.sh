@@ -45,7 +45,7 @@ else
 fi
 if [ "$adm_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof adm`" ] && logger -t "【ADM】" "停止 adm" && adm_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$adm_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -72,8 +72,8 @@ cat > "/tmp/sh_ad_m_keey_k.sh" <<-ADMK
 sleep 919
 adm_enable=\`nvram get adm_enable\`
 if [ ! -f /tmp/cron_adb.lock ] && [ "\$adm_enable" = "1" ] ; then
-eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1;}')
-eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1;}')
+eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -86,8 +86,8 @@ killall -9 sh_ad_m_keey_k.sh
 rm -f /tmp/cron_adb.lock
 reb="1"
 runx="1"
-ss_link_1=${ss_link_1:-"www.163.com"}
-ss_link_2=${ss_link_2:-"www.google.com.hk"}
+[ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
+[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 while true; do
 [ ! -s "/tmp/7620adm/adm" ] && nvram set adm_status=00 && { logger -t "【ADM】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
 if [ ! -f /tmp/cron_adb.lock ] ; then
@@ -169,8 +169,10 @@ done
 
 adm_keepcpu () {
 if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
-	CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' -e 's/,.*//g' -e 's/\..*//g'`
-	if [ $((CPULoad)) -ge "2" ] ; then
+	processor=`cat /proc/cpuinfo| grep "processor"| wc -l`
+	processor=`expr $processor \* 2`
+	CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' | awk -F ',' '{print $2;}' | sed -e 's/\..*//g'`
+	if [ $((CPULoad)) -ge "$processor" ] ; then
 		logger -t "【ADM】" "CPU 负载拥堵, 关闭 adm"
 		adm_flush_rules
 		/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
@@ -182,7 +184,7 @@ if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		while [[ "$CPULoad" -gt "$processor" ]] 
 		do
 			sleep 62
-			CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' -e 's/,.*//g' -e 's/\..*//g'`
+			CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' | awk -F ',' '{print $2;}' | sed -e 's/\..*//g'`
 		done
 		logger -t "【ADM】" "CPU 负载正常"
 		rm -f /tmp/cron_adb.lock
@@ -196,8 +198,9 @@ port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
 [ "$port" != 0 ] && adm_flush_rules
 killall -15 adm sh_ad_m_keey_k.sh
 killall -9 adm sh_ad_m_keey_k.sh
-rm -f /tmp/7620adm.tgz /tmp/cron_adb.lock /tmp/sh_ad_m_keey_k.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+rm -f /tmp/adbyby_host.conf
+rm -f /tmp/7620adm.tgz /tmp/cron_adb.lock /tmp/sh_ad_m_keey_k.sh /tmp/cp_rules.lock
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 adm_start () {
@@ -296,9 +299,16 @@ done
 [ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
 }
 
-adm_cp_rules() {
-
-[ -f /tmp/7620adm/adm_ipset.txt ] && cp -f /tmp/7620adm/adm_ipset.txt /tmp/adbyby_host.conf
+adm_cp_rules () {
+rm -f /tmp/b/*
+I=30
+while [ -f /tmp/cp_rules.lock ]; do
+		I=$(($I - 1))
+		[ $I -lt 0 ] && break
+		sleep 1
+done
+touch /tmp/cp_rules.lock
+[ ! -f /tmp/adbyby_host.conf ] && [ -f /tmp/7620adm/adm_ipset.txt ] && cp -f /tmp/7620adm/adm_ipset.txt /tmp/adbyby_host.conf
 # 去除gfw donmain中与 adbyby host 包含的域名，这部分域名交由adbyby处理。
 # 参考的awk指令写法
 #  awk  'NR==FNR{a[$0]}NR>FNR{ if($1 in a) print $0}' file1 file2 #找出两文件中相同的值
@@ -309,17 +319,17 @@ if [ "$adbyby_mode_x" == 1 ] && [ -s /tmp/adbyby_host.conf ] ; then
 logger -t "【iptables】" "添加 ipset 转发规则"
 sed -Ei '/adbyby_host.conf|cflist.conf/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed  "s/\/adm_list/\/adbybylist/" -i  /tmp/adbyby_host.conf
-whitehost=`sed -n 's/.*whitehost=\(.*\)/\1/p' /tmp/bin/adhook.ini`
 [ ! -z $whitehost ] && sed -Ei "/$(echo $whitehost | tr , \|)/d" /tmp/adbyby_host.conf
 [ -f "$confdir$gfwlist" ] && gfw_black=$(grep "/$gfw_black_list" "$confdir$gfwlist" | sed 's/.*\=//g')
 if [ -s "$confdir$gfwlist" ] && [ -s /tmp/adbyby_host.conf ] && [ ! -z "$gfw_black" ] ; then
 	logger -t "【iptables】" "admlist 规则处理开始"
 	mkdir -p /tmp/b/
-	sed -e '/^\#/d' -e "s/ipset=\/www\./ipset=\/\./" -e "s/ipset=\/bbs\./ipset=\/\./" -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\//ipset=\/\./" -i /tmp/adbyby_host.conf
-	sed -e '/^\#/d' -e "s/ipset=\/www\./ipset=\/\./" -e "s/ipset=\/bbs\./ipset=\/\./" -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\//ipset=\/\./" -i "$confdir$gfwlist"
+	sed -e '/^\#/d' -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\/www\./ipset=\/\./" -e "s/ipset=\/bbs\./ipset=\/\./" -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\//ipset=\/\./" -i /tmp/adbyby_host.conf
+	sed -e '/^\#/d' -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\/www\./ipset=\/\./" -e "s/ipset=\/bbs\./ipset=\/\./" -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\//ipset=\/\./" -i "$confdir$gfwlist"
 	sed -e '/^\#/d' -e "s/ipset=\///" -e "s/adbybylist//" /tmp/adbyby_host.conf > /tmp/b/adbyby_host去干扰.conf
 	sed -e '/^\#/d' -e "s/ipset=\///" -e "s/$gfw_black_list//" -e "/server=\//d" "$confdir$gfwlist" > /tmp/b/gfwlist去干扰.conf
 	awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' /tmp/b/adbyby_host去干扰.conf /tmp/b/gfwlist去干扰.conf > /tmp/b/host相同行.conf
+	[ -s /tmp/ss/cflist.conf ] && sed -e '/^\#/d' -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\//ipset=\/\./" -e "s/ipset=\/\./\./" -e "s/cflist//" /tmp/ss/cflist.conf >> /tmp/b/host相同行.conf
 	if [ -s /tmp/b/host相同行.conf ] ; then
 		logger -t "【iptables】" "gfwlist 规则处理开始"
 		sed -e "s/^/ipset=\//" -e "s/$/adbybylist/" /tmp/b/host相同行.conf > /tmp/b/host相同行2.conf
@@ -349,7 +359,7 @@ restart_dhcpd
 logger -t "【iptables】" "admlist 规则处理完毕"
 rm -f /tmp/b/*
 fi
-
+rm -f /tmp/cp_rules.lock
 }
 
 adm_flush_rules () {
@@ -358,7 +368,6 @@ flush_r
 ipset -F adbybylist &> /dev/null
 ipset destroy adbybylist &> /dev/null
 #ipset -F cflist &> /dev/null
-rm -f /tmp/adbyby_host.conf
 sed -Ei '/adbyby_host.conf/d' /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 logger -t "【iptables】" "完成删除18309规则"
@@ -479,7 +488,7 @@ done < /tmp/ad_spec_lan.txt
 	sleep 1
 	gen_include &
 	logger -t "【iptables】" "完成添加18309规则"
-	[ "$adbyby_mode_x" == 1 ] && adm_cp_rules &
+	[ "$adbyby_mode_x" == 1 ] && adm_cp_rules
 }
 
 

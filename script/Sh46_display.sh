@@ -33,7 +33,7 @@ else
 fi
 if [ "$display_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof lcd4linux`" ] && logger -t "【相框显示】" "停止 lcd4linux" && display_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$display_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -44,9 +44,9 @@ fi
 }
 
 display_keep () {
-eval $(ps - w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "kill "$1";";}')
 eval "$scriptfilepath getweather &"
-eval $(ps - w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1";";}')
 eval "$scriptfilepath getaqidata &"
 logger -t "【相框显示】" "守护进程启动"
 if [ -s /tmp/script/_opt_script_check ]; then
@@ -67,12 +67,12 @@ sleep 180
 runx=`expr $runx + 1`
 if [ "$runx" -eq 10 ] && [ "`nvram get display_enable`" = "1" ] ; then
 	# 每半小时获取天气信息
-	eval $(ps - w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "kill "$1;}')
+	eval $(ps - w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "kill "$1";";}')
 	eval "$scriptfilepath getweather &"
 	if [ "$runx" -eq 20 ] && [ "`nvram get display_enable`" = "1" ] ; then
 		# 每1小时获取AQI数据和数据绘图
 		runx=1
-		eval $(ps - w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1;}')
+		eval $(ps - w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1";";}')
 		eval "$scriptfilepath getaqidata &"
 	fi
 fi
@@ -84,7 +84,7 @@ display_close () {
 sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
 killall lcd4linux getaqidata getweather displaykeep.sh
 killall -9 lcd4linux getaqidata getweather displaykeep.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 display_start () {
@@ -104,20 +104,10 @@ fi
 
 cp -f /etc/storage/display_lcd4linux_script.sh /tmp/lcd4linux.conf
 SVC_PATH=/opt/bin/lcd4linux
-hash lcd4linux 2>/dev/null || rm -rf /opt/bin/lcd4linux
+hash lcd4linux 2>/dev/null || rm -rf /opt/bin/lcd4linux /opt/opti.txt
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget
-fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【相框显示】" "找不到 $SVC_PATH 下载程序"
-	lcd1="$hiboyfile/lcd.tgz"
-	logger -t "【相框显示】" "下载LCD文件 $lcd1"
-	wgetcurl.sh "/opt/lcd.tgz" "$hiboyfile/lcd.tgz" "$hiboyfile2/lcd.tgz"
-	untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
-	cp -f /opt/lcd4linux/lcd4linux.conf /etc/storage/display_lcd4linux_script.sh
-else
-	logger -t "【相框显示】" "找到 $SVC_PATH"
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"

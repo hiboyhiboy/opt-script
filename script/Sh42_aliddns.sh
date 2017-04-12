@@ -33,7 +33,7 @@ else
 fi
 if [ "$aliddns_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【aliddns动态域名】" "停止 aliddns" && aliddns_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$aliddns_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -62,7 +62,7 @@ done
 
 aliddns_close () {
 
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 aliddns_start () {
@@ -194,7 +194,7 @@ esac
 		;;
 	*)
 		echo "Get Record Info Failed!"
-		logger -t "【AliDDNS动态域名】" "获取记录信息失败！"
+		#logger -t "【AliDDNS动态域名】" "获取记录信息失败！"
 		return 1
 		;;
 	esac

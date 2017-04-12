@@ -33,7 +33,7 @@ else
 fi
 if [ "$cow_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "停止 cow" && cow_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$cow_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -69,10 +69,10 @@ done
 
 cow_close () {
 sed -Ei '/【cow】|^$/d' /tmp/script/_opt_script_check
-[ ! -z "$cow_path" ] && eval $(ps - w | grep "$cow_path" | grep -v grep | awk '{print "kill "$1;}')
+[ ! -z "$cow_path" ] && eval $(ps - w | grep "$cow_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall cow cow_script.sh
 killall -9 cow cow_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 cow_start () {

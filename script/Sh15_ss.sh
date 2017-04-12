@@ -1335,7 +1335,7 @@ nvram set gfwlist3="ss-redir stop."
 /etc/storage/ez_buttons_script.sh 3 &
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 check_setting()
@@ -1353,7 +1353,7 @@ fi
 if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "停止 ss-redir" && stop_SS
 	[ ! -z "`pidof ss-local`" ] && logger -t "【SS】" "停止 ss-local" && stop_SS
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ss_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -1391,8 +1391,8 @@ cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
 sleep 919
 ss_enable=\`nvram get ss_enable\`
 if [ ! -f /tmp/cron_ss.lock ] && [ "\$ss_enable" = "1" ] ; then
-eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1;}')
-eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1;}')
+eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
 eval "$scriptfilepath keep &"
 exit 0
 fi

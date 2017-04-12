@@ -38,7 +38,7 @@ else
 fi
 if [ "$kcptun_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "停止 $kcptun_path" && kcptun_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$kcptun_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -77,10 +77,10 @@ done
 kcptun_close () {
 
 sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
-[ ! -z "$kcptun_path" ] && eval $(ps - w | grep "$kcptun_path" | grep -v grep | awk '{print "kill "$1}')
+[ ! -z "$kcptun_path" ] && eval $(ps - w | grep "$kcptun_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall client_linux_mips kcptun_script.sh sh_kcpkeep.sh
 killall -9 client_linux_mips kcptun_script.sh sh_kcpkeep.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 kcptun_start () {

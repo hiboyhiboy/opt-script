@@ -25,7 +25,7 @@ else
 fi
 if [ "$vpnproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "停止 nvpproxy" && vpnproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$vpnproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -65,7 +65,7 @@ sed -Ei '/【vpnproxy】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -p tcp --dport $vpnproxy_wan_port -j ACCEPT
 killall nvpproxy
 killall -9 nvpproxy
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 vpnproxy_start () {

@@ -32,7 +32,7 @@ else
 fi
 if [ "$meow_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$meow_path" | grep -v grep )" ] && logger -t "【meow】" "停止 meow" && meow_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$meow_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -68,10 +68,10 @@ done
 
 meow_close () {
 sed -Ei '/【meow】|^$/d' /tmp/script/_opt_script_check
-[ ! -z "$meow_path" ] && eval $(ps - w | grep "$meow_path" | grep -v grep | awk '{print "kill "$1;}')
+[ ! -z "$meow_path" ] && eval $(ps - w | grep "$meow_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall meow meow_script.sh
 killall -9 meow meow_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 meow_start () {

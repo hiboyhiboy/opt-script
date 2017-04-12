@@ -4,23 +4,23 @@ source /etc/storage/script/init.sh
 nvramshow=`nvram showall | grep upscript_enable | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep script | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-file_o_check() {
+file_o_check () {
 #获取script的sh*文件MD5
 eval $(md5sum `/usr/bin/find /etc/storage/script/ -perm '-u+x' -name '*.sh' | sort -r` | awk '{print $2"_o="$1;}' | awk -F '/' '{print $NF;}' | sed 's/\.sh//g')
 }
 
-file_t_check() {
+file_t_check () {
 #获取最新script的sh*文件MD5
 rm -f /tmp/scriptsh.txt
 wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scriptsh.txt"
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2017-4-9"
+	nvram set scripto="2017-4-12"
 fi
 }
 
-file_check() {
+file_check () {
 mkdir -p /tmp/script
 while read line
 do
@@ -47,12 +47,40 @@ fi
 done < /tmp/scriptsh.txt
 }
 
-start_upscript() {
+start_upscript_daydayup () {
+
 logger -t "【script】" "脚本检查更新"
 file_t_check
-[ "$upscript_enable" != "1" ] && return
 if [ -s /tmp/scriptsh.txt ] ; then
-	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "脚本需要更新, 未启用自动更新, 请手动更新"
+	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "脚本需要更新, 未启用自动更新, 请手动更新" && return
+	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then
+		logger -t "【script】" "脚本需要更新, 自动下载更新"
+		nvram set scripto="$scriptt"
+		file_o_check
+		cd /etc/storage/script/
+		rm -f ./.upscript_daydayup
+		mkdir -p /tmp/script
+		while read line
+		do
+		c_line=`echo $line |grep -v "#" |grep -v 'scriptt='`
+		file_name=${line%%=*}
+		if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
+			echo "$hiboyscript/script/$file_name.sh" >> ./.upscript_daydayup
+		fi
+		done < /tmp/scriptsh.txt
+		daydayup ./.upscript_daydayup >> /tmp/syslog.log &
+	fi
+else
+	[ "$upscript_enable" != "1" ] && return
+	logger -t "【script】" "脚本检查更新失败"
+fi
+}
+
+start_upscript () {
+logger -t "【script】" "脚本检查更新"
+file_t_check
+if [ -s /tmp/scriptsh.txt ] ; then
+	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "脚本需要更新, 未启用自动更新, 请手动更新" && return
 	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then
 		logger -t "【script】" "脚本需要更新, 自动下载更新"
 		nvram set scripto="$scriptt"
@@ -60,17 +88,19 @@ if [ -s /tmp/scriptsh.txt ] ; then
 		file_check
 	fi
 else
+	[ "$upscript_enable" != "1" ] && return
 	logger -t "【script】" "脚本检查更新失败"
 fi
 }
 
 case $ACTION in
 start)
-	start_upscript
+	hash daydayup 2>/dev/null && start_upscript_daydayup
+	hash daydayup 2>/dev/null || start_upscript
 	;;
 *)
-	file_t_check
-	start_upscript
+	hash daydayup 2>/dev/null && start_upscript_daydayup
+	hash daydayup 2>/dev/null || start_upscript
 	;;
 esac
 

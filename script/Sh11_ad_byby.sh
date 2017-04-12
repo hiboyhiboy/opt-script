@@ -46,7 +46,7 @@ else
 fi
 if [ "$adbyby_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "停止 adbyby" && adbyby_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$adbyby_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -73,8 +73,8 @@ cat > "/tmp/sh_ad_byby_keey_k.sh" <<-ADMK
 sleep 919
 adbyby_enable=\`nvram get adbyby_enable\`
 if [ ! -f /tmp/cron_adb.lock ] && [ "\$adbyby_enable" = "1" ] ; then
-eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1;}')
-eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1;}')
+eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -87,8 +87,8 @@ killall -9 sh_ad_byby_keey_k.sh
 rm -f /tmp/cron_adb.lock
 reb="1"
 runx="1"
-ss_link_1=${ss_link_1:-"www.163.com"}
-ss_link_2=${ss_link_2:-"www.google.com.hk"}
+[ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
+[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 while true; do
 [ ! -s "/tmp/bin/adbyby" ] && nvram set adbyby_status=00 && { logger -t "【Adbyby】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
 if [ ! -f /tmp/cron_adb.lock ] ; then
@@ -170,20 +170,20 @@ done
 
 adbyby_keepcpu () {
 if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
-	CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' -e 's/,.*//g' -e 's/\..*//g'`
-	if [ $((CPULoad)) -ge "2" ] ; then
+	processor=`cat /proc/cpuinfo| grep "processor"| wc -l`
+	processor=`expr $processor \* 2`
+	CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' | awk -F ',' '{print $2;}' | sed -e 's/\..*//g'`
+	if [ $((CPULoad)) -ge "$processor" ] ; then
 		logger -t "【Adbyby】" "CPU 负载拥堵, 关闭 adbyby"
 		adbyby_flush_rules
 		/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
 		killall -15 adbyby
 		killall -9 adbyby
 		touch /tmp/cron_adb.lock
-		processor=`cat /proc/cpuinfo| grep "processor"| wc -l`
-		processor=`expr $processor \* 2`
 		while [[ "$CPULoad" -gt "$processor" ]] 
 		do
 			sleep 62
-			CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' -e 's/,.*//g' -e 's/\..*//g'`
+			CPULoad=`uptime |sed -e 's/\ *//g' -e 's/.*://g' | awk -F ',' '{print $2;}' | sed -e 's/\..*//g'`
 		done
 		logger -t "【Adbyby】" "CPU 负载正常"
 		rm -f /tmp/cron_adb.lock
@@ -198,7 +198,7 @@ port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
 killall -15 adbyby sh_ad_byby_keey_k.sh
 killall -9 adbyby sh_ad_byby_keey_k.sh
 rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock /tmp/adbyby_host_backup.conf /tmp/sh_ad_byby_keey_k.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 adbyby_start () {

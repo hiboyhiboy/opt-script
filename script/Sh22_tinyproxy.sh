@@ -24,7 +24,7 @@ else
 fi
 if [ "$tinyproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "停止 $tinyproxy_path" && tinyproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$tinyproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -71,8 +71,8 @@ tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep
 [ ! -z "$tinyproxyport" ] && iptables -D INPUT -p tcp --dport $tinyproxyport -j ACCEPT
 killall tinyproxy tinyproxy_script.sh
 killall -9 tinyproxy tinyproxy_script.sh
-[ ! -z "$tinyproxy_path" ] && eval $(ps - w | grep "$tinyproxy_path" | grep -v grep | awk '{print "kill "$1;}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+[ ! -z "$tinyproxy_path" ] && eval $(ps - w | grep "$tinyproxy_path" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 tinyproxy_start () {

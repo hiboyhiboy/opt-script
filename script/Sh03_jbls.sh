@@ -14,8 +14,9 @@ fi
 jbls_check () {
 if [ "$jbls_enable" != "1" ] ; then
 	[ ! -z "`pidof jblicsvr`" ] && logger -t "【jbls】" "停止 jblicsvr" && jbls_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
+[ -z "`pidof jblicsvr`" ] && sleep 20
 if [ -z "`pidof jblicsvr`" ] && [ "$jbls_enable" = "1" ] ; then
 	jbls_close
 	jbls_start
@@ -46,7 +47,7 @@ sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/txt-record=_jetbrains-license-server.lan/d' /etc/storage/dnsmasq/dnsmasq.conf
 killall jblicsvr jbls_script.sh
 killall -9 jblicsvr jbls_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 jbls_start () {

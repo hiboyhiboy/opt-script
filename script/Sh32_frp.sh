@@ -24,7 +24,7 @@ fi
 if [ "$frp_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof frpc`" ] && logger -t "【frp】" "停止 frpc" && frp_close
 	[ ! -z "`pidof frps`" ] && logger -t "【frp】" "停止 frps" && frp_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$frp_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -73,7 +73,7 @@ frp_close () {
 sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
 killall frpc frps frp_script.sh
 killall -9 frpc frps frp_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 frp_start () {

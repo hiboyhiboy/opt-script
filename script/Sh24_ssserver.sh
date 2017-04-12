@@ -28,7 +28,7 @@ else
 fi
 if [ "$ssserver_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "停止 ss-server" && ssserver_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ssserver_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -72,7 +72,7 @@ iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT &
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT &
 killall ss-server obfs-server >/dev/null 2>&1
 killall -9 ss-server obfs-server >/dev/null 2>&1
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 ssserver_start () {
