@@ -16,7 +16,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2017-4-12-2"
+	nvram set scripto="2017-4-12-3"
 fi
 }
 
@@ -95,12 +95,14 @@ fi
 
 case $ACTION in
 start)
-	hash daydayup 2>/dev/null && start_upscript_daydayup
-	hash daydayup 2>/dev/null || start_upscript
+	#hash daydayup 2>/dev/null && start_upscript_daydayup
+	#hash daydayup 2>/dev/null || start_upscript
+	start_upscript
 	;;
 *)
-	hash daydayup 2>/dev/null && start_upscript_daydayup
-	hash daydayup 2>/dev/null || start_upscript
+	#hash daydayup 2>/dev/null && start_upscript_daydayup
+	#hash daydayup 2>/dev/null || start_upscript
+	start_upscript
 	;;
 esac
 
