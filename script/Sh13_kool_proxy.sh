@@ -338,6 +338,11 @@ koolproxy_rules_list
 cd /tmp/7620koolproxy/data
 daydayup /etc/storage/koolproxy_rules_list.sh >> /tmp/syslog.log
 [ $? -eq 0 ] && logger -t "【koolproxy】" "完成规则更新" || logger -t "【koolproxy】" "下载规则更新"
+if [ -s /tmp/7620koolproxy/data/koolproxy.txt ] ; then
+nvram set koolproxy_rules_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
+nvram set koolproxy_rules_nu_local="`cat /tmp/7620koolproxy/data/koolproxy.txt | grep -v ! | wc -l`"
+nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '2p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
+fi
 }
 
 update_kp_rules () {
@@ -375,9 +380,11 @@ file_name=${line##*/}
 	fi
 fi
 done < /etc/storage/koolproxy_rules_list.sh
+if [ -s /tmp/7620koolproxy/rule_store/koolproxy.txt ] ; then
 nvram set koolproxy_rules_date_local="`sed -n '1,10p' /tmp/7620koolproxy/rule_store/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/rule_store/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
 nvram set koolproxy_rules_nu_local="`cat /tmp/7620koolproxy/rule_store/koolproxy.txt | grep -v ! | wc -l`"
 nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/rule_store/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/rule_store/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '2p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
+fi
 rm -rf /tmp/7620koolproxy/rule_tmp/*
 }
 
