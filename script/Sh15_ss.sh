@@ -148,8 +148,9 @@ ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 
 ss_updatess=`nvram get ss_updatess`
 ss_updatess=${ss_updatess:-"0"}
-[ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
+[ -z $ss_link_1 ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
+[ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 
 ##  bigandy modify 
 ##  1. 增加xbox的支持 （未实现，下一版本）
@@ -378,9 +379,9 @@ if [ "$ss_check" = "1" ] ; then
 			sleep 1
 			curltest=`which curl`
 			if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-				wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+				wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 				[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
-				[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+				[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 				[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 			else
 				check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
@@ -1276,9 +1277,9 @@ echo "Debug: $DNS_Server"
 	sleep 1
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
-		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 	else
 		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
@@ -1496,9 +1497,9 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+	wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
-	[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+	[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 	[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 else
 	check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`

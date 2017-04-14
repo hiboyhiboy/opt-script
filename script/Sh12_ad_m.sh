@@ -86,8 +86,9 @@ killall -9 sh_ad_m_keey_k.sh
 rm -f /tmp/cron_adb.lock
 reb="1"
 runx="1"
-[ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
+[ -z $ss_link_1 ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
+[ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 while true; do
 [ ! -s "/tmp/7620adm/adm" ] && nvram set adm_status=00 && { logger -t "【ADM】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
 if [ ! -f /tmp/cron_adb.lock ] ; then
@@ -99,9 +100,9 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	fi
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
-		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 $ss_link_1
+		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
 	else
 		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
