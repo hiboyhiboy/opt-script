@@ -187,7 +187,7 @@ arDdnsUpdate() {
 		PARAM_BODY="{\"domain_id\":\"$DOMAIN_ID\",\"host\":\"$HOST\",\"type\":\"A\",\"value\":\"$IP\",\"line_id\":\"1\"}"
 		HMAC_A=$(printf "%s" "$API_KEY$URL_A$PARAM_BODY$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
 
-		RESULT=$(curl -k -s "$URL_A" -X PUT -d "$PARAM_BODY" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_A" -H 'Content-Type: application/json')
+		RESULT=$(curl -k -s "$URL_A" -X POST -d "$PARAM_BODY" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_A" -H 'Content-Type: application/json')
 	else
 		# 更新记录IP
 		IP=$hostIP
@@ -196,7 +196,7 @@ arDdnsUpdate() {
 		PARAM_BODY="{\"domain_id\":\"$DOMAIN_ID\",\"host\":\"$HOST\",\"value\":\"$IP\"}"
 		HMAC_U=$(printf "%s" "$API_KEY$URL_U$PARAM_BODY$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
 
-		RESULT=$(curl -k -s "$URL_U" -X POST -d "$PARAM_BODY" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_U" -H 'Content-Type: application/json')
+		RESULT=$(curl -k -s "$URL_U" -X PUT -d "$PARAM_BODY" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_U" -H 'Content-Type: application/json')
 	fi
 	echo "$RESULT"
 
