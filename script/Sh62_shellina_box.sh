@@ -1,22 +1,26 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+shellinabox_port=`nvram get shellinabox_port`
+shellinabox_enable=`nvram get shellinabox_enable`
+[ -z $shellinabox_enable ] && shellinabox_enable=0 && nvram set shellinabox_enable=$shellinabox_enable
+if [ "$shellinabox_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep shellinabox | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+
+[ -z $shellinabox_port ] && shellinabox_port="4200" && nvram set shellinabox_port=$shellinabox_port
+[ -z $shellinabox_css ] && shellinabox_css="white-on-black" && nvram set shellinabox_css=$shellinabox_css
+
+[ -z $shellinabox_options_ttyd ] && shellinabox_options_ttyd="login" && nvram set shellinabox_options_ttyd=$shellinabox_options_ttyd
+fi
+shell_log="【shellinabox】"
+[ "$shellinabox_enable" = "2" ] && shell_log="【ttyd】"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep shellina_box)" ]  && [ ! -s /tmp/script/_shellina_box ]; then
 	mkdir -p /tmp/script
 	ln -sf $scriptfilepath /tmp/script/_shellina_box
 	chmod 777 /tmp/script/_shellina_box
 fi
-
-[ -z $shellinabox_enable ] && shellinabox_enable=0 && nvram set shellinabox_enable=$shellinabox_enable
-[ -z $shellinabox_port ] && shellinabox_port="4200" && nvram set shellinabox_port=$shellinabox_port
-[ -z $shellinabox_css ] && shellinabox_css="white-on-black" && nvram set shellinabox_css=$shellinabox_css
-
-[ -z $shellinabox_options_ttyd ] && shellinabox_options_ttyd="login" && nvram set shellinabox_options_ttyd=$shellinabox_options_ttyd
-shell_log="【shellinabox】"
-[ "$shellinabox_enable" = "2" ] && shell_log="【ttyd】"
-
 shellinabox_check () {
 
 A_restart=`nvram get shellinabox_status`

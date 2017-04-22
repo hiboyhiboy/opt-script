@@ -1,17 +1,20 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+meow_enable=`nvram get meow_enable`
+[ -z $meow_enable ] && meow_enable=0 && nvram set meow_enable=0
+meow_path=`nvram get meow_path`
+meow_path=${meow_path:-"/opt/bin/meow"}
+if [ "$meow_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep meow | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-meow_path=${meow_path:-"/opt/bin/meow"}
 ss_mode_x=${ss_mode_x:-"0"}
 kcptun2_enable=${kcptun2_enable:-"0"}
 kcptun2_enable2=${kcptun2_enable2:-"0"}
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 ss_s1_local_port=${ss_s1_local_port:-"1081"}
 ss_s2_local_port=${ss_s2_local_port:-"1082"}
-
-[ -z $meow_enable ] && meow_enable=0 && nvram set meow_enable=0
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep meow)" ]  && [ ! -s /tmp/script/_meow ]; then
 	mkdir -p /tmp/script

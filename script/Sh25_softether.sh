@@ -1,10 +1,13 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep softether | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-softether_path=${softether_path:-"/opt/softether/vpnserver"}
-
+softether_enable=`nvram get softether_enable`
 [ -z $softether_enable ] && softether_enable=0 && nvram set softether_enable=0
+softether_path=`nvram get softether_path`
+softether_path=${softether_path:-"/opt/softether/vpnserver"}
+if [ "$softether_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep softether | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep softether)" ]  && [ ! -s /tmp/script/_softether ]; then
 	mkdir -p /tmp/script
@@ -115,9 +118,9 @@ softether_path="$SVC_PATH"
 logger -t "【softether】" "运行 softether_script"
 $softether_path stop
 /etc/storage/softether_script.sh &
-sleep 2
+sleep 3
 [ ! -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动成功"
-[ -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动失败, 注意检查hamcore.se2、vpncmd、vpnserver是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set softether_status=00; eval "$scriptfilepath &"; exit 0; }
+[ -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动失败, 注意检查hamcore.se2、vpncmd、vpnserver是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { rm -f $softether_path ; nvram set softether_status=00; eval "$scriptfilepath &"; exit 0; }
 
 logger -t "【softether】" "允许 500、4500、1701 udp端口通过防火墙"
 iptables -I INPUT -p udp --destination-port 500 -j ACCEPT

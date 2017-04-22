@@ -1,6 +1,9 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+cloudxns_enable=`nvram get cloudxns_enable`
+[ -z $cloudxns_enable ] && cloudxns_enable=0 && nvram set cloudxns_enable=0
+if [ "$cloudxns_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 hostIP=""
 IP=""
@@ -9,8 +12,7 @@ SECRET_KEY="$cloudxns_password"
 DOMAIN="$cloudxns_domian"
 HOST="$cloudxns_host"
 cloudxns_interval=${cloudxns_interval:-"600"}
-
-[ -z $cloudxns_enable ] && cloudxns_enable=0 && nvram set cloudxns_enable=0
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cloudxns)" ]  && [ ! -s /tmp/script/_cloudxns ]; then
 	mkdir -p /tmp/script

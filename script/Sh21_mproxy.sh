@@ -1,9 +1,12 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep mproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+mproxyport=`nvram get mproxyport`
+mproxy_enable=`nvram get mproxy_enable`
 [ -z $mproxy_enable ] && mproxy_enable=0 && nvram set mproxy_enable=0
+if [ "$mproxy_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep mproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mproxy)" ]  && [ ! -s /tmp/script/_mproxy ]; then
 	mkdir -p /tmp/script

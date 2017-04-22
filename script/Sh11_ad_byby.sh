@@ -1,10 +1,13 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+TAG="AD_BYBY"		  # iptables tag
+adbyby_enable=`nvram get adbyby_enable`
+[ -z $adbyby_enable ] && adbyby_enable=0 && nvram set adbyby_enable=0
+if [ "$adbyby_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep adbyby | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-[ -z $adbyby_enable ] && adbyby_enable=0 && nvram set adbyby_enable=0
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 
 
@@ -12,12 +15,12 @@ adbybyfile="$hiboyfile/7620i.tar.gz"
 adbybyfile2="$hiboyfile2/7620i.tar.gz"
 
 
-TAG="AD_BYBY"		  # iptables tag
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
 AD_LAN_AC_IP=${AD_LAN_AC_IP:-"0"}
 lan_ipaddr=`nvram get lan_ipaddr`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
+fi
 #检查 dnsmasq 目录参数
 confdir=`grep conf-dir /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
 if [ -z "$confdir" ] ; then 
@@ -32,6 +35,28 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ad_byby)" ]  &
 	ln -sf $scriptfilepath /tmp/script/_ad_byby
 	chmod 777 /tmp/script/_ad_byby
 fi
+
+adbyby_mount () {
+
+ss_opt_x=`nvram get ss_opt_x`
+upanPath=""
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+echo "$upanPath"
+if [ ! -z "$upanPath" ] ; then 
+	logger -t "【Adbyby】" "已挂载储存设备, 主程序放外置设备存储"
+	mkdir -p $upanPath/7620adbyby
+	mkdir -p /tmp/bin
+	mount --bind $upanPath/7620adbyby /tmp/bin
+else
+	logger -t "【Adbyby】" "未挂载储存设备, 主程序放路由内存存储"
+	mkdir -p /tmp/bin
+fi
+export PATH='/tmp/bin:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
+hash adbyby 2>/dev/null || rm -rf /tmp/bin/*
+}
 
 adbyby_check () {
 
@@ -215,6 +240,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	do
 		modprobe $module
 	done 
+	adbyby_mount
 	if [ ! -s "/tmp/bin/adbyby" ] ; then
 		logger -t "【Adbyby】" "开始下载 7620n.tar.gz"
 		wgetcurl.sh /tmp/7620n.tar.gz $adbybyfile $adbybyfile2
@@ -268,6 +294,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	lan_ipaddr="0.0.0.0" #`nvram get lan_ipaddr`
 	sed -e "s|^\(listen-address.*\)=[^=]*$|\1=$lan_ipaddr:8118|" -i /tmp/bin/adhook.ini
 	# 处理第三方自定义规则 /tmp/rule_DOMAIN.txt
+	/etc/storage/ad_config_script.sh
 	adbyby_adblocks=`nvram get adbyby_adblocks`
 	rm -f /tmp/bin/data/user.bin
 	rm -f /tmp/bin/data/user.txt
@@ -725,6 +752,12 @@ update)
 		logger -t "【Adbyby】" "更新检查:不需更新 $urla "
 	fi
 	[ -s /tmp/sh_ad_byby_keey_k.sh ] && /tmp/sh_ad_byby_keey_k.sh &
+	;;
+update_ad)
+	adbyby_mount
+	adbyby_close
+	rm -rf /tmp/bin/*
+	nvram set adbyby_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	;;
 *)
 	adbyby_check

@@ -1,6 +1,9 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+aliddns_enable=`nvram get aliddns_enable`
+[ -z $aliddns_enable ] && aliddns_enable=0 && nvram set aliddns_enable=0
+if [ "$aliddns_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep aliddns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 hostIP=""
 domain=""
@@ -10,8 +13,7 @@ timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 aliddns_record_id=""
 aliddns_interval=${aliddns_interval:-"600"}
 aliddns_ttl=${aliddns_interval:-"600"}
-
-[ -z $aliddns_enable ] && aliddns_enable=0 && nvram set aliddns_enable=0
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep aliddns)" ]  && [ ! -s /tmp/script/_aliddns ]; then
 	mkdir -p /tmp/script

@@ -1,10 +1,14 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+kcptun_enable=`nvram get kcptun_enable`
+[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
+kcptun_path=`nvram get kcptun_path`
+kcptun_path=${kcptun_path:-"/opt/bin/client_linux_mips"}
+if [ "$kcptun_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
 
 kcptun_s_server=""
 kcptun_sport=${kcptun_sport:-"29900"}
@@ -18,8 +22,7 @@ kcptun_dscp=${kcptun_dscp:-"0"}
 kcptun_datashard=${kcptun_datashard:-"10"}
 kcptun_parityshard=${kcptun_parityshard:-"3"}
 kcptun_autoexpire=${kcptun_autoexpire:-"0"}
-kcptun_path=${kcptun_path:-"/opt/bin/client_linux_mips"}
-
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kcp_tun)" ]  && [ ! -s /tmp/script/_kcp_tun ]; then
 	mkdir -p /tmp/script
 	ln -sf $scriptfilepath /tmp/script/_kcp_tun

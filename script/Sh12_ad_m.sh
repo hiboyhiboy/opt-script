@@ -1,22 +1,25 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+TAG="AD_BYBY"		  # iptables tag
+adm_enable=`nvram get adm_enable`
+[ -z $adm_enable ] && adm_enable=0 && nvram set adm_enable=0
+if [ "$adm_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep adbyby | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep adm | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-[ -z $adm_enable ] && adm_enable=0 && nvram set adm_enable=0
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 
 adbmfile="$hiboyfile/7620adm.tgz"
 adbmfile2="$hiboyfile2/7620adm.tgz"
 
-TAG="AD_BYBY"		  # iptables tag
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
 AD_LAN_AC_IP=${AD_LAN_AC_IP:-"0"}
 lan_ipaddr=`nvram get lan_ipaddr`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
+fi
 #检查 dnsmasq 目录参数
 confdir=`grep conf-dir /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
 if [ -z "$confdir" ] ; then 
@@ -31,6 +34,28 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ad_m)" ]  && [
 	ln -sf $scriptfilepath /tmp/script/_ad_m
 	chmod 777 /tmp/script/_ad_m
 fi
+
+adm_mount () {
+
+ss_opt_x=`nvram get ss_opt_x`
+upanPath=""
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+echo "$upanPath"
+if [ ! -z "$upanPath" ] ; then 
+	logger -t "【ADM】" "已挂载储存设备, 主程序放外置设备存储"
+	mkdir -p $upanPath/7620adm
+	mkdir -p /tmp/7620adm
+	mount --bind $upanPath/7620adm /tmp/7620adm
+else
+	logger -t "【ADM】" "未挂载储存设备, 主程序放路由内存存储"
+	mkdir -p /tmp/7620adm
+fi
+export PATH='/tmp/7620adm:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
+hash adm 2>/dev/null || rm -rf /tmp/7620adm/*
+}
 
 adm_check () {
 
@@ -213,6 +238,7 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 	do
 		modprobe $module
 	done 
+	adm_mount
 	if [ ! -s "/tmp/7620adm/adm" ] ; then
 		logger -t "【ADM】" "开始下载 7620adm.tgz"
 		wgetcurl.sh /tmp/7620adm.tgz $adbmfile $adbmfile2
@@ -243,6 +269,7 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 	# 
 	
 	# 处理第三方自定义规则 /tmp/rule_DOMAIN.txt
+	/etc/storage/ad_config_script.sh
 	adbyby_adblocks=`nvram get adbyby_adblocks`
 	rm -f /tmp/7620adm/user.bin
 	rm -f /tmp/7620adm/user.txt
@@ -705,6 +732,12 @@ update)
 		logger -t "【ADM】" "更新检查:不需更新 $urla "
 	fi
 	[ -s /tmp/sh_ad_m_keey_k.sh ] && /tmp/sh_ad_m_keey_k.sh &
+	;;
+update_ad)
+	adm_mount
+	adm_close
+	rm -rf /tmp/7620adm/*
+	nvram set adm_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	;;
 *)
 	adm_check

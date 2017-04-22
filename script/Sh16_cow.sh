@@ -1,18 +1,21 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+cow_enable=`nvram get cow_enable`
+[ -z $cow_enable ] && cow_enable=0 && nvram set cow_enable=0
+cow_path=`nvram get cow_path`
+cow_path=${cow_path:-"/opt/bin/cow"}
+if [ "$cow_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep cow | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-cow_path=${cow_path:-"/opt/bin/cow"}
 ss_mode_x=${ss_mode_x:-"0"}
 kcptun2_enable=${kcptun2_enable:-"0"}
 kcptun2_enable2=${kcptun2_enable2:-"0"}
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 ss_s1_local_port=${ss_s1_local_port:-"1081"}
 ss_s2_local_port=${ss_s2_local_port:-"1082"}
+fi
 
-
-[ -z $cow_enable ] && cow_enable=0 && nvram set cow_enable=0
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cow)" ]  && [ ! -s /tmp/script/_cow ]; then
 	mkdir -p /tmp/script

@@ -1,9 +1,12 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep vpnproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+vpnproxy_wan_port=`nvram get vpnproxy_wan_port`
+vpnproxy_enable=`nvram get vpnproxy_enable`
 [ -z $vpnproxy_enable ] && vpnproxy_enable=0 && nvram set vpnproxy_enable=0
+if [ "$vpnproxy_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep vpnproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep vpnproxy)" ]  && [ ! -s /tmp/script/_vpnproxy ]; then
 	mkdir -p /tmp/script

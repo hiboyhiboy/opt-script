@@ -1,14 +1,17 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+ssserver_port=`nvram get ssserver_port`
+ssserver_enable=`nvram get ssserver_enable`
+[ -z $ssserver_enable ] && ssserver_enable=0 && nvram set ssserver_enable=0
+if [ "$ssserver_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ssserver | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 ssserver_password=${ssserver_password:-"m"}
 ssserver_time=${ssserver_time:-"120"}
 ssserver_port=${ssserver_port:-"8388"}
-[ -z $ssserver_enable ] && ssserver_enable=0 && nvram set ssserver_enable=0
 [ -z $ssserver_method ] && ssserver_method="aes-256-cfb" && nvram set ssserver_method="aes-256-cfb"
-
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ssserver)" ]  && [ ! -s /tmp/script/_ssserver ]; then
 	mkdir -p /tmp/script
 	ln -sf $scriptfilepath /tmp/script/_ssserver

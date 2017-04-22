@@ -1,10 +1,10 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep mentohust | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+mentohust_enable=`nvram get mentohust_enable`
 [ -z $mentohust_enable ] && mentohust_enable=0 && nvram set mentohust_enable=0
-
+if [ "$mentohust_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep mentohust | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 [ -z $mentohust_path ] && mentohust_path="/usr/bin/mentohust" && nvram set mentohust_path=$mentohust_path
 [ -z $mentohust_n ] && mentohust_n=$(nvram get wan0_ifname_t) && nvram set mentohust_n=$mentohust_n
 [ -z $mentohust_i ] && mentohust_i="0.0.0.0" && nvram set mentohust_i=$mentohust_i
@@ -21,7 +21,7 @@ nvramshow=`nvram showall | grep mentohust | awk '{print gensub(/'"'"'/,"'"'"'\"'
 [ -z $mentohust_b ] && mentohust_b="0" && nvram set mentohust_b=$mentohust_b
 [ -z $mentohust_v ] && mentohust_v="0.00" && nvram set mentohust_v=$mentohust_v
 [ -z $mentohust_c ] && mentohust_c="dhclinet" && nvram set mentohust_c=$mentohust_c
-
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mento_hust)" ]  && [ ! -s /tmp/script/_mento_hust ]; then
 	mkdir -p /tmp/script

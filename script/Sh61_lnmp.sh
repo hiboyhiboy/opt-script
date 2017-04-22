@@ -1,16 +1,12 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep lnmp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ]  && [ ! -s /tmp/script/_lnmp ]; then
-	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_lnmp
-	chmod 777 /tmp/script/_lnmp
-fi
-
 lnmp_enable=`nvram get lnmp_enable`
 [ -z $lnmp_enable ] && lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
+if [ "$lnmp_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep lnmp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+
 default_enable=`nvram get default_enable`
 [ -z $default_enable ] && default_enable=0 && nvram set default_enable=$default_enable
 default_port=`nvram get default_port`
@@ -42,7 +38,12 @@ lnmpfile5="$hiboyfile/owncloud-8.0.14.tar.bz2"
 lnmpfile55="$hiboyfile2/owncloud-8.0.14.tar.bz2"
 lnmpfile6="$hiboyfile/wifidog_server.tgz"
 lnmpfile66="$hiboyfile2/wifidog_server.tgz"
-
+fi
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ]  && [ ! -s /tmp/script/_lnmp ]; then
+	mkdir -p /tmp/script
+	ln -sf $scriptfilepath /tmp/script/_lnmp
+	chmod 777 /tmp/script/_lnmp
+fi
 
 lnmp_check () {
 

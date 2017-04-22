@@ -1,20 +1,17 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+TAG="SS_SPEC"		  # iptables tag
+ss_enable=`nvram get ss_enable`
+[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
+if [ "$ss_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss)" ]  && [ ! -s /tmp/script/_ss ]; then
-	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_ss
-	chmod 777 /tmp/script/_ss
-fi
 #================华丽的分割线====================================
 #set -x
 #初始化开始
-TAG="SS_SPEC"		  # iptables tag
 FWI="/tmp/firewall.shadowsocks.pdcn" # firewall include file
 
 ss_enable=`nvram get ss_enable`
@@ -151,7 +148,7 @@ ss_updatess=${ss_updatess:-"0"}
 [ -z $ss_link_1 ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
-
+fi
 ##  bigandy modify 
 ##  1. 增加xbox的支持 （未实现，下一版本）
 ##  2. 改写获取gfwlist逻辑
@@ -175,6 +172,12 @@ if [ -z "$confdir" ] ; then
 	confdir="/tmp/ss/dnsmasq.d"
 fi
 [ ! -d "$confdir" ] && mkdir -p $confdir
+
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss)" ]  && [ ! -s /tmp/script/_ss ]; then
+	mkdir -p /tmp/script
+	ln -sf $scriptfilepath /tmp/script/_ss
+	chmod 777 /tmp/script/_ss
+fi
 
 # 创建JSON
 cat > "/tmp/SSJSON.sh" <<-\SSJSONSH
@@ -1133,7 +1136,11 @@ fi
 		logger -t "【SS】" "加速国内 dns 访问，模式:$ss_mode_x, pdnsd_all:$ss_pdnsd_all, 下载 accelerated-domains.china.conf"
 		DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="114.114.114.114"
-		wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/accelerated-domains.china.conf" "$hiboyfile2/accelerated-domains.china.conf"
+		if [ ! -s /tmp/ss/accelerated-domains.china.conf ] ; then
+			wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/accelerated-domains.china.conf" "$hiboyfile2/accelerated-domains.china.conf"
+		else
+			mv -f /tmp/ss/accelerated-domains.china.conf /tmp/ss/tmp_accelerated-domains.china.conf
+		fi
 		cat /tmp/ss/tmp_accelerated-domains.china.conf |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			sed -e "s|^\(server.*\)/[^/]*$|\1/$DNS_china|" > /tmp/ss/accelerated-domains.china.conf
@@ -1328,7 +1335,7 @@ rm -f /tmp/sh_sskeey_k.sh
 rm -f $confdir/r.gfwlist.conf
 rm -f $confdir/r.sub.conf
 rm -f $confdir/r.adhost.conf
-rm -f $confdir/accelerated-domains.china.conf
+#rm -f $confdir/accelerated-domains.china.conf
 [ -f /opt/etc/init.d/S24chinadns ] && { rm -f /var/log/chinadns.lock; /opt/etc/init.d/S24chinadns stop& }
 [ -f /opt/etc/init.d/S26pdnsd ] && { rm -f /var/log/pdnsd.lock; /opt/etc/init.d/S26pdnsd stop& }
 [ -f /opt/etc/init.d/S27pcap-dnsproxy ] && { rm -f /var/log/pcap-dnsproxy.lock; /opt/etc/init.d/S27pcap-dnsproxy stop& }

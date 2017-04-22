@@ -1,9 +1,11 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep serverchan | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+serverchan_enable=`nvram get serverchan_enable`
 [ -z $serverchan_enable ] && serverchan_enable=0 && nvram set serverchan_enable=0
+if [ "$serverchan_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep serverchan | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep server_chan)" ]  && [ ! -s /tmp/script/_server_chan ]; then
 	mkdir -p /tmp/script

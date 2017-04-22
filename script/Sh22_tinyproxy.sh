@@ -1,9 +1,14 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep tinyproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+tinyproxyport=`nvram get tinyproxyport`
+tinyproxy_enable=`nvram get tinyproxy_enable`
 [ -z $tinyproxy_enable ] && tinyproxy_enable=0 && nvram set tinyproxy_enable=0
+tinyproxy_path=`nvram get tinyproxy_path`
+[ -z $tinyproxy_path ] && tinyproxy_path=`which tinyproxy` && nvram set tinyproxy_path="$tinyproxy_path"
+if [ "$tinyproxy_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep tinyproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tinyproxy)" ]  && [ ! -s /tmp/script/_tinyproxy ]; then
 	mkdir -p /tmp/script
@@ -12,7 +17,6 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tinyproxy)" ] 
 fi
 
 tinyproxy_check () {
-[ -z $tinyproxy_path ] && tinyproxy_path=`which tinyproxy` && nvram set tinyproxy_path="$tinyproxy_path"
 A_restart=`nvram get tinyproxy_status`
 B_restart="$tinyproxy_enable$tinyproxy_path$tinyproxy_port$(cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
