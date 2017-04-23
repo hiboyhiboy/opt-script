@@ -119,7 +119,7 @@ logger -t "【kcptun】" "kcptun-version: $kcptun_v"
 logger -t "【kcptun】" "运行 kcptun_script"
 
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $kcptun_server | awk 'NR==5{print $3}'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 kcptun_s_server=$resolveip
 [ -z "$kcptun_s_server" ] && { logger -t "【kcptun】" "[错误!!] 实在找不到你的 kcptun 服务器IP，麻烦看看哪里错了？10 秒后自动尝试重新启动" && sleep 10 && nvram set kcptun_status=00; eval "$scriptfilepath &"; exit 0; }
 
@@ -155,6 +155,20 @@ sleep 2
 
 
 eval "$scriptfilepath keep &"
+}
+arNslookup() {
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g
+		fi
+	else
+		Address=`curl -k http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g
+		fi
+	fi
 }
 
 initopt () {

@@ -27,12 +27,6 @@ kcptun2_enable=${kcptun2_enable:-"0"}
 kcptun2_enable2=`nvram get kcptun2_enable2`
 kcptun2_enable2=${kcptun2_enable2:-"0"}
 
-kcptun_server=`nvram get kcptun_server`
-if [ "$kcptun_enable" != "0" ] ; then
-resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $kcptun_server | awk 'NR==5{print $3}'` 
-kcptun_server=$resolveip
-fi
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 nvram set ss_server1=`nvram get ss_server`
 nvram set ss_s1_port=`nvram get ss_server_port`
@@ -242,10 +236,10 @@ logger -t "【ss-redir】" "启动所有的 SS 连线, 出现的 SS 日志并不
 logger -t "【SS】" "SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
 [ -z "$ss_server1" ] && { logger -t "【SS】" "[错误!!] SS服务器没有设置"; stop_SS; clean_SS; } 
 [ ! -z "$ss_server1" ] && ss_s1_ip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
-[ -z "$ss_s1_ip" ] && ss_s1_ip=`nslookup $ss_server1 | awk 'NR==5{print $3}'` 
+[ -z "$ss_s1_ip" ] && ss_s1_ip=`arNslookup $ss_server1 | sed -n '1p'` 
 [ -z "$ss_s1_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS1服务器IP，麻烦看看哪里错了？"; clean_SS; } 
 [ ! -z "$ss_server2" ] && ss_s2_ip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
-[ ! -z "$ss_server2" ] && [ -z "$ss_s2_ip" ] && ss_s2_ip=`nslookup $ss_server2 | awk 'NR==5{print $3}'`
+[ ! -z "$ss_server2" ] && [ -z "$ss_s2_ip" ] && ss_s2_ip=`arNslookup $ss_server2 | sed -n '1p'`
 [ ! -z "$ss_server2" ] && [ -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS2服务器IP，麻烦看看哪里错了？"; } 
 [ ! -z "$ss_s2_ip" ] && ss_ip="$ss_s1_ip,$ss_s2_ip" || ss_ip=$ss_s1_ip
 if [ "$ss_udp_enable" == 1 ] ; then
@@ -688,15 +682,15 @@ fi
 	if [ ! -z "$del_line" ] ; then
 		del_line=`echo $del_line | sed s/WAN@//g` #WAN@开头的 域名 使用 代理中转
 		/usr/bin/resolveip -4 -t 4 $del_line | grep -v :  > /tmp/ss/tmp.list
-		[ ! -s /tmp/ss/tmp.list ] && nslookup $del_line | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":"  >> /tmp/ss/wantoss.list
-		[ -s /tmp/ss/tmp.list ] && cat /tmp/ss/tmp.list >> /tmp/ss/wantoss.list && echo "" > /tmp/ss/tmp.list
+		[ ! -s /tmp/ss/tmp.list ] && arNslookup $del_line | sort -u | grep -v "^$"  >> /tmp/ss/wantoss.list
+		[ -s /tmp/ss/tmp.list ] && cat /tmp/ss/tmp.list| sort -u | grep -v "^$" >> /tmp/ss/wantoss.list && echo "" > /tmp/ss/tmp.list
 	fi
 	add_line=`echo $line |grep "WAN!"`
 	if [ ! -z "$add_line" ] ; then
 		add_line=`echo $add_line | sed s/WAN!//g` #WAN!开头的 域名 忽略 代理中转
 		/usr/bin/resolveip -4 -t 4 $add_line | grep -v :  > /tmp/ss/tmp.list
-		[ ! -s /tmp/ss/tmp.list ] && nslookup $add_line | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":"  >> /tmp/ss/wannoss.list
-		[ -s /tmp/ss/tmp.list ] && cat /tmp/ss/tmp.list >> /tmp/ss/wannoss.list && echo "" > /tmp/ss/tmp.list
+		[ ! -s /tmp/ss/tmp.list ] && arNslookup $add_line | sort -u | grep -v "^$"  >> /tmp/ss/wannoss.list
+		[ -s /tmp/ss/tmp.list ] && cat /tmp/ss/tmp.list| sort -u | grep -v "^$" >> /tmp/ss/wannoss.list && echo "" > /tmp/ss/tmp.list
 	fi
 		net_line=`echo $line |grep "WAN+"`
 	if [ ! -z "$net_line" ] ; then
@@ -756,6 +750,30 @@ EOF
 
 }
 
+arNslookup() {
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g
+		fi
+	else
+		Address=`curl -k http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g
+		fi
+	fi
+}
+
+if [ "$ss_enable" != "0" ] ; then
+	kcptun_server=`nvram get kcptun_server`
+	if [ "$kcptun_enable" != "0" ] ; then
+		resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
+		[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
+		kcptun_server=$resolveip
+	fi
+fi
+
 gen_special_purpose_ip() {
 #处理肯定不走通道的目标网段
 lan_ipaddr=`nvram get lan_ipaddr`
@@ -764,18 +782,18 @@ kcptun_enable=${kcptun_enable:-"0"}
 kcptun_server=`nvram get kcptun_server`
 if [ "$kcptun_enable" != "0" ] && [ -z "$kcptun_server" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $kcptun_server | awk 'NR==5{print $3}'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 kcptun_server=$resolveip
 fi
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 if [ "$ss_enable" != "0" ] && [ -z "$ss_s1_ip" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $ss_server1 | awk 'NR==5{print $3}'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server1 | sed -n '1p'` 
 ss_s1_ip=$resolveip
 fi
 if [ ! -z "$ss_server2" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $ss_server2 | awk 'NR==5{print $3}'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server2 | sed -n '1p'` 
 ss_s2_ip=$resolveip
 fi
 	cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"

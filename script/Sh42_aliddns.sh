@@ -207,10 +207,10 @@ esac
 arNslookup() {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1
+		wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1 | sed s/\;/"\n"/g | sed -n '1p'
 		return $?
 	else
-		curl -k http://119.29.29.29/d?dn=$1
+		curl -k http://119.29.29.29/d?dn=$1 | sed s/\;/"\n"/g | sed -n '1p'
 		return $?
 	fi
 }

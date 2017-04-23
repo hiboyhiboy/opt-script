@@ -530,7 +530,7 @@ kcptun_enable=${kcptun_enable:-"0"}
 kcptun_server=`nvram get kcptun_server`
 if [ "$kcptun_enable" != "0" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $kcptun_server | awk 'NR==5{print $3}'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 kcptun_server=$resolveip
 fi
 
@@ -549,12 +549,12 @@ kcptun2_enable2=${kcptun2_enable2:-"0"}
 [ "$kcptun2_enable" = "2" ] && ss_server2=""
 if [ "$ss_enable" != "0" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $ss_server1 | awk 'NR==5{print $3}'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server1 | sed -n '1p'` 
 ss_s1_ip=$resolveip
 fi
 if [ ! -z "$ss_server2" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $ss_server2 | awk 'NR==5{print $3}'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server2 | sed -n '1p'` 
 ss_s2_ip=$resolveip
 fi
 cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
@@ -691,6 +691,21 @@ adm_cron_job(){
 		cru.sh a adm_update "*/$adm_update_min */$adm_update_hour * * * $scriptfilepath update &" &
 	else
 		logger -t "【adm】" "规则自动更新关闭状态，不启用自动更新..."
+	fi
+}
+
+arNslookup() {
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g
+		fi
+	else
+		Address=`curl -k http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g
+		fi
 	fi
 }
 
