@@ -24,6 +24,7 @@ AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
 AD_LAN_AC_IP=${AD_LAN_AC_IP:-"0"}
 lan_ipaddr=`nvram get lan_ipaddr`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
+[ "$koolproxy_video" = "1" ] && mode_video=" -e " || mode_video=""
 fi
 #检查 dnsmasq 目录参数
 confdir=`grep conf-dir /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
@@ -65,7 +66,7 @@ hash koolproxy 2>/dev/null || rm -rf /tmp/7620koolproxy/*
 koolproxy_check () {
 
 A_restart=`nvram get koolproxy_status`
-B_restart="$koolproxy_enable$ss_link_1$koolproxy_auto$koolproxy_update$koolproxy_update_hour$koolproxy_update_min$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$koolproxy_enable$ss_link_1$koolproxy_auto$koolproxy_video$koolproxy_update$koolproxy_update_hour$koolproxy_update_min$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set koolproxy_status=$B_restart
@@ -151,7 +152,8 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -15 koolproxy
 			killall -9 koolproxy
 			sleep 3
-			/tmp/7620koolproxy/koolproxy >/dev/null 2>&1 &
+			cd /tmp/7620koolproxy/
+			/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
 			sleep 20
 			reb=`expr $reb + 1`
 		fi
@@ -161,7 +163,8 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -15 koolproxy
 			killall -9 koolproxy
 			sleep 3
-			/tmp/7620koolproxy/koolproxy >/dev/null 2>&1 &
+			cd /tmp/7620koolproxy/
+			/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
 			sleep 20
 		fi
 		port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
@@ -339,8 +342,8 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	export PATH='/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 	export LD_LIBRARY_PATH=/tmp/7620koolproxy/lib:/lib:/opt/lib
 	nvram set koolproxy_h="`/tmp/7620koolproxy/koolproxy -h | awk 'NR==1{print}'`"
-	sleep 1
-	/tmp/7620koolproxy/koolproxy -d >/dev/null 2>&1 &
+	cd /tmp/7620koolproxy/
+	/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
 	rm -f /tmp/adbyby_host.conf
 	if [ "$adbyby_adblocks" = "1" ] ; then
 		logger -t "【koolproxy】" "加载 第三方自定义 规则, 等候10秒"
