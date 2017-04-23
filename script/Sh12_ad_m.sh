@@ -127,8 +127,10 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
-		[ "$check" == "404" ] && wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
-		[ "$check" == "404" ] && [ "$?" == "0" ] && check=200 || check=404
+		if [ "$check" == "404" ] ; then
+			wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
 	else
 		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 		[ "$check" != "200" ] && restart_dhcpd && sleep 3
