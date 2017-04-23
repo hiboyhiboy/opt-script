@@ -147,11 +147,15 @@ arDdnsInfo() {
 arNslookup() {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1 | sed s/\;/"\n"/g | sed -n '1p'
-		return $?
+		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g | sed -n '1p'
+		fi
 	else
-		curl -k http://119.29.29.29/d?dn=$1 | sed s/\;/"\n"/g | sed -n '1p'
-		return $?
+		Address=`curl -k http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g | sed -n '1p'
+		fi
 	fi
 }
 
