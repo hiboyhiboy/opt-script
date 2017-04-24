@@ -13,7 +13,7 @@ nvramshow=`nvram showall | grep koolproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 
 koolproxyfile="https://kprule.com/downloads/mipsel"
-koolproxyfilecdn="https://kprules-test.b0.upaiyun.com/downloads/mipsel"
+koolproxyfilecdn="https://github.com/koolproxy/koolproxy-bin/raw/master/mipsel"
 koolproxyfile2="$hiboyfile/koolproxy"
 koolproxyfile22="$hiboyfile2/koolproxy"
 koolproxyfile3="$hiboyfile/7620koolproxy.tgz"
