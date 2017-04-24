@@ -761,6 +761,18 @@ EOF
 }
 
 arNslookup() {
+mkdir -p /tmp/arNslookup
+nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":" > /tmp/arNslookup/$$ &
+I=5
+while [ ! -s /tmp/arNslookup/$$ ] ; do
+		I=$(($I - 1))
+		[ $I -lt 0 ] && break
+		sleep 1
+done
+if [ -s /tmp/arNslookup/$$ ] ; then
+cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
+rm -f /tmp/arNslookup/$$
+else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
@@ -773,6 +785,7 @@ arNslookup() {
 		echo $Address |  sed s/\;/"\n"/g
 		fi
 	fi
+fi
 }
 
 if [ "$ss_enable" != "0" ] ; then
