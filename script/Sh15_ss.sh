@@ -235,12 +235,22 @@ start_ss_redir()
 logger -t "【ss-redir】" "启动所有的 SS 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
 logger -t "【SS】" "SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
 [ -z "$ss_server1" ] && { logger -t "【SS】" "[错误!!] SS服务器没有设置"; stop_SS; clean_SS; } 
+if [ -z $(echo $ss_server1 | grep : | grep -v "\.") ] ; then 
 [ ! -z "$ss_server1" ] && ss_s1_ip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
 [ -z "$ss_s1_ip" ] && ss_s1_ip=`arNslookup $ss_server1 | sed -n '1p'` 
+else
+# IPv6
+ss_s1_ip=$ss_server1
+fi
 [ -z "$ss_s1_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS1服务器IP，麻烦看看哪里错了？"; clean_SS; } 
+if [ -z $(echo $ss_server2 | grep : | grep -v "\.") ] ; then 
 [ ! -z "$ss_server2" ] && ss_s2_ip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
 [ ! -z "$ss_server2" ] && [ -z "$ss_s2_ip" ] && ss_s2_ip=`arNslookup $ss_server2 | sed -n '1p'`
 [ ! -z "$ss_server2" ] && [ -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS2服务器IP，麻烦看看哪里错了？"; } 
+else
+# IPv6
+ss_s2_ip=$ss_server2
+fi
 [ ! -z "$ss_s2_ip" ] && ss_ip="$ss_s1_ip,$ss_s2_ip" || ss_ip=$ss_s1_ip
 if [ "$ss_udp_enable" == 1 ] ; then
 ss_usage="$ss_usage -u"
@@ -787,14 +797,24 @@ kcptun_server=$resolveip
 fi
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 if [ "$ss_enable" != "0" ] && [ -z "$ss_s1_ip" ] ; then
+if [ -z $(echo $ss_server1 | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $ss_server1 | sed -n '1p'` 
 ss_s1_ip=$resolveip
+else
+# IPv6
+ss_s1_ip=$ss_server1
+fi
 fi
 if [ ! -z "$ss_server2" ] ; then
+if [ -z $(echo $ss_server2 | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $ss_server2 | sed -n '1p'` 
 ss_s2_ip=$resolveip
+else
+# IPv6
+ss_s2_ip=$ss_server2
+fi
 fi
 	cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 0.0.0.0/8
