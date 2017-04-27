@@ -12,7 +12,7 @@ nvramshow=`nvram showall | grep koolproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'
 
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 
-koolproxyfile="https://kprule.com/downloads/mipsel"
+koolproxyfile="https://koolproxy.com/downloads/mipsel"
 koolproxyfilecdn="https://github.com/koolproxy/koolproxy-bin/raw/master/mipsel"
 koolproxyfile2="$hiboyfile/koolproxy"
 koolproxyfile22="$hiboyfile2/koolproxy"
@@ -129,6 +129,16 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		sleep 5
 		reboot
 	fi
+	hash check_network 2>/dev/null && {
+	check_network 3
+	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+		if [ "$check" == "404" ] ; then
+			check_network 3
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
+	}
+	hash check_network 2>/dev/null || check=404
+	[ "$check" == "404" ] && {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
@@ -142,6 +152,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		[ "$check" != "200" ] && restart_dhcpd && sleep 3
 		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
+	}
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
 		PIDS=$(ps - w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
@@ -334,6 +345,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	cd /tmp/7620koolproxy/
 	rm -f /tmp/7620koolproxy/user2.txt /tmp/7620koolproxy/user3adblocks.txt /tmp/7620koolproxy/user_store.txt
 	
+	[ "$koolproxy_uprules" != "2" ] && rm -rf /tmp/7620koolproxy/data/rules/1.dat /tmp/7620koolproxy/data/rules/kp.dat /tmp/7620koolproxy/data/rules/koolproxy.txt
 	# 更新规则
 	#hash daydayup 2>/dev/null && update_kp_rules_daydayup
 	#hash daydayup 2>/dev/null || update_kp_rules
@@ -351,6 +363,25 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	else
 		sleep 5
 	fi
+
+	I=15
+	while [ ! -f /tmp/7620koolproxy/data/rules/koolproxy.txt ]; do
+			I=$(($I - 1))
+			[ $I -lt 0 ] && break
+			sleep 1
+	done
+	[ -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] && nvram set koolproxy_uprules=2
+	[ ! -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] && {
+	logger -t "【koolproxy】" "自动更新规则失效，启用脚本手动下载更新。"
+	nvram set koolproxy_uprules=1
+	mkdir -p /tmp/7620koolproxy/data/rules
+	cd /tmp/7620koolproxy/data/rules
+	hash daydayup 2>/dev/null && update_kp_rules_daydayup
+	hash daydayup 2>/dev/null || update_kp_rules
+	killall koolproxy
+	cd /tmp/7620koolproxy/
+	/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
+	}
 	hash krdl 2>/dev/null && krdl_ipset
 fi
 if [ -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] ; then
@@ -371,41 +402,30 @@ eval "$scriptfilepath keep &"
 
 koolproxy_rules_list () {
 
-if [ ! -s /etc/storage/koolproxy_rules_list.sh ] ; then
-cat > "/etc/storage/koolproxy_rules_list.sh" <<-\KPR
-# 【添加为#注释行，会自动忽略】
-# 爪机浏览器规则：
-http://koolshare.b0.upaiyun.com/wp/koolproxy_wp.txt
-# 拯救室友规则：
-#http://koolshare.b0.upaiyun.com/rules/filter_game.txt
-# 【adbyby规则翻译的koolproxy兼容规则 by <dsyo2008> http://koolshare.cn/thread-83553-1-1.html】
-#https://raw.githubusercontent.com/dsyo2008/lazy_for_koolproxy/master/lazy_kp.txt
-
+mkdir -p /tmp/7620koolproxy/data/rules
+cat > "/tmp/7620koolproxy/data/rules/koolproxy_rules_list.sh" <<-\KPR
+https://kprule.com/koolproxy.txt
+https://kprule.com/kp.dat
 KPR
-fi
+
 }
 
 update_kp_rules_daydayup () {
 koolproxy_rules_list
-cd /tmp/7620koolproxy/data
-daydayup /etc/storage/koolproxy_rules_list.sh >> /tmp/syslog.log
+cd /tmp/7620koolproxy/data/rules
+daydayup /tmp/7620koolproxy/data/rules/koolproxy_rules_list.sh >> /tmp/syslog.log
 [ $? -eq 0 ] && logger -t "【koolproxy】" "完成规则更新" || logger -t "【koolproxy】" "下载规则更新"
-if [ -s /tmp/7620koolproxy/data/koolproxy.txt ] ; then
-nvram set koolproxy_rules_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
-nvram set koolproxy_rules_nu_local="`cat /tmp/7620koolproxy/data/koolproxy.txt | grep -v ! | wc -l`"
-nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '2p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
-fi
 }
 
 update_kp_rules () {
 
 mkdir -p /tmp/7620koolproxy/rule_store
 mkdir -p /tmp/7620koolproxy/rule_tmp
-rm -rf `ls -L /tmp/7620koolproxy/data/*_*.dat`
-rm -rf `ls -L /tmp/7620koolproxy/data/*_*.txt`
-rm -rf /tmp/7620koolproxy/data/koolproxyrule_*
+#rm -rf `ls -L /tmp/7620koolproxy/data/rules/*_*.dat`
+#rm -rf `ls -L /tmp/7620koolproxy/data/rules/*_*.txt`
+#rm -rf /tmp/7620koolproxy/data/rules/koolproxyrule_*
 rm -rf /tmp/7620koolproxy/rule_tmp/*
-rm -rf /tmp/7620koolproxy/data/1.dat  /tmp/7620koolproxy/data/koolproxy.txt
+rm -rf /tmp/7620koolproxy/data/rules/1.dat /tmp/7620koolproxy/data/rules/kp.dat /tmp/7620koolproxy/data/rules/koolproxy.txt
 logger -t "【koolproxy】" "检测规则是否有更新"
 koolproxy_rules_list
 while read line
@@ -428,15 +448,10 @@ file_name=${line##*/}
 		else
 			logger -t "【koolproxy】" " 本地【$file_name】已经是最新！，$line"
 		fi
-		ln -sf /tmp/7620koolproxy/rule_store/$file_name /tmp/7620koolproxy/data/koolproxyrule_$file_name
+		ln -sf /tmp/7620koolproxy/rule_store/$file_name /tmp/7620koolproxy/data/rules/$file_name
 	fi
 fi
-done < /etc/storage/koolproxy_rules_list.sh
-if [ -s /tmp/7620koolproxy/rule_store/koolproxy.txt ] ; then
-nvram set koolproxy_rules_date_local="`sed -n '1,10p' /tmp/7620koolproxy/rule_store/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/rule_store/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
-nvram set koolproxy_rules_nu_local="`cat /tmp/7620koolproxy/rule_store/koolproxy.txt | grep -v ! | wc -l`"
-nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/rule_store/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/rule_store/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '2p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
-fi
+done < /tmp/7620koolproxy/data/rules/koolproxy_rules_list.sh
 rm -rf /tmp/7620koolproxy/rule_tmp/*
 }
 
@@ -452,12 +467,6 @@ done
 
 krdl_ipset () {
 
-I=30
-while [ ! -f /tmp/7620koolproxy/data/rules/koolproxy.txt ]; do
-		I=$(($I - 1))
-		[ $I -lt 0 ] && break
-		sleep 1
-done
 [ ! -f /tmp/7620koolproxy/data/rules/koolproxy.txt ] && return 0
 # Koolproxy Rules to Domain List
 rm -f /tmp/7620koolproxy/domain.txt /tmp/7620koolproxy/domain2.txt /tmp/7620koolproxy/ip.txt
@@ -477,6 +486,7 @@ cd /tmp/7620koolproxy/data/rules
 # done < /etc/storage/koolproxy_rules_list.sh
 # krdl ./user.txt
 krdl ./1.dat
+krdl ./kp.dat
 krdl ./koolproxy.txt
 krdl ./user.txt
 sleep 2
@@ -921,7 +931,7 @@ C)
 	koolproxy_cp_rules
 	;;
 update)
-	exit 0
+	#exit 0
 	[ "$koolproxy_enable" != "1" ] && exit 0
 	killall sh_ad_kp_keey_k.sh
 	killall -9 sh_ad_kp_keey_k.sh
@@ -945,7 +955,7 @@ update)
 			fi
 		fi
 	fi
-	done < /etc/storage/koolproxy_rules_list.sh
+	done < /tmp/7620koolproxy/data/rules/koolproxy_rules_list.sh
 	logger -t "【koolproxy】" "更新检查:不需更新 $urla "
 	}
 	[ -f /tmp/sh_ad_kp_keey_k.sh ] && /tmp/sh_ad_kp_keey_k.sh &

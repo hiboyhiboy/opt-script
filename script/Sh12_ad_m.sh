@@ -123,6 +123,16 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		sleep 5
 		reboot
 	fi
+	hash check_network 2>/dev/null && {
+	check_network 3
+	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+		if [ "$check" == "404" ] ; then
+			check_network 3
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
+	}
+	hash check_network 2>/dev/null || check=404
+	[ "$check" == "404" ] && {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
@@ -136,6 +146,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		[ "$check" != "200" ] && restart_dhcpd && sleep 3
 		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
+	}
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
 		PIDS=$(ps - w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)

@@ -384,6 +384,16 @@ if [ "$ss_check" = "1" ] ; then
 			BP_IP="$ss_s1_ip,$ss_s2_ip,$kcptun_server"
 			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80' -o -O
 			sleep 1
+			hash check_network 2>/dev/null && {
+			check_network 3
+			[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+				if [ "$check" == "404" ] ; then
+					check_network 3
+					[ "$?" == "0" ] && check=200 || check=404
+				fi
+			}
+			hash check_network 2>/dev/null || check=404
+			[ "$check" == "404" ] && {
 			curltest=`which curl`
 			if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 				wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
@@ -397,11 +407,14 @@ if [ "$ss_check" = "1" ] ; then
 				[ "$check" != "200" ] && restart_dhcpd && sleep 3
 				[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			fi
+			}
 			if [ "$check" == "200" ] ; then
-				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 $ss_link_1 成功"
+				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 www.163.com 成功"
+				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 $ss_link_1 成功"
 				checkip=1
 			else
-				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 $ss_link_1 失败"
+				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 www.163.com 失败"
+				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 $ss_link_1 失败"
 				[ ${action_port:=1090} ] && [ $action_port == 1091 ] && Server=1090 || Server=1091
 				#加上切换标记
 				nvram set ss_working_port=$Server
@@ -1335,6 +1348,16 @@ echo "Debug: $DNS_Server"
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
 	sleep 1
+	hash check_network 2>/dev/null && {
+	check_network 3
+	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+		if [ "$check" == "404" ] ; then
+			check_network 3
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
+	}
+	hash check_network 2>/dev/null || check=404
+	[ "$check" == "404" ] && {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
@@ -1348,8 +1371,10 @@ echo "Debug: $DNS_Server"
 		[ "$check" != "200" ] && restart_dhcpd && sleep 3
 		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
+	}
 if [ "$check" != "200" ] ; then 
-	logger -t "【SS】" "连 $ss_link_1 的域名都解析不了, 你的网络能用？？"
+	hash check_network 2>/dev/null && logger -t "【SS】" "连 www.163.com 的域名都解析不了, 你的网络能用？？"
+	hash check_network 2>/dev/null || logger -t "【SS】" "连 $ss_link_1 的域名都解析不了, 你的网络能用？？"
 	logger -t "【SS】" "SS 网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
 	clean_SS
 fi
@@ -1557,28 +1582,16 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 #检查是否存在SS备份服务器, 这里通过判断 ss_rdd_server 是否填写来检查是否存在备用服务器
 
 
-curltest=`which curl`
-if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
-	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+hash check_network 2>/dev/null && {
+check_network
+[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+		check_network
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
-else
-	check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-	[ "$check" != "200" ] && restart_dhcpd && sleep 3
-	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-fi
-if [ "$check" == "200" ] ; then
-	echo "[$LOGTIME] Internet have no problem."
-else
-	logger -t "【SS】" "[$LOGTIME] Internet 问题, 请检查您的服务供应商."
-	rebss=`expr $rebss + 1`
-	restart_dhcpd
-fi
-
-
+}
+hash check_network 2>/dev/null || check=404
+[ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
@@ -1592,12 +1605,45 @@ else
 	[ "$check" != "200" ] && restart_dhcpd && sleep 3
 	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
+}
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
 	nvram set ss_internet="1"
 	#跳出当前循环
 	continue
+fi
+
+hash check_network 2>/dev/null && {
+check_network 3
+[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	if [ "$check" == "404" ] ; then
+		check_network 3
+		[ "$?" == "0" ] && check=200 || check=404
+	fi
+}
+hash check_network 2>/dev/null || check=404
+[ "$check" == "404" ] && {
+curltest=`which curl`
+if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+	wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	if [ "$check" == "404" ] ; then
+		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+		[ "$?" == "0" ] && check=200 || check=404
+	fi
+else
+	check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+fi
+}
+if [ "$check" == "200" ] ; then
+	echo "[$LOGTIME] Internet have no problem."
+else
+	logger -t "【SS】" "[$LOGTIME] Internet 问题, 请检查您的服务供应商."
+	rebss=`expr $rebss + 1`
+	restart_dhcpd
 fi
 
 #404
@@ -1615,6 +1661,16 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 		sleep 5
 	fi
 fi
+hash check_network 2>/dev/null && {
+check_network
+[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	if [ "$check" == "404" ] ; then
+		check_network
+		[ "$?" == "0" ] && check=200 || check=404
+	fi
+}
+hash check_network 2>/dev/null || check=404
+[ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
@@ -1628,6 +1684,7 @@ else
 	[ "$check" != "200" ] && restart_dhcpd && sleep 3
 	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
+}
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
@@ -1676,6 +1733,16 @@ CATIP
 fi
 restart_dhcpd
 sleep 5
+hash check_network 2>/dev/null && {
+check_network
+[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	if [ "$check" == "404" ] ; then
+		check_network
+		[ "$?" == "0" ] && check=200 || check=404
+	fi
+}
+hash check_network 2>/dev/null || check=404
+[ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
@@ -1689,6 +1756,7 @@ else
 	[ "$check" != "200" ] && restart_dhcpd && sleep 3
 	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
+}
 if [ "$check" == "200" ] ; then
 	logger -t "【SS】" "[$LOGTIME] SS 服务器 `nvram get ss_working_port` 连接."
 	rebss="1"
@@ -1800,6 +1868,11 @@ repdnsd)
 	;;
 help)
 	echo "Usage: $0 {start|rules|flush|update|stop}"
+	;;
+update_optss)
+	rm -rf /opt/bin/ss-redir /opt/bin/ss-local
+	/etc/storage/ez_buttons_script.sh cleanss &
+	exit 0
 	;;
 *)
 	check_setting
