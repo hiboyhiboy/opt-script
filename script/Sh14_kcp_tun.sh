@@ -1,10 +1,14 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+kcptun_enable=`nvram get kcptun_enable`
+[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
+kcptun_path=`nvram get kcptun_path`
+kcptun_path=${kcptun_path:-"/opt/bin/client_linux_mips"}
+if [ "$kcptun_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
 
 kcptun_s_server=""
 kcptun_sport=${kcptun_sport:-"29900"}
@@ -18,8 +22,7 @@ kcptun_dscp=${kcptun_dscp:-"0"}
 kcptun_datashard=${kcptun_datashard:-"10"}
 kcptun_parityshard=${kcptun_parityshard:-"3"}
 kcptun_autoexpire=${kcptun_autoexpire:-"0"}
-kcptun_path=${kcptun_path:-"/opt/bin/client_linux_mips"}
-
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kcp_tun)" ]  && [ ! -s /tmp/script/_kcp_tun ]; then
 	mkdir -p /tmp/script
 	ln -sf $scriptfilepath /tmp/script/_kcp_tun
@@ -38,7 +41,7 @@ else
 fi
 if [ "$kcptun_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "停止 $kcptun_path" && kcptun_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$kcptun_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -77,10 +80,10 @@ done
 kcptun_close () {
 
 sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
-[ ! -z "$kcptun_path" ] && eval $(ps - w | grep "$kcptun_path" | grep -v grep | awk '{print "kill "$1}')
+[ ! -z "$kcptun_path" ] && eval $(ps - w | grep "$kcptun_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall client_linux_mips kcptun_script.sh sh_kcpkeep.sh
 killall -9 client_linux_mips kcptun_script.sh sh_kcpkeep.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 kcptun_start () {
@@ -116,7 +119,7 @@ logger -t "【kcptun】" "kcptun-version: $kcptun_v"
 logger -t "【kcptun】" "运行 kcptun_script"
 
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`nslookup $kcptun_server | awk 'NR==5{print $3}'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 kcptun_s_server=$resolveip
 [ -z "$kcptun_s_server" ] && { logger -t "【kcptun】" "[错误!!] 实在找不到你的 kcptun 服务器IP，麻烦看看哪里错了？10 秒后自动尝试重新启动" && sleep 10 && nvram set kcptun_status=00; eval "$scriptfilepath &"; exit 0; }
 
@@ -152,6 +155,34 @@ sleep 2
 
 
 eval "$scriptfilepath keep &"
+}
+
+arNslookup() {
+mkdir -p /tmp/arNslookup
+nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":" > /tmp/arNslookup/$$ &
+I=5
+while [ ! -s /tmp/arNslookup/$$ ] ; do
+		I=$(($I - 1))
+		[ $I -lt 0 ] && break
+		sleep 1
+done
+if [ -s /tmp/arNslookup/$$ ] ; then
+cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
+rm -f /tmp/arNslookup/$$
+else
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g
+		fi
+	else
+		Address=`curl -k http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g
+		fi
+	fi
+fi
 }
 
 initopt () {

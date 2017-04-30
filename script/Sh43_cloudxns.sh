@@ -1,6 +1,9 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+cloudxns_enable=`nvram get cloudxns_enable`
+[ -z $cloudxns_enable ] && cloudxns_enable=0 && nvram set cloudxns_enable=0
+if [ "$cloudxns_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 hostIP=""
 IP=""
@@ -9,8 +12,7 @@ SECRET_KEY="$cloudxns_password"
 DOMAIN="$cloudxns_domian"
 HOST="$cloudxns_host"
 cloudxns_interval=${cloudxns_interval:-"600"}
-
-[ -z $cloudxns_enable ] && cloudxns_enable=0 && nvram set cloudxns_enable=0
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cloudxns)" ]  && [ ! -s /tmp/script/_cloudxns ]; then
 	mkdir -p /tmp/script
@@ -31,7 +33,7 @@ else
 fi
 if [ "$cloudxns_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【CloudXNS动态域名】" "停止 cloudxns" && cloudxns_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$cloudxns_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -60,7 +62,7 @@ done
 
 cloudxns_close () {
 
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 cloudxns_start () {
@@ -114,14 +116,16 @@ arDdnsInfo() {
 	URL_D="https://www.cloudxns.net/api2/domain"
 	DATE=$(date)
 	HMAC_D=$(printf "%s" "$API_KEY$URL_D$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
-	DOMAIN_ID=$(curl -k -s $URL_D -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_D"|grep -o "id\":\"[0-9]*\",\"domain\":\"$DOMAIN"|grep -o "[0-9]*"|head -n1)
-	echo "DOMAIN ID: $DOMAIN_ID"
+	DOMAIN_ID=$(curl -k -s $URL_D -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_D")
+	DOMAIN_ID=$(echo $DOMAIN_ID|grep -o "id\":\"[0-9]*\",\"domain\":\"$DOMAIN"|grep -o "[0-9]*"|head -n1)
+	#echo "DOMAIN ID: $DOMAIN_ID"
 	# 获得最后更新IP
 	URL_R="https://www.cloudxns.net/api2/record/$DOMAIN_ID?host_id=0&row_num=500"
 	HMAC_R=$(printf "%s" "$API_KEY$URL_R$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
-	recordIP=$(curl -k -s "$URL_R" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_R"|grep -o "\"host\":\"$HOST\",.*" | awk -F type\":\"A\"  '{print $1}'|grep -o "value\":\"[0-9\.]*"|grep -o "[0-9\.]*")
+	recordIP=$(curl -k -s "$URL_R" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_R")
+	recordIP=$(echo $recordIP|grep -o "\"host\":\"$HOST\",.*" | awk -F type\":\"A\"  '{print $1}'|grep -o "value\":\"[0-9\.]*"|grep -o "[0-9\.]*")
 
-	echo "recordIP: $recordIP"
+	#echo "arDdnsInfo recordIP: $recordIP"
 	
 
 	# Output IP
@@ -132,7 +136,7 @@ arDdnsInfo() {
 		;;
 	*)
 		echo "Get Record Info Failed!"
-		logger -t "【CloudXNS动态域名】" "获取记录信息失败！"
+		#logger -t "【CloudXNS动态域名】" "获取记录信息失败！"
 		return 1
 		;;
 	esac
@@ -143,11 +147,15 @@ arDdnsInfo() {
 arNslookup() {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1
-		return $?
+		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g | sed -n '1p'
+		fi
 	else
-		curl -k http://119.29.29.29/d?dn=$1
-		return $?
+		Address=`curl -k http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g | sed -n '1p'
+		fi
 	fi
 }
 
@@ -158,24 +166,34 @@ arDdnsUpdate() {
 	URL_D="https://www.cloudxns.net/api2/domain"
 	DATE=$(date)
 	HMAC_D=$(printf "%s" "$API_KEY$URL_D$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
-	DOMAIN_ID=$(curl -k -s $URL_D -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_D"|grep -o "id\":\"[0-9]*\",\"domain\":\"$DOMAIN"|grep -o "[0-9]*"|head -n1)
+	DOMAIN_ID=$(curl -k -s $URL_D -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_D")
+	DOMAIN_ID=$(echo $DOMAIN_ID|grep -o "id\":\"[0-9]*\",\"domain\":\"$DOMAIN"|grep -o "[0-9]*"|head -n1)
 	echo "DOMAIN ID: $DOMAIN_ID"
 
 	# 获得记录ID
 	URL_R="https://www.cloudxns.net/api2/record/$DOMAIN_ID?host_id=0&row_num=500"
 	HMAC_R=$(printf "%s" "$API_KEY$URL_R$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
-	RECORD_ID=$(curl -k -s "$URL_R" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_R"|grep -o "record_id\":\"[0-9]*\",\"host_id\":\"[0-9]*\",\"host\":\"$HOST\""|grep -o "record_id\":\"[0-9]*"|grep -o "[0-9]*")
+	RECORD_ID=$(curl -k -s "$URL_R" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_R")
+	RECORD_ID=$(echo $RECORD_ID|grep -o "record_id\":\"[0-9]*\",\"host_id\":\"[0-9]*\",\"host\":\"$HOST\""|grep -o "record_id\":\"[0-9]*"|grep -o "[0-9]*")
 	echo "RECORD ID: $RECORD_ID"
 	if [ "$RECORD_ID" = "" ] ; then
+		# 获取线路ID
+		# URL_I="https://www.cloudxns.net/api2/line"
+		# DATE=$(date)
+		# HMAC_I=$(printf "%s" "$API_KEY$URL_I$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
+		# LINE_ID=$(curl -k -s $URL_I -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_I")
+		# LINE_ID=$(echo $LINE_ID|grep -o "id\":\"[0-9]*\","|grep -o "[0-9]*"|head -n1)
+		# echo "LINE ID: $LINE_ID"
+
 		# 添加子域名记录IP
 		logger -t "【CloudXNS动态域名】" "添加子域名 ${HOST} 记录IP"
 		IP=$hostIP
-		URL_A="https://www.cloudxns.net/api2/record/"
+		URL_A="https://www.cloudxns.net/api2/record"
 
-		PARAM_BODY="{\"domain_id\":\"$DOMAIN_ID\",\"host\":\"$HOST\",\"type\":\"A\",\"value\":\"$IP\"}"
+		PARAM_BODY="{\"domain_id\":\"$DOMAIN_ID\",\"host\":\"$HOST\",\"type\":\"A\",\"value\":\"$IP\",\"line_id\":\"1\"}"
 		HMAC_A=$(printf "%s" "$API_KEY$URL_A$PARAM_BODY$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
 
-		RESULT=$(curl -k -s "$URL_A" -X PUT -d "$PARAM_BODY" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_A" -H 'Content-Type: application/json')
+		RESULT=$(curl -k -s "$URL_A" -X POST -d "$PARAM_BODY" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_A" -H 'Content-Type: application/json')
 	else
 		# 更新记录IP
 		IP=$hostIP

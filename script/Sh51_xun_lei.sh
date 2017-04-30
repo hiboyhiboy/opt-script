@@ -1,9 +1,11 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep xunlei | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+xunleis=`nvram get xunleis`
 [ -z $xunleis ] && xunleis=0 && nvram set xunleis=0
+if [ "$xunleis" != "0" ] ; then
+nvramshow=`nvram showall | grep xunlei | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep xun_lei)" ]  && [ ! -s /tmp/script/_xun_lei ]; then
 	mkdir -p /tmp/script
@@ -23,7 +25,7 @@ else
 fi
 if [ "$xunleis" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ETMDaemon`" ] && logger -t "【迅雷下载】" "停止 xunleis" && xunlei_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$xunleis" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -87,7 +89,7 @@ sed -Ei '/【迅雷下载】|^$/d' /tmp/script/_opt_script_check
 killall ETMDaemon EmbedThunderManager vod_httpserver portal
 killall -9 ETMDaemon EmbedThunderManager vod_httpserver portal
 rm -f "/opt/etc/init.d/$scriptname"
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 xunlei_start () {

@@ -1,6 +1,9 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+aliddns_enable=`nvram get aliddns_enable`
+[ -z $aliddns_enable ] && aliddns_enable=0 && nvram set aliddns_enable=0
+if [ "$aliddns_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep aliddns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 hostIP=""
 domain=""
@@ -10,8 +13,7 @@ timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 aliddns_record_id=""
 aliddns_interval=${aliddns_interval:-"600"}
 aliddns_ttl=${aliddns_interval:-"600"}
-
-[ -z $aliddns_enable ] && aliddns_enable=0 && nvram set aliddns_enable=0
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep aliddns)" ]  && [ ! -s /tmp/script/_aliddns ]; then
 	mkdir -p /tmp/script
@@ -33,7 +35,7 @@ else
 fi
 if [ "$aliddns_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【aliddns动态域名】" "停止 aliddns" && aliddns_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$aliddns_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -62,7 +64,7 @@ done
 
 aliddns_close () {
 
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 aliddns_start () {
@@ -194,7 +196,7 @@ esac
 		;;
 	*)
 		echo "Get Record Info Failed!"
-		logger -t "【AliDDNS动态域名】" "获取记录信息失败！"
+		#logger -t "【AliDDNS动态域名】" "获取记录信息失败！"
 		return 1
 		;;
 	esac
@@ -205,11 +207,15 @@ esac
 arNslookup() {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1
-		return $?
+		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g | sed -n '1p'
+		fi
 	else
-		curl -k http://119.29.29.29/d?dn=$1
-		return $?
+		Address=`curl -k http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g | sed -n '1p'
+		fi
 	fi
 }
 

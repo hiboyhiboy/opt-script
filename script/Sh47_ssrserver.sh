@@ -1,9 +1,11 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep ssrserver | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+ssrserver_enable=`nvram get ssrserver_enable`
 [ -z $ssrserver_enable ] && ssrserver_enable=0 && nvram set ssrserver_enable=0
+if [ "$ssrserver_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep ssrserver | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ssrserver)" ]  && [ ! -s /tmp/script/_ssrserver ]; then
 	mkdir -p /tmp/script
@@ -23,7 +25,7 @@ else
 fi
 if [ "$ssrserver_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`ps - w | grep manyuser/shadowsocks/server | grep -v grep `" ] && logger -t "【SSR_server】" "停止 ssrserver" && ssrserver_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ssrserver_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -59,8 +61,8 @@ done
 
 ssrserver_close () {
 sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check
-eval $(ps - w | grep "manyuser/shadowsocks/server" | grep -v grep | awk '{print "kill "$1;}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "manyuser/shadowsocks/server" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 ssrserver_start () {
@@ -79,7 +81,7 @@ if [ -z "$upanPath" ] ; then
 fi
 
 SVC_PATH=/opt/bin/python
-hash python 2>/dev/null || rm -rf /opt/bin/python
+hash python 2>/dev/null || rm -rf /opt/bin/python /opt/opti.txt
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SSR_server】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget

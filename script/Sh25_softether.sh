@@ -1,10 +1,13 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep softether | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-softether_path=${softether_path:-"/opt/softether/vpnserver"}
-
+softether_enable=`nvram get softether_enable`
 [ -z $softether_enable ] && softether_enable=0 && nvram set softether_enable=0
+softether_path=`nvram get softether_path`
+softether_path=${softether_path:-"/opt/softether/vpnserver"}
+if [ "$softether_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep softether | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep softether)" ]  && [ ! -s /tmp/script/_softether ]; then
 	mkdir -p /tmp/script
@@ -25,7 +28,7 @@ else
 fi
 if [ "$softether_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$softether_path" | grep -v grep )" ] && logger -t "【softether】" "停止 softether" && softether_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$softether_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -74,10 +77,10 @@ iptables -D INPUT -p udp --destination-port 500 -j ACCEPT
 iptables -D INPUT -p udp --destination-port 4500 -j ACCEPT
 iptables -D INPUT -p udp --destination-port 1701 -j ACCEPT
 [ ! -z "$softether_path" ] && $softether_path stop
-[ ! -z "$softether_path" ] && eval $(ps - w | grep "$softether_path" | grep -v grep | awk '{print "kill "$1;}')
+[ ! -z "$softether_path" ] && eval $(ps - w | grep "$softether_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall vpnserver softether_script.sh
 killall -9 vpnserver softether_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 softether_start () {
@@ -115,9 +118,9 @@ softether_path="$SVC_PATH"
 logger -t "【softether】" "运行 softether_script"
 $softether_path stop
 /etc/storage/softether_script.sh &
-sleep 2
+sleep 3
 [ ! -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动成功"
-[ -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动失败, 注意检查hamcore.se2、vpncmd、vpnserver是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set softether_status=00; eval "$scriptfilepath &"; exit 0; }
+[ -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动失败, 注意检查hamcore.se2、vpncmd、vpnserver是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { rm -f $softether_path ; nvram set softether_status=00; eval "$scriptfilepath &"; exit 0; }
 
 logger -t "【softether】" "允许 500、4500、1701 udp端口通过防火墙"
 iptables -I INPUT -p udp --destination-port 500 -j ACCEPT

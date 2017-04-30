@@ -1,12 +1,14 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+dnspod_enable=`nvram get dnspod_enable`
+[ -z $dnspod_enable ] && dnspod_enable=0 && nvram set dnspod_enable=0
+if [ "$dnspod_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep dnspod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 hostIP=""
 myIP=""
 dnspod_interval=${dnspod_interval:-"600"}
-
-[ -z $dnspod_enable ] && dnspod_enable=0 && nvram set dnspod_enable=0
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep dnspod)" ]  && [ ! -s /tmp/script/_dnspod ]; then
 	mkdir -p /tmp/script
@@ -27,11 +29,10 @@ else
 fi
 if [ "$dnspod_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【DNSPod动态域名】" "停止 dnspod" && dnspod_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$dnspod_enable" = "1" ] ; then
-[ $dnspod_username ] && [ $dnspod_password ] && [ $dnspod_domian ] \
-	&& [ $dnspod_host ] || [ $dnspod_Token ]  && [ $dnspod_domian ] && [ $dnspod_host ] || { logger -t "【DNSPod动态域名】" "用户名密码或者 Token 等设置未填写, 10 秒后自动尝试重新启动" && sleep 10 nvram set dnspod_status=00; eval "$scriptfilepath &"; exit 0; }
+[ "x${dnspod_Token}" = "x" ] && [ "x${dnspod_username}" = "x" ] && [ "x${dnspod_password}" = "x" ] && { logger -t "【DNSPod动态域名】" "用户名密码或者 Token 等设置未填写, 10 秒后自动尝试重新启动" && sleep 10; nvram set dnspod_status=00; eval "$scriptfilepath &"; exit 0; }
 	if [ "$needed_restart" = "1" ] ; then
 		dnspod_close
 		eval "$scriptfilepath keep &"
@@ -56,7 +57,7 @@ done
 }
 
 dnspod_close () {
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 dnspod_start () {
@@ -111,7 +112,7 @@ arDdnsInfo() {
 		;;
 	*)
 		echo "Get Record Info Failed!"
-		logger -t "【DNSPod动态域名】" "获取记录信息失败！"
+		#logger -t "【DNSPod动态域名】" "获取记录信息失败！"
 		return 1
 		;;
 	esac
@@ -122,11 +123,15 @@ arDdnsInfo() {
 arNslookup() {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1
-		return $?
+		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g | sed -n '1p'
+		fi
 	else
-		curl -k http://119.29.29.29/d?dn=$1
-		return $?
+		Address=`curl -k http://119.29.29.29/d?dn=$1`
+		if [ $? -eq 0 ]; then
+		echo $Address |  sed s/\;/"\n"/g | sed -n '1p'
+		fi
 	fi
 }
 

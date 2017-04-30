@@ -1,9 +1,12 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep syncthing | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+syncthing_wan_port=`nvram get syncthing_wan_port`
+syncthing_enable=`nvram get syncthing_enable`
 [ -z $syncthing_enable ] && syncthing_enable=0 && nvram set syncthing_enable=0
+if [ "$syncthing_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep syncthing | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep sync_thing)" ]  && [ ! -s /tmp/script/_sync_thing ]; then
 	mkdir -p /tmp/script
@@ -27,7 +30,7 @@ else
 fi
 if [ "$syncthing_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof syncthing`" ] && logger -t "【syncthing】" "停止 syncthing" && syncthing_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$syncthing_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -76,7 +79,7 @@ killall syncthing
 killall -9 syncthing
 iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT &
 iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT &
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 syncthing_start () {

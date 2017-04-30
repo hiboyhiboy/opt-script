@@ -1,9 +1,11 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep serverchan | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+serverchan_enable=`nvram get serverchan_enable`
 [ -z $serverchan_enable ] && serverchan_enable=0 && nvram set serverchan_enable=0
+if [ "$serverchan_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep serverchan | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep server_chan)" ]  && [ ! -s /tmp/script/_server_chan ]; then
 	mkdir -p /tmp/script
@@ -24,7 +26,7 @@ else
 fi
 if [ "$serverchan_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "停止 serverchan" && serverchan_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$serverchan_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -62,7 +64,7 @@ serverchan_close () {
 sed -Ei '/【微信推送】|^$/d' /tmp/script/_opt_script_check
 killall serverchan_script.sh
 killall -9 serverchan_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 serverchan_start () {

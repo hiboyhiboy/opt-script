@@ -1,14 +1,17 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+ssserver_port=`nvram get ssserver_port`
+ssserver_enable=`nvram get ssserver_enable`
+[ -z $ssserver_enable ] && ssserver_enable=0 && nvram set ssserver_enable=0
+if [ "$ssserver_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ssserver | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 ssserver_password=${ssserver_password:-"m"}
 ssserver_time=${ssserver_time:-"120"}
 ssserver_port=${ssserver_port:-"8388"}
-[ -z $ssserver_enable ] && ssserver_enable=0 && nvram set ssserver_enable=0
 [ -z $ssserver_method ] && ssserver_method="aes-256-cfb" && nvram set ssserver_method="aes-256-cfb"
-
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ssserver)" ]  && [ ! -s /tmp/script/_ssserver ]; then
 	mkdir -p /tmp/script
 	ln -sf $scriptfilepath /tmp/script/_ssserver
@@ -28,7 +31,7 @@ else
 fi
 if [ "$ssserver_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "停止 ss-server" && ssserver_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ssserver_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -72,7 +75,7 @@ iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT &
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT &
 killall ss-server obfs-server >/dev/null 2>&1
 killall -9 ss-server obfs-server >/dev/null 2>&1
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 ssserver_start () {

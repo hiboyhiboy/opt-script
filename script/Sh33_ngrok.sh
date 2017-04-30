@@ -1,9 +1,11 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep ngrok | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+ngrok_enable=`nvram get ngrok_enable`
 [ -z $ngrok_enable ] && ngrok_enable=0 && nvram set ngrok_enable=0
+if [ "$ngrok_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep ngrok | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ngrok)" ]  && [ ! -s /tmp/script/_ngrok ]; then
 	mkdir -p /tmp/script
@@ -24,7 +26,7 @@ else
 fi
 if [ "$ngrok_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "停止 ngrok" && ngrok_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ngrok_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -57,7 +59,7 @@ ngrok_close () {
 sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
 killall ngrokc ngrok_script.sh
 killall -9 ngrokc ngrok_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 ngrok_start () {

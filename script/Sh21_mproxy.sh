@@ -1,9 +1,12 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep mproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+mproxyport=`nvram get mproxyport`
+mproxy_enable=`nvram get mproxy_enable`
 [ -z $mproxy_enable ] && mproxy_enable=0 && nvram set mproxy_enable=0
+if [ "$mproxy_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep mproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mproxy)" ]  && [ ! -s /tmp/script/_mproxy ]; then
 	mkdir -p /tmp/script
@@ -23,7 +26,7 @@ else
 fi
 if [ "$mproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof mproxy`" ] && logger -t "【mproxy】" "停止 mproxy" && mproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$mproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -65,7 +68,7 @@ mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v "^#" | grep "mpro
 [ ! -z "$mproxyport" ] && iptables -D INPUT -p tcp --dport $mproxyport -j ACCEPT
 killall mproxy mproxy_script.sh
 killall -9 mproxy mproxy_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 mproxy_start () {

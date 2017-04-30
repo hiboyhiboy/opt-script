@@ -1,9 +1,11 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep wifidog | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+wifidog_enable=`nvram get wifidog_enable`
 [ -z $wifidog_enable ] && wifidog_enable=0 && nvram set wifidog_enable=0
+if [ "$wifidog_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep wifidog | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wifi_dog)" ]  && [ ! -s /tmp/script/_wifi_dog ]; then
 	mkdir -p /tmp/script
@@ -48,7 +50,7 @@ else
 fi
 if [ "$wifidog_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof wifidog`" ] && logger -t "【wifidog】" "停止 wifidog" && wifidog_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$wifidog_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -94,7 +96,7 @@ fi
 $WD_DIR/wdctl stop
 killall wifidog wdctl
 killall -9 wifidog wdctl
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 wifidog_start () {

@@ -1,9 +1,12 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep vpnproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+vpnproxy_wan_port=`nvram get vpnproxy_wan_port`
+vpnproxy_enable=`nvram get vpnproxy_enable`
 [ -z $vpnproxy_enable ] && vpnproxy_enable=0 && nvram set vpnproxy_enable=0
+if [ "$vpnproxy_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep vpnproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep vpnproxy)" ]  && [ ! -s /tmp/script/_vpnproxy ]; then
 	mkdir -p /tmp/script
@@ -25,7 +28,7 @@ else
 fi
 if [ "$vpnproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "停止 nvpproxy" && vpnproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$vpnproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -65,7 +68,7 @@ sed -Ei '/【vpnproxy】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -p tcp --dport $vpnproxy_wan_port -j ACCEPT
 killall nvpproxy
 killall -9 nvpproxy
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 vpnproxy_start () {

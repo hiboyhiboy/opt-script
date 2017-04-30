@@ -1,9 +1,14 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep tinyproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
+tinyproxyport=`nvram get tinyproxyport`
+tinyproxy_enable=`nvram get tinyproxy_enable`
 [ -z $tinyproxy_enable ] && tinyproxy_enable=0 && nvram set tinyproxy_enable=0
+tinyproxy_path=`nvram get tinyproxy_path`
+[ -z $tinyproxy_path ] && tinyproxy_path=`which tinyproxy` && nvram set tinyproxy_path="$tinyproxy_path"
+if [ "$tinyproxy_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep tinyproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tinyproxy)" ]  && [ ! -s /tmp/script/_tinyproxy ]; then
 	mkdir -p /tmp/script
@@ -12,7 +17,6 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tinyproxy)" ] 
 fi
 
 tinyproxy_check () {
-[ -z $tinyproxy_path ] && tinyproxy_path=`which tinyproxy` && nvram set tinyproxy_path="$tinyproxy_path"
 A_restart=`nvram get tinyproxy_status`
 B_restart="$tinyproxy_enable$tinyproxy_path$tinyproxy_port$(cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -24,7 +28,7 @@ else
 fi
 if [ "$tinyproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "停止 $tinyproxy_path" && tinyproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$tinyproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -71,8 +75,8 @@ tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep
 [ ! -z "$tinyproxyport" ] && iptables -D INPUT -p tcp --dport $tinyproxyport -j ACCEPT
 killall tinyproxy tinyproxy_script.sh
 killall -9 tinyproxy tinyproxy_script.sh
-[ ! -z "$tinyproxy_path" ] && eval $(ps - w | grep "$tinyproxy_path" | grep -v grep | awk '{print "kill "$1;}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+[ ! -z "$tinyproxy_path" ] && eval $(ps - w | grep "$tinyproxy_path" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 tinyproxy_start () {

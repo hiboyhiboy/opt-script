@@ -1,17 +1,20 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+meow_enable=`nvram get meow_enable`
+[ -z $meow_enable ] && meow_enable=0 && nvram set meow_enable=0
+meow_path=`nvram get meow_path`
+meow_path=${meow_path:-"/opt/bin/meow"}
+if [ "$meow_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep meow | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-meow_path=${meow_path:-"/opt/bin/meow"}
 ss_mode_x=${ss_mode_x:-"0"}
 kcptun2_enable=${kcptun2_enable:-"0"}
 kcptun2_enable2=${kcptun2_enable2:-"0"}
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 ss_s1_local_port=${ss_s1_local_port:-"1081"}
 ss_s2_local_port=${ss_s2_local_port:-"1082"}
-
-[ -z $meow_enable ] && meow_enable=0 && nvram set meow_enable=0
+fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep meow)" ]  && [ ! -s /tmp/script/_meow ]; then
 	mkdir -p /tmp/script
@@ -32,7 +35,7 @@ else
 fi
 if [ "$meow_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$meow_path" | grep -v grep )" ] && logger -t "【meow】" "停止 meow" && meow_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$meow_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -68,10 +71,10 @@ done
 
 meow_close () {
 sed -Ei '/【meow】|^$/d' /tmp/script/_opt_script_check
-[ ! -z "$meow_path" ] && eval $(ps - w | grep "$meow_path" | grep -v grep | awk '{print "kill "$1;}')
+[ ! -z "$meow_path" ] && eval $(ps - w | grep "$meow_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall meow meow_script.sh
 killall -9 meow meow_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 meow_start () {

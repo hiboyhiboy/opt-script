@@ -1,18 +1,21 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+cow_enable=`nvram get cow_enable`
+[ -z $cow_enable ] && cow_enable=0 && nvram set cow_enable=0
+cow_path=`nvram get cow_path`
+cow_path=${cow_path:-"/opt/bin/cow"}
+if [ "$cow_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep cow | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-cow_path=${cow_path:-"/opt/bin/cow"}
 ss_mode_x=${ss_mode_x:-"0"}
 kcptun2_enable=${kcptun2_enable:-"0"}
 kcptun2_enable2=${kcptun2_enable2:-"0"}
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 ss_s1_local_port=${ss_s1_local_port:-"1081"}
 ss_s2_local_port=${ss_s2_local_port:-"1082"}
+fi
 
-
-[ -z $cow_enable ] && cow_enable=0 && nvram set cow_enable=0
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cow)" ]  && [ ! -s /tmp/script/_cow ]; then
 	mkdir -p /tmp/script
@@ -33,7 +36,7 @@ else
 fi
 if [ "$cow_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps - w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "停止 cow" && cow_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1;}'); exit 0; }
+	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$cow_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -69,10 +72,10 @@ done
 
 cow_close () {
 sed -Ei '/【cow】|^$/d' /tmp/script/_opt_script_check
-[ ! -z "$cow_path" ] && eval $(ps - w | grep "$cow_path" | grep -v grep | awk '{print "kill "$1;}')
+[ ! -z "$cow_path" ] && eval $(ps - w | grep "$cow_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall cow cow_script.sh
 killall -9 cow cow_script.sh
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1;}')
+eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 cow_start () {
