@@ -386,7 +386,7 @@ if [ "$ss_check" = "1" ] ; then
 			sleep 1
 			hash check_network 2>/dev/null && {
 			check_network 3
-			[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+			[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 				if [ "$check" == "404" ] ; then
 					check_network 3
 					[ "$?" == "0" ] && check=200 || check=404
@@ -397,14 +397,14 @@ if [ "$ss_check" = "1" ] ; then
 			curltest=`which curl`
 			if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 				wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
-				[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+				[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 				if [ "$check" == "404" ] ; then
 					wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 					[ "$?" == "0" ] && check=200 || check=404
 				fi
 			else
 				check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-				[ "$check" != "200" ] && restart_dhcpd && sleep 3
+				[ "$check" != "200" ] && sleep 3
 				[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			fi
 			}
@@ -1350,7 +1350,7 @@ echo "Debug: $DNS_Server"
 	sleep 1
 	hash check_network 2>/dev/null && {
 	check_network 3
-	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 		if [ "$check" == "404" ] ; then
 			check_network 3
 			[ "$?" == "0" ] && check=200 || check=404
@@ -1361,14 +1361,14 @@ echo "Debug: $DNS_Server"
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
-		[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+		[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 		if [ "$check" == "404" ] ; then
 			wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
 		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-		[ "$check" != "200" ] && restart_dhcpd && sleep 3
+		[ "$check" != "200" ] && sleep 3
 		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
 	}
@@ -1584,7 +1584,7 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 
 hash check_network 2>/dev/null && {
 check_network
-[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		check_network
 		[ "$?" == "0" ] && check=200 || check=404
@@ -1595,14 +1595,14 @@ hash check_network 2>/dev/null || check=404
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
-	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
 	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && sleep 3
 	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
 }
@@ -1616,7 +1616,7 @@ fi
 
 hash check_network 2>/dev/null && {
 check_network 3
-[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		check_network 3
 		[ "$?" == "0" ] && check=200 || check=404
@@ -1627,14 +1627,14 @@ hash check_network 2>/dev/null || check=404
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
-	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
 	check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && sleep 3
 	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 fi
 }
@@ -1663,7 +1663,7 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 fi
 hash check_network 2>/dev/null && {
 check_network
-[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		check_network
 		[ "$?" == "0" ] && check=200 || check=404
@@ -1674,14 +1674,14 @@ hash check_network 2>/dev/null || check=404
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
-	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
 	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && sleep 3
 	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
 }
@@ -1735,7 +1735,7 @@ restart_dhcpd
 sleep 5
 hash check_network 2>/dev/null && {
 check_network
-[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		check_network
 		[ "$?" == "0" ] && check=200 || check=404
@@ -1746,14 +1746,14 @@ hash check_network 2>/dev/null || check=404
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
-	[ "$?" == "0" ] && check=200 || { check=404; restart_dhcpd && sleep 3; }
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
 	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	[ "$check" != "200" ] && restart_dhcpd && sleep 3
+	[ "$check" != "200" ] && sleep 3
 	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
 }
