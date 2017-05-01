@@ -254,6 +254,10 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		modprobe $module
 	done 
 	adbyby_mount
+	if [ -s /etc_ro/7620i.tar.gz ] && [ ! -s "/tmp/bin/adbyby" ] ; then
+		logger -t "【Adbyby】" "使用内置主程序"
+		untar.sh /etc_ro/7620i.tar.gz /tmp /tmp/bin/adbyby
+	fi
 	if [ ! -s "/tmp/bin/adbyby" ] ; then
 		logger -t "【Adbyby】" "开始下载 7620n.tar.gz"
 		wgetcurl.sh /tmp/7620n.tar.gz $adbybyfile $adbybyfile2
