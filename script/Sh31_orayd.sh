@@ -100,6 +100,8 @@ done
 phddns_close () {
 killall oraynewph oraysl
 killall -9 oraynewph oraysl
+eval $(ps - w | grep "_orayd keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_orayd.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

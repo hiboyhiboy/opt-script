@@ -83,6 +83,8 @@ sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$kcptun_path" ] && eval $(ps - w | grep "$kcptun_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall client_linux_mips kcptun_script.sh sh_kcpkeep.sh
 killall -9 client_linux_mips kcptun_script.sh sh_kcpkeep.sh
+eval $(ps - w | grep "_kcp_tun keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_kcp_tun.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

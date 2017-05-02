@@ -101,6 +101,8 @@ sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
 /opt/etc/init.d/S80nginx stop
 killall spawn-fcgi nginx php-cgi mysqld
 killall -9 spawn-fcgi nginx php-cgi mysqld
+eval $(ps - w | grep "_lnmp keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_lnmp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

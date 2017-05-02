@@ -86,6 +86,8 @@ display_close () {
 sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
 killall lcd4linux getaqidata getweather displaykeep.sh
 killall -9 lcd4linux getaqidata getweather displaykeep.sh
+eval $(ps - w | grep "_display keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_display.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

@@ -97,6 +97,8 @@ sed -Ei '/【ttyd】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -p tcp --dport $shellinabox_port -j ACCEPT
 killall shellinaboxd ttyd
 killall -9 shellinaboxd ttyd
+eval $(ps - w | grep "_shellina_box keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_shellina_box.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

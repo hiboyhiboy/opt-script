@@ -64,6 +64,8 @@ done
 
 aliddns_close () {
 
+eval $(ps - w | grep "_aliddns keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_aliddns.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

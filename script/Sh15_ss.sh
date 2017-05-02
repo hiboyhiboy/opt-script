@@ -1151,7 +1151,6 @@ fi
 	adbyby_cflist
 	logger -t "【SS】" "GFWList update 重启 dnsmasq 更新列表"
 	ipset flush gfwlist
-	restart_dhcpd
 fi
 
 }
@@ -1215,7 +1214,6 @@ fi
 		echo "conf-file=/tmp/ss/accelerated-domains.china.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 	fi
 	logger -t "【SS】" "chnroutes update 重启 dnsmasq 更新列表"
-	restart_dhcpd
 	rm -f /tmp/cron_ss.lock
 
 fi
@@ -1286,7 +1284,6 @@ restart_dhcpd
 
 start_SS()
 {
-	restart_dhcpd
 	logger -t "【SS】" "启动 SS"
 	nvram set ss_internet="2"
 	optssredir="0"
@@ -1344,6 +1341,7 @@ echo "Debug: $DNS_Server"
 	nvram set ss_updatess2=0
 	update_chnroutes
 	update_gfwlist
+	restart_dhcpd
 	nvram set ss_updatess2=1
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
@@ -1423,6 +1421,8 @@ nvram set gfwlist3="ss-redir stop."
 /etc/storage/ez_buttons_script.sh 3 &
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
+eval $(ps - w | grep "_ss keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_ss.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
@@ -1851,6 +1851,7 @@ update)
 	nvram set ss_updatess2=1
 	update_chnroutes
 	update_gfwlist
+	restart_dhcpd
 	[ -s /tmp/sh_sskeey_k.sh ] && /tmp/sh_sskeey_k.sh &
 	;;
 updatess)
@@ -1859,6 +1860,7 @@ updatess)
 	nvram set ss_updatess2=1
 	update_chnroutes
 	update_gfwlist
+	restart_dhcpd
 	;;
 stop)
 	stop_SS

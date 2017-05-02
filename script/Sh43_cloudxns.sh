@@ -62,6 +62,8 @@ done
 
 cloudxns_close () {
 
+eval $(ps - w | grep "_cloudxns keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_cloudxns.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

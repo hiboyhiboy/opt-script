@@ -74,6 +74,8 @@ sed -Ei '/【meow】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$meow_path" ] && eval $(ps - w | grep "$meow_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall meow meow_script.sh
 killall -9 meow meow_script.sh
+eval $(ps - w | grep "_meow keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_meow.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

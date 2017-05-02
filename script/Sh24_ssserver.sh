@@ -75,6 +75,8 @@ iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT &
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT &
 killall ss-server obfs-server >/dev/null 2>&1
 killall -9 ss-server obfs-server >/dev/null 2>&1
+eval $(ps - w | grep "_ssserver keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_ssserver.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

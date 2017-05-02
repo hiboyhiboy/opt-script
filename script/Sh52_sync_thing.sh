@@ -79,6 +79,8 @@ killall syncthing
 killall -9 syncthing
 iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT &
 iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT &
+eval $(ps - w | grep "_sync_thing keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_sync_thing.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

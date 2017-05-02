@@ -57,6 +57,8 @@ done
 }
 
 dnspod_close () {
+eval $(ps - w | grep "_dnspod keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_dnspod.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

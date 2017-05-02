@@ -47,6 +47,8 @@ sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/txt-record=_jetbrains-license-server.lan/d' /etc/storage/dnsmasq/dnsmasq.conf
 killall jblicsvr jbls_script.sh
 killall -9 jblicsvr jbls_script.sh
+eval $(ps - w | grep "_jbls keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_jbls.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

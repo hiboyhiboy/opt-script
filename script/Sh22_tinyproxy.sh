@@ -76,6 +76,8 @@ tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep
 killall tinyproxy tinyproxy_script.sh
 killall -9 tinyproxy tinyproxy_script.sh
 [ ! -z "$tinyproxy_path" ] && eval $(ps - w | grep "$tinyproxy_path" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_tinyproxy keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_tinyproxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

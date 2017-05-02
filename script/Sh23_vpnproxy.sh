@@ -68,6 +68,8 @@ sed -Ei '/【vpnproxy】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -p tcp --dport $vpnproxy_wan_port -j ACCEPT
 killall nvpproxy
 killall -9 nvpproxy
+eval $(ps - w | grep "_vpnproxy keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_vpnproxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

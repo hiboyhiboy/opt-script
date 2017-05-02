@@ -89,6 +89,8 @@ sed -Ei '/【迅雷下载】|^$/d' /tmp/script/_opt_script_check
 killall ETMDaemon EmbedThunderManager vod_httpserver portal
 killall -9 ETMDaemon EmbedThunderManager vod_httpserver portal
 rm -f "/opt/etc/init.d/$scriptname"
+eval $(ps - w | grep "_xun_lei keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_xun_lei.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

@@ -68,6 +68,8 @@ mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v "^#" | grep "mpro
 [ ! -z "$mproxyport" ] && iptables -D INPUT -p tcp --dport $mproxyport -j ACCEPT
 killall mproxy mproxy_script.sh
 killall -9 mproxy mproxy_script.sh
+eval $(ps - w | grep "_mproxy keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_mproxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

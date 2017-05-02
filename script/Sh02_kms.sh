@@ -47,6 +47,8 @@ sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf; restart_dhcpd;
 killall vlmcsd vlmcsdini_script.sh
 killall -9 vlmcsd vlmcsdini_script.sh
+eval $(ps - w | grep "_kms keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_kms.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

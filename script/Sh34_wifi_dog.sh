@@ -96,6 +96,8 @@ fi
 $WD_DIR/wdctl stop
 killall wifidog wdctl
 killall -9 wifidog wdctl
+eval $(ps - w | grep "_wifi_dog keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_wifi_dog.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

@@ -235,10 +235,16 @@ adm_close () {
 cru.sh d adm_update &
 port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
 [ "$port" != 0 ] && adm_flush_rules
+killall -15 adbyby sh_ad_byby_keey_k.sh
+killall -9 adbyby sh_ad_byby_keey_k.sh
 killall -15 adm sh_ad_m_keey_k.sh
 killall -9 adm sh_ad_m_keey_k.sh
+killall -15 koolproxy sh_ad_kp_keey_k.sh
+killall -9 koolproxy sh_ad_kp_keey_k.sh
 rm -f /tmp/adbyby_host.conf
 rm -f /tmp/7620adm.tgz /tmp/cron_adb.lock /tmp/sh_ad_m_keey_k.sh /tmp/cp_rules.lock
+eval $(ps - w | grep "_ad_m keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_ad_m.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

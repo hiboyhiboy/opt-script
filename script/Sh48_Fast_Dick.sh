@@ -56,6 +56,8 @@ FastDick_close () {
 killall FastDick_script.sh
 killall -9 FastDick_script.sh
 eval $(ps - w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_Fast_Dick keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_Fast_Dick.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

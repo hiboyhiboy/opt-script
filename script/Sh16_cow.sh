@@ -75,6 +75,8 @@ sed -Ei '/【cow】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$cow_path" ] && eval $(ps - w | grep "$cow_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall cow cow_script.sh
 killall -9 cow cow_script.sh
+eval $(ps - w | grep "_cow keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_cow.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

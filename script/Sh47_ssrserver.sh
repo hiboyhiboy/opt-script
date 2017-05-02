@@ -62,6 +62,8 @@ done
 ssrserver_close () {
 sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check
 eval $(ps - w | grep "manyuser/shadowsocks/server" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_ssrserver keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_ssrserver.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

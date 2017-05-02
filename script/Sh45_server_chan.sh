@@ -64,6 +64,8 @@ serverchan_close () {
 sed -Ei '/【微信推送】|^$/d' /tmp/script/_opt_script_check
 killall serverchan_script.sh
 killall -9 serverchan_script.sh
+eval $(ps - w | grep "_server_chan keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_server_chan.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

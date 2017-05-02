@@ -75,6 +75,8 @@ frp_close () {
 sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
 killall frpc frps frp_script.sh
 killall -9 frpc frps frp_script.sh
+eval $(ps - w | grep "_frp keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_frp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

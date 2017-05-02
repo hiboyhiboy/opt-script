@@ -76,6 +76,8 @@ mentohust_close () {
 sed -Ei '/【mentohust】|^$/d' /tmp/script/_opt_script_check
 killall mentohust
 killall -9 mentohust
+eval $(ps - w | grep "_mento_hust keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_mento_hust.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 

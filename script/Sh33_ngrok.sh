@@ -59,6 +59,8 @@ ngrok_close () {
 sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
 killall ngrokc ngrok_script.sh
 killall -9 ngrokc ngrok_script.sh
+eval $(ps - w | grep "_ngrok keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps - w | grep "_ngrok.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
