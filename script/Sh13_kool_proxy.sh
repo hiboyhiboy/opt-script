@@ -272,9 +272,9 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 		modprobe $module
 	done 
 	koolproxy_mount
-	if [ -s /etc_ro/7620koolproxy_3_4.tgz ] && [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
+	if [ -s /etc_ro/7620koolproxy_*.tgz ] && [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "使用内置主程序"
-		untar.sh /etc_ro/7620koolproxy_3_4.tgz /tmp /tmp/7620koolproxy/data/version
+		untar.sh /etc_ro/7620koolproxy_*.tgz /tmp /tmp/7620koolproxy/data/version
 	fi
 	if [ ! -s "/tmp/7620koolproxy/data/version" ] ; then
 		logger -t "【koolproxy】" "开始下载 7620koolproxy.tgz"
