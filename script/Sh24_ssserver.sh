@@ -38,7 +38,7 @@ if [ "$ssserver_enable" = "1" ] ; then
 		ssserver_close
 		ssserver_start
 	else
-		[ -z "`pidof server`" ] && nvram set ssserver_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "`pidof ss-server`" ] && nvram set ssserver_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		if [ -n "`pidof ss-server`" ] && [ "$ssserver_enable" = "1" ] ; then
 			port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
 			if [ "$port" = 0 ] ; then
