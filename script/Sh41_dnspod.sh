@@ -28,8 +28,8 @@ else
 	needed_restart=0
 fi
 if [ "$dnspod_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps - w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【DNSPod动态域名】" "停止 dnspod" && dnspod_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	[ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【DNSPod动态域名】" "停止 dnspod" && dnspod_close
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$dnspod_enable" = "1" ] ; then
 [ "x${dnspod_Token}" = "x" ] && [ "x${dnspod_username}" = "x" ] && [ "x${dnspod_password}" = "x" ] && { logger -t "【DNSPod动态域名】" "用户名密码或者 Token 等设置未填写, 10 秒后自动尝试重新启动" && sleep 10; nvram set dnspod_status=00; eval "$scriptfilepath &"; exit 0; }
@@ -37,7 +37,7 @@ if [ "$dnspod_enable" = "1" ] ; then
 		dnspod_close
 		eval "$scriptfilepath keep &"
 	else
-		[ -z "$(ps - w | grep "$scriptname keep" | grep -v grep )" ] && nvram set dnspod_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && nvram set dnspod_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -57,9 +57,9 @@ done
 }
 
 dnspod_close () {
-eval $(ps - w | grep "_dnspod keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_dnspod.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_dnspod keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_dnspod.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 dnspod_start () {

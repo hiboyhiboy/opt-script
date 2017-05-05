@@ -47,15 +47,47 @@ upanPath=""
 echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then 
 	logger -t "【Adbyby】" "已挂载储存设备, 主程序放外置设备存储"
-	mkdir -p $upanPath/7620adbyby
-	mkdir -p /tmp/bin
-	mount --bind $upanPath/7620adbyby /tmp/bin
+	initopt
+	mkdir -p $upanPath/ad/bin
+	ln -sf "$upanPath/ad/bin" /tmp/bin
+	if [ -s /etc_ro/7620i.tar.gz ] && [ ! -s "$$upanPath/ad/bin/adbyby" ] ; then
+		logger -t "【Adbyby】" "使用内置主程序"
+		untar.sh /etc_ro/7620i.tar.gz $upanPath/ad $upanPath/ad/bin/adbyby
+	fi
+	if [ ! -s "$upanPath/ad/bin/adbyby" ] ; then
+		logger -t "【Adbyby】" "开始下载 7620n.tar.gz"
+		wgetcurl.sh $upanPath/ad/7620n.tar.gz $adbybyfile $adbybyfile2
+		untar.sh $upanPath/ad/7620n.tar.gz $upanPath/ad $upanPath/ad/bin/adbyby
+	fi
+	if [ ! -s "$upanPath/ad/bin/adbyby" ] ; then
+		logger -t "【Adbyby】" "开始下载http://update.adbyby.com/download/7620n.tar.gz"
+		wgetcurl.sh $upanPath/ad/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'http://update.adbyby.com/download/7620n.tar.gz'
+		untar.sh $upanPath/ad/7620n.tar.gz $upanPath/ad $upanPath/ad/bin/adbyby
+	fi
 else
 	logger -t "【Adbyby】" "未挂载储存设备, 主程序放路由内存存储"
 	mkdir -p /tmp/bin
+	if [ -s /etc_ro/7620i.tar.gz ] && [ ! -s "/tmp/bin/adbyby" ] ; then
+		logger -t "【Adbyby】" "使用内置主程序"
+		untar.sh /etc_ro/7620i.tar.gz /tmp /tmp/bin/adbyby
+	fi
+	if [ ! -s "/tmp/bin/adbyby" ] ; then
+		logger -t "【Adbyby】" "开始下载 7620n.tar.gz"
+		wgetcurl.sh /tmp/7620n.tar.gz $adbybyfile $adbybyfile2
+		untar.sh /tmp/7620n.tar.gz /tmp /tmp/bin/adbyby
+	fi
+	if [ ! -s "/tmp/bin/adbyby" ] ; then
+		logger -t "【Adbyby】" "开始下载http://update.adbyby.com/download/7620n.tar.gz"
+		wgetcurl.sh /tmp/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'http://update.adbyby.com/download/7620n.tar.gz'
+		untar.sh /tmp/7620n.tar.gz /tmp /tmp/bin/adbyby
+	fi
 fi
 export PATH='/tmp/bin:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 hash adbyby 2>/dev/null || rm -rf /tmp/bin/*
+if [ ! -s "/tmp/bin/adbyby" ] ; then
+	rm -rf /tmp/bin/*
+	logger -t "【Adbyby】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adbyby_status=00; eval "$scriptfilepath &"; exit 0; }
+fi
 }
 
 adbyby_check () {
@@ -71,7 +103,7 @@ else
 fi
 if [ "$adbyby_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "停止 adbyby" && adbyby_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$adbyby_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -79,7 +111,7 @@ if [ "$adbyby_enable" = "1" ] ; then
 		adbyby_start
 	else
 		[ -z "`pidof adbyby`" ] || [ ! -s "/tmp/bin/adbyby" ] && nvram set adbyby_status=00 && { eval "$scriptfilepath start &"; exit 0; }
-		PIDS=$(ps - w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
 		if [ "$PIDS" != 0 ] ; then
 			port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
 			if [ "$port" = 0 ] ; then
@@ -106,8 +138,8 @@ cat > "/tmp/sh_ad_byby_keey_k.sh" <<-ADMK
 sleep 919
 adbyby_enable=\`nvram get adbyby_enable\`
 if [ ! -f /tmp/cron_adb.lock ] && [ "\$adbyby_enable" = "1" ] ; then
-eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
-eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -158,7 +190,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	}
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
-		PIDS=$(ps - w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 
 			logger -t "【Adbyby】" "网络连接正常"
 			logger -t "【Adbyby】" "找不到进程, 重启 adbyby"
@@ -200,7 +232,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
 			sleep 5
 		done
-		PIDS=$(ps - w | grep "/tmp/bin/adbyby" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | wc -l)
 		if [ "$PIDS" != 0 ] ; then 
 			killall -15 adbyby
 			killall -9 adbyby
@@ -249,9 +281,9 @@ killall -9 adm sh_ad_m_keey_k.sh
 killall -15 koolproxy sh_ad_kp_keey_k.sh
 killall -9 koolproxy sh_ad_kp_keey_k.sh
 rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock /tmp/adbyby_host_backup.conf /tmp/sh_ad_byby_keey_k.sh
-eval $(ps - w | grep "_ad_byby keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_ad_byby.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ad_byby keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ad_byby.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 adbyby_start () {
@@ -268,23 +300,6 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		modprobe $module
 	done 
 	adbyby_mount
-	if [ -s /etc_ro/7620i.tar.gz ] && [ ! -s "/tmp/bin/adbyby" ] ; then
-		logger -t "【Adbyby】" "使用内置主程序"
-		untar.sh /etc_ro/7620i.tar.gz /tmp /tmp/bin/adbyby
-	fi
-	if [ ! -s "/tmp/bin/adbyby" ] ; then
-		logger -t "【Adbyby】" "开始下载 7620n.tar.gz"
-		wgetcurl.sh /tmp/7620n.tar.gz $adbybyfile $adbybyfile2
-		untar.sh /tmp/7620n.tar.gz /tmp /tmp/bin/adbyby
-	fi
-	if [ ! -s "/tmp/bin/adbyby" ] ; then
-		logger -t "【Adbyby】" "开始下载http://update.adbyby.com/download/7620n.tar.gz"
-		wgetcurl.sh /tmp/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'http://update.adbyby.com/download/7620n.tar.gz'
-		untar.sh /tmp/7620n.tar.gz /tmp /tmp/bin/adbyby
-	fi
-	if [ ! -s "/tmp/bin/adbyby" ] ; then
-		logger -t "【Adbyby】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adbyby_status=00; eval "$scriptfilepath &"; exit 0; }
-	fi
 	sed -e '/^$/d' -i /etc/storage/dnsmasq/hosts
 	sed -e '/.*127.0.0.1.*update.adbyby.com.*/d' -i /etc/storage/dnsmasq/hosts
 	sed -e '/.*119.147.134.192.*update.adbyby.com/d' -i /etc/storage/dnsmasq/hosts
@@ -310,14 +325,14 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"
 		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 		wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules2
-		[ -f /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2
+		[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2
 		mv -f /tmp/bin/data/video.txt /tmp/bin/data/video_B.txt
 		xwhyc_rules="$hiboyfile/lazy.txt"
 		xwhyc_rules3="$hiboyfile2/lazy.txt"
 		xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
 		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 		wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules2
-		[ -f /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2
+		[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2
 		mv -f /tmp/bin/data/lazy.txt /tmp/bin/data/lazy_B.txt
 	fi
 	chmod 777 /tmp/bin/adbyby
@@ -781,6 +796,14 @@ else
 fi
 }
 
+initopt () {
+optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
+[ ! -z "$optPath" ] && return
+if [ -s "/opt/etc/init.d/rc.func" ] ; then
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+fi
+
+}
 
 case $ACTION in
 start)

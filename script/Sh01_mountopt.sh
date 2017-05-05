@@ -105,11 +105,15 @@ mkdir -p /opt/bin
 }
 
 opt_file () {
+if [ ! -f /opt/opt.tgz ]  ; then
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 [ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
 optPath="`grep ' /opt ' /proc/mounts | grep /dev`"
 [ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile3"; }
-logger -t "【opt】" "opt 下载完成，开始解压"
+logger -t "【opt】" "/opt/opt.tgz 下载完成，开始解压"
+else
+logger -t "【opt】" "/opt/opt.tgz 已经存在，开始解压"
+fi
 tar -xzvf /opt/opt.tgz -C /opt
 
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
@@ -118,19 +122,25 @@ optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 
 opt_wget () {
 #opt检查更新
-[ "$upopt_enable" = "1" ] && upopt
+[ "$upopt_enable" = "1" ] && [ -f /opt/opti.txt ] && upopt
 if [ "$(cat /tmp/opti.txt)"x != "$(cat /opt/opti.txt)"x ] && [ "$upopt_enable" = "1" ] && [ -f /tmp/opti.txt ] ; then
 	logger -t "【opt】" "opt 需要更新, 自动启动更新"
 	rm -rf /opt/opti.txt
 	rm -rf /opt/lnmp.txt
+	rm -rf /opt/opt.tgz
+fi
+optw_enable=`nvram get optw_enable`
+if [ "$optw_enable" != "2" ] ; then
+	nvram set optw_enable=2
+	nvram commit
 fi
 if [ ! -f "/opt/opti.txt" ] ; then
 	logger -t "【opt】" "自动安装（覆盖 opt 文件夹）"
-	logger -t "【opt】" "opt 第一次下载"
+	logger -t "【opt】" "opt 第一次下载/opt/opt.tgz"
 	opt_file
 	if [ ! -s "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "/opt/opt.tgz 下载失败"
-		logger -t "【opt】" "opt 第二次下载"
+		logger -t "【opt】" "opt 第二次下载/opt/opt.tgz"
 		opt_file
 	fi
 	if [ -s "/opt/opti.txt" ] ; then
@@ -164,6 +174,13 @@ optwget)
 	;;
 upopt)
 	upopt
+	;;
+reopt)
+	mount_check
+	rm -rf /opt/opti.txt
+	rm -rf /opt/lnmp.txt
+	opt_wget
+	[ -f /opt/lcd.tgz ] && untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
 	;;
 *)
 	mount_check

@@ -26,12 +26,15 @@ fi
 if [ "$frp_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof frpc`" ] && logger -t "【frp】" "停止 frpc" && frp_close
 	[ ! -z "`pidof frps`" ] && logger -t "【frp】" "停止 frps" && frp_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$frp_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		frp_close
 		frp_start
+	else
+		[ "$frps_enable" = "1" ] && [ -z "`pidof frpc`" ] && nvram set frp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ "$frps_enable" = "1" ] && [ -z "`pidof frps`" ] && nvram set frp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -75,9 +78,9 @@ frp_close () {
 sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
 killall frpc frps frp_script.sh
 killall -9 frpc frps frp_script.sh
-eval $(ps - w | grep "_frp keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_frp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_frp keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_frp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 frp_start () {
@@ -131,7 +134,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

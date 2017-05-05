@@ -58,12 +58,14 @@ else
 fi
 if [ "$lnmp_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "停止 nginx+php+mysql 环境" && lnmp_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$lnmp_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		lnmp_close
 		lnmp_start
+	else
+		[ -z "`pidof nginx`" ] && nvram set lnmp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -101,9 +103,9 @@ sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
 /opt/etc/init.d/S80nginx stop
 killall spawn-fcgi nginx php-cgi mysqld
 killall -9 spawn-fcgi nginx php-cgi mysqld
-eval $(ps - w | grep "_lnmp keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_lnmp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_lnmp keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_lnmp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 lnmp_start () {
@@ -318,8 +320,12 @@ eval "$scriptfilepath keep &"
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
+optw_enable=`nvram get optw_enable`
+if [ "$optw_enable" != "2" ] ; then
+	nvram set optw_enable=2
+fi
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

@@ -25,13 +25,15 @@ else
 	needed_restart=0
 fi
 if [ "$serverchan_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps - w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "停止 serverchan" && serverchan_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	[ ! -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "停止 serverchan" && serverchan_close
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$serverchan_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		serverchan_close
 		serverchan_start
+	else
+		[ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] || [ ! -s "`which curl`" ] && nvram set serverchan_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -52,7 +54,7 @@ fi
 
 while true; do
 	[ ! -s "`which curl`" ] && nvram set serverchan_status=03 && { logger -t "【微信推送】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
-	if [ -z "$(ps - w | grep "serverchan_scri" | grep -v grep )" ] ; then
+	if [ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] ; then
 		logger -t "【微信推送】" "重新启动"
 		{ nvram set serverchan_status=01 && eval "$scriptfilepath &" ; exit 0; }
 	fi
@@ -64,9 +66,9 @@ serverchan_close () {
 sed -Ei '/【微信推送】|^$/d' /tmp/script/_opt_script_check
 killall serverchan_script.sh
 killall -9 serverchan_script.sh
-eval $(ps - w | grep "_server_chan keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_server_chan.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_server_chan keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_server_chan.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 serverchan_start () {
@@ -84,8 +86,8 @@ fi
 logger -t "【微信推送】" "运行 /etc/storage/serverchan_script.sh"
 /etc/storage/serverchan_script.sh &
 sleep 3
-[ ! -z "$(ps - w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动成功"
-[ -z "$(ps - w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set serverchan_status=01; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动成功"
+[ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set serverchan_status=01; eval "$scriptfilepath &"; exit 0; }
 eval "$scriptfilepath keep &"
 }
 
@@ -93,7 +95,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

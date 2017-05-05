@@ -30,13 +30,14 @@ else
 fi
 if [ "$syncthing_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof syncthing`" ] && logger -t "【syncthing】" "停止 syncthing" && syncthing_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$syncthing_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		syncthing_close
 		syncthing_start
 	else
+		[ -z "`pidof syncthing`" ] && nvram set syncthing_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22000 | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 			iptables -t filter -I INPUT -p tcp --dport 22000 -j ACCEPT &
@@ -79,9 +80,9 @@ killall syncthing
 killall -9 syncthing
 iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT &
 iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT &
-eval $(ps - w | grep "_sync_thing keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_sync_thing.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_sync_thing keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_sync_thing.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 syncthing_start () {
@@ -119,8 +120,8 @@ nvram set syncthing_upanPath="$upanPath"
 "$upanPath/syncthing/syncthing-linux-mipsle/syncthing" -home "$upanPath/syncthing" -gui-address 0.0.0.0:$syncthing_wan_port &
 
 sleep 2
-[ ! -z "$(ps - w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动成功"
-[ -z "$(ps - w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set syncthing_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动成功"
+[ -z "$(ps -w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set syncthing_status=00; eval "$scriptfilepath &"; exit 0; }
 initopt
 
 iptables -t filter -I INPUT -p tcp --dport 22000 -j ACCEPT &
@@ -136,7 +137,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

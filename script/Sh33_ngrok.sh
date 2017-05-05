@@ -26,12 +26,14 @@ else
 fi
 if [ "$ngrok_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "停止 ngrok" && ngrok_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ngrok_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		ngrok_close
 		ngrok_start
+	else
+		[ -z "`pidof ngrokc`" ] && nvram set ngrok_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -59,9 +61,9 @@ ngrok_close () {
 sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
 killall ngrokc ngrok_script.sh
 killall -9 ngrokc ngrok_script.sh
-eval $(ps - w | grep "_ngrok keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_ngrok.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ngrok keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ngrok.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 ngrok_start () {
@@ -122,7 +124,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

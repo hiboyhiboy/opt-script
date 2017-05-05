@@ -46,15 +46,45 @@ upanPath=""
 echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then 
 	logger -t "【ADM】" "已挂载储存设备, 主程序放外置设备存储"
-	mkdir -p $upanPath/7620adm
-	mkdir -p /tmp/7620adm
-	mount --bind $upanPath/7620adm /tmp/7620adm
+	initopt
+	mkdir -p $upanPath/ad/7620adm
+	ln -sf "$upanPath/ad/7620adm" /tmp/7620adm
+	if [ ! -s "$upanPath/ad/7620adm/adm" ] ; then
+		logger -t "【ADM】" "开始下载 7620adm.tgz"
+		wgetcurl.sh $upanPath/ad/7620adm.tgz $adbmfile $adbmfile2
+		untar.sh $upanPath/ad/7620adm.tgz $upanPath/ad $upanPath/ad/7620adm/adm
+	fi
+	if [ ! -s "$upanPath/ad/7620adm/adm" ] ; then
+		logger -t "【ADM】" "开始下载 7620adm.tgz"
+		wgetcurl.sh $upanPath/ad/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz"
+		untar.sh $upanPath/ad/7620adm.tgz $upanPath/ad $upanPath/ad/7620a/adm
+		if [ -d "$upanPath/ad/7620a" ] ; then
+			mv -f $upanPath/ad/7620a $upanPath/ad/7620adm
+		fi
+	fi
 else
 	logger -t "【ADM】" "未挂载储存设备, 主程序放路由内存存储"
 	mkdir -p /tmp/7620adm
+	if [ ! -s "/tmp/7620adm/adm" ] ; then
+		logger -t "【ADM】" "开始下载 7620adm.tgz"
+		wgetcurl.sh /tmp/7620adm.tgz $adbmfile $adbmfile2
+		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620adm/adm
+	fi
+	if [ ! -s "/tmp/7620adm/adm" ] ; then
+		logger -t "【ADM】" "开始下载 7620adm.tgz"
+		wgetcurl.sh /tmp/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz"
+		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620a/adm
+		if [ -d "/tmp/7620a" ] ; then
+			mv -f /tmp/7620a /tmp/7620adm
+		fi
+	fi
 fi
 export PATH='/tmp/7620adm:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 hash adm 2>/dev/null || rm -rf /tmp/7620adm/*
+if [ ! -s "/tmp/7620adm/adm" ] ; then
+	rm -rf /tmp/7620adm/*
+	logger -t "【ADM】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adm_status=00; eval "$scriptfilepath &"; exit 0; }
+fi
 }
 
 adm_check () {
@@ -70,7 +100,7 @@ else
 fi
 if [ "$adm_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof adm`" ] && logger -t "【ADM】" "停止 adm" && adm_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$adm_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -78,7 +108,7 @@ if [ "$adm_enable" = "1" ] ; then
 		adm_start
 	else
 		[ -z "`pidof adm`" ] || [ ! -s "/tmp/7620adm/adm" ] && nvram set adm_status=00 && { eval "$scriptfilepath start &"; exit 0; }
-		PIDS=$(ps - w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
 		if [ "$PIDS" != 0 ] ; then
 			port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
 			if [ "$port" = 0 ] ; then
@@ -97,8 +127,8 @@ cat > "/tmp/sh_ad_m_keey_k.sh" <<-ADMK
 sleep 919
 adm_enable=\`nvram get adm_enable\`
 if [ ! -f /tmp/cron_adb.lock ] && [ "\$adm_enable" = "1" ] ; then
-eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
-eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -149,7 +179,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	}
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
-		PIDS=$(ps - w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 
 			logger -t "【ADM】" "网络连接正常"
 			logger -t "【ADM】" "找不到进程, 重启 adm"
@@ -191,7 +221,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
 			sleep 5
 		done
-		PIDS=$(ps - w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
 		if [ "$PIDS" != 0 ] ; then 
 			killall -15 adm
 			killall -9 adm
@@ -243,9 +273,9 @@ killall -15 koolproxy sh_ad_kp_keey_k.sh
 killall -9 koolproxy sh_ad_kp_keey_k.sh
 rm -f /tmp/adbyby_host.conf
 rm -f /tmp/7620adm.tgz /tmp/cron_adb.lock /tmp/sh_ad_m_keey_k.sh /tmp/cp_rules.lock
-eval $(ps - w | grep "_ad_m keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_ad_m.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ad_m keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ad_m.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 adm_start () {
@@ -258,22 +288,6 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 		modprobe $module
 	done 
 	adm_mount
-	if [ ! -s "/tmp/7620adm/adm" ] ; then
-		logger -t "【ADM】" "开始下载 7620adm.tgz"
-		wgetcurl.sh /tmp/7620adm.tgz $adbmfile $adbmfile2
-		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620adm/adm
-	fi
-	if [ ! -s "/tmp/7620adm/adm" ] ; then
-		logger -t "【ADM】" "开始下载 7620adm.tgz"
-		wgetcurl.sh /tmp/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz"
-		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620a/adm
-		if [ -d "/tmp/7620a" ] ; then
-			mv -f /tmp/7620a /tmp/7620adm
-		fi
-	fi
-	if [ ! -s "/tmp/7620adm/adm" ] ; then
-		logger -t "【ADM】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adm_status=00; eval "$scriptfilepath &"; exit 0; }
-	fi
 	# 恢复上次保存的证书
 	#if [ "$adm_https" = "0" ] ; then
 	#	sed -e "s|^\(support_ssl.*\)=[^=]*$|\1=0|" -i /tmp/7620adm/ADMConfig.ini
@@ -747,6 +761,15 @@ else
 		fi
 	fi
 fi
+}
+
+initopt () {
+optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
+[ ! -z "$optPath" ] && return
+if [ -s "/opt/etc/init.d/rc.func" ] ; then
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+fi
+
 }
 
 case $ACTION in

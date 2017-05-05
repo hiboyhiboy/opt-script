@@ -27,14 +27,15 @@ else
 	needed_restart=0
 fi
 if [ "$tinyproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps - w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "停止 $tinyproxy_path" && tinyproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	[ ! -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "停止 $tinyproxy_path" && tinyproxy_close
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$tinyproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		tinyproxy_close
 		tinyproxy_start
 	else
+		[ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && nvram set tinyproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 		[ ! -z "$tinyproxyport" ] && port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$tinyproxyport | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ ! -z "$tinyproxyport" ] && [ "$port" = 0 ] ; then
@@ -60,7 +61,7 @@ return
 fi
 
 while true; do
-	if [ -z "$(ps - w | grep "$tinyproxy_path" | grep -v grep )" ] || [ ! -s "$tinyproxy_path" ] ; then
+	if [ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] || [ ! -s "$tinyproxy_path" ] ; then
 		logger -t "【tinyproxy】" "重新启动"
 		{ nvram set tinyproxy_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
@@ -75,10 +76,10 @@ tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep
 [ ! -z "$tinyproxyport" ] && iptables -D INPUT -p tcp --dport $tinyproxyport -j ACCEPT
 killall tinyproxy tinyproxy_script.sh
 killall -9 tinyproxy tinyproxy_script.sh
-[ ! -z "$tinyproxy_path" ] && eval $(ps - w | grep "$tinyproxy_path" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_tinyproxy keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_tinyproxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+[ ! -z "$tinyproxy_path" ] && eval $(ps -w | grep "$tinyproxy_path" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_tinyproxy keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_tinyproxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 tinyproxy_start () {
@@ -120,8 +121,8 @@ B_restart="$tinyproxy_enable$tinyproxy_path$tinyproxy_port$(cat /etc/storage/tin
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 [ "$A_restart" != "$B_restart" ] && nvram set tinyproxy_status=$B_restart
 sleep 2
-[ ! -z "$(ps - w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动成功"
-[ -z "$(ps - w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set tinyproxy_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动成功"
+[ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set tinyproxy_status=00; eval "$scriptfilepath &"; exit 0; }
 if [ "$tinyproxy_port" = "1" ] ; then
 	tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 	echo "tinyproxyport:$tinyproxyport"
@@ -135,7 +136,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

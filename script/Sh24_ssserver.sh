@@ -31,13 +31,14 @@ else
 fi
 if [ "$ssserver_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "停止 ss-server" && ssserver_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ssserver_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		ssserver_close
 		ssserver_start
 	else
+		[ -z "`pidof server`" ] && nvram set ssserver_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		if [ -n "`pidof ss-server`" ] && [ "$ssserver_enable" = "1" ] ; then
 			port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
 			if [ "$port" = 0 ] ; then
@@ -75,9 +76,9 @@ iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT &
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT &
 killall ss-server obfs-server >/dev/null 2>&1
 killall -9 ss-server obfs-server >/dev/null 2>&1
-eval $(ps - w | grep "_ssserver keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_ssserver.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ssserver keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ssserver.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 ssserver_start () {
@@ -115,7 +116,7 @@ fi
 sleep 2
 [ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动成功"
 [ -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set ssserver_status=00; eval "$scriptfilepath &"; exit 0; }
-logger -t "【SS_server】" "`ps - w | grep ss-server | grep -v grep`"
+logger -t "【SS_server】" "`ps -w | grep ss-server | grep -v grep`"
 iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT &
 iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT &
 eval "$scriptfilepath keep &"
@@ -126,7 +127,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

@@ -1232,7 +1232,7 @@ adbyby_cflist()
 if [ "$ipsets" == 1 ] ; then
 	if [ -s "/tmp/7620adm/adm" ] ; then
 		port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
-		PIDS=$(ps - w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
 		if [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 			chmod 777 /tmp/script/_ad_m
 			/tmp/script/_ad_m C &
@@ -1240,7 +1240,7 @@ if [ "$ipsets" == 1 ] ; then
 	fi
 	if [ -s "/tmp/7620koolproxy/koolproxy" ] ; then
 		port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
-		PIDS=$(ps - w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
 		if [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 			chmod 777 /tmp/script/_kool_proxy
 			/tmp/script/_kool_proxy C &
@@ -1248,7 +1248,7 @@ if [ "$ipsets" == 1 ] ; then
 	fi
 	if [ -s "/tmp/bin/adbyby" ] ; then
 		port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
-		PIDS=$(ps - w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
 		if [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 			chmod 777 /tmp/script/_ad_byby
 			/tmp/script/_ad_byby C &
@@ -1421,9 +1421,9 @@ nvram set gfwlist3="ss-redir stop."
 /etc/storage/ez_buttons_script.sh 3 &
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
-eval $(ps - w | grep "_ss keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_ss.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ss keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ss.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 check_setting()
@@ -1441,7 +1441,7 @@ fi
 if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "停止 ss-redir" && stop_SS
 	[ ! -z "`pidof ss-local`" ] && logger -t "【SS】" "停止 ss-local" && stop_SS
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ss_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -1479,8 +1479,8 @@ cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
 sleep 919
 ss_enable=\`nvram get ss_enable\`
 if [ ! -f /tmp/cron_ss.lock ] && [ "\$ss_enable" = "1" ] ; then
-eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
-eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -1533,7 +1533,7 @@ if [ "$rebss" -gt 6 ] ; then
 	fi
 fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
-	NUM=`ps - w | grep ss-local_ | grep -v grep |wc -l`
+	NUM=`ps -w | grep ss-local_ | grep -v grep |wc -l`
 	SSRNUM=1
 	[ ! -z $ss_rdd_server ] && SSRNUM=2
 	if [ "$NUM" -lt "$SSRNUM" ] || [ ! -s "`which ss-local`" ] ; then
@@ -1546,7 +1546,7 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	[ "$ss_mode_x" = "3" ] && continue
 fi
 
-NUM=`ps - w | grep ss-redir_ | grep -v grep |wc -l`
+NUM=`ps -w | grep ss-redir_ | grep -v grep |wc -l`
 SSRNUM=1
 [ ! -z $ss_rdd_server ] && SSRNUM=2
 if [ "$NUM" -lt "$SSRNUM" ] ; then
@@ -1803,7 +1803,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

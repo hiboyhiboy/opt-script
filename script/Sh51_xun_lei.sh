@@ -25,12 +25,14 @@ else
 fi
 if [ "$xunleis" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ETMDaemon`" ] && logger -t "【迅雷下载】" "停止 xunleis" && xunlei_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$xunleis" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		xunlei_close
 		xunlei_start
+	else
+		[ -z "`pidof ETMDaemon`" ] && nvram set xunleis_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -75,7 +77,7 @@ while true; do
 		logger -t "【迅雷下载】" "找不到文件 $xunleis_dir/xunlei/portal"
 		{ eval "$scriptfilepath &" ; exit 0; }
 	fi
-	running=$(ps - w | grep "/xunlei/lib/" | grep -v "grep" | wc -l)
+	running=$(ps -w | grep "/xunlei/lib/" | grep -v "grep" | wc -l)
 	if [ $running -le 2 ] ; then
 		logger -t "【迅雷下载】" "重新启动$running"
 		{ nvram set xunleis_status=00 && eval "$scriptfilepath &" ; exit 0; }
@@ -89,9 +91,9 @@ sed -Ei '/【迅雷下载】|^$/d' /tmp/script/_opt_script_check
 killall ETMDaemon EmbedThunderManager vod_httpserver portal
 killall -9 ETMDaemon EmbedThunderManager vod_httpserver portal
 rm -f "/opt/etc/init.d/$scriptname"
-eval $(ps - w | grep "_xun_lei keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_xun_lei.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_xun_lei keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_xun_lei.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 xunlei_start () {
@@ -136,8 +138,8 @@ export LD_LIBRARY_PATH="$xunleis_dir/xunlei/lib:/lib:/opt/lib"
 sleep 2
 export LD_LIBRARY_PATH="/lib:/opt/lib"
 sleep 5
-[ ! -z "$(ps - w | grep "/xunlei/lib/" | grep -v grep )" ] && logger -t "【迅雷下载】" "启动成功"
-[ -z "$(ps - w | grep "/xunlei/lib/" | grep -v grep )" ] && logger -t "【迅雷下载】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set xunleis_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "/xunlei/lib/" | grep -v grep )" ] && logger -t "【迅雷下载】" "启动成功"
+[ -z "$(ps -w | grep "/xunlei/lib/" | grep -v grep )" ] && logger -t "【迅雷下载】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set xunleis_status=00; eval "$scriptfilepath &"; exit 0; }
 initopt
 eval "$scriptfilepath keep &"
 }
@@ -146,7 +148,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

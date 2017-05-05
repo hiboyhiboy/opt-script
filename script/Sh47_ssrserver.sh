@@ -24,13 +24,15 @@ else
 	needed_restart=0
 fi
 if [ "$ssrserver_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "`ps - w | grep manyuser/shadowsocks/server | grep -v grep `" ] && logger -t "【SSR_server】" "停止 ssrserver" && ssrserver_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	[ ! -z "`ps -w | grep manyuser/shadowsocks/server | grep -v grep `" ] && logger -t "【SSR_server】" "停止 ssrserver" && ssrserver_close
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ssrserver_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		ssrserver_close
 		ssrserver_start
+	else
+		[ -z "`ps -w | grep manyuser/shadowsocks/server | grep -v grep `" ] || [ ! -s "`which python`" ] && nvram set ssrserver_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -50,7 +52,7 @@ return
 fi
 
 while true; do
-	NUM=`ps - w | grep "manyuser/shadowsocks/server" | grep -v grep |wc -l`
+	NUM=`ps -w | grep "manyuser/shadowsocks/server" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ "$NUM" -gt "1" ] || [ ! -s "`which python`" ] ; then
 		logger -t "【SSR_server】" "重新启动$NUM"
 		{ nvram set ssrserver_status=00 && eval "$scriptfilepath &" ; exit 0; }
@@ -61,10 +63,10 @@ done
 
 ssrserver_close () {
 sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check
-eval $(ps - w | grep "manyuser/shadowsocks/server" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_ssrserver keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_ssrserver.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "manyuser/shadowsocks/server" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ssrserver keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_ssrserver.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 ssrserver_start () {
@@ -145,8 +147,8 @@ else
 	
 fi
 sleep 2
-[ ! -z "$(ps - w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动成功"
-[ -z "$(ps - w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set ssrserver_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动成功"
+[ -z "$(ps -w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set ssrserver_status=00; eval "$scriptfilepath &"; exit 0; }
 initopt
 eval "$scriptfilepath keep &"
 }
@@ -154,8 +156,12 @@ eval "$scriptfilepath keep &"
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
+optw_enable=`nvram get optw_enable`
+if [ "$optw_enable" != "2" ] ; then
+	nvram set optw_enable=2
+fi
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

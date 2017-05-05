@@ -27,14 +27,15 @@ else
 	needed_restart=0
 fi
 if [ "$softether_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps - w | grep "$softether_path" | grep -v grep )" ] && logger -t "【softether】" "停止 softether" && softether_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	[ ! -z "$(ps -w | grep "$softether_path" | grep -v grep )" ] && logger -t "【softether】" "停止 softether" && softether_close
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$softether_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		softether_close
 		softether_start
 	else
+		[ -z "$(ps -w | grep "$softether_path" | grep -v grep )" ] && nvram set softether_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:500 | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 		logger -t "【softether】" "允许 500、4500、1701 udp端口通过防火墙"
@@ -61,7 +62,7 @@ return
 fi
 
 while true; do
-	NUM=`ps - w | grep "$softether_path" | grep -v grep |wc -l`
+	NUM=`ps -w | grep "$softether_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$softether_path" ] ; then
 		logger -t "【softether】" "重新启动$NUM"
 		{ nvram set softether_status=00 && eval "$scriptfilepath &" ; exit 0; }
@@ -77,12 +78,12 @@ iptables -D INPUT -p udp --destination-port 500 -j ACCEPT
 iptables -D INPUT -p udp --destination-port 4500 -j ACCEPT
 iptables -D INPUT -p udp --destination-port 1701 -j ACCEPT
 [ ! -z "$softether_path" ] && $softether_path stop
-[ ! -z "$softether_path" ] && eval $(ps - w | grep "$softether_path" | grep -v grep | awk '{print "kill "$1";";}')
+[ ! -z "$softether_path" ] && eval $(ps -w | grep "$softether_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall vpnserver softether_script.sh
 killall -9 vpnserver softether_script.sh
-eval $(ps - w | grep "_softether keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_softether.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_softether keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_softether.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 softether_start () {
@@ -137,7 +138,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

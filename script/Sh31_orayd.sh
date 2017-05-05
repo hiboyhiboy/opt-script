@@ -21,7 +21,7 @@ fi
 phddns_check () {
 if [ "$phddns" != "1" ] ; then
 	[ ! -z "`pidof oraysl`" ] && logger -t "【花生壳内网版】" "停止 oraysl" && phddns_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$phddns" = "1" ] ; then
 	if [ -z "`pidof oraysl`" ] || [ ! -s "`which oraysl`" ] ; then
@@ -86,8 +86,8 @@ nvram set phddns_st="$STATUS"
 nvram set phddns_szUID="$szUID"
 while true; do
 	onlinetest
-	NUM=`ps - w | grep "oraynewph -s 0.0.0.0" | grep -v grep |wc -l`
-	NUM2=`ps - w | grep "oraysl -a 127.0.0.1" | grep -v grep |wc -l`
+	NUM=`ps -w | grep "oraynewph -s 0.0.0.0" | grep -v grep |wc -l`
+	NUM2=`ps -w | grep "oraysl -a 127.0.0.1" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ "$NUM2" -lt "1" ] || [ $online -le 0 ] || [ ! -s "/usr/bin/oraysl" ] ; then
 		logger -t "【花生壳内网版】" "网络状态:【$orayslstatus 】，重新启动($NUM , $NUM)"
 		{ eval "$scriptfilepath &" ; exit 0; }
@@ -100,9 +100,9 @@ done
 phddns_close () {
 killall oraynewph oraysl
 killall -9 oraynewph oraysl
-eval $(ps - w | grep "_orayd keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_orayd.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_orayd keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_orayd.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 phddns_start () {
@@ -150,7 +150,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

@@ -24,16 +24,16 @@ else
 	needed_restart=0
 fi
 if [ "$FastDick_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	running=$(ps - w | grep "FastDick" | grep -v "grep" | wc -l)
+	running=$(ps -w | grep "FastDick" | grep -v "grep" | wc -l)
 	[ $running -gt 1 ] && logger -t "【迅雷快鸟】" "停止 迅雷快鸟$running" && FastDick_clos
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$FastDick_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		FastDick_close
 		FastDick_start
 	else
-		running=$(ps - w | grep "FastDick" | grep -v "grep" | wc -l)
+		running=$(ps -w | grep "FastDick" | grep -v "grep" | wc -l)
 		if [ $running -lt 1 ] ; then
 			nvram set FastDicks_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		fi
@@ -45,7 +45,7 @@ FastDick_keep () {
 logger -t "【迅雷快鸟】" "守护进程启动"
 while true; do
 sleep 948
-eval $(ps - w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
 killall FastDick_script.sh
 killall -9 FastDick_script.sh
 /etc/storage/FastDick_script.sh &
@@ -55,10 +55,10 @@ done
 FastDick_close () {
 killall FastDick_script.sh
 killall -9 FastDick_script.sh
-eval $(ps - w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_Fast_Dick keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_Fast_Dick.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_Fast_Dick keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_Fast_Dick.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 
@@ -125,10 +125,14 @@ EEF
 		chmod 777 "/etc/storage/FastDick_script.sh"
 	fi
 	logger -t "【迅雷快鸟】" "启动完成`cat /opt/FastDick/swjsq.log`"
+	optw_enable=`nvram get optw_enable`
+	if [ "$optw_enable" != "2" ] ; then
+		nvram set optw_enable=2
+	fi
 fi
 sleep 2
-[ ! -z "$(ps - w | grep "FastDick" | grep -v grep )" ] && logger -t "【迅雷快鸟】" "启动成功"
-[ -z "$(ps - w | grep "FastDick" | grep -v grep )" ] && logger -t "【迅雷快鸟】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set FastDicks_status=00 ; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "FastDick" | grep -v grep )" ] && logger -t "【迅雷快鸟】" "启动成功"
+[ -z "$(ps -w | grep "FastDick" | grep -v grep )" ] && logger -t "【迅雷快鸟】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set FastDicks_status=00 ; eval "$scriptfilepath &"; exit 0; }
 
 eval "$scriptfilepath keep &"
 }

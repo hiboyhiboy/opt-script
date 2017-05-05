@@ -52,12 +52,30 @@ upanPath=""
 echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then 
 	logger -t "【koolproxy】" "已挂载储存设备, 主程序放外置设备存储"
-	mkdir -p $upanPath/7620koolproxy
-	mkdir -p /tmp/7620koolproxy
-	mount --bind $upanPath/7620koolproxy /tmp/7620koolproxy
+	initopt
+	mkdir -p $upanPath/ad/7620koolproxy
+	ln -sf "$upanPath/ad/7620koolproxy" /tmp/7620koolproxy
+	if [ -s /etc_ro/7620koolproxy_*.tgz ] && [ ! -s "$upanPath/ad/7620koolproxy/koolproxy" ] ; then
+		logger -t "【koolproxy】" "使用内置主程序"
+		untar.sh /etc_ro/7620koolproxy_*.tgz $upanPath/ad $upanPath/ad/7620koolproxy/data/version
+	fi
+	if [ ! -s "$upanPath/ad/7620koolproxy/data/version" ] ; then
+		logger -t "【koolproxy】" "开始下载 7620koolproxy.tgz"
+		wgetcurl.sh $upanPath/ad/7620koolproxy.tgz $koolproxyfile3 $koolproxyfile33
+		untar.sh $upanPath/ad/7620koolproxy.tgz $upanPath/ad $upanPath/ad/7620koolproxy/data/version
+	fi
 else
 	logger -t "【koolproxy】" "未挂载储存设备, 主程序放路由内存存储"
 	mkdir -p /tmp/7620koolproxy
+	if [ -s /etc_ro/7620koolproxy_*.tgz ] && [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
+		logger -t "【koolproxy】" "使用内置主程序"
+		untar.sh /etc_ro/7620koolproxy_*.tgz /tmp /tmp/7620koolproxy/data/version
+	fi
+	if [ ! -s "/tmp/7620koolproxy/data/version" ] ; then
+		logger -t "【koolproxy】" "开始下载 7620koolproxy.tgz"
+		wgetcurl.sh /tmp/7620koolproxy.tgz $koolproxyfile3 $koolproxyfile33
+		untar.sh /tmp/7620koolproxy.tgz /tmp /tmp/7620koolproxy/data/version
+	fi
 fi
 export PATH='/tmp/7620koolproxy:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 hash koolproxy 2>/dev/null || rm -rf /tmp/7620koolproxy/*
@@ -76,7 +94,7 @@ else
 fi
 if [ "$koolproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "停止 koolproxy" && koolproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$koolproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -84,7 +102,7 @@ if [ "$koolproxy_enable" = "1" ] ; then
 		koolproxy_start
 	else
 		[ -z "`pidof koolproxy`" ] || [ ! -s "/tmp/7620koolproxy/koolproxy" ] && nvram set koolproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
-		PIDS=$(ps - w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
 		if [ "$PIDS" != 0 ] ; then
 			port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
 			if [ "$port" = 0 ] ; then
@@ -109,8 +127,8 @@ cat > "/tmp/sh_ad_kp_keey_k.sh" <<-ADMK
 sleep 919
 koolproxy_enable=\`nvram get koolproxy_enable\`
 if [ ! -f /tmp/cron_adb.lock ] && [ "\$koolproxy_enable" = "1" ] ; then
-eval \$(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
-eval \$(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
+eval \$(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -161,7 +179,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	}
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
-		PIDS=$(ps - w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 
 			logger -t "【koolproxy】" "网络连接正常"
 			logger -t "【koolproxy】" "找不到进程, 重启 koolproxy"
@@ -205,7 +223,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
 			sleep 5
 		done
-		PIDS=$(ps - w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
+		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
 		if [ "$PIDS" != 0 ] ; then 
 			killall -15 koolproxy
 			killall -9 koolproxy
@@ -257,9 +275,9 @@ killall -15 koolproxy sh_ad_kp_keey_k.sh
 killall -9 koolproxy sh_ad_kp_keey_k.sh
 rm -f /tmp/adbyby_host.conf
 rm -f /tmp/7620koolproxy.tgz /tmp/cron_adb.lock /tmp/sh_ad_kp_keey_k.sh /tmp/cp_rules.lock
-eval $(ps - w | grep "_kool_proxy keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_kool_proxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_kool_proxy keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_kool_proxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 koolproxy_start () {
@@ -272,15 +290,6 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 		modprobe $module
 	done 
 	koolproxy_mount
-	if [ -s /etc_ro/7620koolproxy_*.tgz ] && [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
-		logger -t "【koolproxy】" "使用内置主程序"
-		untar.sh /etc_ro/7620koolproxy_*.tgz /tmp /tmp/7620koolproxy/data/version
-	fi
-	if [ ! -s "/tmp/7620koolproxy/data/version" ] ; then
-		logger -t "【koolproxy】" "开始下载 7620koolproxy.tgz"
-		wgetcurl.sh /tmp/7620koolproxy.tgz $koolproxyfile3 $koolproxyfile33
-		untar.sh /tmp/7620koolproxy.tgz /tmp /tmp/7620koolproxy/data/version
-	fi
 	if [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "开始下载 koolproxy"
 		wgetcurl.sh /tmp/7620koolproxy/koolproxy $koolproxyfile $koolproxyfilecdn
@@ -917,6 +926,15 @@ else
 		fi
 	fi
 fi
+}
+
+initopt () {
+optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
+[ ! -z "$optPath" ] && return
+if [ -s "/opt/etc/init.d/rc.func" ] ; then
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+fi
+
 }
 
 case $ACTION in

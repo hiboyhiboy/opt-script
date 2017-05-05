@@ -5,13 +5,6 @@ display_enable=`nvram get display_enable`
 [ -z $display_enable ] && display_enable=0 && nvram set display_enable=0
 if [ "$display_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep display | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-fi
-
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ]  && [ ! -s /tmp/script/_display ]; then
-	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_display
-	chmod 777 /tmp/script/_display
-fi
 
 if [ -z "$display_weather" ] ; then 
 display_weather="2151330"
@@ -21,6 +14,14 @@ fi
 if [ -z "$display_aqidata" ] ; then 
 display_aqidata="beijing"
 nvram set display_aqidata="beijing"
+fi
+
+fi
+
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ]  && [ ! -s /tmp/script/_display ]; then
+	mkdir -p /tmp/script
+	ln -sf $scriptfilepath /tmp/script/_display
+	chmod 777 /tmp/script/_display
 fi
 
 display_check () {
@@ -35,20 +36,22 @@ else
 fi
 if [ "$display_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof lcd4linux`" ] && logger -t "【相框显示】" "停止 lcd4linux" && display_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$display_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		display_close
 		display_start
+	else
+		[ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && nvram set display_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
 
 display_keep () {
-eval $(ps - w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "kill "$1";";}')
 eval "$scriptfilepath getweather &"
-eval $(ps - w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1";";}')
 eval "$scriptfilepath getaqidata &"
 logger -t "【相框显示】" "守护进程启动"
 if [ -s /tmp/script/_opt_script_check ]; then
@@ -69,14 +72,14 @@ sleep 180
 runx=`expr $runx + 1`
 if [ "$runx" -eq 10 ] && [ "`nvram get display_enable`" = "1" ] ; then
 	# 每半小时获取天气信息
-	eval $(ps - w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "kill "$1";";}')
+	eval $(ps -w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "kill "$1";";}')
 	eval "$scriptfilepath getweather &"
-	if [ "$runx" -eq 20 ] && [ "`nvram get display_enable`" = "1" ] ; then
-		# 每1小时获取AQI数据和数据绘图
-		runx=1
-		eval $(ps - w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1";";}')
-		eval "$scriptfilepath getaqidata &"
-	fi
+fi
+if [ "$runx" -eq 20 ] && [ "`nvram get display_enable`" = "1" ] ; then
+	# 每1小时获取AQI数据和数据绘图
+	runx=1
+	eval $(ps -w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1";";}')
+	eval "$scriptfilepath getaqidata &"
 fi
 done
 
@@ -86,9 +89,9 @@ display_close () {
 sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
 killall lcd4linux getaqidata getweather displaykeep.sh
 killall -9 lcd4linux getaqidata getweather displaykeep.sh
-eval $(ps - w | grep "_display keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_display.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_display keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_display.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 display_start () {
@@ -157,8 +160,8 @@ B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/dis
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 [ "$A_restart" != "$B_restart" ] && nvram set display_status=$B_restart
 sleep 2
-[ ! -z "$(ps - w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功"
-[ -z "$(ps - w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set display_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功"
+[ -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set display_status=00; eval "$scriptfilepath &"; exit 0; }
 initopt
 eval "$scriptfilepath keep &"
 }
@@ -416,8 +419,12 @@ python /opt/lcd4linux/scripts/drawchart.py &
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
+optw_enable=`nvram get optw_enable`
+if [ "$optw_enable" != "2" ] ; then
+	nvram set optw_enable=2
+fi
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

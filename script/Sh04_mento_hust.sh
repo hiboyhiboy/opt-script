@@ -42,7 +42,7 @@ else
 fi
 if [ "$mentohust_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof mentohust`" ] && logger -t "【MentoHUST】" "停止 mentohust" && mentohust_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$mentohust_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -50,6 +50,8 @@ if [ "$mentohust_enable" = "1" ] ; then
 		rm -f /etc/storage/mentohust.conf
 		mentohust_close
 		mentohust_start
+	else
+		[ -z "`pidof mentohust`" ] && nvram set mentohust_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -76,9 +78,9 @@ mentohust_close () {
 sed -Ei '/【mentohust】|^$/d' /tmp/script/_opt_script_check
 killall mentohust
 killall -9 mentohust
-eval $(ps - w | grep "_mento_hust keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_mento_hust.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_mento_hust keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_mento_hust.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 mentohust_start () {
@@ -141,7 +143,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

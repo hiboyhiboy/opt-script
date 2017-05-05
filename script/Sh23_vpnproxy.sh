@@ -28,13 +28,14 @@ else
 fi
 if [ "$vpnproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "停止 nvpproxy" && vpnproxy_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$vpnproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		vpnproxy_close
 		vpnproxy_start
 	else
+		[ -z "`pidof nvpproxy`" ] && nvram set vpnproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$vpnproxy_wan_port | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 		logger -t "【vpnproxy】" "允许 $vpnproxy_wan_port 端口通过防火墙"
@@ -68,9 +69,9 @@ sed -Ei '/【vpnproxy】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -p tcp --dport $vpnproxy_wan_port -j ACCEPT
 killall nvpproxy
 killall -9 nvpproxy
-eval $(ps - w | grep "_vpnproxy keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_vpnproxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_vpnproxy keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_vpnproxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 vpnproxy_start () {
@@ -79,7 +80,6 @@ hash nvpproxy 2>/dev/null || rm -rf /opt/bin/nvpproxy
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 nvpproxy，安装 opt 程序"
 	/tmp/script/_mountopt start
-	initopt
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 $SVC_PATH 下载程序"
@@ -106,6 +106,7 @@ sleep 2
 [ -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set vpnproxy_status=00; eval "$scriptfilepath &"; exit 0; }
 logger -t "【vpnproxy】" "允许 $vpnproxy_wan_port 端口通过防火墙"
 iptables -I INPUT -p tcp --dport $vpnproxy_wan_port -j ACCEPT
+initopt
 eval "$scriptfilepath keep &"
 }
 
@@ -113,7 +114,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

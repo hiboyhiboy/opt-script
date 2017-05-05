@@ -32,15 +32,15 @@ else
 	needed_restart=0
 fi
 if [ "$cloudxns_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps - w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【CloudXNS动态域名】" "停止 cloudxns" && cloudxns_close
-	{ eval $(ps - w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	[ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【CloudXNS动态域名】" "停止 cloudxns" && cloudxns_close
+	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$cloudxns_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		cloudxns_close
 		eval "$scriptfilepath keep &"
 	else
-		[ -z "$(ps - w | grep "$scriptname keep" | grep -v grep )" ] || [ ! -s "`which curl`" ] && nvram set cloudxns_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] || [ ! -s "`which curl`" ] && nvram set cloudxns_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
@@ -62,9 +62,9 @@ done
 
 cloudxns_close () {
 
-eval $(ps - w | grep "_cloudxns keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "_cloudxns.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps - w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_cloudxns keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_cloudxns.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
 cloudxns_start () {
@@ -259,7 +259,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	ln -sf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }
