@@ -57,7 +57,10 @@ else
 	needed_restart=0
 fi
 if [ "$lnmp_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "停止 nginx+php+mysql 环境" && lnmp_close
+	[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "停止 nginx+php 环境" && lnmp_close
+	if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
+		[ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "停止 mysql 环境" && lnmp_close
+	fi
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$lnmp_enable" = "1" ] ; then
@@ -65,7 +68,10 @@ if [ "$lnmp_enable" = "1" ] ; then
 		lnmp_close
 		lnmp_start
 	else
-		[ -z "`pidof nginx`" ] && nvram set lnmp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
+			[ -z "`pidof mysqld`" ] || [ ! -s "`which mysqld`" ] && logger -t "【LNMP】" "mysqld 重新启动" &&{ nvram set lnmp_status=00 && eval "$scriptfilepath &" ; exit 0; }
+		fi
+		[ -z "`pidof nginx`" ] || [ ! -s "`which nginx`" ] && logger -t "【LNMP】" "nginx 重新启动" &&  { nvram set lnmp_status=00 && eval "$scriptfilepath &" ; exit 0; }
 	fi
 fi
 }
@@ -184,8 +190,12 @@ SVC_PATH="/opt/lnmp.txt"
 if [ ! -f "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt optwget
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【LNMP】" "找不到 $SVC_PATH ，需要手动安装 opt-lnmp"
+if [ ! -s "`which nginx`" ] ; then
+	logger -t "【LNMP】" "找不到 nginx ，需要手动安装 opt-lnmp"
+	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set lnmp_status=00; eval "$scriptfilepath &"; exit 0; }
+fi
+if [ ! -s "`which mysqld`" ] ; then
+	logger -t "【LNMP】" "找不到 mysqld ，需要手动安装 opt-lnmp"
 	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set lnmp_status=00; eval "$scriptfilepath &"; exit 0; }
 fi
 
