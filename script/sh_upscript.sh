@@ -1,8 +1,9 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nvramshow=`nvram showall | grep upscript_enable | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep upscript_enable | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep script | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+[ "$ACTION" = "upscript" ] && upscript_enable=1
 
 file_o_check () {
 #获取script的sh*文件MD5
@@ -16,7 +17,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2017-05-05"
+	nvram set scripto="2017-5-6"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -68,6 +69,7 @@ if [ -s /tmp/scriptsh.txt ] ; then
 		file_name=${line%%=*}
 		if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
 			echo "$hiboyscript/script/$file_name.sh" >> ./.upscript_daydayup
+			echo "\|$hiboyscript2/script/$file_name.sh" >> ./.upscript_daydayup
 		fi
 		done < /tmp/scriptsh.txt
 		daydayup ./.upscript_daydayup >> /tmp/syslog.log &
@@ -82,6 +84,7 @@ start_upscript () {
 logger -t "【script】" "脚本检查更新"
 file_t_check
 if [ -s /tmp/scriptsh.txt ] ; then
+	[ "$scriptt"x = "$scripto"x ] && logger -t "【script】" "脚本已经最新"
 	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "脚本需要更新, 未启用自动更新, 请手动更新" && return
 	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then
 		logger -t "【script】" "脚本需要更新, 自动下载更新"

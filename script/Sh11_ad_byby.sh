@@ -311,8 +311,13 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		wget --continue --no-check-certificate -s -q -T 10 http://update.adbyby.com/rule3/video.jpg
 		[ "$?" == "0" ] && check=200 || check=404
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
 	else
 		check=`curl -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
+		[ "$check" != "200" ] && {
+		wget --continue --no-check-certificate -s -q -T 10 http://update.adbyby.com/rule3/video.jpg
+		[ "$?" == "0" ] && check=200 || check=404
+		}
 	fi
 	if [ "$check" == "200" ] ; then
 		echo "[$LOGTIME] update.adbyby.com have no problem."

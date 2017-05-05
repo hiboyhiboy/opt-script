@@ -427,6 +427,7 @@ mkdir -p /tmp/7620koolproxy/data/rules
 cat > "/tmp/7620koolproxy/data/rules/koolproxy_rules_list.sh" <<-\KPR
 https://kprule.com/koolproxy.txt
 https://kprule.com/kp.dat
+https://kprule.com/daily.txt
 KPR
 
 }
