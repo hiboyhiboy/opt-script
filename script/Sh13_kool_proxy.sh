@@ -25,6 +25,8 @@ AD_LAN_AC_IP=${AD_LAN_AC_IP:-"0"}
 lan_ipaddr=`nvram get lan_ipaddr`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
 [ "$koolproxy_video" = "1" ] && mode_video=" -e " || mode_video=""
+adbyby_adblocks=${adbyby_adblocks:-"0"}
+
 fi
 #检查 dnsmasq 目录参数
 confdir=`grep conf-dir /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
@@ -267,10 +269,10 @@ koolproxy_close () {
 cru.sh d koolproxy_update &
 port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
 [ "$port" != 0 ] && koolproxy_flush_rules
-killall -15 adbyby sh_ad_byby_keey_k.sh
-killall -9 adbyby sh_ad_byby_keey_k.sh
-killall -15 adm sh_ad_m_keey_k.sh
-killall -9 adm sh_ad_m_keey_k.sh
+[ "$adbyby_enable" != "1" ] && killall -15 adbyby sh_ad_byby_keey_k.sh
+[ "$adbyby_enable" != "1" ] && killall -9 adbyby sh_ad_byby_keey_k.sh
+[ "$adm_enable" != "1" ] && killall -15 adm sh_ad_m_keey_k.sh
+[ "$adm_enable" != "1" ] && killall -9 adm sh_ad_m_keey_k.sh
 killall -15 koolproxy sh_ad_kp_keey_k.sh
 killall -9 koolproxy sh_ad_kp_keey_k.sh
 rm -f /tmp/adbyby_host.conf
