@@ -335,7 +335,7 @@ if [ "$optw_enable" != "2" ] ; then
 	nvram set optw_enable=2
 fi
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }

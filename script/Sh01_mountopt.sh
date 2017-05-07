@@ -42,6 +42,7 @@ if [ "$mountp" = "0" ] && [ -z "$optPath" ] ; then
 else
 	[ "$mountp" = "1" ] && logger -t "【opt】" "opt 没挂载，重新挂载"
 	[ "$mountp" = "1" ] && mount_opt
+	[ "$mountp" = "0" ] && logger -t "【opt】" "opt 挂载正常：$optPath"
 fi
 AiDisk00
 }
@@ -136,7 +137,7 @@ sync
 
 opt_wget () {
 #opt检查更新
-[ "$upopt_enable" = "1" ] && [ -f /opt/opti.txt ] && upopt
+upopt
 if [ "$(cat /tmp/opti.txt)"x != "$(cat /opt/opti.txt)"x ] && [ "$upopt_enable" = "1" ] && [ -f /tmp/opti.txt ] ; then
 	logger -t "【opt】" "opt 需要更新, 自动启动更新"
 	rm -rf /opt/opti.txt
@@ -160,6 +161,18 @@ if [ ! -f "/opt/opti.txt" ] ; then
 	if [ -s "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "opt 解压完成"
 		chmod 777 /opt -R
+		logger -t "【opt】" "备份文件到 /opt/opt_backup"
+		mkdir -p /opt/opt_backup
+		tar -xzvf /opt/opt.tgz -C /opt/opt_backup
+		if [ -s "/opt/opt_backup/opti.txt" ] ; then
+			logger -t "【opt】" "/opt/opt_backup 解压完成"
+		else
+			logger -t "【opt】" "/opt/opt_backup 解压失败"
+		fi
+		# flush buffers
+		sync
+	else
+		logger -t "【opt】" "opt 解压失败"
 	fi
 fi
 }
@@ -171,6 +184,65 @@ nvram set opto="`cat /opt/opti.txt`"
 nvram set optt="`cat /tmp/opti.txt`"
 nvram set lnmpo="`cat /opt/lnmp.txt`"
 nvram set lnmpt="`cat /tmp/lnmpi.txt`"
+}
+
+libmd5_check () {
+[ ! -f "/opt/opti.txt" ] && logger -t "【libmd5_恢复】" "未找到 /opt/opti.txt 跳过文件恢复" && return 0
+if [ ! -f "/opt/opt_backup/opti.txt" ] ; then
+	logger -t "【libmd5_恢复】" "未找到备份文件 /opt/opt_backup/opti.txt"
+	logger -t "【libmd5_恢复】" "开始解压文件到 /opt/opt_backup"
+	[ ! -f "/opt/opt.tgz" ] && logger -t "【libmd5_恢复】" "未找到 /opt/opt.tgz 跳过文件恢复" && return 0
+	mkdir -p /opt/opt_backup
+	tar -xzvf /opt/opt.tgz -C /opt/opt_backup
+	if [ -s "/opt/opti.txt" ] ; then
+		logger -t "【libmd5_恢复】" "/opt/opt_backup 文件解压完成"
+	fi
+fi
+logger -t "【libmd5_恢复】" "正在对比 /opt/lib/ 文件 md5"
+mkdir -p /tmp/md5/
+/usr/bin/find /opt/opt_backup/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
+/usr/bin/find /opt/opt_backup/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | sort -r  >> /tmp/md5/libmd5f
+while read line
+do
+if [ -f "$line" ] ; then
+	MD5_backup=$(md5sum $line | awk '{print $1;}')
+	b_line=`echo $line | sed  "s/\/opt\/opt_backup\//\/opt\//g" `
+	MD5_OPT=$(md5sum $b_line | awk '{print $1;}')
+	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
+	logger -t "【libmd5_恢复】" "【 $b_line 】，md5不匹配！"
+	logger -t "【libmd5_恢复】" "恢复文件【 $line 】"
+	cp -Hrf $line $b_line
+	lib_status=1
+	fi
+fi
+done < /tmp/md5/libmd5f
+logger -t "【libmd5_恢复】" "md5对比，完成！"
+
+}
+
+libmd5_backup () {
+mkdir -p /opt/opt_backup
+logger -t "【libmd5_备份】" "正在对比 /opt/lib/ 文件 md5"
+mkdir -p /tmp/md5/
+/usr/bin/find /opt/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
+/usr/bin/find /opt/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | sort -r  >> /tmp/md5/libmd5f
+while read line
+do
+if [ -f "$line" ] ; then
+	MD5_backup=$(md5sum $line | awk '{print $1;}')
+	b_line=`echo $line | sed  "s/\/opt\//\/opt\/opt_backup\//g" `
+	MD5_OPT=$(md5sum $b_line | awk '{print $1;}')
+	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
+	logger -t "【libmd5_备份】" "【 $b_line 】，md5不匹配！"
+	logger -t "【libmd5_备份】" "备份文件【 $line 】"
+	cp -Hrf $line $b_line
+	lib_status=1
+	fi
+fi
+done < /tmp/md5/libmd5f
+logger -t "【libmd5_备份】" "md5对比，完成！"
+
+
 }
 
 case $ACTION in
@@ -187,7 +259,12 @@ optwget)
 	opt_wget
 	;;
 upopt)
-	upopt
+	mount_check
+	if [ "$optinstall" = "1" ] || [ "$upopt_enable" = "1" ] ; then
+		opt_wget
+	else
+		upopt
+	fi
 	;;
 reopt)
 	mount_check
@@ -196,9 +273,17 @@ reopt)
 	opt_wget
 	[ -f /opt/lcd.tgz ] && untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
 	;;
+libmd5_check)
+	libmd5_check &
+	;;
+libmd5_backup)
+	libmd5_backup &
+	;;
 *)
 	mount_check
-	[ "$optinstall" = "1" ] && opt_wget
+	if [ "$optinstall" = "1" ] || [ "$upopt_enable" = "1" ] ; then
+		opt_wget
+	fi
 	;;
 esac
 

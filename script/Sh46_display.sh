@@ -167,7 +167,6 @@ eval "$scriptfilepath keep &"
 }
 
 getweather () {
-logger -t "【相框显示】" "获取天气信息"
 
 #http://weather.yahoo.com/2146704
 #The location parameter needs to be a WOEID. 
@@ -187,13 +186,17 @@ echo $yahooweb
 rm -f /tmp/weatherweb
 #wget -O /tmp/weatherweb $yahooweb
 wgetcurl.sh /tmp/weatherweb $yahooweb
-if [ $? = 0 ]; then
+if [ -s /tmp/weatherweb ]; then
 	cat /tmp/weatherweb | grep '<yweather' | awk -F'<yweather' '{ \
 		{L1="<yweather"$3; L2="<yweather"$2; L3="<yweather"$4; L4="<yweather"$5; L5="<yweather"$6; L6="<yweather"$7; L7="<yweather"$8; L8="<yweather"$9}} \
 		END \
 		{ printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n", \
 		L1,L2,L3,L4,L5,L6,L7,L8}' \
 		> /tmp/weather
+	if [ ! -s /tmp/weather ]; then
+		return 1
+	fi
+	logger -t "【相框显示】" "获取天气信息"
 	cat /tmp/weather | grep '<yweather' | awk -F'"' '{C1++;}{ \
 		{if (substr($1, 11, 8)=="location") L1=$4} \
 		{if (substr($1, 11, 4)=="wind") {L81=$4; L82=$6; L83=$8; \
@@ -222,12 +225,16 @@ fi
 }
 
 getaqidata () {
-logger -t "【相框显示】" "获取AQI数据和数据绘图"
 
 #获取AQI数据和数据绘图。http://www.aqicn.org
 rm -f /tmp/aqicn
 #wget -c -O /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --continue --no-check-certificate
 wgetcurl.sh /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
+if [ ! -s /tmp/aqicn ]; then
+	return 1
+fi
+logger -t "【相框显示】" "获取AQI数据和数据绘图"
+
 timeh=`date +%H`
 mkdir -p /tmp/aqii
 #记录小于24个需要补零
@@ -424,7 +431,7 @@ if [ "$optw_enable" != "2" ] ; then
 	nvram set optw_enable=2
 fi
 if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	cp -f "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 
 }
