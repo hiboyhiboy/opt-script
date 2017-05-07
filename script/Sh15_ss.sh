@@ -696,6 +696,8 @@ fi
 
 # 外网(WAN)访问控制
 	logger -t "【SS】" "外网(WAN)访问控制，设置 WAN IP 转发或忽略代理中转"
+	sed -e '/.*opt.cn2k.net/d' -i /etc/storage/shadowsocks_ss_spec_wan.sh
+	echo "WAN!opt.cn2k.net" >> /etc/storage/shadowsocks_ss_spec_wan.sh
 	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
 	rm -f /tmp/ss/wantoss.list
 	rm -f /tmp/ss/wannoss.list
@@ -866,6 +868,7 @@ fi
 100.100.100.100
 188.188.188.188
 110.110.110.110
+67.21.69.151
 $ss_s1_ip
 $ss_s2_ip
 $kcptun_server
