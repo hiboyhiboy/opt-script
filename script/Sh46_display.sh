@@ -450,6 +450,9 @@ getweather)
 getaqidata)
 	getaqidata
 	;;
+redisplay)
+	nvram set display_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+	;;
 *)
 	display_check
 	;;
