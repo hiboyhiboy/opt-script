@@ -70,7 +70,12 @@ if [ ! -z "$upanPath" ] ; then
 		chmod 700 /opt/home/admin/.ssh
 		chmod 600 /opt/home/admin/.ssh/authorized_keys
 	fi
-
+	
+	#使用文件创建swap分区
+	#bs  blocksize ，每个块大小为1k.count=204800。则总大小为200M的文件
+	#dd if=/dev/zero of=/opt/.swap bs=1k count=204800
+	#mkswap /opt/.swap
+	# 挂载 /opt/.swap
 	# check swap file exist
 	if [ -z "$mtd_device" ] && [ -f /opt/.swap ] ; then
 		swap_part=`cat /proc/swaps | grep 'partition' 2>/dev/null`
@@ -80,6 +85,12 @@ if [ ! -z "$upanPath" ] ; then
 			[ $? -eq 0 ] && logger -t "${self_name}" "Activate swap file /opt/.swap SUCCESS!"
 		fi
 	fi
+	# 卸载 /opt/.swap
+	# check swap file exist
+	# if [ -f /opt/.swap ] ; then
+		# swapoff /opt/.swap 2>/dev/null
+		# [ $? -eq 0 ] && logger -t "${self_name}" "Deactivate swap file /opt/.swap SUCCESS!"
+	# fi
 else
 	mkdir -p /tmp/AiDisk_00/opt
 	mount -o bind /tmp/AiDisk_00/opt /opt
@@ -118,6 +129,9 @@ tar -xzvf /opt/opt.tgz -C /opt
 
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 [ ! -z "$optPath" ] && rm -f /opt/opt.tgz
+# flush buffers
+sync
+
 }
 
 opt_wget () {
