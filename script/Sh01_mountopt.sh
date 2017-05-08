@@ -187,6 +187,11 @@ nvram set lnmpt="`cat /tmp/lnmpi.txt`"
 }
 
 libmd5_check () {
+optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
+if [ ! -z "$optPath" ] ; then
+	logger -t "【libmd5_恢复】" " /opt/lib/ 在内存储存，跳过恢复"
+	return 0
+fi
 [ ! -f "/opt/opti.txt" ] && logger -t "【libmd5_恢复】" "未找到 /opt/opti.txt 跳过文件恢复" && return 0
 if [ ! -f "/opt/opt_backup/opti.txt" ] ; then
 	logger -t "【libmd5_恢复】" "未找到备份文件 /opt/opt_backup/opti.txt"
@@ -221,6 +226,11 @@ logger -t "【libmd5_恢复】" "md5对比，完成！"
 }
 
 libmd5_backup () {
+optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
+if [ ! -z "$optPath" ] ; then
+	logger -t "【libmd5_备份】" " /opt/lib/ 在内存储存，跳过备份"
+	return 0
+fi
 mkdir -p /opt/opt_backup
 logger -t "【libmd5_备份】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
