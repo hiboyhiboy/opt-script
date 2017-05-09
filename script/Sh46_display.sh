@@ -148,12 +148,13 @@ sed -e "s/SpaceDir\ \ .*/$upanPath2/" -i /etc/storage/display_lcd4linux_script.s
 cp -f /etc/storage/display_lcd4linux_script.sh /tmp/lcd4linux.conf
 chmod 600 /tmp/lcd4linux.conf
 chmod 777 /opt/bin/lcd4linux
+sleep 5
 logger -t "【相框显示】" "运行 lcd4linux"
 cd /opt/bin/
 export LD_LIBRARY_PATH=/opt/lib
-lcd4linux -f /tmp/lcd4linux.conf
-sleep 2
+ lcd4linux -f /tmp/lcd4linux.conf
 export LD_LIBRARY_PATH=/lib:/opt/lib
+sleep 2
 logger -t "【相框显示】" "开始显示数据"
 A_restart=`nvram get display_status`
 B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v "^$")"
@@ -185,7 +186,7 @@ yahooweb='https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20weathe
 echo $yahooweb
 rm -f /tmp/weatherweb
 #wget -O /tmp/weatherweb $yahooweb
-wgetcurl.sh /tmp/weatherweb $yahooweb
+wgetcurl.sh /tmp/weatherweb $yahooweb $yahooweb N
 if [ -s /tmp/weatherweb ]; then
 	cat /tmp/weatherweb | grep '<yweather' | awk -F'<yweather' '{ \
 		{L1="<yweather"$3; L2="<yweather"$2; L3="<yweather"$4; L4="<yweather"$5; L5="<yweather"$6; L6="<yweather"$7; L7="<yweather"$8; L8="<yweather"$9}} \
@@ -194,6 +195,8 @@ if [ -s /tmp/weatherweb ]; then
 		L1,L2,L3,L4,L5,L6,L7,L8}' \
 		> /tmp/weather
 	if [ ! -s /tmp/weather ]; then
+		logger -t "【相框显示】" "获取天气信息错误！请检查链接："
+		logger -t "【相框显示】" "$yahooweb"
 		return 1
 	fi
 	logger -t "【相框显示】" "获取天气信息"
@@ -228,9 +231,12 @@ getaqidata () {
 
 #获取AQI数据和数据绘图。http://www.aqicn.org
 rm -f /tmp/aqicn
+aqicnorg="http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
 #wget -c -O /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --continue --no-check-certificate
-wgetcurl.sh /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
+wgetcurl.sh /tmp/aqicn "$aqicnorg" "$aqicnorg" N
 if [ ! -s /tmp/aqicn ]; then
+	logger -t "【相框显示】" "获取AQI数据错误！请检查链接："
+	logger -t "【相框显示】" "$aqicnorg"
 	return 1
 fi
 logger -t "【相框显示】" "获取AQI数据和数据绘图"

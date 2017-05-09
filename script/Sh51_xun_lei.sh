@@ -39,11 +39,11 @@ fi
 
 xunlei_keep () {
 sleep 15
-wgetcurl.sh "/tmp/xunlei.info" "http://127.0.0.1:9000/getsysinfo" "http://127.0.0.1:9001/getsysinfo"
+wgetcurl.sh "/tmp/xunlei.info" "http://127.0.0.1:9000/getsysinfo" "http://127.0.0.1:9001/getsysinfo" N
 if [ ! -s /tmp/xunlei.info ] ; then
 	sleep 15
-	wgetcurl.sh "/tmp/xunlei.info" "http://127.0.0.1:9000/getsysinfo" "http://127.0.0.1:9001/getsysinfo"
-	[ ! -s /tmp/xunlei.info ] && { wgetcurl.sh "/tmp/xunlei.info" "http://`nvram get lan_ipaddr`:9002/getsysinfo" "http://`nvram get lan_ipaddr`:9003/getsysinfo" ; }
+	wgetcurl.sh "/tmp/xunlei.info" "http://127.0.0.1:9000/getsysinfo" "http://127.0.0.1:9001/getsysinfo" N
+	[ ! -s /tmp/xunlei.info ] && { wgetcurl.sh "/tmp/xunlei.info" "http://`nvram get lan_ipaddr`:9002/getsysinfo" "http://`nvram get lan_ipaddr`:9003/getsysinfo" N ; }
 fi
 logger -t "【迅雷下载】" "启动 xunlei, 绑定设备页面【http://yuancheng.xunlei.com】"
 logger -t "【迅雷下载】" "在浏览器中输入【http://`nvram get lan_ipaddr`:9000/getsysinfo】"

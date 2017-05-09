@@ -5,8 +5,8 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 #set -x
 #hiboyfile="https://bitbucket.org/hiboyhiboy/opt-file/raw/master"
 #hiboyscript="https://bitbucket.org/hiboyhiboy/opt-script/raw/master"
-hiboyfile="http://opt.cn2k.net/opt-file"
-hiboyscript="http://opt.cn2k.net/opt-script"
+hiboyfile="http://opt.cn2qq.com/opt-file"
+hiboyscript="http://opt.cn2qq.com/opt-script"
 hiboyfile2="https://raw.githubusercontent.com/hiboyhiboy/opt-file/master"
 hiboyscript2="https://raw.githubusercontent.com/hiboyhiboy/opt-script/master"
 ACTION=$1

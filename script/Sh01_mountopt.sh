@@ -161,18 +161,23 @@ if [ ! -f "/opt/opti.txt" ] ; then
 	if [ -s "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "opt 解压完成"
 		chmod 777 /opt -R
+	else
+		logger -t "【opt】" "opt 解压失败"
+	fi
+	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
+	if [ -z "$optPath" ] && [ -s "/opt/opt.tgz" ] ; then
+		logger -t "【opt】" "opt 解压完成"
+		chmod 777 /opt -R
 		logger -t "【opt】" "备份文件到 /opt/opt_backup"
 		mkdir -p /opt/opt_backup
 		tar -xzvf /opt/opt.tgz -C /opt/opt_backup
 		if [ -s "/opt/opt_backup/opti.txt" ] ; then
 			logger -t "【opt】" "/opt/opt_backup 解压完成"
+			# flush buffers
+			sync
 		else
 			logger -t "【opt】" "/opt/opt_backup 解压失败"
 		fi
-		# flush buffers
-		sync
-	else
-		logger -t "【opt】" "opt 解压失败"
 	fi
 fi
 }
@@ -222,6 +227,8 @@ if [ -f "$line" ] ; then
 fi
 done < /tmp/md5/libmd5f
 logger -t "【libmd5_恢复】" "md5对比，完成！"
+# flush buffers
+sync
 
 }
 
@@ -251,7 +258,8 @@ if [ -f "$line" ] ; then
 fi
 done < /tmp/md5/libmd5f
 logger -t "【libmd5_备份】" "md5对比，完成！"
-
+# flush buffers
+sync
 
 }
 

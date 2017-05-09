@@ -97,7 +97,8 @@ else
 	logger -t "【SSR_server】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set ssrserver_status=00; eval "$scriptfilepath &"; exit 0; }
 fi
 hash python 2>/dev/null || {  logger -t "【SSR_server】" "无法运行 python 程序，请检查系统，10 秒后自动尝试重新启动" ; sleep 10 ; nvram set ssrserver_status=00 ; eval "$scriptfilepath &" ; exit 1; }
-mv -f /opt/shadowsocks-manyuser /opt/shadowsocksr-manyuser
+[ -d /opt/shadowsocks-manyuser ] && [ ! -d /opt/shadowsocksr-manyuser ] && mv -f /opt/shadowsocks-manyuser /opt/shadowsocksr-manyuser
+[ -d /opt/shadowsocks-manyuser ] && rm -rf /opt/shadowsocks-manyuser
 if [ "$ssrserver_update" != "0" ] ; then
 logger -t "【SSR_server】" "SSR_server 检测更新"
 	rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb

@@ -142,7 +142,6 @@ killall -9 sh_ad_kp_keey_k.sh
 
 rm -f /tmp/cron_adb.lock
 reb="1"
-runx="1"
 [ -z $ss_link_1 ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
@@ -214,7 +213,11 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 				logger -t "【koolproxy】" "找不到3000转发规则, 重新添加"
 				koolproxy_add_rules
 			fi
-		runx=`expr $runx + 1`
+		port=$(iptables -t nat -L | grep 'AD_BYBY_to' | wc -l)
+			if [ "$port" = 0 ] && [ ! -f /tmp/cron_adb.lock ] ; then
+				logger -t "【koolproxy】" "找不到AD_BYBY_to转发规则, 重新添加"
+				koolproxy_add_rules
+			fi
 	else
 		# logger -t "【koolproxy】" "网络连接中断 $reb, 关闭 koolproxy"
 		port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)

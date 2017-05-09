@@ -155,7 +155,6 @@ killall -9 sh_ad_byby_keey_k.sh
 
 rm -f /tmp/cron_adb.lock
 reb="1"
-runx="1"
 [ -z $ss_link_1 ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
@@ -225,7 +224,11 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 				logger -t "【Adbyby】" "找不到8118转发规则, 重新添加"
 				adbyby_add_rules
 			fi
-		runx=`expr $runx + 1`
+		port=$(iptables -t nat -L | grep 'AD_BYBY_to' | wc -l)
+			if [ "$port" = 0 ] && [ ! -f /tmp/cron_adb.lock ] ; then
+				logger -t "【Adbyby】" "找不到AD_BYBY_to转发规则, 重新添加"
+				adbyby_add_rules
+			fi
 	else
 		# logger -t "【Adbyby】" "网络连接中断 $reb, 关闭 adbyby"
 		port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
@@ -335,14 +338,14 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 		wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules2
 		[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2
-		mv -f /tmp/bin/data/video.txt /tmp/bin/data/video_B.txt
+		[ -s /tmp/bin/data/video.txt ] && mv -f /tmp/bin/data/video.txt /tmp/bin/data/video_B.txt
 		xwhyc_rules="$hiboyfile/lazy.txt"
 		xwhyc_rules3="$hiboyfile2/lazy.txt"
 		xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
 		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 		wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules2
 		[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2
-		mv -f /tmp/bin/data/lazy.txt /tmp/bin/data/lazy_B.txt
+		[ -s /tmp/bin/data/lazy.txt ] && mv -f /tmp/bin/data/lazy.txt /tmp/bin/data/lazy_B.txt
 	fi
 	chmod 777 /tmp/bin/adbyby
 	# 设置路由ip:8118
@@ -397,8 +400,8 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		logger -t "【Adbyby】" "加载手动同步更新规则"
 		grep -v '^!' /tmp/bin/data/video_B.txt | grep -v "^$" >> /tmp/bin/data/user.txt
 		grep -v '^!' /tmp/bin/data/lazy_B.txt | grep -v "^$" >> /tmp/bin/data/user.txt
-		mv -f /tmp/bin/data/lazy_B.txt /tmp/bin/data/lazy.txt
-		mv -f /tmp/bin/data/video_B.txt /tmp/bin/data/video.txt
+		[ -s /tmp/bin/data/lazy_B.txt ] && mv -f /tmp/bin/data/lazy_B.txt /tmp/bin/data/lazy.txt
+		[ -s /tmp/bin/data/video_B.txt ] && mv -f /tmp/bin/data/video_B.txt /tmp/bin/data/video.txt
 	fi
 	logger -t "【Adbyby】" "启动 adbyby 程序"
 	/tmp/bin/adbyby >/dev/null 2>&1 &
