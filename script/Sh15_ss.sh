@@ -338,28 +338,28 @@ check_ssr()
 {
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
+if [ "$ss_type" != "1" ] ; then
+	if [ ! -s "/usr/sbin/ss-redir" ] ; then
+		[ ! -s "/opt/bin/ss0-redir" ] && cp -f /opt/bin/ss-redir /opt/bin/ss0-redir
+		[ -s "/opt/bin/ss0-redir" ] && cp -f /opt/bin/ss0-redir /opt/bin/ss-redir
+	fi
+	if [ ! -s "/usr/sbin/ssr-local" ] ; then
+		[ ! -s "/opt/bin/ss0-local" ] && cp -f /opt/bin/ss-local /opt/bin/ss0-local
+		[ -s "/opt/bin/ss0-local" ] && cp -f /opt/bin/ss0-local /opt/bin/ss-local
+	fi
+fi
 if [ "$ss_type" = "1" ] ; then
 	if [ -s "/usr/sbin/ssr-redir" ] ; then
 		mount --bind /usr/sbin/ssr-redir /usr/sbin/ss-redir
 	else
-		if [ ! -s "/tmp/bin/ssr-redir" ] ; then
-			logger -t "【SSR】" "找不到 ssr-redir. tmp下载程序"
-			mkdir -p /tmp/bin
-			wgetcurl.sh "/tmp/bin/ssr-redir" "$hiboyfile/ssr-redir" "$hiboyfile2/ssr-redir"
-			chmod 777 "/tmp/bin/ssr-redir"
-		fi
-		mount --bind /tmp/bin/ssr-redir /usr/sbin/ss-redir
+		[ ! -s "/opt/bin/ss0-redir" ] && cp -f /opt/bin/ss-redir /opt/bin/ss0-redir
+		[ -s "/opt/bin/ssr-redir" ] && cp -f /opt/bin/ssr-redir /opt/bin/ss-redir
 	fi
 	if [ -s "/usr/sbin/ssr-local" ] ; then
 		mount --bind /usr/sbin/ssr-local /usr/sbin/ss-local
 	else
-		if [ ! -s "/tmp/bin/ssr-local" ] ; then
-			logger -t "【SSR】" "找不到 ssr-local. tmp下载程序"
-			mkdir -p /tmp/bin
-			wgetcurl.sh "/tmp/bin/ssr-local" "$hiboyfile/ssr-local" "$hiboyfile2/ssr-local"
-			chmod 777 "/tmp/bin/ssr-local"
-		fi
-		mount --bind /tmp/bin/ssr-local /usr/sbin/ss-local
+		[ ! -s "/opt/bin/ss0-local" ] && cp -f /opt/bin/ss-local /opt/bin/ss0-local
+		[ -s "/opt/bin/ssr-local" ] && cp -f /opt/bin/ssr-local /opt/bin/ss-local
 	fi
 fi
 }
@@ -429,7 +429,7 @@ if [ "$ss_check" = "1" ] ; then
 		logger -t "【ss-redir】" "check_ip 检查两个 SS 服务器代理连接失败, 请检查配置, 10 秒后重启shadowsocks"
 		killall ss-local ss-redir
 		sleep 10
-		/etc/storage/ez_buttons_script.sh cleanss & 
+		clean_SS 
 		exit 0
 	fi
 fi
@@ -1024,7 +1024,7 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 	if [ "$ss_3p_enable" = "1" ] ; then
 		if [ "$ss_3p_gfwlist" = "1" ] ; then
 			logger -t "【SS】" "正在获取官方 gfwlist...."
-			wgetcurl.sh /tmp/ss/gfwlist.b64 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt
+			wgetcurl.sh /tmp/ss/gfwlist.b64 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt N
 			base64 -d  /tmp/ss/gfwlist.b64 > /tmp/ss/gfwlist.txt
 			cat /tmp/ss/gfwlist.txt | sort -u |
 					sed '/^$\|@@/d'|
@@ -1036,9 +1036,9 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 		if [ "$ss_3p_kool" = "1" ] ; then
 			#2 获取koolshare.github.io/maintain_files/gfwlist.conf
 			logger -t "【SS】" "正在获取 koolshare 列表...."
-			wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt http://koolshare.github.io/maintain_files/gfwlist.conf
+			wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt http://koolshare.github.io/maintain_files/gfwlist.conf http://koolshare.github.io/maintain_files/gfwlist.conf N
 			cat /tmp/ss/gfwdomain_tmp.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_1.txt
-			wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/koolshare/koolshare.github.io/master/maintain_files/gfwlist.conf
+			wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/koolshare/koolshare.github.io/master/maintain_files/gfwlist.conf https://raw.githubusercontent.com/koolshare/koolshare.github.io/master/maintain_files/gfwlist.conf N
 			cat /tmp/ss/gfwdomain_tmp.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_2.txt
 		fi
 		rm -rf /tmp/ss/gfwdomain_tmp.txt
@@ -1094,7 +1094,7 @@ fi
 if [ "$ss_3p_enable" = "1" ] ; then
 	if [ "$ss_sub1" = "1" ] ; then
 		logger -t "【SS】" "处理订阅列表1...."
-		wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt
+		wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt N
 		cat /tmp/ss/tmp_sub.txt |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			awk '{printf("server=/%s/127.0.0.1#8053\nipset=/%s/gfwlist\n", $1, $1 )}'  > $confdir/r.sub.conf
@@ -1102,7 +1102,7 @@ if [ "$ss_3p_enable" = "1" ] ; then
 	#处理只做dns解释的域名
 	if [ "$ss_sub2" = "1" ] ; then
 		logger -t "【SS】" "处理订阅列表2...."
-		wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt
+		wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt N
 		cat /tmp/ss/tmp_sub.txt |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			awk '{printf("server=/%s/127.0.0.1#8053\n", $1 )}'  >> $confdir/r.sub.conf
@@ -1114,7 +1114,7 @@ if [ "$ss_3p_enable" = "1" ] ; then
 		[ -z "$DNS" ] && DNS="114.114.114.114"
 	awk_cmd="awk '{printf(\"server=/%s/$DNS\\n\", \$1 )}'  >> $confdir/r.sub.conf"
 	#echo $awk_cmd
-	wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/passby.txt
+	wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/passby.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/passby.txt N
 		cat /tmp/ss/tmp_sub.txt |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			eval $awk_cmd
@@ -1182,7 +1182,7 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 		echo ss_spec_dst_sh
 		# wget --continue --no-check-certificate -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > /tmp/ss/chnroute.txt
 		# echo ""  >> /tmp/ss/chnroute.txt
-		wgetcurl.sh /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt
+		wgetcurl.sh /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt N
 		cat /tmp/ss/tmp_chnroute.txt > /tmp/ss/chnroute.txt
 		echo ""  >> /tmp/ss/chnroute.txt
 		wgetcurl.sh /tmp/ss/tmp_chnroute.txt "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt"
@@ -1292,9 +1292,17 @@ start_SS()
 	optssredir="0"
 if [ "$ss_mode_x" != "3" ] ; then
 	hash ss-redir 2>/dev/null || optssredir="1"
+	hash ssr-redir 2>/dev/null || optssredir="1"
 else
 	hash ss-local 2>/dev/null || optssredir="2"
+	hash ssr-local 2>/dev/null || optssredir="2"
 fi
+check_ss_plugin=`echo $ss_plugin_config |  grep obfs-local`
+check_ss_plugin2=`echo $ss2_plugin_config |  grep obfs-local`
+if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
+	hash obfs-local 2>/dev/null || optssredir="4"
+fi
+hash pdnsd 2>/dev/null || optssredir="5"
 [ "$ss_run_ss_local" = "1" ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
 if [ "$optssredir" != "0" ] ; then
 	# 找不到ss-redir，安装opt
@@ -1306,24 +1314,50 @@ optssredir="0"
 if [ "$ss_mode_x" != "3" ] ; then
 	hash ss-redir 2>/dev/null || rm -rf /opt/bin/ss-redir
 	hash ss-redir 2>/dev/null || optssredir="1"
+	hash ssr-redir 2>/dev/null || rm -rf /opt/bin/ssr-redir
+	hash ssr-redir 2>/dev/null || optssredir="1"
 else
 	hash ss-local 2>/dev/null || rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="2"
+	hash ssr-local 2>/dev/null || rm -rf /opt/bin/ssr-local
+	hash ssr-local 2>/dev/null || optssredir="2"
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
 	hash ss-local 2>/dev/null || optssredir="3"
+	hash ssr-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "1" ] ; then
 	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
+	[ ! s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
 	chmod 777 "/opt/bin/ss-redir"
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; nvram set ss_status=00 && nvram commit; eval "$scriptfilepath start &"; exit 1; }
+	[ ! s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/ssr-redir" "$hiboyfile2/ssr-redir"
+	chmod 777 "/opt/bin/ssr-redir"
+hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; nvram set ss_status=00 && nvram commit; eval "$scriptfilepath start &"; exit 1; }
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
 	logger -t "【SS】" "找不到 ss-local. opt 下载程序"
-	wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/ss-local" "$hiboyfile2/ss-local"
+	[ ! s /opt/bin/ss-local ] && wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/ss-local" "$hiboyfile2/ss-local"
 	chmod 777 "/opt/bin/ss-local"
 	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; nvram set ss_status=00 && nvram commit; eval "$scriptfilepath start &"; exit 1; }
+	[ ! s /opt/bin/ssr-local ] && wgetcurl.sh "/opt/bin/ssr-local" "$hiboyfile/ssr-local" "$hiboyfile2/ssr-local"
+	chmod 777 "/opt/bin/ssr-local"
+	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; nvram set ss_status=00 && nvram commit; eval "$scriptfilepath start &"; exit 1; }
+fi
+if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
+	hash obfs-local 2>/dev/null || optssredir="4"
+fi
+if [ "$optssredir" = "4" ] ; then
+	logger -t "【SS】" "找不到 obfs-local. opt 下载程序"
+	wgetcurl.sh "/opt/bin/obfs-local" "$hiboyfile/obfs-local" "$hiboyfile2/obfs-local"
+	chmod 777 "/opt/bin/obfs-local"
+	hash obfs-local 2>/dev/null || { logger -t "【SS】" "找不到 obfs-local, 请检查系统"; nvram set ss_status=00 && nvram commit; eval "$scriptfilepath start &"; exit 1; }
+fi
+if [ ! -s /usr/sbin/pdnsd ] ; then
+	logger -t "【SS】" "找不到 pdnsd. opt 下载程序"
+	wgetcurl.sh "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
+	chmod 777 "/opt/bin/pdnsd"
+	hash pdnsd 2>/dev/null || { logger -t "【SS】" "找不到 pdnsd, 请检查系统"; nvram set ss_status=00 && nvram commit; eval "$scriptfilepath start &"; exit 1; }
 fi
 check_ssr
 echo "Debug: $DNS_Server"
@@ -1395,7 +1429,19 @@ eval "$scriptfilepath keep &"
 
 clean_SS()
 {
-/etc/storage/ez_buttons_script.sh cleanss &
+# 重置 SS IP 规则文件并重启 SS
+logger -t "【SS】" "重置 SS IP 规则文件并重启 SS"
+/tmp/script/_ss stop
+sed -Ei '/adbyby_host.conf|cflist.conf|AiDisk_00|server=/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github/d' /etc/storage/dnsmasq/dnsmasq.conf
+rm -f /tmp/ss/dnsmasq.d/*
+restart_dhcpd
+rm -rf /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt /tmp/ss/*
+[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
+[ ! -f /etc/storage/basedomain.txt ] && tar -xzvf /etc_ro/basedomain.tgz -C /tmp && ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
+nvram set ss_status="cleanss"
+nvram set kcptun_status="cleanss"
+/tmp/script/_ss &
 exit 0
 }
 
@@ -1530,7 +1576,7 @@ fi
 if [ "$rebss" -gt 6 ] ; then
 	if [ "$kcptun2_enable" = "1" ] || [ -z $ss_rdd_server ] ; then
 		logger -t "【SS】" "[$LOGTIME] 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
-		/etc/storage/ez_buttons_script.sh cleanss &
+		clean_SS
 		sleep 5
 		exit 0
 	fi
@@ -1541,7 +1587,7 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	[ ! -z $ss_rdd_server ] && SSRNUM=2
 	if [ "$NUM" -lt "$SSRNUM" ] || [ ! -s "`which ss-local`" ] ; then
 		logger -t "【SS】" "找不到 $SSRNUM ss-local 进程 $rebss, 重启SS."
-		/etc/storage/ez_buttons_script.sh cleanss &
+		clean_SS
 		sleep 5
 		exit 0
 	fi
@@ -1554,7 +1600,7 @@ SSRNUM=1
 [ ! -z $ss_rdd_server ] && SSRNUM=2
 if [ "$NUM" -lt "$SSRNUM" ] ; then
 	logger -t "【SS】" "找不到 $SSRNUM shadowsocks 进程 $rebss, 重启SS."
-	/etc/storage/ez_buttons_script.sh cleanss &
+	clean_SS
 	sleep 5
 	exit 0
 fi
@@ -1876,7 +1922,7 @@ help)
 	;;
 update_optss)
 	rm -rf /opt/bin/ss-redir /opt/bin/ss-local
-	/etc/storage/ez_buttons_script.sh cleanss &
+	clean_SS
 	exit 0
 	;;
 *)

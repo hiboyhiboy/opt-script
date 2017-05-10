@@ -186,7 +186,7 @@ yahooweb='https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20weathe
 echo $yahooweb
 rm -f /tmp/weatherweb
 #wget -O /tmp/weatherweb $yahooweb
-wgetcurl.sh /tmp/weatherweb $yahooweb $yahooweb N
+wgetcurl.sh /tmp/weatherweb "$yahooweb" "$yahooweb" N
 if [ -s /tmp/weatherweb ]; then
 	cat /tmp/weatherweb | grep '<yweather' | awk -F'<yweather' '{ \
 		{L1="<yweather"$3; L2="<yweather"$2; L3="<yweather"$4; L4="<yweather"$5; L5="<yweather"$6; L6="<yweather"$7; L7="<yweather"$8; L8="<yweather"$9}} \

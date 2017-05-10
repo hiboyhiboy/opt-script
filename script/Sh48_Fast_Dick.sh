@@ -100,7 +100,7 @@ else
 	rm -f "/opt/FastDick/" -R
 	mkdir -p "/opt/FastDick"
 	swjsqfile="https://raw.githubusercontent.com/fffonion/Xunlei-FastDick/master/swjsq.py"
-	wgetcurl.sh "/opt/FastDick/swjsq.py" $swjsqfile
+	wgetcurl.sh "/opt/FastDick/swjsq.py" $swjsqfile $swjsqfile N
 	chmod 777 "/opt/FastDick/swjsq.py"
 	logger -t "【迅雷快鸟】" "程序下载完成, 正在启动 python /opt/FastDick/swjsq.py"
 	echo "$FastDick_uid,$FastDick_pwd" >/opt/FastDick/swjsq.account.txt

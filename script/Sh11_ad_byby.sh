@@ -65,7 +65,7 @@ if [ ! -z "$upanPath" ] ; then
 	fi
 	if [ ! -s "$upanPath/ad/bin/adbyby" ] ; then
 		logger -t "【Adbyby】" "开始下载http://update.adbyby.com/download/7620n.tar.gz"
-		wgetcurl.sh $upanPath/ad/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'http://update.adbyby.com/download/7620n.tar.gz'
+		wgetcurl.sh $upanPath/ad/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'http://update.adbyby.com/download/7620n.tar.gz' N
 		untar.sh $upanPath/ad/7620n.tar.gz $upanPath/ad $upanPath/ad/bin/adbyby
 	fi
 else
@@ -82,7 +82,7 @@ else
 	fi
 	if [ ! -s "/tmp/bin/adbyby" ] ; then
 		logger -t "【Adbyby】" "开始下载http://update.adbyby.com/download/7620n.tar.gz"
-		wgetcurl.sh /tmp/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'http://update.adbyby.com/download/7620n.tar.gz'
+		wgetcurl.sh /tmp/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'http://update.adbyby.com/download/7620n.tar.gz' N
 		untar.sh /tmp/7620n.tar.gz /tmp /tmp/bin/adbyby
 	fi
 fi

@@ -297,7 +297,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	koolproxy_mount
 	if [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "开始下载 koolproxy"
-		wgetcurl.sh /tmp/7620koolproxy/koolproxy $koolproxyfile $koolproxyfilecdn
+		wgetcurl.sh /tmp/7620koolproxy/koolproxy $koolproxyfile $koolproxyfilecdn N
 	fi
 	if [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "开始下载 koolproxy"
@@ -377,7 +377,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	#hash daydayup 2>/dev/null || update_kp_rules
 	logger -t "【koolproxy】" "启动 koolproxy 程序"
 	chmod 777 /tmp/7620koolproxy/koolproxy
-	export PATH='/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
+	export PATH='/tmp/7620koolproxy:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 	export LD_LIBRARY_PATH=/tmp/7620koolproxy/lib:/lib:/opt/lib
 	nvram set koolproxy_h="`/tmp/7620koolproxy/koolproxy -h | awk 'NR==1{print}'`"
 	cd /tmp/7620koolproxy/
@@ -465,7 +465,7 @@ fi
 c_line=`echo $line |grep -v "#" |grep -v '*'`
 if [ ! -z $file_name ] && [ ! -z "$c_line" ] ; then
 file_name=${line##*/}
-	wgetcurl.sh /tmp/7620koolproxy/rule_tmp/$file_name $line
+	wgetcurl.sh /tmp/7620koolproxy/rule_tmp/$file_name $line $line N
 	if [ -f /tmp/7620koolproxy/rule_tmp/$file_name ] ; then
 		MD5_TMP=`md5sum /tmp/7620koolproxy/rule_tmp/$file_name  | awk '{print $1}'`
 		MD5_ORI=`md5sum /tmp/7620koolproxy/rule_store/$file_name| awk '{print $1}'`

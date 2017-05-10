@@ -114,10 +114,18 @@ else
 	mkdir -p /tmp/AiDisk_00/opt
 fi
 mkdir -p /opt/bin
+if [ ! -f /sbin/check_network ] && [ ! -f /opt/bin/check_network ] ; then
+	wgetcurl.sh '/opt/bin/check_network' "$hiboyfile/check_network" "$hiboyfile2/check_network"
+fi
+[ -f /sbin/check_network ] && [ -f /opt/bin/check_network ] && rm -f /opt/bin/check_network
+# flush buffers
+sync
+
 }
 
 opt_file () {
 if [ ! -f /opt/opt.tgz ]  ; then
+logger -t "【opt】" "/opt 可用空间：$(df -m | grep /opt | awk -F' ' '{print $4}')M"
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 [ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
 optPath="`grep ' /opt ' /proc/mounts | grep /dev`"

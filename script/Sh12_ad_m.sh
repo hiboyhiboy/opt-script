@@ -59,7 +59,7 @@ if [ ! -z "$upanPath" ] ; then
 	fi
 	if [ ! -s "$upanPath/ad/7620adm/adm" ] ; then
 		logger -t "【ADM】" "开始下载 7620adm.tgz"
-		wgetcurl.sh $upanPath/ad/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz"
+		wgetcurl.sh $upanPath/ad/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz" "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz" N
 		untar.sh $upanPath/ad/7620adm.tgz $upanPath/ad $upanPath/ad/7620a/adm
 		if [ -d "$upanPath/ad/7620a" ] ; then
 			mv -f $upanPath/ad/7620a $upanPath/ad/7620adm
@@ -75,7 +75,7 @@ else
 	fi
 	if [ ! -s "/tmp/7620adm/adm" ] ; then
 		logger -t "【ADM】" "开始下载 7620adm.tgz"
-		wgetcurl.sh /tmp/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz"
+		wgetcurl.sh /tmp/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz" "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz" N
 		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620a/adm
 		if [ -d "/tmp/7620a" ] ; then
 			mv -f /tmp/7620a /tmp/7620adm
@@ -332,7 +332,7 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 	grep -v '^!' /tmp/7620adm/user3adblocks.txt | grep -v "^$" >> /tmp/7620adm/user.txt
 	logger -t "【ADM】" "启动 adm 程序"
 	cd /tmp/7620adm
-	export PATH='/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
+	export PATH='/tmp/7620adm:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 	export LD_LIBRARY_PATH=/tmp/7620adm/lib:/lib:/opt/lib
 	/tmp/7620adm/adm >/dev/null 2>&1 &
 	if [ "$adbyby_adblocks" = "1" ] ; then
