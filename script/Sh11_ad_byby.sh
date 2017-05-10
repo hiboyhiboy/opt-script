@@ -336,15 +336,15 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		xwhyc_rules3="$hiboyfile2/video.txt"
 		xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"
 		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-		wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules2
-		[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2
+		wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules2 N
+		[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2 N
 		[ -s /tmp/bin/data/video.txt ] && mv -f /tmp/bin/data/video.txt /tmp/bin/data/video_B.txt
 		xwhyc_rules="$hiboyfile/lazy.txt"
 		xwhyc_rules3="$hiboyfile2/lazy.txt"
 		xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
 		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-		wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules2
-		[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2
+		wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules2 N
+		[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2 N
 		[ -s /tmp/bin/data/lazy.txt ] && mv -f /tmp/bin/data/lazy.txt /tmp/bin/data/lazy_B.txt
 	fi
 	chmod 777 /tmp/bin/adbyby
@@ -849,7 +849,7 @@ update)
 	rm -f /tmp/var/video.txt
 	urla="http://update.adbyby.com/rule3/video.jpg"
 	checkb="/tmp/bin/data/video.txt"
-	wgetcurl.sh $checka $urla
+	wgetcurl.sh $checka $urla N
 	if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
 		logger -t "【Adbyby】" "更新检查:有更新 $urla , 重启进程"
 		nvram set adbyby_status=00 && { eval "$scriptfilepath start &"; exit 0; }
