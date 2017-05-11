@@ -33,7 +33,7 @@ if [ "$frp_enable" = "1" ] ; then
 		frp_close
 		frp_start
 	else
-		[ "$frps_enable" = "1" ] && [ -z "`pidof frpc`" ] && nvram set frp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ "$frpc_enable" = "1" ] && [ -z "`pidof frpc`" ] && nvram set frp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 		[ "$frps_enable" = "1" ] && [ -z "`pidof frps`" ] && nvram set frp_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
