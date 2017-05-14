@@ -37,7 +37,43 @@ wifidog_Daemon=`nvram get wifidog_Daemon`
 [ -z $wifidog_MaxConn ] && wifidog_MaxConn="30" && nvram set wifidog_MaxConn=$wifidog_MaxConn
 [ -z $wifidog_MACList ] && wifidog_MACList="00:00:DE:AD:BE:AF" && nvram set wifidog_MACList=$wifidog_MACList
 
-wifidog_check () {
+wifidog_restart () {
+
+relock="/var/lock/wifidog_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set wifidog_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【wifidog】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	wifidog_renum=${wifidog_renum:-"0"}
+	wifidog_renum=`expr $wifidog_renum + 1`
+	nvram set wifidog_renum="$wifidog_renum"
+	if [ "$wifidog_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【wifidog】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get wifidog_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set wifidog_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set wifidog_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+wifidog_get_status () {
 
 A_restart=`nvram get wifidog_status`
 B_restart="$wifidog_enable$wifidog_Daemon$wifidog_Hostname$wifidog_HTTPPort$wifidog_Path$wifidog_id$wifidog_lanif$wifidog_wanif$wifidog_Port$wifidog_Interval$wifidog_Timeout$wifidog_MaxConn$wifidog_MACList"
@@ -48,6 +84,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+wifidog_check () {
+
+wifidog_get_status
 if [ "$wifidog_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof wifidog`" ] && logger -t "【wifidog】" "停止 wifidog" && wifidog_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -57,7 +98,7 @@ if [ "$wifidog_enable" = "1" ] ; then
 		wifidog_close
 		wifidog_start
 	else
-		[ -z "`pidof wifidog`" ] && nvram set wifidog_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "`pidof wifidog`" ] && wifidog_restart
 	fi
 fi
 }
@@ -75,7 +116,7 @@ fi
 while true; do
 	if [ -z "`pidof wifidog`" ] || [ ! -s "`which wifidog`" ] ; then
 		logger -t "【wifidog】" "重新启动"
-		{ nvram set wifidog_status=00 && eval "$scriptfilepath &" ; exit 0; }
+		wifidog_restart
 	fi
 sleep 234
 done
@@ -128,7 +169,7 @@ else
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【wifidog】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【wifidog】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set wifidog_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【wifidog】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && wifidog_restart x
 fi
 
 logger -t "【wifidog】" "运行 wifidog"
@@ -208,8 +249,9 @@ FWD
 $SVC_PATH -c /etc/storage/wifidog.conf &
 
 sleep 2
-[ ! -z "`pidof wifidog`" ] && logger -t "【wifidog】" "启动成功"
-[ -z "`pidof wifidog`" ] && logger -t "【wifidog】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set wifidog_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "`pidof wifidog`" ] && logger -t "【wifidog】" "启动成功" && wifidog_restart o
+[ -z "`pidof wifidog`" ] && logger -t "【wifidog】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && wifidog_restart x
+#wifidog_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -253,7 +295,7 @@ stop)
 	wifidog_close
 	;;
 keep)
-	wifidog_check
+	#wifidog_check
 	wifidog_keep
 	;;
 *)

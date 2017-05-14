@@ -13,7 +13,43 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep server_chan)" 
 	chmod 777 /tmp/script/_server_chan
 fi
 
-serverchan_check () {
+serverchan_restart () {
+
+relock="/var/lock/serverchan_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set serverchan_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【serverchan】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	serverchan_renum=${serverchan_renum:-"0"}
+	serverchan_renum=`expr $serverchan_renum + 1`
+	nvram set serverchan_renum="$serverchan_renum"
+	if [ "$serverchan_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【serverchan】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get serverchan_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set serverchan_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set serverchan_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+serverchan_get_status () {
 
 A_restart=`nvram get serverchan_status`
 B_restart="$serverchan_enable$serverchan_sckey$serverchan_notify_1$serverchan_notify_2$serverchan_notify_3$serverchan_notify_4$(cat /etc/storage/serverchan_script.sh | grep -v '^#' | grep -v "^$")"
@@ -24,6 +60,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+serverchan_check () {
+
+serverchan_get_status
 if [ "$serverchan_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "停止 serverchan" && serverchan_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -33,7 +74,7 @@ if [ "$serverchan_enable" = "1" ] ; then
 		serverchan_close
 		serverchan_start
 	else
-		[ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] || [ ! -s "`which curl`" ] && nvram set serverchan_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] || [ ! -s "`which curl`" ] && serverchan_restart
 	fi
 fi
 }
@@ -53,10 +94,10 @@ return
 fi
 
 while true; do
-	[ ! -s "`which curl`" ] && nvram set serverchan_status=03 && { logger -t "【微信推送】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
+	[ ! -s "`which curl`" ] && { logger -t "【微信推送】" "重新启动"; serverchan_restart ; }
 	if [ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] ; then
 		logger -t "【微信推送】" "重新启动"
-		{ nvram set serverchan_status=01 && eval "$scriptfilepath &" ; exit 0; }
+		serverchan_restart
 	fi
 sleep 245
 done
@@ -80,14 +121,15 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		logger -t "【微信推送】" "找不到 curl ，需要手动安装 opt 后输入[opkg install curl]安装"
-		logger -t "【微信推送】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set serverchan_status=02; eval "$scriptfilepath &"; exit 0; }
+		logger -t "【微信推送】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && serverchan_restart x
 	fi
 fi
 logger -t "【微信推送】" "运行 /etc/storage/serverchan_script.sh"
 /etc/storage/serverchan_script.sh &
 sleep 3
-[ ! -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动成功"
-[ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set serverchan_status=01; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动成功" && serverchan_restart o
+[ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && serverchan_restart x
+#serverchan_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -112,7 +154,7 @@ stop)
 	serverchan_close
 	;;
 keep)
-	serverchan_check
+	#serverchan_check
 	serverchan_keep
 	;;
 *)

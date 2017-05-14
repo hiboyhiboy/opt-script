@@ -17,10 +17,10 @@ adbmfile2="$hiboyfile2/7620adm.tgz"
 
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
-AD_LAN_AC_IP=${AD_LAN_AC_IP:-"0"}
+[ -z $AD_LAN_AC_IP ] && AD_LAN_AC_IP=0 && nvram set AD_LAN_AC_IP=$AD_LAN_AC_IP
 lan_ipaddr=`nvram get lan_ipaddr`
-[ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
-adbyby_adblocks=${adbyby_adblocks:-"0"}
+[ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr && nvram set ss_DNS_Redirect_IP=$ss_DNS_Redirect_IP
+[ -z $adbyby_adblocks ] && adbyby_adblocks=0 && nvram set adbyby_adblocks=$adbyby_adblocks
 
 fi
 #检查 dnsmasq 目录参数
@@ -86,14 +86,51 @@ export PATH='/tmp/7620adm:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/
 hash adm 2>/dev/null || rm -rf /tmp/7620adm/*
 if [ ! -s "/tmp/7620adm/adm" ] ; then
 	rm -rf /tmp/7620adm/*
-	logger -t "【ADM】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adm_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【ADM】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && adm_restart x
 fi
 }
 
-adm_check () {
+adm_restart () {
+
+relock="/var/lock/adm_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set adm_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	rm -rf /tmp/7620adm/*
+	if [ -f $relock ] ; then
+		logger -t "【adm】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	adm_renum=${adm_renum:-"0"}
+	adm_renum=`expr $adm_renum + 1`
+	nvram set adm_renum="$adm_renum"
+	if [ "$adm_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【adm】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get adm_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set adm_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set adm_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+adm_get_status () {
 
 A_restart=`nvram get adm_status`
-B_restart="$adm_enable$ss_link_1$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adm_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adm_enable$ss_link_1$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adm_rules_script.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set adm_status=$B_restart
@@ -101,6 +138,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+adm_check () {
+
+adm_get_status
 if [ "$adm_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof adm`" ] && logger -t "【ADM】" "停止 adm" && adm_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -110,7 +152,7 @@ if [ "$adm_enable" = "1" ] ; then
 		adm_close
 		adm_start
 	else
-		[ -z "`pidof adm`" ] || [ ! -s "/tmp/7620adm/adm" ] && nvram set adm_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "`pidof adm`" ] || [ ! -s "/tmp/7620adm/adm" ] && adm_restart
 		PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
 		if [ "$PIDS" != 0 ] ; then
 			port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
@@ -147,7 +189,7 @@ reb="1"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 while true; do
-[ ! -s "/tmp/7620adm/adm" ] && nvram set adm_status=00 && { logger -t "【ADM】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
+[ ! -s "/tmp/7620adm/adm" ] && logger -t "【ADM】" "重新启动" && adm_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ "$reb" -gt 5 ] && [ "$(cat /tmp/reb.lock)x" == "1x" ] ; then
 		LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
@@ -321,7 +363,7 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 		c_line=`echo $line |grep -v "#"`
 		if [ ! -z "$c_line" ] ; then
 			logger -t "【ADM】" "下载规则:$line"
-			wgetcurl.sh /tmp/7620adm/user2.txt $line
+			wgetcurl.sh /tmp/7620adm/user2.txt $line $line N
 			grep -v '^!' /tmp/7620adm/user2.txt | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> /tmp/7620adm/user3adblocks.txt
 			rm -f /tmp/7620adm/user2.txt
 		fi
@@ -347,13 +389,14 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 		[ ! -f /etc/storage/adm/adm_ca_key.pem ] && [ -f /tmp/7620adm/adm_ca_key.pem ] && cp /tmp/7620adm/adm_ca_key.pem /etc/storage/adm/adm_ca_key.pem && mtd_storage.sh save &
 	#fi
 fi
-[ ! -z "`pidof adm`" ] && logger -t "【ADM】" "启动成功"
-[ -z "`pidof adm`" ] && logger -t "【ADM】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adm_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "`pidof adm`" ] && logger -t "【ADM】" "启动成功" && adm_restart o
+[ -z "`pidof adm`" ] && logger -t "【ADM】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && adm_restart x
 adm_add_rules
 rm -f /tmp/7620adm.tgz /tmp/cron_adb.lock
 /etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
 logger -t "【ADM】" "守护进程启动"
 adm_cron_job
+#adm_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -563,7 +606,7 @@ gen_special_purpose_ip () {
 #处理肯定不走通道的目标网段
 lan_ipaddr=`nvram get lan_ipaddr`
 kcptun_enable=`nvram get kcptun_enable`
-kcptun_enable=${kcptun_enable:-"0"}
+[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=$kcptun_enable
 kcptun_server=`nvram get kcptun_server`
 if [ "$kcptun_enable" != "0" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
@@ -573,15 +616,15 @@ fi
 
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 ss_enable=`nvram get ss_enable`
-ss_enable=${ss_enable:-"0"}
+[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=$ss_enable
 [ "$ss_enable" = "0" ] && ss_s1_ip="" && ss_s2_ip=""
 nvram set ss_server1=`nvram get ss_server`
 ss_server1=`nvram get ss_server1`
 ss_server2=`nvram get ss_server2`
 kcptun2_enable=`nvram get kcptun2_enable`
-kcptun2_enable=${kcptun2_enable:-"0"}
+[ -z $kcptun2_enable ] && kcptun2_enable=0 && nvram set kcptun2_enable=$kcptun2_enable
 kcptun2_enable2=`nvram get kcptun2_enable2`
-kcptun2_enable2=${kcptun2_enable2:-"0"}
+[ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
 [ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_server2=""
 if [ "$ss_enable" != "0" ] ; then
@@ -719,9 +762,9 @@ EOF
 }
 
 adm_cron_job(){
-	adm_update=${adm_update:-"0"}
-	adm_update_hour=${adm_update_hour:-"23"}
-	adm_update_min=${adm_update_min:-"59"}
+	[ -z $adm_update ] && adm_update=0 && nvram set adm_update=$adm_update
+	[ -z $adm_update_hour ] && adm_update_hour=23 && nvram set adm_update_hour=$adm_update_hour
+	[ -z $adm_update_min ] && adm_update_min=59 && nvram set adm_update_min=$adm_update_min
 	if [ "0" == "$adm_update" ]; then
 	[ $adm_update_hour -gt 23 ] && adm_update_hour=23 && nvram set adm_update_hour=$adm_update_hour
 	[ $adm_update_hour -lt 0 ] && adm_update_hour=0 && nvram set adm_update_hour=$adm_update_hour
@@ -790,7 +833,7 @@ stop)
 	adm_close
 	;;
 keep)
-	adm_check
+	#adm_check
 	adm_keep
 	;;
 A)
@@ -810,10 +853,10 @@ update)
 	rm -f /tmp/var/admrule_everyday.txt
 	urla="http://update2.admflt.com/ruler/admrule_everyday.txt"
 	checkb="/tmp/7620adm/subscribe/admrule_everyday.txt"
-	wgetcurl.sh $checka $urla
+	wgetcurl.sh $checka $urla $urla N
 	if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
 		logger -t "【ADM】" "更新检查:有更新 $urla , 重启进程"
-		nvram set adm_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		adm_restart
 	else
 		logger -t "【ADM】" "更新检查:不需更新 $urla "
 	fi
@@ -823,7 +866,8 @@ update_ad)
 	adm_mount
 	adm_close
 	rm -rf /tmp/7620adm/*
-	nvram set adm_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+	adm_restart o
+	adm_restart
 	;;
 *)
 	adm_check

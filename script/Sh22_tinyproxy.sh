@@ -16,7 +16,44 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tinyproxy)" ] 
 	chmod 777 /tmp/script/_tinyproxy
 fi
 
-tinyproxy_check () {
+tinyproxy_restart () {
+
+relock="/var/lock/tinyproxy_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set tinyproxy_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【tinyproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	tinyproxy_renum=${tinyproxy_renum:-"0"}
+	tinyproxy_renum=`expr $tinyproxy_renum + 1`
+	nvram set tinyproxy_renum="$tinyproxy_renum"
+	if [ "$tinyproxy_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【tinyproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get tinyproxy_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set tinyproxy_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set tinyproxy_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+tinyproxy_get_status () {
+
 A_restart=`nvram get tinyproxy_status`
 B_restart="$tinyproxy_enable$tinyproxy_path$tinyproxy_port$(cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -26,6 +63,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+tinyproxy_check () {
+
+tinyproxy_get_status
 if [ "$tinyproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "停止 $tinyproxy_path" && tinyproxy_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -35,7 +77,7 @@ if [ "$tinyproxy_enable" = "1" ] ; then
 		tinyproxy_close
 		tinyproxy_start
 	else
-		[ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && nvram set tinyproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && tinyproxy_restart
 		tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 		[ ! -z "$tinyproxyport" ] && port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$tinyproxyport | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ ! -z "$tinyproxyport" ] && [ "$port" = 0 ] ; then
@@ -63,7 +105,7 @@ fi
 while true; do
 	if [ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] || [ ! -s "$tinyproxy_path" ] ; then
 		logger -t "【tinyproxy】" "重新启动"
-		{ nvram set tinyproxy_status=00 && eval "$scriptfilepath &" ; exit 0; }
+		tinyproxy_restart
 	fi
 sleep 222
 done
@@ -108,7 +150,7 @@ else
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【tinyproxy】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【tinyproxy】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set tinyproxy_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【tinyproxy】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && tinyproxy_restart x
 fi
 if [ -s "$SVC_PATH" ] ; then
 	nvram set tinyproxy_path="$SVC_PATH"
@@ -117,18 +159,16 @@ tinyproxy_path="$SVC_PATH"
 logger -t "【tinyproxy】" "运行 $tinyproxy_path"
 $tinyproxy_path -c /etc/storage/tinyproxy_script.sh &
 restart_dhcpd
-B_restart="$tinyproxy_enable$tinyproxy_path$tinyproxy_port$(cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v "^$")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-[ "$A_restart" != "$B_restart" ] && nvram set tinyproxy_status=$B_restart
 sleep 2
-[ ! -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动成功"
-[ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set tinyproxy_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动成功" && tinyproxy_restart o
+[ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tinyproxy_restart x
 if [ "$tinyproxy_port" = "1" ] ; then
 	tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 	echo "tinyproxyport:$tinyproxyport"
 	[ ! -z "$tinyproxyport" ] && logger -t "【tinyproxy】" "允许 $tinyproxyport 端口通过防火墙"
 	[ ! -z "$tinyproxyport" ] && iptables -I INPUT -p tcp --dport $tinyproxyport -j ACCEPT
 fi
+tinyproxy_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -153,7 +193,7 @@ stop)
 	tinyproxy_close
 	;;
 keep)
-	tinyproxy_check
+	#tinyproxy_check
 	tinyproxy_keep
 	;;
 *)

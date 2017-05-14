@@ -24,7 +24,44 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ]  &
 	chmod 777 /tmp/script/_display
 fi
 
-display_check () {
+display_restart () {
+
+relock="/var/lock/display_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set display_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【display】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	display_renum=${display_renum:-"0"}
+	display_renum=`expr $display_renum + 1`
+	nvram set display_renum="$display_renum"
+	if [ "$display_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【display】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get display_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set display_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set display_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+display_get_status () {
+
 A_restart=`nvram get display_status`
 B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -34,6 +71,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+display_check () {
+
+display_get_status
 if [ "$display_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof lcd4linux`" ] && logger -t "【相框显示】" "停止 lcd4linux" && display_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -43,7 +85,7 @@ if [ "$display_enable" = "1" ] ; then
 		display_close
 		display_start
 	else
-		[ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && nvram set display_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && display_restart
 	fi
 fi
 }
@@ -66,7 +108,7 @@ runx="1"
 while true; do
 	if [ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && [ ! -s /tmp/script/_opt_script_check ]; then
 		logger -t "【相框显示】" "重新启动"
-		{ nvram set display_status=00 && eval "$scriptfilepath &" ; exit 0; }
+		display_restart
 	fi
 sleep 180
 runx=`expr $runx + 1`
@@ -105,7 +147,7 @@ echo "$upanPath"
 if [ -z "$upanPath" ] ; then 
 	logger -t "【相框显示】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 	sleep 10
-	nvram set display_status=00 && eval "$scriptfilepath &"
+	display_restart x
 	exit 0
 fi
 
@@ -118,7 +160,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【相框显示】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set display_status_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【相框显示】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
 if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	lcd1="$hiboyfile/lcd.tgz"
@@ -129,7 +171,7 @@ if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 fi
 if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	logger -t "【相框显示】" "缺少 /etc/storage/display_lcd4linux_script.sh 文件, 启动失败"
-	logger -t "【相框显示】" "停止程序, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set display_status_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【相框显示】" "停止程序, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
 # 修改显示空间
 ss_opt_x=`nvram get ss_opt_x`
@@ -156,14 +198,11 @@ export LD_LIBRARY_PATH=/opt/lib
 export LD_LIBRARY_PATH=/lib:/opt/lib
 sleep 2
 logger -t "【相框显示】" "开始显示数据"
-A_restart=`nvram get display_status`
-B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v "^$")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-[ "$A_restart" != "$B_restart" ] && nvram set display_status=$B_restart
 sleep 2
-[ ! -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功"
-[ -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set display_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功" && display_restart o
+[ -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 initopt
+display_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -454,7 +493,7 @@ stop)
 	display_close
 	;;
 keep)
-	display_check
+	#display_check
 	display_keep
 	;;
 getweather)
@@ -464,7 +503,8 @@ getaqidata)
 	getaqidata
 	;;
 redisplay)
-	nvram set display_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+	display_restart o
+	display_restart
 	;;
 *)
 	display_check

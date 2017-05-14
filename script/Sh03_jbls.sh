@@ -74,7 +74,7 @@ stop)
 	jbls_close
 	;;
 keep)
-	jbls_check
+	#jbls_check
 	jbls_keep
 	;;
 *)

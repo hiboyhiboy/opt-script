@@ -80,7 +80,7 @@ stop)
 	kms_close
 	;;
 keep)
-	kms_check
+	#kms_check
 	kms_keep
 	;;
 *)

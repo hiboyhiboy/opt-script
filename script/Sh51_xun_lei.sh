@@ -13,7 +13,44 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep xun_lei)" ]  &
 	chmod 777 /tmp/script/_xun_lei
 fi
 
-xunlei_check () {
+xunleis_restart () {
+
+relock="/var/lock/xunleis_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set xunleis_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【xunleis】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	xunleis_renum=${xunleis_renum:-"0"}
+	xunleis_renum=`expr $xunleis_renum + 1`
+	nvram set xunleis_renum="$xunleis_renum"
+	if [ "$xunleis_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【xunleis】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get xunleis_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set xunleis_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set xunleis_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+xunlei_get_status () {
+
 A_restart=`nvram get xunleis_status`
 B_restart="$xunleis$xunleis_dir"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -23,6 +60,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+xunlei_check () {
+
+xunlei_get_status
 if [ "$xunleis" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ETMDaemon`" ] && logger -t "【迅雷下载】" "停止 xunleis" && xunlei_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -32,7 +74,7 @@ if [ "$xunleis" = "1" ] ; then
 		xunlei_close
 		xunlei_start
 	else
-		[ -z "`pidof ETMDaemon`" ] && nvram set xunleis_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "`pidof ETMDaemon`" ] && xunleis_restart
 	fi
 fi
 }
@@ -75,12 +117,12 @@ fi
 while true; do
 	if [ ! -s "$xunleis_dir/xunlei/portal" ] ; then
 		logger -t "【迅雷下载】" "找不到文件 $xunleis_dir/xunlei/portal"
-		{ eval "$scriptfilepath &" ; exit 0; }
+		xunleis_restart
 	fi
 	running=$(ps -w | grep "/xunlei/lib/" | grep -v "grep" | wc -l)
 	if [ $running -le 2 ] ; then
 		logger -t "【迅雷下载】" "重新启动$running"
-		{ nvram set xunleis_status=00 && eval "$scriptfilepath &" ; exit 0; }
+		xunleis_restart
 	fi
 sleep 251
 done
@@ -109,7 +151,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	if [ -z "$upanPath" ] ; then 
 		logger -t "【迅雷下载】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 		sleep 10
-		nvram set xunleis_status=00 && eval "$scriptfilepath &"
+		xunleis_restart x
 		exit 0
 	fi
 	xunleis_dir="$upanPath"
@@ -128,7 +170,7 @@ if [ ! -s "$SVC_PATH" ] || [ $portal_md5 != $xunleimd5 ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【迅雷下载】" "找不到 $SVC_PATH ，需要手动安装 Xware1.0.31_mipsel_32_uclibc"
-	logger -t "【迅雷下载】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set xunleis_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【迅雷下载】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && xunleis_restart x
 fi
 chmod 777 "$xunleis_dir/xunlei" -R
 logger -t "【迅雷下载】" "启动程序"
@@ -138,9 +180,10 @@ export LD_LIBRARY_PATH="$xunleis_dir/xunlei/lib:/lib:/opt/lib"
 sleep 2
 export LD_LIBRARY_PATH="/lib:/opt/lib"
 sleep 5
-[ ! -z "$(ps -w | grep "/xunlei/lib/" | grep -v grep )" ] && logger -t "【迅雷下载】" "启动成功"
-[ -z "$(ps -w | grep "/xunlei/lib/" | grep -v grep )" ] && logger -t "【迅雷下载】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set xunleis_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "/xunlei/lib/" | grep -v grep )" ] && logger -t "【迅雷下载】" "启动成功" && xunleis_restart o
+[ -z "$(ps -w | grep "/xunlei/lib/" | grep -v grep )" ] && logger -t "【迅雷下载】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && xunleis_restart x
 initopt
+xunlei_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -165,7 +208,7 @@ stop)
 	xunlei_close
 	;;
 keep)
-	xunlei_check
+	#xunlei_check
 	xunlei_keep
 	;;
 *)

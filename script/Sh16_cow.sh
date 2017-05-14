@@ -4,16 +4,16 @@ source /etc/storage/script/init.sh
 cow_enable=`nvram get cow_enable`
 [ -z $cow_enable ] && cow_enable=0 && nvram set cow_enable=0
 cow_path=`nvram get cow_path`
-cow_path=${cow_path:-"/opt/bin/cow"}
+[ -z $cow_path ] && cow_path="/opt/bin/cow" && nvram set cow_path=$cow_path
 if [ "$cow_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 nvramshow=`nvram showall | grep cow | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-ss_mode_x=${ss_mode_x:-"0"}
-kcptun2_enable=${kcptun2_enable:-"0"}
-kcptun2_enable2=${kcptun2_enable2:-"0"}
+[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
+[ -z $kcptun2_enable ] && kcptun2_enable=0 && nvram set kcptun2_enable=$kcptun2_enable
+[ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
-ss_s1_local_port=${ss_s1_local_port:-"1081"}
-ss_s2_local_port=${ss_s2_local_port:-"1082"}
+[ -z $ss_s1_local_port ] && ss_s1_local_port=1081 && nvram set ss_s1_local_port=$ss_s1_local_port
+[ -z $ss_s2_local_port ] && ss_s2_local_port=1082 && nvram set ss_s2_local_port=$ss_s2_local_port
 fi
 
 
@@ -23,7 +23,44 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cow)" ]  && [ 
 	chmod 777 /tmp/script/_cow
 fi
 
-cow_check () {
+cow_restart () {
+
+relock="/var/lock/cow_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set cow_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【cow】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	cow_renum=${cow_renum:-"0"}
+	cow_renum=`expr $cow_renum + 1`
+	nvram set cow_renum="$cow_renum"
+	if [ "$cow_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【cow】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get cow_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set cow_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set cow_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+cow_get_status () {
+
 lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get cow_status`
 B_restart="$cow_enable$cow_path$lan_ipaddr$ss_s1_local_port$ss_s2_local_port$ss_mode_x$ss_rdd_server$(cat /etc/storage/cow_script.sh /etc/storage/cow_config_script.sh | grep -v '^#' | grep -v "^$")"
@@ -34,6 +71,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+cow_check () {
+
+cow_get_status
 if [ "$cow_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "停止 cow" && cow_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -43,7 +85,7 @@ if [ "$cow_enable" = "1" ] ; then
 		cow_close
 		cow_start
 	else
-		[ -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && nvram set cow_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && cow_restart
 	fi
 fi
 }
@@ -66,7 +108,7 @@ while true; do
 	NUM=`ps -w | grep "$cow_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$cow_path" ] ; then
 		logger -t "【cow】" "重新启动$NUM"
-		{ nvram set cow_status=00 && eval "$scriptfilepath &" ; exit 0; }
+		cow_restart
 	fi
 sleep 216
 done
@@ -101,7 +143,7 @@ else
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【cow】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【cow】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set cow_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【cow】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && cow_restart x
 fi
 if [ -s "$SVC_PATH" ] ; then
 	nvram set cow_path="$SVC_PATH"
@@ -112,13 +154,11 @@ logger -t "【cow】" "运行 cow_script"
 /etc/storage/cow_script.sh
 $cow_path -rc /etc/storage/cow_config_script.sh &
 restart_dhcpd
-B_restart="$cow_enable$cow_path$lan_ipaddr$ss_s1_local_port$ss_s2_local_port$ss_mode_x$ss_rdd_server$(cat /etc/storage/cow_script.sh /etc/storage/cow_config_script.sh | grep -v '^#' | grep -v "^$")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-[ "$A_restart" != "$B_restart" ] && nvram set cow_status=$B_restart
 sleep 2
-[ ! -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "启动成功"
-[ -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set cow_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "启动成功" && cow_restart o
+[ -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && cow_restart x
 initopt
+cow_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -143,7 +183,7 @@ stop)
 	cow_close
 	;;
 keep)
-	cow_check
+	#cow_check
 	cow_keep
 	;;
 *)

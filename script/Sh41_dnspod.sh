@@ -7,7 +7,7 @@ if [ "$dnspod_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep dnspod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 hostIP=""
 myIP=""
-dnspod_interval=${dnspod_interval:-"600"}
+[ -z $dnspod_interval ] && dnspod_interval=600 && nvram set dnspod_interval=$dnspod_interval
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep dnspod)" ]  && [ ! -s /tmp/script/_dnspod ]; then
@@ -16,7 +16,7 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep dnspod)" ]  &&
 	chmod 777 /tmp/script/_dnspod
 fi
 
-dnspod_check () {
+dnspod_get_status () {
 
 A_restart=`nvram get dnspod_status`
 B_restart="$dnspod_enable$dnspod_username$dnspod_password$dnspod_Token$dnspod_domian$dnspod_host$dnspod_domian2$dnspod_host2$dnspod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
@@ -27,6 +27,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+dnspod_check () {
+
+dnspod_get_status
 if [ "$dnspod_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【DNSPod动态域名】" "停止 dnspod" && dnspod_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -77,15 +82,17 @@ cat > "/etc/storage/ddns_script.sh" <<-\EEE
 arIpAddress () {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip"
-#wget --no-check-certificate --quiet --output-document=- "1212.ip138.com/ic.asp" | grep -E -o '([0-9]+\.){3}[0-9]+'
-#wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx"
-#wget --no-check-certificate --quiet --output-document=- "ip.3322.net"
+    wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #wget --no-check-certificate --quiet --output-document=- "1212.ip138.com/ic.asp" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
 else
-curl -k -s "http://members.3322.org/dyndns/getip"
-#curl -k -s 1212.ip138.com/ic.asp | grep -E -o '([0-9]+\.){3}[0-9]+'
-#curl -k -s ip.6655.com/ip.aspx
-#curl -k -s ip.3322.net
+    curl -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #curl -k -s 1212.ip138.com/ic.asp | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
 fi
 }
 arIpAddress=$(arIpAddress)
@@ -214,6 +221,18 @@ arDdnsCheck() {
 	local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
+	if [ "$hostIP"x ="x"  ] ; then
+		curltest=`which curl`
+		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+			hostIP=`wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+		else
+			hostIP=`curl -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+		fi
+		if [ "$hostIP"x ="x"  ] ; then
+			logger -t "【DNSPod动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
+			return 1
+		fi
+	fi
 	echo "Updating Domain: ${2}.${1}"
 	echo "hostIP: ${hostIP}"
 	#lastIP=$(arNslookup "${2}.${1}")

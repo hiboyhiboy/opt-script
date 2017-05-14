@@ -21,11 +21,11 @@ koolproxyfile33="$hiboyfile2/7620koolproxy.tgz"
 
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
-AD_LAN_AC_IP=${AD_LAN_AC_IP:-"0"}
+[ -z $AD_LAN_AC_IP ] && AD_LAN_AC_IP=0 && nvram set AD_LAN_AC_IP=$AD_LAN_AC_IP
 lan_ipaddr=`nvram get lan_ipaddr`
-[ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
+[ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr && nvram set ss_DNS_Redirect_IP=$ss_DNS_Redirect_IP
+[ -z $adbyby_adblocks ] && adbyby_adblocks=0 && nvram set adbyby_adblocks=$adbyby_adblocks
 [ "$koolproxy_video" = "1" ] && mode_video=" -e " || mode_video=""
-adbyby_adblocks=${adbyby_adblocks:-"0"}
 
 fi
 #检查 dnsmasq 目录参数
@@ -83,10 +83,47 @@ export PATH='/tmp/7620koolproxy:/etc/storage/bin:/tmp/script:/etc/storage/script
 hash koolproxy 2>/dev/null || rm -rf /tmp/7620koolproxy/*
 }
 
-koolproxy_check () {
+koolproxy_restart () {
+
+relock="/var/lock/koolproxy_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set koolproxy_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	rm -rf /tmp/7620koolproxy/*
+	if [ -f $relock ] ; then
+		logger -t "【koolproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	koolproxy_renum=${koolproxy_renum:-"0"}
+	koolproxy_renum=`expr $koolproxy_renum + 1`
+	nvram set koolproxy_renum="$koolproxy_renum"
+	if [ "$koolproxy_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【koolproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get koolproxy_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set koolproxy_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set koolproxy_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+koolproxy_get_status () {
 
 A_restart=`nvram get koolproxy_status`
-B_restart="$koolproxy_enable$ss_link_1$koolproxy_auto$koolproxy_video$koolproxy_update$koolproxy_update_hour$koolproxy_update_min$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$koolproxy_enable$ss_link_1$koolproxy_auto$koolproxy_video$koolproxy_update$koolproxy_update_hour$koolproxy_update_min$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set koolproxy_status=$B_restart
@@ -94,6 +131,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+koolproxy_check () {
+
+koolproxy_get_status
 if [ "$koolproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "停止 koolproxy" && koolproxy_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -103,7 +145,7 @@ if [ "$koolproxy_enable" = "1" ] ; then
 		koolproxy_close
 		koolproxy_start
 	else
-		[ -z "`pidof koolproxy`" ] || [ ! -s "/tmp/7620koolproxy/koolproxy" ] && nvram set koolproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "`pidof koolproxy`" ] || [ ! -s "/tmp/7620koolproxy/koolproxy" ] && koolproxy_restart
 		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
 		if [ "$PIDS" != 0 ] ; then
 			port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
@@ -146,7 +188,7 @@ reb="1"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 while true; do
-[ ! -s "/tmp/7620koolproxy/koolproxy" ] && nvram set koolproxy_status=00 && { logger -t "【koolproxy】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
+[ ! -s "/tmp/7620koolproxy/koolproxy" ] && logger -t "【koolproxy】" "重新启动" && koolproxy_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ "$reb" -gt 5 ] && [ "$(cat /tmp/reb.lock)x" == "1x" ] ; then
 		LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
@@ -304,7 +346,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 		wgetcurl.sh /tmp/7620koolproxy/koolproxy $koolproxyfile2 $koolproxyfile22
 	fi
 	if [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
-		logger -t "【koolproxy】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set koolproxy_status=00; eval "$scriptfilepath &"; exit 0; }
+		logger -t "【koolproxy】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && koolproxy_restart x
 	fi
 	# 恢复上次保存的证书
 	mkdir -p /etc/storage/koolproxy /tmp/7620koolproxy/data/certs /tmp/7620koolproxy/data/private
@@ -342,7 +384,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 		c_line=`echo $line |grep -v "#"`
 		if [ ! -z "$c_line" ] ; then
 			logger -t "【koolproxy】" "下载规则:$line"
-			wgetcurl.sh /tmp/7620koolproxy/user2.txt $line
+			wgetcurl.sh /tmp/7620koolproxy/user2.txt $line $line N
 			grep -v '^!' /tmp/7620koolproxy/user2.txt | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> /tmp/7620koolproxy/user3adblocks.txt
 			rm -f /tmp/7620koolproxy/user2.txt
 		fi
@@ -356,7 +398,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	c_line=`echo $line |grep -v "#" |grep -v '*'`
 	if [ ! -z "$c_line" ] ; then
 		logger -t "【koolproxy】" "下载规则:$line"
-		wgetcurl.sh /tmp/7620koolproxy/user2.txt $line
+		wgetcurl.sh /tmp/7620koolproxy/user2.txt $line $line N
 		grep -v '^!' /tmp/7620koolproxy/user2.txt | sort -u | grep -v "^$" >> /tmp/7620koolproxy/user_store.txt
 		rm -f /tmp/7620koolproxy/user2.txt
 	fi
@@ -407,6 +449,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	killall koolproxy
 	cd /tmp/7620koolproxy/
 	/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
+	koolproxy_cron_job
 	}
 	hash krdl 2>/dev/null && krdl_ipset
 fi
@@ -416,13 +459,14 @@ nvram set koolproxy_rules_nu_local="`cat /tmp/7620koolproxy/data/rules/koolproxy
 nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/rules/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/rules/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+' | sed -n '2p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g'`"
 fi
 
-[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动成功"
-[ -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set koolproxy_status=00; eval "$scriptfilepath &"; exit 0; }
-koolproxy_add_rules
+[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动成功" && koolproxy_restart o
+[ -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && koolproxy_restart x
+#koolproxy_add_rules
 rm -f /tmp/7620koolproxy.tgz /tmp/cron_adb.lock
 /etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
 logger -t "【koolproxy】" "守护进程启动"
-#koolproxy_cron_job
+koolproxy_cron_job
+#koolproxy_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -728,7 +772,7 @@ gen_special_purpose_ip () {
 #处理肯定不走通道的目标网段
 lan_ipaddr=`nvram get lan_ipaddr`
 kcptun_enable=`nvram get kcptun_enable`
-kcptun_enable=${kcptun_enable:-"0"}
+[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=$kcptun_enable
 kcptun_server=`nvram get kcptun_server`
 if [ "$kcptun_enable" != "0" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
@@ -738,15 +782,15 @@ fi
 
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 ss_enable=`nvram get ss_enable`
-ss_enable=${ss_enable:-"0"}
+[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=$ss_enable
 [ "$ss_enable" = "0" ] && ss_s1_ip="" && ss_s2_ip=""
 nvram set ss_server1=`nvram get ss_server`
 ss_server1=`nvram get ss_server1`
 ss_server2=`nvram get ss_server2`
 kcptun2_enable=`nvram get kcptun2_enable`
-kcptun2_enable=${kcptun2_enable:-"0"}
+[ -z $kcptun2_enable ] && kcptun2_enable=0 && nvram set kcptun2_enable=$kcptun2_enable
 kcptun2_enable2=`nvram get kcptun2_enable2`
-kcptun2_enable2=${kcptun2_enable2:-"0"}
+[ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
 [ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_server2=""
 if [ "$ss_enable" != "0" ] ; then
@@ -884,9 +928,9 @@ EOF
 }
 
 koolproxy_cron_job(){
-	koolproxy_update=${koolproxy_update:-"0"}
-	koolproxy_update_hour=${koolproxy_update_hour:-"23"}
-	koolproxy_update_min=${koolproxy_update_min:-"59"}
+	[ -z $koolproxy_update ] && koolproxy_update=0 && nvram set koolproxy_update=$koolproxy_update
+	[ -z $koolproxy_update_hour ] && koolproxy_update_hour=23 && nvram set koolproxy_update_hour=$koolproxy_update_hour
+	[ -z $koolproxy_update_min ] && koolproxy_update_min=59 && nvram set koolproxy_update_min=$koolproxy_update_min
 	if [ "0" == "$koolproxy_update" ] ; then
 	[ $koolproxy_update_hour -gt 23 ] && koolproxy_update_hour=23 && nvram set koolproxy_update_hour=$koolproxy_update_hour
 	[ $koolproxy_update_hour -lt 0 ] && koolproxy_update_hour=0 && nvram set koolproxy_update_hour=$koolproxy_update_hour
@@ -955,7 +999,7 @@ stop)
 	koolproxy_close
 	;;
 keep)
-	koolproxy_check
+	#koolproxy_check
 	koolproxy_keep
 	;;
 A)
@@ -974,7 +1018,7 @@ update)
 	killall -9 sh_ad_kp_keey_k.sh
 	hash daydayup 2>/dev/null && { 
 	update_kp_rules_daydayup
-	[ $? != 0 ] && nvram set koolproxy_status=00 && eval "$scriptfilepath start &" && exit 0
+	[ $? != 0 ] && koolproxy_restart
 	}
 	hash daydayup 2>/dev/null || { 
 	while read line
@@ -982,13 +1026,13 @@ update)
 	c_line=`echo $line |grep -v "#"`
 	if [ ! -z "$c_line" ] ; then
 		file_name=${line##*/}
-		wgetcurl.sh /tmp/7620koolproxy/rule_tmp/$file_name $line
+		wgetcurl.sh /tmp/7620koolproxy/rule_tmp/$file_name $line $line N
 		if [ -f /tmp/7620koolproxy/rule_tmp/$file_name ] ; then
 			MD5_TMP=`md5sum /tmp/7620koolproxy/rule_tmp/$file_name  | awk '{print $1}'`
 			MD5_ORI=`md5sum /tmp/7620koolproxy/rule_store/$file_name| awk '{print $1}'`
 			if [ ! -f /tmp/7620koolproxy/rule_store/$file_name ] || [ "$MD5_TMP"x != "$MD5_ORI"x ] ; then
 			logger -t "【koolproxy】" "更新检查:有更新 $urla , 重启进程"
-			nvram set koolproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+			koolproxy_restart
 			fi
 		fi
 	fi
@@ -1001,7 +1045,8 @@ update_ad)
 	koolproxy_mount
 	koolproxy_close
 	rm -rf /tmp/7620koolproxy/*
-	nvram set koolproxy_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+	koolproxy_restart o
+	koolproxy_restart
 	;;
 *)
 	koolproxy_check

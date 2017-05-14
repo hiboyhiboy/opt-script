@@ -19,10 +19,10 @@ adbybyfile2="$hiboyfile2/7620i.tar.gz"
 
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
-AD_LAN_AC_IP=${AD_LAN_AC_IP:-"0"}
+[ -z $AD_LAN_AC_IP ] && AD_LAN_AC_IP=0 && nvram set AD_LAN_AC_IP=$AD_LAN_AC_IP
 lan_ipaddr=`nvram get lan_ipaddr`
-[ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
-adbyby_adblocks=${adbyby_adblocks:-"0"}
+[ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr && nvram set ss_DNS_Redirect_IP=$ss_DNS_Redirect_IP
+[ -z $adbyby_adblocks ] && adbyby_adblocks=0 && nvram set adbyby_adblocks=$adbyby_adblocks
 
 fi
 #检查 dnsmasq 目录参数
@@ -90,14 +90,51 @@ export PATH='/tmp/bin:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/
 hash adbyby 2>/dev/null || rm -rf /tmp/bin/*
 if [ ! -s "/tmp/bin/adbyby" ] ; then
 	rm -rf /tmp/bin/*
-	logger -t "【Adbyby】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adbyby_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【Adbyby】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && adbyby_restart x
 fi
 }
 
-adbyby_check () {
+adbyby_restart () {
+
+relock="/var/lock/adbyby_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set adbyby_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	rm -rf /tmp/bin/*
+	if [ -f $relock ] ; then
+		logger -t "【adbyby】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	adbyby_renum=${adbyby_renum:-"0"}
+	adbyby_renum=`expr $adbyby_renum + 1`
+	nvram set adbyby_renum="$adbyby_renum"
+	if [ "$adbyby_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【adbyby】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get adbyby_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set adbyby_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set adbyby_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+adbyby_get_status () {
 
 A_restart=`nvram get adbyby_status`
-B_restart="$adbyby_enable$ss_link_1$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$ss_sub4$adbyby_whitehost_x$whitehost$lan_ipaddr$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_DNS_Redirect$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adbyby_enable$ss_link_1$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$ss_sub4$adbyby_whitehost_x$whitehost$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set adbyby_status=$B_restart
@@ -105,6 +142,11 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+adbyby_check () {
+
+adbyby_get_status
 if [ "$adbyby_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "停止 adbyby" && adbyby_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
@@ -114,7 +156,7 @@ if [ "$adbyby_enable" = "1" ] ; then
 		adbyby_close
 		adbyby_start
 	else
-		[ -z "`pidof adbyby`" ] || [ ! -s "/tmp/bin/adbyby" ] && nvram set adbyby_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "`pidof adbyby`" ] || [ ! -s "/tmp/bin/adbyby" ] && adbyby_restart
 		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
 		if [ "$PIDS" != 0 ] ; then
 			port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
@@ -159,7 +201,7 @@ reb="1"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 while true; do
-[ ! -s "/tmp/bin/adbyby" ] && nvram set adbyby_status=00 && { logger -t "【Adbyby】" "重新启动"; eval "$scriptfilepath start &"; exit 0; }
+[ ! -s "/tmp/bin/adbyby" ] && logger -t "【Adbyby】" "重新启动" && adbyby_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ "$reb" -gt 5 ] && [ "$(cat /tmp/reb.lock)x" == "1x" ] ; then
 		LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
@@ -365,7 +407,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		c_line=`echo $line |grep -v "#"`
 		if [ ! -z "$c_line" ] ; then
 			logger -t "【Adbyby】" "下载规则:$line"
-			wgetcurl.sh /tmp/bin/data/user2.txt $line
+			wgetcurl.sh /tmp/bin/data/user2.txt $line $line N
 			grep -v '^!' /tmp/bin/data/user2.txt | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> /tmp/bin/data/user3adblocks.txt
 			rm -f /tmp/bin/data/user2.txt
 		fi
@@ -412,8 +454,8 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		sleep 5
 	fi
 fi
-[ ! -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "启动成功"
-[ -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set adbyby_status=00; eval "$scriptfilepath &"; exit 0; }
+[ ! -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "启动成功" && adbyby_restart o
+[ -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && adbyby_restart x
 adbyby_add_rules
 rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock
 if [ "$adbyby_mode_x" = "1" ] ; then
@@ -437,6 +479,7 @@ nvram set adbybyuser="自定义规则行数:  `sed -n '$=' /tmp/bin/data/user_ru
 /etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
 logger -t "【Adbyby】" "守护进程启动"
 adbyby_cron_job
+#adbyby_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -604,7 +647,7 @@ gen_special_purpose_ip () {
 #处理肯定不走通道的目标网段
 lan_ipaddr=`nvram get lan_ipaddr`
 kcptun_enable=`nvram get kcptun_enable`
-kcptun_enable=${kcptun_enable:-"0"}
+[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=$kcptun_enable
 kcptun_server=`nvram get kcptun_server`
 if [ "$kcptun_enable" != "0" ] ; then
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
@@ -614,15 +657,15 @@ fi
 
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 ss_enable=`nvram get ss_enable`
-ss_enable=${ss_enable:-"0"}
+[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=$ss_enable
 [ "$ss_enable" = "0" ] && ss_s1_ip="" && ss_s2_ip=""
 nvram set ss_server1=`nvram get ss_server`
 ss_server1=`nvram get ss_server1`
 ss_server2=`nvram get ss_server2`
 kcptun2_enable=`nvram get kcptun2_enable`
-kcptun2_enable=${kcptun2_enable:-"0"}
+[ -z $kcptun2_enable ] && kcptun2_enable=0 && nvram set kcptun2_enable=$kcptun2_enable
 kcptun2_enable2=`nvram get kcptun2_enable2`
-kcptun2_enable2=${kcptun2_enable2:-"0"}
+[ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
 [ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_server2=""
 if [ "$ss_enable" != "0" ] ; then
@@ -758,9 +801,9 @@ EOF
 }
 
 adbyby_cron_job(){
-	adbyby_update=${adbyby_update:-"0"}
-	adbyby_update_hour=${adbyby_update_hour:-"23"}
-	adbyby_update_min=${adbyby_update_min:-"59"}
+	[ -z $adbyby_update ] && adbyby_update=0 && nvram set adbyby_update=$adbyby_update
+	[ -z $adbyby_update_hour ] && adbyby_update_hour=23 && nvram set adbyby_update_hour=$adbyby_update_hour
+	[ -z $adbyby_update_min ] && adbyby_update_min=59 && nvram set adbyby_update_min=$adbyby_update_min
 	if [ "0" == "$adbyby_update" ]; then
 	[ $adbyby_update_hour -gt 23 ] && adbyby_update_hour=23 && nvram set adbyby_update_hour=$adbyby_update_hour
 	[ $adbyby_update_hour -lt 0 ] && adbyby_update_hour=0 && nvram set adbyby_update_hour=$adbyby_update_hour
@@ -829,7 +872,7 @@ stop)
 	adbyby_close
 	;;
 keep)
-	adbyby_check
+	#adbyby_check
 	adbyby_keep
 	;;
 A)
@@ -852,7 +895,7 @@ update)
 	wgetcurl.sh $checka $urla N
 	if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
 		logger -t "【Adbyby】" "更新检查:有更新 $urla , 重启进程"
-		nvram set adbyby_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		adbyby_restart
 	else
 		logger -t "【Adbyby】" "更新检查:不需更新 $urla "
 	fi
@@ -862,7 +905,8 @@ update_ad)
 	adbyby_mount
 	adbyby_close
 	rm -rf /tmp/bin/*
-	nvram set adbyby_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+	adbyby_restart o
+	adbyby_restart
 	;;
 *)
 	adbyby_check
