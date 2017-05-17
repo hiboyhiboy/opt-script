@@ -431,8 +431,26 @@ if [ "$ss_check" = "1" ] ; then
 fi
 }
 
+start_dnsproxy()
+{
+
+logger -t "【SS】" "启动 dnsproxy 防止域名污染"
+if [ -s /sbin/dnsproxy ] ; then
+	/sbin/dnsproxy -d
+else
+	dnsproxy -d
+fi
+}
+
 start_pdnsd()
 {
+
+hash dnsproxy 2>/dev/null && dnsproxy_x="1"
+hash dnsproxy 2>/dev/null || dnsproxy_x="0"
+if [ "$dnsproxy_x" = "1" ] ; then
+start_dnsproxy
+return
+fi
 logger -t "【SS】" "启动 pdnsd 防止域名污染"
 pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
 pdnsd_conf="/etc/storage/pdnsd.conf"
@@ -677,7 +695,7 @@ if [ "$ss_udp_enable" == 1 ] ; then
 	iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $ss_working_port --tproxy-mark 0x01/0x01
 fi
 # 加载 pdnsd 规则
-logger -t "【SS】" "pdnsd 模式:$ss_pdnsd_wo_redir, 0走代理 1直连"
+logger -t "【SS】" "dnsproxy 模式:$ss_pdnsd_wo_redir, 0走代理 1直连"
 echo "ss_pdnsd_wo_redir:$ss_pdnsd_wo_redir"
 if [ "$ss_pdnsd_wo_redir" == 0 ] ; then
 	# pdnsd 0走代理
@@ -1273,7 +1291,7 @@ min-cache-ttl=1800
 EOF
 fi
 #启动PDNSD防止域名污染
-start_pdnsd
+start_dnsproxy
 sed -Ei '/github/d' /etc/storage/dnsmasq/dnsmasq.conf
 cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\_CONF
 server=/githubusercontent.com/127.0.0.1#8053
@@ -1300,7 +1318,7 @@ check_ss_plugin2=`echo $ss2_plugin_config |  grep obfs-local`
 if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
 	hash obfs-local 2>/dev/null || optssredir="4"
 fi
-hash pdnsd 2>/dev/null || optssredir="5"
+hash dnsproxy 2>/dev/null || optssredir="5"
 [ "$ss_run_ss_local" = "1" ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
 if [ "$optssredir" != "0" ] ; then
 	# 找不到ss-redir，安装opt
@@ -1351,11 +1369,11 @@ if [ "$optssredir" = "4" ] ; then
 	chmod 777 "/opt/bin/obfs-local"
 	hash obfs-local 2>/dev/null || { logger -t "【SS】" "找不到 obfs-local, 请检查系统"; ss_restart x ; }
 fi
-if [ ! -s /usr/sbin/pdnsd ] ; then
-	logger -t "【SS】" "找不到 pdnsd. opt 下载程序"
-	wgetcurl.sh "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
-	chmod 777 "/opt/bin/pdnsd"
-	hash pdnsd 2>/dev/null || { logger -t "【SS】" "找不到 pdnsd, 请检查系统"; ss_restart x ; }
+if [ ! -s /sbin/dnsproxy ] ; then
+	logger -t "【SS】" "找不到 dnsproxy. opt 下载程序"
+	wgetcurl.sh "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
+	chmod 777 "/opt/bin/dnsproxy"
+	hash dnsproxy 2>/dev/null || { logger -t "【SS】" "找不到 dnsproxy, 请检查系统"; ss_restart x ; }
 fi
 check_ssr
 echo "Debug: $DNS_Server"
@@ -1456,8 +1474,8 @@ ss_working_port=`nvram get ss_working_port`
 sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 clean_ss_rules
-killall ss-redir ssr-redir ss-local ssr-local ss-tunnel pdnsd sh_sskeey_k.sh obfs-local
-killall -9 ss-redir ssr-redir ss-local ssr-local ss-tunnel pdnsd sh_sskeey_k.sh obfs-local
+killall ss-redir ssr-redir ss-local ssr-local ss-tunnel pdnsd dnsproxy sh_sskeey_k.sh obfs-local
+killall -9 ss-redir ssr-redir ss-local ssr-local ss-tunnel pdnsd dnsproxy sh_sskeey_k.sh obfs-local
 rm -f /tmp/sh_sskeey_k.sh
 rm -f $confdir/r.gfwlist.conf
 rm -f $confdir/r.sub.conf
@@ -1545,7 +1563,7 @@ if [ "$ss_enable" = "1" ] ; then
 		start_SS
 	else
 		[ "$ss_mode_x" = "3" ] && { [ -z "`pidof ss-local`" ] || [ ! -s "`which ss-local`" ] && ss_restart ; }
-		[ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] || [ ! -s "`which pdnsd`" ] && ss_restart ; }
+		[ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] || [ ! -s "`which dnsproxy`" ] && ss_restart ; }
 		if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" ] ; then
 			port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 			if [ "$port" = 0 ] ; then
@@ -1640,8 +1658,8 @@ if [ "$NUM" -lt "$SSRNUM" ] ; then
 	sleep 5
 	exit 0
 fi
-if [ -z "`pidof pdnsd`" ] || [ ! -s "`which pdnsd`" ] ; then
-	logger -t "【SS】" "找不到 pdnsd 进程 $rebss，重启 pdnsd"
+if [ -z "`pidof dnsproxy`" ] || [ ! -s "`which dnsproxy`" ] ; then
+	logger -t "【SS】" "找不到 dnsproxy 进程 $rebss，重启 dnsproxy"
 	eval "$scriptfilepath repdnsd &"
 	sleep 10
 fi
@@ -1949,7 +1967,7 @@ stop)
 	stop_SS
 	;;
 repdnsd)
-	start_pdnsd
+	start_dnsproxy
 	;;
 help)
 	echo "Usage: $0 {start|rules|flush|update|stop}"
