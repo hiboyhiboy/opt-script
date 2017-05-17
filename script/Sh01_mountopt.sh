@@ -300,7 +300,7 @@ reopt)
 	[ -f /opt/lcd.tgz ] && untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
 	;;
 libmd5_check)
-	libmd5_check &
+	libmd5_check
 	;;
 libmd5_backup)
 	libmd5_backup &
