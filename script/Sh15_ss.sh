@@ -1974,7 +1974,8 @@ help)
 	;;
 update_optss)
 	rm -rf /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
-	clean_SS o
+	ss_restart o
+	clean_SS
 	exit 0
 	;;
 *)
