@@ -84,8 +84,8 @@ if [ "$ssserver_enable" = "1" ] ; then
 			port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
 			if [ "$port" = 0 ] ; then
 				logger -t "【SS_server】" "检测$port:找不到 ss-server 端口:$ssserver_port 规则, 重新添加"
-				iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT &
-				iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT &
+				iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
+				iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
 			fi
 		fi
 	fi
@@ -113,8 +113,8 @@ done
 ssserver_close () {
 
 sed -Ei '/【SS_server】|^$/d' /tmp/script/_opt_script_check
-iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT &
-iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT &
+iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
+iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
 killall ss-server obfs-server >/dev/null 2>&1
 killall -9 ss-server obfs-server >/dev/null 2>&1
 eval $(ps -w | grep "_ssserver keep" | grep -v grep | awk '{print "kill "$1";";}')
@@ -158,8 +158,9 @@ sleep 2
 [ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动成功" && ssserver_restart o
 [ -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 logger -t "【SS_server】" "`ps -w | grep ss-server | grep -v grep`"
-iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT &
-iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT &
+iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
+
+iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
 #ssserver_get_status
 eval "$scriptfilepath keep &"
 

@@ -401,7 +401,7 @@ eval "$scriptfilepath keep &"
 }
 
 flush_r () {
-iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 18309 &> /dev/null
+iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 18309 > /dev/null
 iptables-save -c | sed  "s/webstr--url/webstr --url/g" | grep -v "$TAG" | iptables-restore -c
 for setname in $(ipset -n list | grep -i "ad_spec"); do
 	ipset destroy $setname 2>/dev/null

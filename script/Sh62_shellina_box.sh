@@ -90,7 +90,7 @@ if [ "$shellinabox_enable" = "1" ] || [ "$shellinabox_enable" = "2" ] ; then
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$shellinabox_port | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
 			logger -t "$shell_log" "检测:找不到 ss-server 端口:$shellinabox_port 规则, 重新添加"
-			iptables -t filter -I INPUT -p tcp --dport $shellinabox_port -j ACCEPT &
+			iptables -t filter -I INPUT -p tcp --dport $shellinabox_port -j ACCEPT
 		fi
 		fi
 	fi

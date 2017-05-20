@@ -81,11 +81,11 @@ if [ "$syncthing_enable" = "1" ] ; then
 		[ -z "`pidof syncthing`" ] && syncthing_restart
 		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22000 | cut -d " " -f 1 | sort -nr | wc -l)
 		if [ "$port" = 0 ] ; then
-			iptables -t filter -I INPUT -p tcp --dport 22000 -j ACCEPT &
-			iptables -t filter -I INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT &
+			iptables -t filter -I INPUT -p tcp --dport 22000 -j ACCEPT
+			iptables -t filter -I INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT
 			if [ "$syncthing_wan" = "1" ] ; then
 				logger -t "【syncthing】" "WebGUI 允许 $syncthing_wan_port tcp端口通过防火墙"
-				iptables -t filter -I INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT &
+				iptables -t filter -I INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT
 			fi
 		fi
 	fi
@@ -114,13 +114,13 @@ done
 syncthing_close () {
 
 sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check
-iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT &
-iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT &
-iptables -t filter -D INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT &
+iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT
+iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT
+iptables -t filter -D INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT
 killall syncthing
 killall -9 syncthing
-iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT &
-iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT &
+iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT
+iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT
 eval $(ps -w | grep "_sync_thing keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "_sync_thing.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
@@ -165,11 +165,11 @@ sleep 2
 [ -z "$(ps -w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && syncthing_restart x
 initopt
 
-iptables -t filter -I INPUT -p tcp --dport 22000 -j ACCEPT &
-iptables -t filter -I INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT &
+iptables -t filter -I INPUT -p tcp --dport 22000 -j ACCEPT
+iptables -t filter -I INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT
 if [ "$syncthing_wan" = "1" ] ; then
 	logger -t "【syncthing】" "WebGUI 允许 $syncthing_wan_port tcp端口通过防火墙"
-	iptables -t filter -I INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT &
+	iptables -t filter -I INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT
 fi
 #syncthing_get_status
 eval "$scriptfilepath keep &"
