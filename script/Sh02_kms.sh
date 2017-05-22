@@ -53,8 +53,8 @@ eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";"
 }
 
 kms_start () {
-[ ! -f /etc_ro/vlmcsd.kmd ] && /usr/bin/vlmcsd -i /etc/storage/vlmcsdini_script.sh -l /tmp/vlmcsd.log &
-[ -f /etc_ro/vlmcsd.kmd ] && /usr/bin/vlmcsd -j /etc_ro/vlmcsd.kmd -i /etc/storage/vlmcsdini_script.sh -l /tmp/vlmcsd.log &
+[ ! -f /etc_ro/vlmcsd.kmd ] && /usr/bin/vlmcsd -i /etc/storage/vlmcsdini_script.sh -l /tmp/vlmcsd.log
+[ -f /etc_ro/vlmcsd.kmd ] && /usr/bin/vlmcsd -j /etc_ro/vlmcsd.kmd -i /etc/storage/vlmcsdini_script.sh -l /tmp/vlmcsd.log
 computer_name=`nvram get computer_name`
 sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf
 nvram set lan_domain="lan"

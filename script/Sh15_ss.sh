@@ -1306,18 +1306,31 @@ start_SS()
 	logger -t "【SS】" "启动 SS"
 	nvram set ss_internet="2"
 	optssredir="0"
+if [ "$ss_type" != "1" ] ; then
+# SS
 if [ "$ss_mode_x" != "3" ] ; then
 	hash ss-redir 2>/dev/null || optssredir="1"
-	hash ssr-redir 2>/dev/null || optssredir="1"
 else
 	hash ss-local 2>/dev/null || optssredir="2"
-	hash ssr-local 2>/dev/null || optssredir="2"
 fi
 check_ss_plugin=`echo $ss_plugin_config |  grep obfs-local`
 check_ss_plugin2=`echo $ss2_plugin_config |  grep obfs-local`
 if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
 	hash obfs-local 2>/dev/null || optssredir="4"
 fi
+# SS
+fi
+
+if [ "$ss_type" = "1" ] ; then
+# SSR
+if [ "$ss_mode_x" != "3" ] ; then
+	hash ssr-redir 2>/dev/null || optssredir="1"
+else
+	hash ssr-local 2>/dev/null || optssredir="2"
+fi
+# SSR
+fi
+
 hash dnsproxy 2>/dev/null || optssredir="5"
 [ "$ss_run_ss_local" = "1" ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
 if [ "$optssredir" != "0" ] ; then
@@ -1327,38 +1340,30 @@ if [ "$optssredir" != "0" ] ; then
 	initopt
 fi
 optssredir="0"
+
+if [ "$ss_type" != "1" ] ; then
+# SS
 if [ "$ss_mode_x" != "3" ] ; then
 	hash ss-redir 2>/dev/null || rm -rf /opt/bin/ss-redir
 	hash ss-redir 2>/dev/null || optssredir="1"
-	hash ssr-redir 2>/dev/null || rm -rf /opt/bin/ssr-redir
-	hash ssr-redir 2>/dev/null || optssredir="1"
 else
 	hash ss-local 2>/dev/null || rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="2"
-	hash ssr-local 2>/dev/null || rm -rf /opt/bin/ssr-local
-	hash ssr-local 2>/dev/null || optssredir="2"
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
 	hash ss-local 2>/dev/null || optssredir="3"
-	hash ssr-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "1" ] ; then
 	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
 	[ ! s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
 	chmod 777 "/opt/bin/ss-redir"
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
-	[ ! s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/ssr-redir" "$hiboyfile2/ssr-redir"
-	chmod 777 "/opt/bin/ssr-redir"
-hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
 	logger -t "【SS】" "找不到 ss-local. opt 下载程序"
 	[ ! s /opt/bin/ss-local ] && wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/ss-local" "$hiboyfile2/ss-local"
 	chmod 777 "/opt/bin/ss-local"
 	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; ss_restart x ; }
-	[ ! s /opt/bin/ssr-local ] && wgetcurl.sh "/opt/bin/ssr-local" "$hiboyfile/ssr-local" "$hiboyfile2/ssr-local"
-	chmod 777 "/opt/bin/ssr-local"
-	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; ss_restart x ; }
 fi
 if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
 	hash obfs-local 2>/dev/null || optssredir="4"
@@ -1369,6 +1374,34 @@ if [ "$optssredir" = "4" ] ; then
 	chmod 777 "/opt/bin/obfs-local"
 	hash obfs-local 2>/dev/null || { logger -t "【SS】" "找不到 obfs-local, 请检查系统"; ss_restart x ; }
 fi
+# SS
+fi
+
+if [ "$ss_type" = "1" ] ; then
+# SSR
+if [ "$ss_mode_x" != "3" ] ; then
+	hash ssr-redir 2>/dev/null || rm -rf /opt/bin/ssr-redir
+	hash ssr-redir 2>/dev/null || optssredir="1"
+else
+	hash ssr-local 2>/dev/null || rm -rf /opt/bin/ssr-local
+	hash ssr-local 2>/dev/null || optssredir="2"
+fi
+if [ "$ss_run_ss_local" = "1" ] ; then
+	hash ssr-local 2>/dev/null || optssredir="3"
+fi
+if [ "$optssredir" = "1" ] ; then
+	[ ! s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/ssr-redir" "$hiboyfile2/ssr-redir"
+	chmod 777 "/opt/bin/ssr-redir"
+hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
+fi
+if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
+	[ ! s /opt/bin/ssr-local ] && wgetcurl.sh "/opt/bin/ssr-local" "$hiboyfile/ssr-local" "$hiboyfile2/ssr-local"
+	chmod 777 "/opt/bin/ssr-local"
+	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; ss_restart x ; }
+fi
+# SSR
+fi
+
 if [ ! -s /sbin/dnsproxy ] ; then
 	logger -t "【SS】" "找不到 dnsproxy. opt 下载程序"
 	wgetcurl.sh "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
@@ -1973,7 +2006,8 @@ help)
 	echo "Usage: $0 {start|rules|flush|update|stop}"
 	;;
 update_optss)
-	rm -rf /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
+	rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
+	rm -f /opt/bin/ss0-redir /opt/bin/ssr0-redir /opt/bin/ss0-local /opt/bin/ssr0-local
 	ss_restart o
 	clean_SS
 	exit 0
