@@ -392,10 +392,10 @@ if [ "$ss_check" = "1" ] ; then
 			[ "$check" == "404" ] && {
 			curltest=`which curl`
 			if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-				wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+				wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 				[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 				if [ "$check" == "404" ] ; then
-					wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+					wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 					[ "$?" == "0" ] && check=200 || check=404
 				fi
 			else
@@ -1446,10 +1446,10 @@ echo "Debug: $DNS_Server"
 	check_link="$ss_link_1"
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+		wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 		if [ "$check" == "404" ] ; then
-			wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+			wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
@@ -1730,10 +1730,10 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	wget --continue --no-check-certificate -q -T 10 $ss_link_2
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_2" -O /dev/null
+		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
@@ -1762,10 +1762,10 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+	wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+		wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
@@ -1809,10 +1809,10 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	wget --continue --no-check-certificate -q -T 10 $ss_link_2
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_2" -O /dev/null
+		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
@@ -1881,10 +1881,10 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -s -q -T 10 $ss_link_2
+	wget --continue --no-check-certificate -q -T 10 $ss_link_2
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_2" -O /dev/null
+		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else

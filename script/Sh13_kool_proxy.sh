@@ -208,10 +208,10 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	[ "$check" == "404" ] && {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+		wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404;  sleep 3; }
 		if [ "$check" == "404" ] ; then
-			wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+			wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
@@ -311,6 +311,9 @@ fi
 }
 
 koolproxy_close () {
+
+cru.sh d adbyby_update &
+cru.sh d adm_update &
 cru.sh d koolproxy_update &
 port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
 [ "$port" != 0 ] && koolproxy_flush_rules

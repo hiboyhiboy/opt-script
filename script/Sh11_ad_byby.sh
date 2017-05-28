@@ -221,10 +221,10 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	[ "$check" == "404" ] && {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+		wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404;  sleep 3; }
 		if [ "$check" == "404" ] ; then
-			wget --continue --no-check-certificate -s -q -T 10 "$ss_link_1" -O /dev/null
+			wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
@@ -320,7 +320,10 @@ fi
 }
 
 adbyby_close () {
+
 cru.sh d adbyby_update &
+cru.sh d adm_update &
+cru.sh d koolproxy_update &
 port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
 [ "$port" != 0 ] && adbyby_flush_rules
 killall -15 adbyby sh_ad_byby_keey_k.sh
@@ -358,13 +361,13 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	restart_dhcpd
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -s -q -T 10 http://update.adbyby.com/rule3/video.jpg
+		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg
 		[ "$?" == "0" ] && check=200 || check=404
 		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
 	else
 		check=`curl -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
 		[ "$check" != "200" ] && {
-		wget --continue --no-check-certificate -s -q -T 10 http://update.adbyby.com/rule3/video.jpg
+		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg
 		[ "$?" == "0" ] && check=200 || check=404
 		}
 	fi
