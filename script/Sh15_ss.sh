@@ -1335,7 +1335,7 @@ hash dnsproxy 2>/dev/null || optssredir="5"
 [ "$ss_run_ss_local" = "1" ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
 if [ "$optssredir" != "0" ] ; then
 	# 找不到ss-redir，安装opt
-	logger -t "【SS】" "找不到 ss-redir 或 ss-local 下载程序"
+	logger -t "【SS】" "找不到 ss-redir 、 ss-local 或 obfs-local ，挂载opt"
 	/tmp/script/_mountopt start
 	initopt
 fi
@@ -1403,9 +1403,13 @@ fi
 fi
 
 if [ ! -s /sbin/dnsproxy ] ; then
-	logger -t "【SS】" "找不到 dnsproxy. opt 下载程序"
-	wgetcurl.sh "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
-	chmod 777 "/opt/bin/dnsproxy"
+	logger -t "【SS】" "找不到 dnsproxy. opt ，挂载opt"
+	/tmp/script/_mountopt start
+	initopt
+	if [ ! -s /opt/bin/dnsproxy ] ; then
+		wgetcurl.sh "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
+		chmod 777 "/opt/bin/dnsproxy"
+	fi
 	hash dnsproxy 2>/dev/null || { logger -t "【SS】" "找不到 dnsproxy, 请检查系统"; ss_restart x ; }
 fi
 check_ssr
