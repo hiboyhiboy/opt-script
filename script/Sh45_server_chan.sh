@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 serverchan_enable=`nvram get serverchan_enable`
 [ -z $serverchan_enable ] && serverchan_enable=0 && nvram set serverchan_enable=0
 if [ "$serverchan_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep serverchan | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+nvramshow=`nvram showall | grep '=' | grep serverchan | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep server_chan)" ]  && [ ! -s /tmp/script/_server_chan ]; then

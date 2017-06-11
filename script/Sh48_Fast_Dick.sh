@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 FastDick_enable=`nvram get FastDick_enable`
 [ -z $FastDick_enable ] && FastDick_enable=0 && nvram set FastDick_enable=0
 if [ "$FastDick_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep FastDick | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+nvramshow=`nvram showall | grep '=' | grep FastDick | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ]  && [ ! -s /tmp/script/_Fast_Dick ]; then

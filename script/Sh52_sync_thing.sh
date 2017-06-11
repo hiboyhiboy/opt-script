@@ -5,7 +5,7 @@ syncthing_wan_port=`nvram get syncthing_wan_port`
 syncthing_enable=`nvram get syncthing_enable`
 [ -z $syncthing_enable ] && syncthing_enable=0 && nvram set syncthing_enable=0
 if [ "$syncthing_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep syncthing | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+nvramshow=`nvram showall | grep '=' | grep syncthing | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep sync_thing)" ]  && [ ! -s /tmp/script/_sync_thing ]; then

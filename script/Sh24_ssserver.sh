@@ -5,7 +5,7 @@ ssserver_port=`nvram get ssserver_port`
 ssserver_enable=`nvram get ssserver_enable`
 [ -z $ssserver_enable ] && ssserver_enable=0 && nvram set ssserver_enable=0
 if [ "$ssserver_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep ssserver | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+nvramshow=`nvram showall | grep '=' | grep ssserver | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 [ -z $ssserver_password ] && ssserver_password="m" && nvram set ssserver_password=$ssserver_password
 [ -z $ssserver_time ] && ssserver_time=120 && nvram set ssserver_time=$ssserver_time

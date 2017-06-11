@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 cloudxns_enable=`nvram get cloudxns_enable`
 [ -z $cloudxns_enable ] && cloudxns_enable=0 && nvram set cloudxns_enable=0
 if [ "$cloudxns_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+nvramshow=`nvram showall | grep '=' | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 hostIP=""
 IP=""
 API_KEY="$cloudxns_username"
@@ -93,7 +93,7 @@ while true; do
 sleep 43
 sleep $cloudxns_interval
 [ ! -s "`which curl`" ] && cloudxns_restart
-nvramshow=`nvram showall | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+nvramshow=`nvram showall | grep '=' | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 [ "$cloudxns_enable" = "0" ] && cloudxns_close && exit 0;
 if [ "$cloudxns_enable" = "1" ] ; then
 	cloudxns_start

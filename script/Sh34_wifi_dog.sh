@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 wifidog_enable=`nvram get wifidog_enable`
 [ -z $wifidog_enable ] && wifidog_enable=0 && nvram set wifidog_enable=0
 if [ "$wifidog_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep wifidog | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+nvramshow=`nvram showall | grep '=' | grep wifidog | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wifi_dog)" ]  && [ ! -s /tmp/script/_wifi_dog ]; then
