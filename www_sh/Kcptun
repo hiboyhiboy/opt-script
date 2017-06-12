@@ -1,0 +1,17 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_SS_Kcptun.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set kcptun_enable=0
+    exit
+fi
+
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set kcptun_L2="$(($3 + 10))"
+nvram set kcptun_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "kcptun_L2"); %>,<% nvram_get_x("", "kcptun_L3"); %>);
+

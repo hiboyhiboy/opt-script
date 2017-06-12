@@ -1,0 +1,22 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_script.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set syncthing_enable=0
+    nvram set xunleis=0
+    nvram set FastDick_enable=0
+    nvram set tinyproxy_enable=0
+    nvram set mproxy_enable=0
+    nvram set vpnproxy_enable=0
+    exit
+fi
+
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set script_L2="$(($3 + 10))"
+nvram set script_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "script_L2"); %>,<% nvram_get_x("", "script_L3"); %>);
+
