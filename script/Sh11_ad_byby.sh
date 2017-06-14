@@ -363,6 +363,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	sed -Ei '/.*update.adbyby.com\/180.76.76.76.*/d' /etc/storage/dnsmasq/dnsmasq.servers
 	sed -e '/^$/d' -i /etc/storage/dnsmasq/dnsmasq.servers
 	restart_dhcpd
+	logger -t "【Adbyby】" "测试下载规则"
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg
@@ -376,11 +377,12 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		}
 	fi
 	if [ "$check" == "200" ] ; then
+		logger -t "【Adbyby】" "测试下载规则成功"
 		echo "[$LOGTIME] update.adbyby.com have no problem."
 		rm -rf /tmp/bin/data/video_B.txt /tmp/bin/data/lazy_B.txt
 	else
 		mkdir -p /tmp/bin/data
-		logger -t "【Adbyby】" "下载规则失败, 强制 手动同步更新规则"
+		logger -t "【Adbyby】" "测试下载规则失败, 强制 手动同步更新规则"
 		xwhyc_rules="$hiboyfile/video.txt"
 		xwhyc_rules3="$hiboyfile2/video.txt"
 		xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"

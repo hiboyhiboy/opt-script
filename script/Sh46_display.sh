@@ -173,7 +173,7 @@ if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	logger -t "【相框显示】" "缺少 /etc/storage/display_lcd4linux_script.sh 文件, 启动失败"
 	logger -t "【相框显示】" "停止程序, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
-[ ! -d /tmp/AiDisk_00/opt ] && /tmp/script/_mountopt
+[ ! -f /tmp/AiDisk_00/opt/bin/lcd4linux ] && /etc/storage/script/Sh01_mountopt.sh
 # 修改显示空间
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""

@@ -90,7 +90,7 @@ cat >> "/tmp/script/_opt_script_check" <<-OSC
 		nvram set serverchan_status=04 && eval "$scriptfilepath &" && sed -Ei '/【微信推送】|^$/d' /tmp/script/_opt_script_check # 【微信推送】
 	fi # 【微信推送】
 OSC
-return
+#return
 fi
 
 while true; do
@@ -99,7 +99,11 @@ while true; do
 		logger -t "【微信推送】" "重新启动"
 		serverchan_restart
 	fi
-sleep 245
+	
+sleep 3600
+killall serverchan_script.sh
+killall -9 serverchan_script.sh
+/etc/storage/serverchan_script.sh &
 done
 }
 
