@@ -435,6 +435,8 @@ start_dnsproxy()
 {
 
 logger -t "【SS】" "启动 dnsproxy 防止域名污染"
+pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
+pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
 if [ -s /sbin/dnsproxy ] ; then
 	/sbin/dnsproxy -d
 else
@@ -444,14 +446,16 @@ fi
 
 start_pdnsd()
 {
-
+if [ "$ss_dnsproxy_x" != "1" ] ; then
 hash dnsproxy 2>/dev/null && dnsproxy_x="1"
 hash dnsproxy 2>/dev/null || dnsproxy_x="0"
 if [ "$dnsproxy_x" = "1" ] ; then
 start_dnsproxy
 return
 fi
+fi
 logger -t "【SS】" "启动 pdnsd 防止域名污染"
+pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
 pdnsd_conf="/etc/storage/pdnsd.conf"
 if [ ! -f "$pdnsd_conf" ] || [ ! -s "$pdnsd_conf" ] ; then
@@ -695,7 +699,7 @@ if [ "$ss_udp_enable" == 1 ] ; then
 	iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $ss_working_port --tproxy-mark 0x01/0x01
 fi
 # 加载 pdnsd 规则
-logger -t "【SS】" "dnsproxy 模式:$ss_pdnsd_wo_redir, 0走代理 1直连"
+logger -t "【SS】" "DNS程序 $ss_dnsproxy_x 模式: $ss_pdnsd_wo_redir 【0走代理 1直连】"
 echo "ss_pdnsd_wo_redir:$ss_pdnsd_wo_redir"
 if [ "$ss_pdnsd_wo_redir" == 0 ] ; then
 	# pdnsd 0走代理
@@ -1291,7 +1295,7 @@ min-cache-ttl=1800
 EOF
 fi
 #启动PDNSD防止域名污染
-start_dnsproxy
+start_pdnsd
 sed -Ei '/github/d' /etc/storage/dnsmasq/dnsmasq.conf
 cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\_CONF
 server=/githubusercontent.com/127.0.0.1#8053
@@ -1331,7 +1335,11 @@ fi
 # SSR
 fi
 
+if [ "$ss_dnsproxy_x" != "1" ] ; then
 hash dnsproxy 2>/dev/null || optssredir="5"
+else
+hash pdnsd 2>/dev/null || optssredir="5"
+fi
 [ "$ss_run_ss_local" = "1" ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
 if [ "$optssredir" != "0" ] ; then
 	# 找不到ss-redir，安装opt
@@ -1402,7 +1410,10 @@ fi
 # SSR
 fi
 
-if [ ! -s /sbin/dnsproxy ] ; then
+if [ "$ss_dnsproxy_x" != "1" ] ; then
+hash dnsproxy 2>/dev/null && dnsproxy_x="1"
+hash dnsproxy 2>/dev/null || dnsproxy_x="0"
+if [ "$dnsproxy_x" = "0" ] ; then
 	logger -t "【SS】" "找不到 dnsproxy. opt ，挂载opt"
 	/tmp/script/_mountopt start
 	initopt
@@ -1412,6 +1423,21 @@ if [ ! -s /sbin/dnsproxy ] ; then
 	fi
 	hash dnsproxy 2>/dev/null || { logger -t "【SS】" "找不到 dnsproxy, 请检查系统"; ss_restart x ; }
 fi
+else
+hash pdnsd 2>/dev/null && dnsproxy_x="1"
+hash pdnsd 2>/dev/null || dnsproxy_x="0"
+if [ "$dnsproxy_x" = "0" ] ; then
+	logger -t "【SS】" "找不到 pdnsd. opt ，挂载opt"
+	/tmp/script/_mountopt start
+	initopt
+	if [ ! -s /opt/bin/pdnsd ] ; then
+		wgetcurl.sh "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
+		chmod 777 "/opt/bin/pdnsd"
+	fi
+	hash pdnsd 2>/dev/null || { logger -t "【SS】" "找不到 pdnsd, 请检查系统"; ss_restart x ; }
+fi
+fi
+
 check_ssr
 echo "Debug: $DNS_Server"
 	rm -f /tmp/cron_ss.lock
@@ -1569,7 +1595,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_server1$ss_server2$ss_s1_port$ss_s2_port$ss_s1_method$ss_s2_method$ss_s1_key$ss_s2_key$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage$ss_s2_usage$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$ss_xbox`nvram get wan0_dns |cut -d ' ' -f1`$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_server1$ss_server2$ss_s1_port$ss_s2_port$ss_s1_method$ss_s2_method$ss_s1_key$ss_s2_key$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage$ss_s2_usage$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$ss_xbox`nvram get wan0_dns |cut -d ' ' -f1`$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
@@ -1600,7 +1626,8 @@ if [ "$ss_enable" = "1" ] ; then
 		start_SS
 	else
 		[ "$ss_mode_x" = "3" ] && { [ -z "`pidof ss-local`" ] || [ ! -s "`which ss-local`" ] && ss_restart ; }
-		[ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] || [ ! -s "`which dnsproxy`" ] && ss_restart ; }
+		[ "$ss_dnsproxy_x" != "1" ] && [ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] || [ ! -s "`which dnsproxy`" ] && ss_restart ; }
+		[ "$ss_dnsproxy_x" = "1" ] && [ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] || [ ! -s "`which pdnsd`" ] && ss_restart ; }
 		if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" ] ; then
 			port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 			if [ "$port" = 0 ] ; then
@@ -1695,10 +1722,18 @@ if [ "$NUM" -lt "$SSRNUM" ] ; then
 	sleep 5
 	exit 0
 fi
+if [ "$ss_dnsproxy_x" != "1" ] ; then
 if [ -z "`pidof dnsproxy`" ] || [ ! -s "`which dnsproxy`" ] ; then
 	logger -t "【SS】" "找不到 dnsproxy 进程 $rebss，重启 dnsproxy"
 	eval "$scriptfilepath repdnsd &"
 	sleep 10
+fi
+else
+if [ -z "`pidof pdnsd`" ] || [ ! -s "`which pdnsd`" ] ; then
+	logger -t "【SS】" "找不到 pdnsd 进程 $rebss，重启 pdnsd"
+	eval "$scriptfilepath repdnsd &"
+	sleep 10
+fi
 fi
 #SS进程监控和双线切换
 #思路：
@@ -2004,7 +2039,7 @@ stop)
 	stop_SS
 	;;
 repdnsd)
-	start_dnsproxy
+	start_pdnsd
 	;;
 help)
 	echo "Usage: $0 {start|rules|flush|update|stop}"

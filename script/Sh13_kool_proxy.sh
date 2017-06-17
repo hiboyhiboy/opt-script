@@ -27,6 +27,14 @@ lan_ipaddr=`nvram get lan_ipaddr`
 [ -z $adbyby_adblocks ] && adbyby_adblocks=0 && nvram set adbyby_adblocks=$adbyby_adblocks
 [ "$koolproxy_video" = "1" ] && mode_video=" -e " || mode_video=""
 
+# MemT=`cat /proc/meminfo | grep MemTotal | awk -F ' ' '{print $2;}'`
+# SwapT=`cat /proc/meminfo | grep SwapTotal | awk -F ' ' '{print $2;}'`
+# if [ $MemT -lt 81920 ] ; then
+# [ "$SwapT" != "0" ] && mode_video="$mode_video -d "
+# else
+# mode_video="$mode_video -d "
+# fi
+# echo "$mode_video"
 fi
 #检查 dnsmasq 目录参数
 confdir=`grep conf-dir /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
