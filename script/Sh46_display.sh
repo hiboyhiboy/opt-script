@@ -106,6 +106,8 @@ fi
 
 runx="1"
 while true; do
+display_enable=`nvram get display_enable`
+[ "$display_enable" != "1" ] && exit
 	if [ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && [ ! -s /tmp/script/_opt_script_check ]; then
 		logger -t "【相框显示】" "重新启动"
 		display_restart

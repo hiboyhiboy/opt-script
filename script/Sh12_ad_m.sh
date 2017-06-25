@@ -189,6 +189,8 @@ reb="1"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 while true; do
+adm_enable=`nvram get adm_enable`
+[ "$adm_enable" != "1" ] && exit
 [ ! -s "/tmp/7620adm/adm" ] && logger -t "【ADM】" "重新启动" && adm_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ "$reb" -gt 5 ] && [ "$(cat /tmp/reb.lock)x" == "1x" ] ; then
