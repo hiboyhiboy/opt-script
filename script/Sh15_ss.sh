@@ -681,6 +681,35 @@ iptables -t nat -N SS_SPEC_WAN_DG
 iptables -t nat -A SS_SPEC_WAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
 iptables -t nat -A SS_SPEC_WAN_DG -p tcp $EXT_ARGS_TCP -j SS_SPEC_WAN_AC
 iptables -t nat -I OUTPUT $wifidognx -p tcp -j SS_SPEC_WAN_DG
+
+if [ "$koolproxy_enable" != "0" ] ; then
+# 加载 kp过滤方案 规则
+logger -t "【SS】" "设置内网(LAN)访问控制【kp过滤方案】"
+grep -v '^#' /etc/storage/shadowsocks_ss_spec_lan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_lan.txt
+while read line
+do
+for host in $line; do
+    case "${host:0:1}" in
+        1|1)
+            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_CHN
+            ;;
+        2|2)
+            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_GFW
+            ;;
+        n|N)
+            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_AC
+            ;;
+        g|G)
+            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_FW
+            ;;
+        b|B)
+            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') -j RETURN
+            ;;
+    esac
+done
+done < /tmp/ss_spec_lan.txt
+fi
+
 # 加载 mangle 规则
 echo "ss_upd_rules:$ss_upd_rules"
 EXT_ARGS_UDP="$ss_upd_rules"

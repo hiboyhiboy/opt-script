@@ -27,6 +27,11 @@ lan_ipaddr=`nvram get lan_ipaddr`
 [ -z $adbyby_adblocks ] && adbyby_adblocks=0 && nvram set adbyby_adblocks=$adbyby_adblocks
 [ "$koolproxy_video" = "1" ] && mode_video=" -e " || mode_video=""
 
+if [ "$ss_enable" = "1" ] ; then
+	if [ ! -z "$(grep -v '^#' /etc/storage/shadowsocks_ss_spec_lan.sh | sort -u | grep -v "^$" | sed s/！/!/g)" ] ; then
+		mode_video="$mode_video --mark "
+	fi
+fi
 # MemT=`cat /proc/meminfo | grep MemTotal | awk -F ' ' '{print $2;}'`
 # SwapT=`cat /proc/meminfo | grep SwapTotal | awk -F ' ' '{print $2;}'`
 # if [ $MemT -lt 81920 ] ; then
@@ -200,6 +205,12 @@ koolproxy_enable=`nvram get koolproxy_enable`
 [ "$koolproxy_enable" != "1" ] && exit
 [ ! -s "/tmp/7620koolproxy/koolproxy" ] && logger -t "【koolproxy】" "重新启动" && koolproxy_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
+	ss_enable=`nvram get ss_enable`
+	if [ "$ss_enable" = "1" ] ; then
+		if [ ! -z "$(grep -v '^#' /etc/storage/shadowsocks_ss_spec_lan.sh | sort -u | grep -v "^$" | sed s/！/!/g)" ] ; then
+			[ -z "$(ps -w | grep koolproxy | grep mark)" ] && logger -t "【koolproxy】" "mark！重新启动" && koolproxy_restart
+		fi
+	fi
 	if [ "$reb" -gt 5 ] && [ "$(cat /tmp/reb.lock)x" == "1x" ] ; then
 		LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
 		echo '['$LOGTIME'] 网络连接中断['$reb']，reboot.' >> /opt/log.txt 2>&1
@@ -241,7 +252,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -9 koolproxy
 			sleep 3
 			cd /tmp/7620koolproxy/
-			/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
+			/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
 			sleep 20
 			reb=`expr $reb + 1`
 		fi
@@ -252,7 +263,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -9 koolproxy
 			sleep 3
 			cd /tmp/7620koolproxy/
-			/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
+			/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
 			sleep 20
 		fi
 		port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
@@ -436,7 +447,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	export LD_LIBRARY_PATH=/tmp/7620koolproxy/lib:/lib:/opt/lib
 	nvram set koolproxy_h="`/tmp/7620koolproxy/koolproxy -h | awk 'NR==1{print}'`"
 	cd /tmp/7620koolproxy/
-	/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
+	/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
 	rm -f /tmp/adbyby_host.conf
 	if [ "$adbyby_adblocks" = "1" ] ; then
 		logger -t "【koolproxy】" "加载 第三方自定义 规则, 等候10秒"
@@ -466,7 +477,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	fi
 	killall koolproxy
 	cd /tmp/7620koolproxy/
-	/tmp/7620koolproxy/koolproxy -d "$mode_video" >/dev/null 2>&1 &
+	/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
 	koolproxy_cron_job
 	}
 	hash krdl 2>/dev/null && krdl_ipset
