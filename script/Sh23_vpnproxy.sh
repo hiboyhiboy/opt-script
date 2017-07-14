@@ -125,14 +125,8 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/nvpproxy.tar.gz "$hiboyfile/nvpproxy.tar.gz" "$hiboyfile2/nvpproxy.tar.gz"
-	tar -xzvf /opt/bin/nvpproxy.tar.gz -C /opt/bin/
-	if [ ! -s "$SVC_PATH" ] ; then
-		logger -t "【vpnproxy】" "解压不正常:/opt/bin/nvpproxy"
-	else
-		chmod 755 "/opt/bin/nvpproxy"
-		rm -rf /opt/bin/nvpproxy.tar.gz
-	fi
+	wgetcurl.sh /opt/bin/nvpproxy "$hiboyfile/nvpproxy" "$hiboyfile2/nvpproxy"
+	chmod 755 "/opt/bin/nvpproxy"
 else
 	logger -t "【vpnproxy】" "找到 $SVC_PATH"
 fi
@@ -145,7 +139,7 @@ $SVC_PATH -port=$vpnproxy_wan_port -proxy=127.0.0.1:$vpnproxy_vpn_port &
 restart_dhcpd
 sleep 2
 [ ! -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "启动成功" && vpnproxy_restart o
-[ -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && vpnproxy_restart x
+[ -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "启动失败, 注意检查端口【netstat -anp | grep LISTEN】是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && vpnproxy_restart x
 logger -t "【vpnproxy】" "允许 $vpnproxy_wan_port 端口通过防火墙"
 iptables -I INPUT -p tcp --dport $vpnproxy_wan_port -j ACCEPT
 initopt
