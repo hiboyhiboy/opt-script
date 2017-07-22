@@ -741,8 +741,8 @@ done < /tmp/ad_spec_lan.txt
 	include_ac_rules nat
 	include_ac_rules2 nat
 	wifidognx=""
-		#wifidogn=`iptables -t nat -L PREROUTING --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## SS_SPEC
-		#if [ -z "$wifidogn" ] ; then
+		wifidogn=`iptables -t nat -L PREROUTING --line-number | grep SS_SPEC_V2RAY_LAN_DG | awk '{print $1}' | awk 'END{print $1}'`  ## SS_SPEC
+		if [ -z "$wifidogn" ] ; then
 			wifidogn=`iptables -t nat -L PREROUTING --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## Outgoing
 			if [ -z "$wifidogn" ] ; then
 				wifidogn=`iptables -t nat -L PREROUTING --line-number | grep vserver | awk '{print $1}' | awk 'END{print $1}'`  ## vserver
@@ -754,11 +754,12 @@ done < /tmp/ad_spec_lan.txt
 			else
 				wifidognx=`expr $wifidogn + 1`
 			fi
-		#else
-		#	wifidognx=`expr $wifidogn + 1`
-		#fi
+		else
+			wifidognx=`expr $wifidogn + 1`
+		fi
 	wifidognx=$wifidognx
 	echo "AD_BYBY-number:$wifidognx"
+	logger -t "【iptables】" "AD_BYBY-number:$wifidogn"
 	if [ -f /tmp/7620koolproxy/koolproxy_hookport.txt ] && [ "$adm_hookport" == 1 ] ; then
 		hookport443='|'
 		sed -e "s/443$hookport443//" -i /tmp/7620koolproxy/koolproxy_hookport.txt

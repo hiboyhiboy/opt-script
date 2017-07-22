@@ -1,0 +1,17 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_v2ray.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set v2ray_enable=0
+    exit
+fi
+
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set v2ray_L2="$(($3 + 10))"
+nvram set v2ray_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "v2ray_L2"); %>,<% nvram_get_x("", "v2ray_L3"); %>);
+

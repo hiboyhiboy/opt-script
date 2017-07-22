@@ -17,7 +17,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2017_7_15"
+	nvram set scripto="2017_7_22"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -55,7 +55,7 @@ start_upscript_daydayup () {
 logger -t "【script】" "脚本检查更新"
 file_t_check
 if [ -s /tmp/scriptsh.txt ] ; then
-	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "脚本需要更新, 未启用自动更新, 请手动更新" && return
+	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "当前【$scripto】脚本需要更新, 未启用自动更新, 请手动更新到【$scriptt】" && return
 	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then
 		logger -t "【script】" "脚本需要更新, 自动下载更新"
 		nvram set scripto="$scriptt"
@@ -85,7 +85,7 @@ logger -t "【script】" "脚本检查更新"
 file_t_check
 if [ -s /tmp/scriptsh.txt ] ; then
 	[ "$scriptt"x = "$scripto"x ] && logger -t "【script】" "脚本已经最新"
-	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "脚本需要更新, 未启用自动更新, 请手动更新" && return
+	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "当前【$scripto】脚本需要更新, 未启用自动更新, 请手动更新到【$scriptt】" && return
 	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then
 		logger -t "【script】" "脚本需要更新, 自动下载更新"
 		nvram set scripto="$scriptt"

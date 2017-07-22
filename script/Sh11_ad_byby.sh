@@ -627,8 +627,8 @@ done < /tmp/ad_spec_lan.txt
 	include_ac_rules nat
 	include_ac_rules2 nat
 	wifidognx=""
-		#wifidogn=`iptables -t nat -L PREROUTING --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## SS_SPEC
-		#if [ -z "$wifidogn" ] ; then
+		wifidogn=`iptables -t nat -L PREROUTING --line-number | grep SS_SPEC_V2RAY_LAN_DG | awk '{print $1}' | awk 'END{print $1}'`  ## SS_SPEC
+		if [ -z "$wifidogn" ] ; then
 			wifidogn=`iptables -t nat -L PREROUTING --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## Outgoing
 			if [ -z "$wifidogn" ] ; then
 				wifidogn=`iptables -t nat -L PREROUTING --line-number | grep vserver | awk '{print $1}' | awk 'END{print $1}'`  ## vserver
@@ -640,11 +640,12 @@ done < /tmp/ad_spec_lan.txt
 			else
 				wifidognx=`expr $wifidogn + 1`
 			fi
-		#else
-		#	wifidognx=`expr $wifidogn + 1`
-		#fi
+		else
+			wifidognx=`expr $wifidogn + 1`
+		fi
 	wifidognx=$wifidognx
 	echo "AD_BYBY-number:$wifidogn"
+	logger -t "【iptables】" "AD_BYBY-number:$wifidogn"
 	iptables -t nat -I PREROUTING $wifidognx -p tcp -m multiport --dports 80,8080 -j AD_BYBY
 	iptables -t nat -A AD_BYBY_to -p tcp -j REDIRECT --to-port 8118
 	dns_redirect

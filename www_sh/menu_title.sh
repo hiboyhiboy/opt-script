@@ -7,7 +7,7 @@ menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端 
 menu_title2="SS配置       SS节点   Kcptun  SS_Server SSR_Server COW       MEOW SoftEtherVPN"
 menu_title3="花生壳内网版 Ngrok    frp     DNSPod    CloudXNS   Aliddns"
 menu_title4="Adbyby       ADM      koolproxy"
-menu_title5="搭建Web环境"
+menu_title5="搭建Web环境  v2ray"
 ################################
 menu_title_all="$menu_title1 $menu_title2 $menu_title3 $menu_title4 $menu_title5"
 source /etc/storage/script/init.sh
@@ -131,11 +131,14 @@ www_upver () {
 
 # 当前 www_sh 文件
 touch /etc/storage/www_sh/menu_title.txt
-nvram set www_ver=`cat /etc/storage/www_sh/menu_title.txt | sed -n '1p'`
+www_ver=`cat /etc/storage/www_sh/menu_title.txt | sed -n '1p'`
+nvram set www_ver=$www_ver
 # 最新 www_sh 文件
 wgetcurl.sh "/tmp/menu_title.txt" "$hiboyscript/www_sh/menu_title.txt" "$hiboyscript2/www_sh/menu_title.txt"
 touch /tmp/menu_title.txt
-nvram set www_ver_n=`cat /tmp/menu_title.txt | sed -n '1p'`
+www_ver_n=`cat /tmp/menu_title.txt | sed -n '1p'`
+nvram set www_ver_n=$www_ver_n
+logger -t "【www_sh】" "当前自定义菜单标题【 $www_ver 】需要更新, 请手动更新到【 $www_ver_n 】"
 
 }
 
@@ -157,6 +160,7 @@ upre)
     run_www_sh
     ;;
 re)
+    rm -f /tmp/menu_title_re
     title_init
     check_www_sh
     run_www_sh
