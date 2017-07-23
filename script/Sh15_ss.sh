@@ -1081,22 +1081,22 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 					sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
 					grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##'  | sort -u > /tmp/ss/gfwlist_domain.txt
 		fi
-		# if [ "$ss_3p_kool" = "1" ] ; then
+		if [ "$ss_3p_kool" = "1" ] ; then
 			# 2 获取koolshare.github.io/maintain_files/gfwlist.conf
-			# logger -t "【SS】" "正在获取 koolshare 列表...."
-			# wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt http://koolshare.github.io/maintain_files/gfwlist.conf http://koolshare.github.io/maintain_files/gfwlist.conf N
-			# cat /tmp/ss/gfwdomain_tmp.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_1.txt
+			logger -t "【SS】" "正在获取 koolshare 列表...."
+			wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/koolshare/koolshare.github.io/acelan_softcenter_ui/maintain_files/gfwlist.conf https://raw.githubusercontent.com/koolshare/koolshare.github.io/acelan_softcenter_ui/maintain_files/gfwlist.conf N
+			cat /tmp/ss/gfwdomain_tmp.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_1.txt
 			# wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/koolshare/koolshare.github.io/master/maintain_files/gfwlist.conf https://raw.githubusercontent.com/koolshare/koolshare.github.io/master/maintain_files/gfwlist.conf N
 			# cat /tmp/ss/gfwdomain_tmp.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_2.txt
-		# fi
-		# rm -rf /tmp/ss/gfwdomain_tmp.txt
+		fi
+		rm -rf /tmp/ss/gfwdomain_tmp.txt
 		# /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwdomain_2.txt 、koolshare以及自定义列表
 	fi
 	#合并多个域名列表（自定义域名，GFWLIST，自带的三个列表）
 	logger -t "【SS】" "根据选项不同，分别会合并固件自带、gfwlist官方...."
 	touch /etc/storage/shadowsocks_mydomain_script.sh
 	cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u > /tmp/ss/gfwdomain_0.txt
-	cat /etc/storage/basedomain.txt /tmp/ss/gfwdomain_0.txt /tmp/ss/gfwlist_domain.txt | 
+	cat /etc/storage/basedomain.txt /tmp/ss/gfwdomain_0.txt /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwlist_domain.txt | 
 		sort -u > /tmp/ss/gfwall_domain.txt
 else
 	logger -t "【SS】" "启动时使用 固件内置list规则 列表...."
