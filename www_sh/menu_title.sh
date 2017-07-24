@@ -138,7 +138,9 @@ wgetcurl.sh "/tmp/menu_title.txt" "$hiboyscript/www_sh/menu_title.txt" "$hiboysc
 touch /tmp/menu_title.txt
 www_ver_n=`cat /tmp/menu_title.txt | sed -n '1p'`
 nvram set www_ver_n=$www_ver_n
+if [ "$www_ver"x != "$www_ver_n"x ] ; then
 logger -t "【www_sh】" "当前自定义菜单标题【 $www_ver 】需要更新, 请手动更新到【 $www_ver_n 】"
+fi
 
 }
 

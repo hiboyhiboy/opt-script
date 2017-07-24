@@ -111,12 +111,14 @@ OSC
 #return
 fi
 
-while true; do
+v2ray_enable=`nvram get v2ray_enable`
+while [ "$v2ray_enable" = "1" ]; do
 	NUM=`ps -w | grep "$v2ray_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$v2ray_path" ] ; then
 		logger -t "【v2ray】" "重新启动$NUM"
 		v2ray_restart
 	fi
+	v2ray_follow=`nvram get v2ray_follow`
 	if [ "$v2ray_follow" = "1" ] ; then
 	port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 	if [ "$port" = 0 ] ; then
@@ -125,6 +127,7 @@ while true; do
 	fi
 	fi
 sleep 218
+v2ray_enable=`nvram get v2ray_enable`
 done
 }
 
