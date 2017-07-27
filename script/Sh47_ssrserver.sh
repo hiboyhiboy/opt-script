@@ -154,9 +154,9 @@ logger -t "【SSR_server】" "SSR_server 检测更新"
 	C_util=`echo -n "$C_util" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 	if [ "$A_util" != "$B_util" ] && [ "$ssrserver_update" = "1" ] ; then
 		logger -t "【SSR_server】" "SSR_server github.com需要更新"
-		logger -t "【SSR_server】" "下载:https://github.com/breakwa11/shadowsocks/archive/manyuser.zip"
+		logger -t "【SSR_server】" "下载:https://github.com/shadowsocksr-rm/shadowsocksr/archive/manyuser.zip"
 		rm -rf /opt/manyuser.zip
-		wgetcurl.sh /opt/manyuser.zip https://github.com/breakwa11/shadowsocks/archive/manyuser.zip https://github.com/breakwa11/shadowsocks/archive/manyuser.zip N
+		wgetcurl.sh /opt/manyuser.zip https://github.com/shadowsocksr-rm/shadowsocksr/archive/manyuser.zip https://github.com/shadowsocksr-rm/shadowsocksr/archive/manyuser.zip N
 		unzip -o /opt/manyuser.zip  -d /opt/
 		rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
 		cp -a /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
