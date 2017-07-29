@@ -86,11 +86,11 @@ fi
 FastDick_keep () {
 logger -t "【迅雷快鸟】" "守护进程启动"
 while true; do
+	running=$(ps -w | grep "FastDick" | grep -v "grep" | wc -l)
+	if [ $running -lt 1 ] ; then
+		FastDicks_restart
+	fi
 sleep 948
-eval $(ps -w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
-killall FastDick_script.sh
-killall -9 FastDick_script.sh
-/etc/storage/FastDick_script.sh &
 done
 }
 

@@ -520,8 +520,8 @@ cat << EOF > config
 }
 EOF
 rm -rf /etc/v2ray/config.back
-mv /etc/v2ray/config.json /etc/v2ray/config.back
-mv config /etc/v2ray/config.json
+mv -f /etc/v2ray/config.json /etc/v2ray/config.back
+mv -f config /etc/v2ray/config.json
 cp -f /etc/v2ray/config.json /etc/v2ray/config.back0
 
 

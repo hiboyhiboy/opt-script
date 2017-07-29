@@ -119,8 +119,10 @@ ssr2_type_protocol_custom=`nvram get ssr2_type_protocol_custom`
 # 插件参数
 ss_plugin_config=`nvram get ss_plugin_config`
 ss2_plugin_config=`nvram get ss2_plugin_config`
-[ ! -z "$ss_plugin_config" ] && [ "$ss_type" = "0" ] && ss_usage_json="$ss_usage_json $ss_plugin_config"
-[ ! -z "$ss2_plugin_config" ] && [ "$ss_type" = "0" ] && ss_s2_usage_json="$ss_s2_usage_json $ss2_plugin_config"
+[ "$ss_type" = "1" ] && ss_plugin_config=""
+[ "$ss_type" = "1" ] && ss2_plugin_config=""
+# [ ! -z "$ss_plugin_config" ] && [ "$ss_type" = "0" ] && ss_usage_json="$ss_usage_json $ss_plugin_config"
+# [ ! -z "$ss2_plugin_config" ] && [ "$ss_type" = "0" ] && ss_s2_usage_json="$ss_s2_usage_json $ss2_plugin_config"
 
 touch /etc/storage/shadowsocks_mydomain_script.sh
 LAN_AC_IP=`nvram get LAN_AC_IP`
@@ -292,16 +294,19 @@ options2=${options2//tls_simple/}
 options2=${options2//random_head/}
 options2=${options2//tls1.2_ticket_auth/}
 
+[ "$ss_type" = "1" ] && ss_plugin_config=""
+[ "$ss_type" = "1" ] && ss2_plugin_config=""
+
 # 启动程序
 pidof ss-redir  >/dev/null 2>&1 && killall ss-redir && killall -9 ss-redir 2>/dev/null
 /tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -k $ss_s1_key -m $ss_s1_method
-ss-redir -c /tmp/ss-redir_1.json $options1 >/dev/null 2>&1 &
+ss-redir -c /tmp/ss-redir_1.json $options1 $ss_plugin_config >/dev/null 2>&1 &
 if [ ! -z $ss_server2 ] ; then
 	#启动第二个SS 连线
 	[  -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 无法获得 SS 服务器2的IP, 请核查设置"; stop_SS; clean_SS; }
 	logger -t "【SS】" "SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
 	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -k $ss_s2_key -m $ss_s2_method
-	ss-redir -c /tmp/ss-redir_2.json $options2 >/dev/null 2>&1 &
+	ss-redir -c /tmp/ss-redir_2.json $options2 $ss2_plugin_config >/dev/null 2>&1 &
 fi
 sleep 2
 [ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动成功" && ss_restart o
@@ -314,13 +319,13 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	pidof ss-local  >/dev/null 2>&1 && killall ss-local && killall -9 ss-local 2>/dev/null
 	logger -t "【ss-local】" "本地监听地址：$ss_s1_local_address 本地代理端口：$ss_s1_local_port SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
 	/tmp/SSJSON.sh -f /tmp/ss-local_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b $ss_s1_local_address -l $ss_s1_local_port -k $ss_s1_key -m $ss_s1_method
-	ss-local -c /tmp/ss-local_1.json $options1 >/dev/null 2>&1 &
+	ss-local -c /tmp/ss-local_1.json $options1 $ss_plugin_config >/dev/null 2>&1 &
 	if [ ! -z $ss_server2 ] ; then
 		#启动第二个SS 连线
 		[  -z "$ss_s2_ip" ] && { logger -t "【ss-local】" "[错误!!] 无法获得 SS 服务器2的IP,请核查设置"; stop_SS; clean_SS; }
 		logger -t "【ss-local】" "本地监听地址：$ss_s2_local_address 本地代理端口：$ss_s2_local_port SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
 		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -k $ss_s2_key -m $ss_s2_method
-		ss-local -c /tmp/ss-local_2.json $options2 >/dev/null 2>&1 &
+		ss-local -c /tmp/ss-local_2.json $options2 $ss2_plugin_config >/dev/null 2>&1 &
 	fi
 sleep 2
 [ ! -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动成功" && ss_restart o
