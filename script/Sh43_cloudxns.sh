@@ -16,7 +16,7 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cloudxns)" ]  && [ ! -s /tmp/script/_cloudxns ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_cloudxns
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_cloudxns
 	chmod 777 /tmp/script/_cloudxns
 fi
 
@@ -315,7 +315,7 @@ arDdnsCheck() {
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
-if [ -s "/opt/etc/init.d/rc.func" ] ; then
+if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 

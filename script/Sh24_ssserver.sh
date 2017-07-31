@@ -14,7 +14,7 @@ nvramshow=`nvram showall | grep '=' | grep ssserver | awk '{print gensub(/'"'"'/
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ssserver)" ]  && [ ! -s /tmp/script/_ssserver ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_ssserver
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ssserver
 	chmod 777 /tmp/script/_ssserver
 fi
 
@@ -169,7 +169,7 @@ eval "$scriptfilepath keep &"
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
-if [ -s "/opt/etc/init.d/rc.func" ] ; then
+if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 

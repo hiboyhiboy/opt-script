@@ -7,7 +7,7 @@ jbls_enable=`nvram get jbls_enable`
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep jbls)" ]  && [ ! -s /tmp/script/_jbls ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_jbls
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_jbls
 	chmod 777 /tmp/script/_jbls
 fi
 

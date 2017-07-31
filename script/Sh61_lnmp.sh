@@ -41,7 +41,7 @@ lnmpfile66="$hiboyfile2/wifidog_server.tgz"
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ]  && [ ! -s /tmp/script/_lnmp ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_lnmp
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_lnmp
 	chmod 777 /tmp/script/_lnmp
 fi
 
@@ -376,7 +376,7 @@ optw_enable=`nvram get optw_enable`
 if [ "$optw_enable" != "2" ] ; then
 	nvram set optw_enable=2
 fi
-if [ -s "/opt/etc/init.d/rc.func" ] ; then
+if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 

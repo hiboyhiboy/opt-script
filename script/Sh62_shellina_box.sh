@@ -18,7 +18,7 @@ shell_log="【shellinabox】"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep shellina_box)" ]  && [ ! -s /tmp/script/_shellina_box ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_shellina_box
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_shellina_box
 	chmod 777 /tmp/script/_shellina_box
 fi
 
@@ -185,7 +185,7 @@ optw_enable=`nvram get optw_enable`
 if [ "$optw_enable" != "2" ] && [ "$shellinabox_wan" = "1" ] ; then
 	nvram set optw_enable=2
 fi
-if [ -s "/opt/etc/init.d/rc.func" ] ; then
+if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 

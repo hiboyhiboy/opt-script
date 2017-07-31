@@ -36,7 +36,7 @@ gfw_black_list="gfwlist"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ad_byby)" ]  && [ ! -s /tmp/script/_ad_byby ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_ad_byby
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ad_byby
 	chmod 777 /tmp/script/_ad_byby
 fi
 
@@ -867,7 +867,7 @@ fi
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
-if [ -s "/opt/etc/init.d/rc.func" ] ; then
+if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 

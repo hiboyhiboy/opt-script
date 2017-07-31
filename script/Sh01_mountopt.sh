@@ -10,7 +10,7 @@ upopt_enable=`nvram get upopt_enable`
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mountopt)" ]  && [ ! -s /tmp/script/_mountopt ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_mountopt
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_mountopt
 	chmod 777 /tmp/script/_mountopt
 fi
 # /etc/storage/script/sh01_mountopt.sh

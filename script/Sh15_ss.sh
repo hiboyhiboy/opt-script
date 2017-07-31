@@ -117,8 +117,8 @@ ssr2_type_protocol_custom=`nvram get ssr2_type_protocol_custom`
 [ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -G $ssr_type_protocol_custom"
 [ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -G $ssr2_type_protocol_custom"
 # 插件参数
-ss_plugin_config=`nvram get ss_plugin_config`
-ss2_plugin_config=`nvram get ss2_plugin_config`
+ss_plugin_config="`nvram get ss_plugin_config`"
+ss2_plugin_config="`nvram get ss2_plugin_config`"
 [ "$ss_type" = "1" ] && ss_plugin_config=""
 [ "$ss_type" = "1" ] && ss2_plugin_config=""
 # [ ! -z "$ss_plugin_config" ] && [ "$ss_type" = "0" ] && ss_usage_json="$ss_usage_json $ss_plugin_config"
@@ -165,13 +165,13 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss)" ]  && [ ! -s /tmp/script/_ss ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_ss
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ss
 	chmod 777 /tmp/script/_ss
 fi
 
 # 创建JSON
 cat > "/tmp/SSJSON.sh" <<-\SSJSONSH
-while getopts ":o:O:g:G:s:p:b:l:k:m:f:" arg; do
+while getopts ":o:O:g:G:s:p:b:l:k:m:f:h:" arg; do
 	case "$arg" in
 		o)
 			obfs=$OPTARG
@@ -206,6 +206,9 @@ while getopts ":o:O:g:G:s:p:b:l:k:m:f:" arg; do
 		f)
 			config_file=$OPTARG
 			;;
+		h)
+			obfs_plugin="`nvram get $OPTARG`"
+			;;
 	esac
 done
 cat > "$config_file" <<-SSJSON
@@ -220,7 +223,8 @@ cat > "$config_file" <<-SSJSON
 "protocol": "$protocol",
 "protocol_param": "$protocol_param",
 "obfs": "$obfs",
-"obfs_param": "$obfs_param"
+"obfs_param": "$obfs_param",
+"plugin": "$obfs_plugin"
 }
 SSJSON
 SSJSONSH
@@ -266,6 +270,7 @@ options1=${options1//auth_sha1_v4/}
 options1=${options1//auth_aes128_md5/}
 options1=${options1//auth_aes128_sha1/}
 options1=${options1//auth_chain_a/}
+options1=${options1//auth_chain_b/}
 options1=${options1//auth_sha1/}
 options1=${options1//plain/}
 options1=${options1//http_simple/}
@@ -286,6 +291,7 @@ options2=${options2//auth_sha1_v4/}
 options2=${options2//auth_aes128_md5/}
 options2=${options2//auth_aes128_sha1/}
 options2=${options2//auth_chain_a/}
+options2=${options2//auth_chain_b/}
 options2=${options2//auth_sha1/}
 options2=${options2//plain/}
 options2=${options2//http_simple/}
@@ -294,19 +300,21 @@ options2=${options2//tls_simple/}
 options2=${options2//random_head/}
 options2=${options2//tls1.2_ticket_auth/}
 
+ss_plugin_config="`nvram get ss_plugin_config`"
+ss2_plugin_config="`nvram get ss2_plugin_config`"
 [ "$ss_type" = "1" ] && ss_plugin_config=""
 [ "$ss_type" = "1" ] && ss2_plugin_config=""
 
 # 启动程序
 pidof ss-redir  >/dev/null 2>&1 && killall ss-redir && killall -9 ss-redir 2>/dev/null
-/tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -k $ss_s1_key -m $ss_s1_method
-ss-redir -c /tmp/ss-redir_1.json $options1 $ss_plugin_config >/dev/null 2>&1 &
+/tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -k $ss_s1_key -m $ss_s1_method -h ss_plugin_config
+ss-redir -c /tmp/ss-redir_1.json $options1 >/dev/null 2>&1 &
 if [ ! -z $ss_server2 ] ; then
 	#启动第二个SS 连线
 	[  -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 无法获得 SS 服务器2的IP, 请核查设置"; stop_SS; clean_SS; }
 	logger -t "【SS】" "SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
-	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -k $ss_s2_key -m $ss_s2_method
-	ss-redir -c /tmp/ss-redir_2.json $options2 $ss2_plugin_config >/dev/null 2>&1 &
+	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -k $ss_s2_key -m $ss_s2_method -h ss2_plugin_config
+	ss-redir -c /tmp/ss-redir_2.json $options2 >/dev/null 2>&1 &
 fi
 sleep 2
 [ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动成功" && ss_restart o
@@ -318,14 +326,14 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	logger -t "【ss-local】" "启动所有的 ss-local 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
 	pidof ss-local  >/dev/null 2>&1 && killall ss-local && killall -9 ss-local 2>/dev/null
 	logger -t "【ss-local】" "本地监听地址：$ss_s1_local_address 本地代理端口：$ss_s1_local_port SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
-	/tmp/SSJSON.sh -f /tmp/ss-local_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b $ss_s1_local_address -l $ss_s1_local_port -k $ss_s1_key -m $ss_s1_method
-	ss-local -c /tmp/ss-local_1.json $options1 $ss_plugin_config >/dev/null 2>&1 &
+	/tmp/SSJSON.sh -f /tmp/ss-local_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b $ss_s1_local_address -l $ss_s1_local_port -k $ss_s1_key -m $ss_s1_method -h ss_plugin_config
+	ss-local -c /tmp/ss-local_1.json $options1 >/dev/null 2>&1 &
 	if [ ! -z $ss_server2 ] ; then
 		#启动第二个SS 连线
 		[  -z "$ss_s2_ip" ] && { logger -t "【ss-local】" "[错误!!] 无法获得 SS 服务器2的IP,请核查设置"; stop_SS; clean_SS; }
 		logger -t "【ss-local】" "本地监听地址：$ss_s2_local_address 本地代理端口：$ss_s2_local_port SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
-		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -k $ss_s2_key -m $ss_s2_method
-		ss-local -c /tmp/ss-local_2.json $options2 $ss2_plugin_config >/dev/null 2>&1 &
+		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -k $ss_s2_key -m $ss_s2_method -h ss2_plugin_config
+		ss-local -c /tmp/ss-local_2.json $options2 >/dev/null 2>&1 &
 	fi
 sleep 2
 [ ! -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动成功" && ss_restart o
@@ -1548,7 +1556,7 @@ clean_SS()
 {
 # 重置 SS IP 规则文件并重启 SS
 logger -t "【SS】" "重置 SS IP 规则文件并重启 SS"
-/tmp/script/_ss stop
+stop_SS
 sed -Ei '/adbyby_host.conf|cflist.conf|AiDisk_00|server=/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github/d' /etc/storage/dnsmasq/dnsmasq.conf
 rm -f /tmp/ss/dnsmasq.d/*
@@ -1557,6 +1565,7 @@ rm -rf /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt /tmp/ss/*
 [ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
 [ ! -f /etc/storage/basedomain.txt ] && tar -xzvf /etc_ro/basedomain.tgz -C /tmp && ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
 nvram set kcptun_status="cleanss"
+nvram set ss_status="cleanss"
 /tmp/script/_kcp_tun &
 ss_restart $1
 exit 0
@@ -2013,7 +2022,7 @@ ss_cron_job(){
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
-if [ -s "/opt/etc/init.d/rc.func" ] ; then
+if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
 fi
 

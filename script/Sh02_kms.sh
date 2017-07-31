@@ -7,7 +7,7 @@ kms_enable=`nvram get kms_enable`
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kms)" ]  && [ ! -s /tmp/script/_kms ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_kms
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kms
 	chmod 777 /tmp/script/_kms
 fi
 

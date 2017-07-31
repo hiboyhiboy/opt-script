@@ -17,7 +17,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2017_07_29"
+	nvram set scripto="2017_08_01"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -91,6 +91,7 @@ if [ -s /tmp/scriptsh.txt ] ; then
 		nvram set scripto="$scriptt"
 		file_o_check
 		file_check
+		logger -t "【script】" "脚本更新完成"
 	fi
 else
 	[ "$upscript_enable" != "1" ] && return
@@ -98,16 +99,34 @@ else
 fi
 }
 
+check_opt () {
+[ ! -d /opt/etc/init.d ] && return
+[ ! -f /tmp/scriptsh.txt ] && file_t_check
+for initopt in `ls -p /opt/etc/init.d`
+do
+if [ ! -z `grep "$(echo $initopt | sed 's/\.sh//g')" /tmp/scriptsh.txt)` ] ; then
+	cp -f /etc/storage/script/$initopt /opt/etc/init.d/$initopt 
+fi
+
+done
+
+}
+
 case $ACTION in
+check_opt)
+	check_opt
+	;;
 start)
 	#hash daydayup 2>/dev/null && start_upscript_daydayup
 	#hash daydayup 2>/dev/null || start_upscript
 	start_upscript
+	check_opt
 	;;
 *)
 	#hash daydayup 2>/dev/null && start_upscript_daydayup
 	#hash daydayup 2>/dev/null || start_upscript
 	start_upscript
+	check_opt
 	;;
 esac
 

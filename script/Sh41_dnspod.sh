@@ -12,7 +12,7 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep dnspod)" ]  && [ ! -s /tmp/script/_dnspod ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_dnspod
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_dnspod
 	chmod 777 /tmp/script/_dnspod
 fi
 

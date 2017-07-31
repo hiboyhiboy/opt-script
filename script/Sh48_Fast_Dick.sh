@@ -9,7 +9,7 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ]  && [ ! -s /tmp/script/_Fast_Dick ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_Fast_Dick
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_Fast_Dick
 	chmod 777 /tmp/script/_Fast_Dick
 fi
 
