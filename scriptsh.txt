@@ -34,5 +34,5 @@ Sh04_mento_hust=4daae089cc80608cc727030517a3c4fe
 Sh03_jbls=143c5d5bd2d5c35c69f707d6183cf9ec
 Sh02_kms=a567fa71439c8ab6c00d54cf435e8edb
 Sh01_mountopt=9a4cf1f8ef803b685c615ae1feb3cdad
-sh_upscript=d93b220e06a449cab43df53f0918d55f
-scriptt=2017_8_1
+sh_upscript=04be5ac779bb8b5b5b34728fe51eabaf
+scriptt=2017_8_2
