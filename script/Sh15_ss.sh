@@ -1567,6 +1567,7 @@ rm -rf /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt /tmp/ss/*
 nvram set kcptun_status="cleanss"
 nvram set ss_status="cleanss"
 /tmp/script/_kcp_tun &
+sleep 1
 ss_restart $1
 exit 0
 }
@@ -1634,6 +1635,7 @@ if [ "$1" = "x" ] ; then
 fi
 nvram set ss_status=0
 eval "$scriptfilepath &"
+sleep 5
 exit 0
 }
 
@@ -1739,8 +1741,9 @@ fi
 if [ "$rebss" -gt 6 ] ; then
 	if [ "$kcptun2_enable" = "1" ] || [ -z $ss_rdd_server ] ; then
 		logger -t "【SS】" "[$LOGTIME] 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
-		clean_SS
-		sleep 5
+		nvram set ss_status=0
+		eval "$scriptfilepath &"
+		sleep 10
 		exit 0
 	fi
 fi
@@ -1750,8 +1753,9 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	[ ! -z $ss_rdd_server ] && SSRNUM=2
 	if [ "$NUM" -lt "$SSRNUM" ] || [ ! -s "`which ss-local`" ] ; then
 		logger -t "【SS】" "找不到 $SSRNUM ss-local 进程 $rebss, 重启SS."
-		clean_SS
-		sleep 5
+		nvram set ss_status=0
+		eval "$scriptfilepath &"
+		sleep 10
 		exit 0
 	fi
 	#跳出当前循环
@@ -1763,8 +1767,9 @@ SSRNUM=1
 [ ! -z $ss_rdd_server ] && SSRNUM=2
 if [ "$NUM" -lt "$SSRNUM" ] ; then
 	logger -t "【SS】" "找不到 $SSRNUM shadowsocks 进程 $rebss, 重启SS."
-	clean_SS
-	sleep 5
+	nvram set ss_status=0
+	eval "$scriptfilepath &"
+	sleep 10
 	exit 0
 fi
 if [ "$ss_dnsproxy_x" != "1" ] ; then
