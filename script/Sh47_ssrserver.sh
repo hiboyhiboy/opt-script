@@ -141,6 +141,14 @@ fi
 hash python 2>/dev/null || {  logger -t "【SSR_server】" "无法运行 python 程序，请检查系统，10 秒后自动尝试重新启动" ; sleep 10 ; ssrserver_restart x ; }
 [ -d /opt/shadowsocks-manyuser ] && [ ! -d /opt/shadowsocksr-manyuser ] && mv -f /opt/shadowsocks-manyuser /opt/shadowsocksr-manyuser
 [ -d /opt/shadowsocks-manyuser ] && rm -rf /opt/shadowsocks-manyuser
+mkdir -p /opt/shadowsocksr-manyuser/shadowsocks/crypto/
+if [ ! -f /opt/shadowsocksr-manyuser/shadowsocks/server.py ] ; then
+	logger -t "【SSR_server】" "找不到 shadowsocks/server.py"
+	logger -t "【SSR_server】" "下载:$hiboyfile/manyuser.zip"
+	rm -rf /opt/manyuser.zip
+	wgetcurl.sh /opt/manyuser.zip "$hiboyfile/manyuser.zip" "$hiboyfile2/manyuser.zip"
+	unzip -o /opt/manyuser.zip  -d /opt/
+fi
 if [ "$ssrserver_update" != "0" ] ; then
 logger -t "【SSR_server】" "SSR_server 检测更新"
 	rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb
@@ -154,10 +162,11 @@ logger -t "【SSR_server】" "SSR_server 检测更新"
 	C_util=`echo -n "$C_util" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 	if [ "$A_util" != "$B_util" ] && [ "$ssrserver_update" = "1" ] ; then
 		logger -t "【SSR_server】" "SSR_server github.com需要更新"
-		logger -t "【SSR_server】" "下载:https://github.com/shadowsocksr-rm/shadowsocksr/archive/manyuser.zip"
+		logger -t "【SSR_server】" "下载:https://github.com/esdeathlove/shadowsocks/archive/ssr_origin.zip"
 		rm -rf /opt/manyuser.zip
-		wgetcurl.sh /opt/manyuser.zip https://github.com/shadowsocksr-rm/shadowsocksr/archive/manyuser.zip https://github.com/shadowsocksr-rm/shadowsocksr/archive/manyuser.zip N
+		wgetcurl.sh /opt/manyuser.zip https://github.com/esdeathlove/shadowsocks/archive/ssr_origin.zip https://github.com/esdeathlove/shadowsocks/archive/ssr_origin.zip N
 		unzip -o /opt/manyuser.zip  -d /opt/
+		mv -f /opt/shadowsocks-ssr_origin /opt/shadowsocksr-manyuser
 		rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
 		cp -a /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
 		logger -t "【SSR_server】" "SSR_server github.com更新完成"

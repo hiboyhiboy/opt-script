@@ -158,6 +158,7 @@ do_start(){
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
             echo "Starting $NAME success"
+            keep
         else
             echo "Starting $NAME failed"
         fi
@@ -224,6 +225,8 @@ exit $RETVAL
 
 
 VVRinit
+
+chmod 755 /etc/init.d/v2ray
 
 fi
 
