@@ -138,6 +138,9 @@ ss_updatess=`nvram get ss_updatess`
 [ -z $ss_link_1 ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
+
+[ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
+
 fi
 ##  bigandy modify 
 ##  1. 增加xbox的支持 （未实现，下一版本）
@@ -459,14 +462,17 @@ fi
 
 start_pdnsd()
 {
-if [ "$ss_dnsproxy_x" != "1" ] ; then
-hash dnsproxy 2>/dev/null && dnsproxy_x="1"
-hash dnsproxy 2>/dev/null || dnsproxy_x="0"
-if [ "$dnsproxy_x" = "1" ] ; then
-start_dnsproxy
-return
+if [ "$ss_dnsproxy_x" = "0" ] ; then
+	hash dnsproxy 2>/dev/null && dnsproxy_x="1"
+	hash dnsproxy 2>/dev/null || dnsproxy_x="0"
+	if [ "$dnsproxy_x" = "1" ] ; then
+		start_dnsproxy
+		return
+	else
+		ss_dnsproxy_x=1 && nvram set ss_dnsproxy_x=1
+	fi
 fi
-fi
+if [ "$ss_dnsproxy_x" = "1" ] ; then
 logger -t "【SS】" "启动 pdnsd 防止域名污染"
 pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
@@ -518,7 +524,10 @@ if ! test -f "$CACHE"; then
 	chown -R $USER.$GROUP $CACHEDIR
 fi
 pdnsd -c $pdnsd_conf -p /var/run/pdnsd.pid &
-
+fi
+if [ "$ss_dnsproxy_x" = "2" ] ; then
+	logger -t "【SS】" "使用 dnsmasq ，请开启 ChinaDNS 防止域名污染"
+fi
 }
 
 
@@ -1328,7 +1337,9 @@ dnsmasq_reconf()
 {
 	#防火墙转发规则加载
 	# for dnsmasq 
-	sed -Ei '/no-resolv|server=|server=127.0.0.1|server=208.67.222.222|dns-forward-max=1000|min-cache-ttl=1800|github/d' /etc/storage/dnsmasq/dnsmasq.conf
+#启动PDNSD防止域名污染
+start_pdnsd
+	sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|github/d' /etc/storage/dnsmasq/dnsmasq.conf
 if [ "$ss_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
 #   #方案三
 	cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
@@ -1338,8 +1349,6 @@ dns-forward-max=1000
 min-cache-ttl=1800
 EOF
 fi
-#启动PDNSD防止域名污染
-start_pdnsd
 sed -Ei '/github/d' /etc/storage/dnsmasq/dnsmasq.conf
 cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\_CONF
 server=/githubusercontent.com/127.0.0.1#8053
@@ -1379,9 +1388,9 @@ fi
 # SSR
 fi
 
-if [ "$ss_dnsproxy_x" != "1" ] ; then
+if [ "$ss_dnsproxy_x" = "0" ] ; then
 hash dnsproxy 2>/dev/null || optssredir="5"
-else
+elif [ "$ss_dnsproxy_x" = "1" ] ; then
 hash pdnsd 2>/dev/null || optssredir="5"
 fi
 [ "$ss_run_ss_local" = "1" ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
@@ -1454,7 +1463,7 @@ fi
 # SSR
 fi
 
-if [ "$ss_dnsproxy_x" != "1" ] ; then
+if [ "$ss_dnsproxy_x" = "0" ] ; then
 hash dnsproxy 2>/dev/null && dnsproxy_x="1"
 hash dnsproxy 2>/dev/null || dnsproxy_x="0"
 if [ "$dnsproxy_x" = "0" ] ; then
@@ -1467,7 +1476,7 @@ if [ "$dnsproxy_x" = "0" ] ; then
 	fi
 	hash dnsproxy 2>/dev/null || { logger -t "【SS】" "找不到 dnsproxy, 请检查系统"; ss_restart x ; }
 fi
-else
+elif [ "$ss_dnsproxy_x" = "1" ] ; then
 hash pdnsd 2>/dev/null && dnsproxy_x="1"
 hash pdnsd 2>/dev/null || dnsproxy_x="0"
 if [ "$dnsproxy_x" = "0" ] ; then
@@ -1547,6 +1556,12 @@ fi
 	nvram set ss_internet="1"
 	ss_cron_job
 	#ss_get_status
+if [ "$ss_dnsproxy_x" = "2" ] ; then
+	logger -t "【SS】" "使用 dnsmasq ，请开启 ChinaDNS 防止域名污染"
+	if [ ! -f "/etc/storage/script/Sh19_chinadns.sh" ] || [ ! -s "/etc/storage/script/Sh19_chinadns.sh" ] ; then
+		/etc/storage/script/Sh19_chinadns.sh &
+	fi
+fi
 eval "$scriptfilepath keep &"
 }
 
@@ -1673,8 +1688,9 @@ if [ "$ss_enable" = "1" ] ; then
 		start_SS
 	else
 		[ "$ss_mode_x" = "3" ] && { [ -z "`pidof ss-local`" ] || [ ! -s "`which ss-local`" ] && ss_restart ; }
-		[ "$ss_dnsproxy_x" != "1" ] && [ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] || [ ! -s "`which dnsproxy`" ] && ss_restart ; }
+		[ "$ss_dnsproxy_x" = "0" ] && [ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] || [ ! -s "`which dnsproxy`" ] && ss_restart ; }
 		[ "$ss_dnsproxy_x" = "1" ] && [ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] || [ ! -s "`which pdnsd`" ] && ss_restart ; }
+		[ "$ss_dnsproxy_x" = "2" ] && [ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] && ss_restart ; }
 		if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" ] ; then
 			port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 			if [ "$port" = 0 ] ; then
@@ -1772,13 +1788,13 @@ if [ "$NUM" -lt "$SSRNUM" ] ; then
 	sleep 10
 	exit 0
 fi
-if [ "$ss_dnsproxy_x" != "1" ] ; then
+if [ "$ss_dnsproxy_x" = "0" ] ; then
 if [ -z "`pidof dnsproxy`" ] || [ ! -s "`which dnsproxy`" ] ; then
 	logger -t "【SS】" "找不到 dnsproxy 进程 $rebss，重启 dnsproxy"
 	eval "$scriptfilepath repdnsd &"
 	sleep 10
 fi
-else
+elif [ "$ss_dnsproxy_x" = "1" ] ; then
 if [ -z "`pidof pdnsd`" ] || [ ! -s "`which pdnsd`" ] ; then
 	logger -t "【SS】" "找不到 pdnsd 进程 $rebss，重启 pdnsd"
 	eval "$scriptfilepath repdnsd &"

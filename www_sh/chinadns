@@ -1,0 +1,35 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app01.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_1=0 #chinadns_enable
+    exit
+fi
+
+if [ -f /tmp/webui_yes ] ; then
+# 加载程序配置页面
+mkdir -p /opt/app/chinadns
+if [ ! -f "/opt/app/chinadns/Advanced_Extensions_chinadns.asp" ] || [ ! -s "/opt/app/chinadns/Advanced_Extensions_chinadns.asp" ] ; then
+	wgetcurl.sh /opt/app/chinadns/Advanced_Extensions_chinadns.asp "$hiboyfile/Advanced_Extensions_chinadnsasp" "$hiboyfile2/Advanced_Extensions_chinadnsasp"
+fi
+umount /www/Advanced_Extensions_app01.asp
+mount --bind /opt/app/chinadns/Advanced_Extensions_chinadns.asp /www/Advanced_Extensions_app01.asp
+app1_ver=$(grep 'app1_ver=' /opt/app/chinadns/Advanced_Extensions_chinadns.asp | awk -F '=' '{print $2;}')
+nvram set app1_ver=${app1_ver}
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh19_chinadns.sh
+# 更新程序启动脚本
+if [ ! -f "/etc/storage/script/Sh19_chinadns.sh" ] || [ ! -s "/etc/storage/script/Sh19_chinadns.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh19_chinadns.sh "$hiboyscript/script/Sh19_chinadns.sh" "$hiboyscript/script/Sh19_chinadns.sh"
+fi
+fi
+[ "$1" = "del" ] && exit
+
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set chinadns_L2="$(($3 + 10))"
+nvram set chinadns_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "chinadns_L2"); %>,<% nvram_get_x("", "chinadns_L3"); %>);
+

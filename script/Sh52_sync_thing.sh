@@ -148,7 +148,8 @@ if [ ! -s "$SVC_PATH" ] && [ -d "$upanPath/syncthing/Downloads" ] ; then
 	wgetcurl.sh "$upanPath/syncthing/Downloads/syncthing-linux-mipsle.tar.gz" "$hiboyfile/syncthing-linux-mipsle.tar.gz" "$hiboyfile2/syncthing-linux-mipsle.tar.gz"
 	untar.sh "$upanPath/syncthing/Downloads/syncthing-linux-mipsle.tar.gz" "$upanPath/syncthing"
 	chmod -R 777  "$upanPath/syncthing/"
-	[ -d "$upanPath/syncthing/syncthing-linux-mipsle"* ] && mv -f "$upanPath/syncthing/syncthing-linux-mipsle"* "$upanPath/syncthing/syncthing-linux-mipsle"
+	cp -r -f -a  $upanPath/syncthing/syncthing-linux-mipsle?*/* $upanPath/syncthing/syncthing-linux-mipsle/
+	rm -rf $upanPath/syncthing/syncthing-linux-mipsle?*/
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【syncthing】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"

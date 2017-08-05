@@ -139,7 +139,7 @@ else
 	logger -t "【SSR_server】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ssrserver_restart x
 fi
 hash python 2>/dev/null || {  logger -t "【SSR_server】" "无法运行 python 程序，请检查系统，10 秒后自动尝试重新启动" ; sleep 10 ; ssrserver_restart x ; }
-[ -d /opt/shadowsocks-manyuser ] && [ ! -d /opt/shadowsocksr-manyuser ] && mv -f /opt/shadowsocks-manyuser /opt/shadowsocksr-manyuser
+[ -d /opt/shadowsocks-manyuser ] && [ ! -d /opt/shadowsocksr-manyuser ] && cp -r -f -a /opt/shadowsocks-manyuser/* /opt/shadowsocksr-manyuser
 [ -d /opt/shadowsocks-manyuser ] && rm -rf /opt/shadowsocks-manyuser
 mkdir -p /opt/shadowsocksr-manyuser/shadowsocks/crypto/
 if [ ! -f /opt/shadowsocksr-manyuser/shadowsocks/server.py ] ; then
@@ -166,9 +166,10 @@ logger -t "【SSR_server】" "SSR_server 检测更新"
 		rm -rf /opt/manyuser.zip
 		wgetcurl.sh /opt/manyuser.zip https://github.com/esdeathlove/shadowsocks/archive/ssr_origin.zip https://github.com/esdeathlove/shadowsocks/archive/ssr_origin.zip N
 		unzip -o /opt/manyuser.zip  -d /opt/
-		mv -f /opt/shadowsocks-ssr_origin /opt/shadowsocksr-manyuser
+		cp -r -f -a /opt/shadowsocks-ssr_origin/* /opt/shadowsocksr-manyuser
+		rm -rf /opt/shadowsocks-ssr_origin/
 		rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
-		cp -a /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
+		cp -af /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
 		logger -t "【SSR_server】" "SSR_server github.com更新完成"
 	else
 		logger -t "【SSR_server】" "SSR_server github.com暂时没更新"
@@ -180,7 +181,7 @@ logger -t "【SSR_server】" "SSR_server 检测更新"
 		wgetcurl.sh /opt/manyuser.zip "$hiboyfile/manyuser.zip" "$hiboyfile2/manyuser.zip"
 		unzip -o /opt/manyuser.zip  -d /opt/
 		rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
-		cp -a /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
+		cp -af /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
 		logger -t "【SSR_server】" "SSR_server code更新完成"
 	else
 		logger -t "【SSR_server】" "SSR_server code暂时没更新"
@@ -188,7 +189,7 @@ logger -t "【SSR_server】" "SSR_server 检测更新"
 fi
 logger -t "【SSR_server】" "启动 SSR_server 服务"
 rm -rf /opt/shadowsocksr-manyuser/user-config.json
-cp -a /etc/storage/SSRconfig_script.sh /opt/shadowsocksr-manyuser/user-config.json
+cp -af /etc/storage/SSRconfig_script.sh /opt/shadowsocksr-manyuser/user-config.json
 if [ -s "/opt/shadowsocksr-manyuser/user-config.json" ] ; then
 	chmod 777 -R /opt/shadowsocksr-manyuser
 	cd /opt/shadowsocksr-manyuser/shadowsocks/

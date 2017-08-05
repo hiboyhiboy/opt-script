@@ -7,7 +7,7 @@ menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端 
 menu_title2="SS配置       SS节点   Kcptun  SS_Server SSR_Server COW       MEOW SoftEtherVPN"
 menu_title3="花生壳内网版 Ngrok    frp     DNSPod    CloudXNS   Aliddns"
 menu_title4="Adbyby       ADM      koolproxy"
-menu_title5="搭建Web环境  v2ray"
+menu_title5="搭建Web环境  v2ray chinadns"
 ################################
 menu_title_all="$menu_title1 $menu_title2 $menu_title3 $menu_title4 $menu_title5"
 source /etc/storage/script/init.sh
@@ -59,11 +59,12 @@ for ii in 1 2 3 4 5
 do
     for i in 1 2 3 4 5 6 7 8
     do
-        #echo 'menu'$i'_title'$ii
+        echo 'menu'$i'_title'$ii
         nvramrun=`eval 'nvram get menu'$i'_title'$ii`
-        if [ ! -z "$nvramrun" ] && [ ! -z "$(echo "$menu_title_all" | grep "$nvramrun")" ] && [ -s /etc/storage/www_sh/$nvramrun ] ; then
-        dos2unix ./$nvramrun
-        eval "/etc/storage/www_sh/$nvramrun $i$ii $i $ii" 
+        if [ ! -z "$nvramrun" ] && [ ! -z "$(echo "$menu_title_all" | grep "$nvramrun")" ] && [ -s "/etc/storage/www_sh/$nvramrun" ] ; then
+        #dos2unix "./$nvramrun"
+        eval $(ps -w | grep "/etc/storage/www_sh/$nvramrun" | grep -v grep | awk '{print "kill "$1";";}')
+        /etc/storage/www_sh/$nvramrun "$i$ii" "$i" "$ii"
         #echo "/etc/storage/www_sh/$nvramrun $i$ii $i $ii"
         fi
     done
@@ -91,7 +92,8 @@ for file in `ls -L /etc/storage/www_sh/`
 do
 if [ -z "$(echo "$menu_title_set" | grep "$file")" ] && [ "$file"x != "menu_title.shx" ] && [ "$file"x != "menu_title.txtx" ] ; then
 www_no_set="$www_no_set $file"
-eval "/etc/storage/www_sh/$file stop" 
+eval $(ps -w | grep "/etc/storage/www_sh/$file" | grep -v grep | awk '{print "kill "$1";";}')
+/etc/storage/www_sh/$file stop
 fi
 done
 nvram set www_no_set="$www_no_set"
@@ -141,7 +143,9 @@ nvram set www_ver_n=$www_ver_n
 if [ "$www_ver"x != "$www_ver_n"x ] ; then
 logger -t "【www_sh】" "当前自定义菜单标题【 $www_ver 】需要更新, 请手动更新到【 $www_ver_n 】"
 fi
-
+# 最新 app_ver_n.txt 文件
+wgetcurl.sh "/tmp/app_ver_n.txt" "$hiboyscript/app_ver_n.txt" "$hiboyscript2/app_ver_n.txt"
+source /tmp/app_ver_n.txt
 }
 
 case $ACTION in

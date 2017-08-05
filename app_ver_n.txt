@@ -1,0 +1,2 @@
+
+nvram set app1_ver_n=2017-8-6
