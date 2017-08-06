@@ -148,7 +148,7 @@ fi
 hash chinadns 2>/dev/null || rm -rf /opt/bin/chinadns
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/tmp/script/_mountopt optwget
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH 下载程序"
@@ -166,6 +166,10 @@ if [ -s "$SVC_PATH" ] ; then
 fi
 chinadns_path="$SVC_PATH"
 
+if [ ! -f "/opt/opti.txt" ] ; then
+	logger -t "【opt】" "安装 opt 环境）"
+	/tmp/script/_mountopt optwget
+fi
 # 配置参数
 usage=""
 if [ "$chinadns_m" = "1" ] ; then
