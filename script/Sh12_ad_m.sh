@@ -62,6 +62,7 @@ if [ ! -z "$upanPath" ] ; then
 		wgetcurl.sh $upanPath/ad/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz" "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz" N
 		untar.sh $upanPath/ad/7620adm.tgz $upanPath/ad $upanPath/ad/7620a/adm
 		if [ -d "$upanPath/ad/7620a" ] ; then
+			mkdir -p $upanPath/ad/7620adm
 			cp -r -f -a $upanPath/ad/7620a/* $upanPath/ad/7620adm
 			rm -rf $upanPath/ad/7620a
 		fi
@@ -79,6 +80,7 @@ else
 		wgetcurl.sh /tmp/7620adm.tgz "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz" "http://admup2.admflt.com/cross_platform/2_6/7620a.tar.gz" N
 		untar.sh /tmp/7620adm.tgz /tmp /tmp/7620a/adm
 		if [ -d "/tmp/7620a" ] ; then
+			mkdir -p $upanPath/ad/7620adm
 			cp -r -f -a /tmp/7620a/* /tmp/7620adm
 			rm -rf /tmp/7620a/
 		fi
