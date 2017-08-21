@@ -135,7 +135,7 @@ restart_dhcpd
 [ ! -z "$chinadns_path" ] && eval $(ps -w | grep "$chinadns_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall chinadns
 killall -9 chinadns
-eval $(ps -w | grep "_chinadns keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_app1 keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "_chinadns.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
@@ -167,7 +167,7 @@ fi
 chinadns_path="$SVC_PATH"
 
 if [ ! -f "/opt/opti.txt" ] ; then
-	logger -t "【opt】" "安装 opt 环境）"
+	logger -t "【opt】" "安装 opt 环境"
 	/tmp/script/_mountopt optwget
 fi
 # 配置参数
@@ -180,7 +180,7 @@ usage=$usage" -d "
 fi
 [ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
 update_app
-
+chmod 755 "/opt/bin/chinadns"
 chinadns_v=`chinadns -V | grep ChinaDNS`
 nvram set chinadns_v="$chinadns_v"
 
@@ -249,10 +249,10 @@ keep)
 	#chinadns_check
 	chinadns_keep
 	;;
-updatechinadns)
+updateapp1)
 	chinadns_restart o
 	[ "$chinadns_enable" = "1" ] && nvram set chinadns_status="updatechinadns" && logger -t "【chinadns】" "重启" && chinadns_restart
-	[ "$chinadns_enable" != "1" ] && [ -f "$chinadns_path" ] && nvram set chinadns_v="" && logger -t "【chinadns】" "更新" && update_app del
+	[ "$chinadns_enable" != "1" ] && nvram set chinadns_v="" && logger -t "【chinadns】" "更新" && update_app del
 	;;
 *)
 	chinadns_check

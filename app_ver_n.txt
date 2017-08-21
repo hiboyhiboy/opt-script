@@ -1,2 +1,3 @@
 
 nvram set app1_ver_n=2017-8-6
+nvram set app2_ver_n=2017-8-20

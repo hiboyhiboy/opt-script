@@ -166,7 +166,8 @@ EEF
 		cat /opt/FastDick/swjsq_wget.sh >> /etc/storage/FastDick_script.sh
 		chmod 777 "/etc/storage/FastDick_script.sh"
 	fi
-	logger -t "【迅雷快鸟】" "启动完成`cat /opt/FastDick/swjsq.log`"
+	logger -t "【迅雷快鸟】" "启动 python 完成"
+	logger -t "【迅雷快鸟】" "`cat /opt/FastDick/swjsq.log`"
 	optw_enable=`nvram get optw_enable`
 	if [ "$optw_enable" != "2" ] ; then
 		nvram set optw_enable=2
@@ -174,8 +175,11 @@ EEF
 fi
 sleep 2
 [ ! -z "$(ps -w | grep "FastDick" | grep -v grep )" ] && logger -t "【迅雷快鸟】" "启动成功" && FastDicks_restart o
-[ -z "$(ps -w | grep "FastDick" | grep -v grep )" ] && logger -t "【迅雷快鸟】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && FastDicks_restart x
-
+if [ "$FastDicks" = "2" ] ; then
+[ -z "$(ps -w | grep "FastDick" | grep -v grep )" ] && logger -t "【迅雷快鸟】" "启动失败, 注意检脚本是否完整,10 秒后自动尝试重新启动" && sleep 10 && FastDicks_restart x
+else
+[ -z "$(ps -w | grep "FastDick" | grep -v grep )" ] && logger -t "【迅雷快鸟】" "启动失败, 注意检查python程序是否下载完整,手动ssh运行【python /opt/FastDick/swjsq.py】看报错日志,10 秒后自动尝试重新启动" && sleep 10 && FastDicks_restart x
+fi
 FastDick_get_status
 eval "$scriptfilepath keep &"
 }
