@@ -1,13 +1,16 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+
+fakeincn_enable=`nvram get app_7`
+[ -z $fakeincn_enable ] && fakeincn_enable=0 && nvram set app_7=0
+if [ "$fakeincn_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep '=' | grep fakeincn | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fakeincn_enable=`nvram get app_7`
 [ -z $fakeincn_enable ] && fakeincn_enable=0 && nvram set app_7=0
 fakeincn_path="/etc/storage/app_1.sh"
+fi
 
-# if [ "$fakeincn_enable" != "0" ] ; then
-# nvramshow=`nvram showall | grep '=' | grep fakeincn | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-# fi
 
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep fakeincn)" ]  && [ ! -s /tmp/script/_app2 ]; then
@@ -18,6 +21,7 @@ fi
 
 fakeincn_restart () {
 
+fakeincn_renum=`nvram get fakeincn_renum`
 relock="/var/lock/fakeincn_restart.lock"
 if [ "$1" = "o" ] ; then
 	nvram set fakeincn_renum="0"
@@ -150,7 +154,7 @@ optssredir="0"
 hash ss-redir 2>/dev/null || optssredir="1"
 if [ "$optssredir" = "1" ] ; then
 	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	[ ! s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
+	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
 	chmod 777 "/opt/bin/ss-redir"
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; fakeincn_restart x ; }
 fi
@@ -164,6 +168,12 @@ eval $fakeincn_path &
 sleep 2
 [ ! -z "$(ps -w | grep "/opt/app/fakeincn/fakeincn" | grep -v grep )" ] && logger -t "【fakeincn】" "启动成功 $fakeincn_v " && fakeincn_restart o
 [ -z "$(ps -w | grep "/opt/app/fakeincn/fakeincn" | grep -v grep )" ] && logger -t "【fakeincn】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && fakeincn_restart x
+
+#载入iptables模块
+for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
+do
+	modprobe $module
+done 
 
 # 写入防火墙规则
 

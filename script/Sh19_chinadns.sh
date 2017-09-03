@@ -1,6 +1,12 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+
+chinadns_enable=`nvram get app_1`
+[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+if [ "$chinadns_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep '=' | grep chinadns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+fi
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_d=`nvram get app_2`
@@ -14,9 +20,6 @@ chinadns_dnss=`nvram get app_5`
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
 
-# if [ "$chinadns_enable" != "0" ] ; then
-# nvramshow=`nvram showall | grep '=' | grep chinadns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-# fi
 
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep chinadns)" ]  && [ ! -s /tmp/script/_app1 ]; then
@@ -27,6 +30,7 @@ fi
 
 chinadns_restart () {
 
+chinadns_renum=`nvram get chinadns_renum`
 relock="/var/lock/chinadns_restart.lock"
 if [ "$1" = "o" ] ; then
 	nvram set chinadns_renum="0"
@@ -184,6 +188,8 @@ chmod 755 "/opt/bin/chinadns"
 chinadns_v=`chinadns -V | grep ChinaDNS`
 nvram set chinadns_v="$chinadns_v"
 
+pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
+pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
 logger -t "【chinadns】" "运行 $SVC_PATH"
 $chinadns_path -p $chinadns_port -s $chinadns_dnss -l /opt/app/chinadns/chinadns_iplist.txt -c /etc/storage/china_ip_list.txt $usage &
 sleep 2

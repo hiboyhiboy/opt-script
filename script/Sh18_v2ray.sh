@@ -1,8 +1,13 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+
 v2ray_enable=`nvram get v2ray_enable`
 [ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
+if [ "$v2ray_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+server_addresses=$(cat /etc/storage/v2ray_script.sh | tr -d ' ' | grep -Eo '"address":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
+fi
 v2ray_path=`nvram get v2ray_path`
 [ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
 v2ray_door=`nvram get v2ray_door`
@@ -10,11 +15,6 @@ v2ray_door=`nvram get v2ray_door`
 v2ray_port=`nvram get v2ray_port`
 [ -z $v2ray_port ] && v2ray_port=1088 && nvram set v2ray_port=1088
 
-if [ "$v2ray_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-server_addresses=$(cat /etc/storage/v2ray_script.sh | tr -d ' ' | grep -Eo '"address":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
-
-fi
 
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep v2ray)" ]  && [ ! -s /tmp/script/_v2ray ]; then
@@ -193,6 +193,11 @@ flush_r
 
 # 透明代理
 logger -t "【v2ray】" "启动 透明代理"
+chinadns_enable=`nvram get app_1`
+[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+if [ "$chinadns_enable" != "0" ] ; then
+logger -t "【v2ray】" "chinadns 已经启动 防止域名污染"
+else
 logger -t "【v2ray】" "启动 dnsproxy 防止域名污染"
 pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
@@ -201,7 +206,7 @@ if [ -s /sbin/dnsproxy ] ; then
 else
 	dnsproxy -d
 fi
-
+fi
 #防火墙转发规则加载
 sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF

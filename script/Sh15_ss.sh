@@ -1416,13 +1416,13 @@ if [ "$ss_run_ss_local" = "1" ] ; then
 fi
 if [ "$optssredir" = "1" ] ; then
 	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	[ ! s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
+	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
 	chmod 777 "/opt/bin/ss-redir"
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
 	logger -t "【SS】" "找不到 ss-local. opt 下载程序"
-	[ ! s /opt/bin/ss-local ] && wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/ss-local" "$hiboyfile2/ss-local"
+	[ ! -s /opt/bin/ss-local ] && wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/ss-local" "$hiboyfile2/ss-local"
 	chmod 777 "/opt/bin/ss-local"
 	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; ss_restart x ; }
 fi
@@ -1451,12 +1451,12 @@ if [ "$ss_run_ss_local" = "1" ] ; then
 	hash ssr-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "1" ] ; then
-	[ ! s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/ssr-redir" "$hiboyfile2/ssr-redir"
+	[ ! -s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/ssr-redir" "$hiboyfile2/ssr-redir"
 	chmod 777 "/opt/bin/ssr-redir"
 hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	[ ! s /opt/bin/ssr-local ] && wgetcurl.sh "/opt/bin/ssr-local" "$hiboyfile/ssr-local" "$hiboyfile2/ssr-local"
+	[ ! -s /opt/bin/ssr-local ] && wgetcurl.sh "/opt/bin/ssr-local" "$hiboyfile/ssr-local" "$hiboyfile2/ssr-local"
 	chmod 777 "/opt/bin/ssr-local"
 	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; ss_restart x ; }
 fi

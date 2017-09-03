@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v2.33.1
+version=v2.36.3
 
 SYSTEMCTL_CMD=$(command -v systemctl)
 SERVICE_CMD=$(command -v service)
