@@ -59,7 +59,11 @@ fi
 #Run Install
 cd /root
 
-curl -L -s -k https://install.direct/go.sh > /root/go.sh 
+curl -L  -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+if [ ! -s /root/go.sh ]; then
+  rm -f /root/go.sh
+  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
 /root/go.sh --version $version
@@ -82,7 +86,11 @@ function up_v2ray(){
     fi
   fi
 
-curl -L -s -k https://install.direct/go.sh > /root/go.sh 
+curl -L -s -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+if [ ! -s /root/go.sh ]; then
+  rm -f /root/go.sh
+  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
 /root/go.sh --version $version
@@ -109,8 +117,7 @@ fi
 
 function check_daemon(){
 
-hash start-stop-daemon 2>/dev/null || echo daemon_x=1
-if [ -f "/etc/init.d/v2ray" ] || [ "$daemon_x" = "1" ] ; then
+if [ ! -f "/etc/init.d/v2ray" ] ; then
 cat > "/etc/init.d/v2ray" <<-\VVRinit
 #!/bin/sh
 ### BEGIN INIT INFO
