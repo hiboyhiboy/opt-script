@@ -116,8 +116,9 @@ fi
 }
 
 function check_daemon(){
-
-if [ ! -f "/etc/init.d/v2ray" ] ; then
+hash start-stop-daemon 2>/dev/null || daemon_x=1
+echo daemon_x=1
+if [ -f "/etc/init.d/v2ray" ] || [ "$daemon_x" = "1" ] ; then
 cat > "/etc/init.d/v2ray" <<-\VVRinit
 #!/bin/sh
 ### BEGIN INIT INFO
