@@ -309,8 +309,8 @@ ss2_plugin_config="`nvram get ss2_plugin_config`"
 [ "$ss_type" = "1" ] && ss2_plugin_config=""
 
 # 启动程序
-pidof ss-redir  >/dev/null 2>&1 && killall ss-redir && killall -9 ss-redir 2>/dev/null
 /tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -k $ss_s1_key -m $ss_s1_method -h ss_plugin_config
+killall_ss_redir
 ss-redir -c /tmp/ss-redir_1.json $options1 >/dev/null 2>&1 &
 if [ ! -z $ss_server2 ] ; then
 	#启动第二个SS 连线
@@ -319,17 +319,11 @@ if [ ! -z $ss_server2 ] ; then
 	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -k $ss_s2_key -m $ss_s2_method -h ss2_plugin_config
 	ss-redir -c /tmp/ss-redir_2.json $options2 >/dev/null 2>&1 &
 fi
-sleep 2
-[ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动成功" && ss_restart o
-[ -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
-
-check_ip
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
-	[ "$ss_mode_x" = "3" ] && killall ss-redir
 	logger -t "【ss-local】" "启动所有的 ss-local 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
-	pidof ss-local  >/dev/null 2>&1 && killall ss-local && killall -9 ss-local 2>/dev/null
 	logger -t "【ss-local】" "本地监听地址：$ss_s1_local_address 本地代理端口：$ss_s1_local_port SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
 	/tmp/SSJSON.sh -f /tmp/ss-local_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b $ss_s1_local_address -l $ss_s1_local_port -k $ss_s1_key -m $ss_s1_method -h ss_plugin_config
+	killall_ss_local
 	ss-local -c /tmp/ss-local_1.json $options1 >/dev/null 2>&1 &
 	if [ ! -z $ss_server2 ] ; then
 		#启动第二个SS 连线
@@ -338,14 +332,55 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -k $ss_s2_key -m $ss_s2_method -h ss2_plugin_config
 		ss-local -c /tmp/ss-local_2.json $options2 >/dev/null 2>&1 &
 	fi
-sleep 2
-[ ! -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动成功" && ss_restart o
-[ -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
 fi
 
 }
 
+start_ss_redir_check()
+{
 
+sleep 2
+[ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动成功" && ss_restart o
+[ -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
+check_ip
+if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
+	[ "$ss_mode_x" = "3" ] && killall_ss_redir
+	[ ! -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动成功" && ss_restart o
+	[ -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
+fi
+
+}
+
+killall_ss_redir()
+{
+
+eval $(ps -w | grep "ss-redir_" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "ss-redir_" | grep -v grep | awk '{print "kill -9 "$1";";}')
+
+}
+
+killall_ss_local()
+{
+
+eval $(ps -w | grep "ss-local_" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "ss-local_" | grep -v grep | awk '{print "kill -9 "$1";";}')
+
+}
+
+swap_ss_redir()
+{
+
+# 启动新进程
+start_ss_redir
+# 重载rules规则
+ipset -! restore <<-EOF
+create ss_spec_dst_sp hash:net hashsize 64
+$(gen_special_purpose_ip | sed -e "s/^/add ss_spec_dst_sp /")
+EOF
+
+start_ss_redir_check
+
+}
 check_ssr()
 {
 umount -l /usr/sbin/ss-redir
@@ -439,7 +474,8 @@ if [ "$ss_check" = "1" ] ; then
 	echo "checkip: "$checkip
 	if [ "$checkip" == "0" ] ; then
 		logger -t "【ss-redir】" "check_ip 检查两个 SS 服务器代理连接失败, 请检查配置, 10 秒后重启shadowsocks"
-		killall ss-local ss-redir
+		killall_ss_local
+		killall_ss_redir
 		sleep 10
 		clean_SS 
 		exit 0
@@ -1497,6 +1533,7 @@ echo "Debug: $DNS_Server"
 	logger -t "【SS】" "###############启动程序###############"
 	if [ "$ss_mode_x" = "3" ] ; then
 		start_ss_redir
+		start_ss_redir_check
 		logger -t "【ss-local】" "启动. 可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用."
 		logger -t "【ss-local】" "shadowsocks 进程守护启动"
 		ss_cron_job
@@ -1506,6 +1543,7 @@ echo "Debug: $DNS_Server"
 	fi
 	dnsmasq_reconf
 	start_ss_redir
+	start_ss_redir_check
 	start_ss_rules
 	sleep 1
 	nvram set ss_updatess2=0
@@ -1598,8 +1636,10 @@ ss_working_port=`nvram get ss_working_port`
 sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 clean_ss_rules
-killall ss-redir ssr-redir ss-local ssr-local ss-tunnel pdnsd dnsproxy sh_sskeey_k.sh obfs-local
-killall -9 ss-redir ssr-redir ss-local ssr-local ss-tunnel pdnsd dnsproxy sh_sskeey_k.sh obfs-local
+killall_ss_redir
+killall_ss_local
+killall pdnsd dnsproxy sh_sskeey_k.sh obfs-local
+killall -9 pdnsd dnsproxy sh_sskeey_k.sh obfs-local
 rm -f /tmp/sh_sskeey_k.sh
 rm -f $confdir/r.gfwlist.conf
 rm -f $confdir/r.sub.conf
@@ -1657,12 +1697,26 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_server1$ss_server2$ss_s1_port$ss_s2_port$ss_s1_method$ss_s2_method$ss_s1_key$ss_s2_key$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage$ss_s2_usage$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$ss_xbox`nvram get wan0_dns |cut -d ' ' -f1`$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server`nvram get wan0_dns |cut -d ' ' -f1`$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
 	needed_restart=1
 	#/etc/storage/ez_buttons_script.sh ping &
+else
+	needed_restart=0
+	ss_get_status2
+fi
+}
+
+ss_get_status2 () {
+
+A_restart=`nvram get ss_status2`
+B_restart="$ss_server1$ss_server2$ss_s1_port$ss_s2_port$ss_s1_method$ss_s2_method$ss_s1_key$ss_s2_key$ss_usage$ss_s2_usage"
+B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+if [ "$A_restart" != "$B_restart" ] ; then
+	nvram set ss_status2=$B_restart
+	needed_restart=2
 else
 	needed_restart=0
 fi
@@ -1678,7 +1732,13 @@ if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ss_enable" = "1" ] ; then
+	if [ "$needed_restart" = "2" ] ; then
+		logger -t "【SS】" "检测:更换线路配置，进行快速切换服务器。"
+		swap_ss_redir
+		logger -t "【SS】" "切换服务器完成。"
+	fi
 	if [ "$needed_restart" = "1" ] ; then
+		hash getopts 2>/dev/null ||  { logger -t "【SS】" "错误！Shell未加载getopts，请检查固件和busybox配置"; stop_SS; exit 1; }
 		[ $ss_server1 ] || logger -t "【SS】" "服务器地址:未填写"
 		[ $ss_s1_port ] || logger -t "【SS】" "服务器端口:未填写"
 		[ $ss_s1_method ] || logger -t "【SS】" "加密方式:未填写"
@@ -1693,7 +1753,7 @@ if [ "$ss_enable" = "1" ] ; then
 		[ "$ss_dnsproxy_x" = "2" ] && [ "$ss_mode_x" != "3" ] && { [ -z "`pidof ss-redir`" ] || [ ! -s "`which ss-redir`" ] && ss_restart ; }
 		if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" ] ; then
 			port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
-			if [ "$port" = 0 ] ; then
+			if [ "$port"x = 0x ] ; then
 				logger -t "【SS】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
 				eval "$scriptfilepath rules &"
 			fi
