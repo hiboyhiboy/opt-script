@@ -2107,19 +2107,22 @@ ss_link_cron_job(){
 
 ssr_link="`nvram get ssr_link`"
 [ -z "$ssr_link" ] && ssr_link="" && nvram set ssr_link=""
-if [ -z "$ssr_link" ]  ; then
-	cru.sh d ss_link_update
-	logger -t "【SS】" "停止 SSR 服务器订阅"
-	return
-fi
-
 A_restart=`nvram get ss_link_status`
 B_restart="$ssr_link"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_link_status=$B_restart
-	cru.sh a ss_link_update "*/12 */3 * * * $scriptfilepath uplink &" &
-	logger -t "【SS】" "启动 SSR 服务器订阅: $ssr_link"
+	if [ -z "$ssr_link" ] ; then
+		cru.sh d ss_link_update
+		logger -t "【SS】" "停止 SSR 服务器订阅"
+		return
+	else
+		cru.sh a ss_link_update "*/12 */3 * * * $scriptfilepath uplink &" &
+		logger -t "【SS】" "启动 SSR 服务器订阅: $ssr_link"
+	fi
+fi
+if [ -z "$ssr_link" ] ; then
+	return
 fi
 mkdir -p /tmp/ss/link
 wgetcurl.sh /tmp/ss/link/1_link.txt "$ssr_link" "$ssr_link" N
