@@ -344,6 +344,26 @@ eval $(ps -w | grep "_ad_byby.sh keep" | grep -v grep | awk '{print "kill "$1";"
 eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
+
+update_ad_rules () {
+
+xwhyc_rules="$hiboyfile/video.txt"
+xwhyc_rules3="$hiboyfile2/video.txt"
+xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"
+xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
+logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
+wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules1 N 5
+[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2 N 5
+xwhyc_rules="$hiboyfile/lazy.txt"
+xwhyc_rules3="$hiboyfile2/lazy.txt"
+xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
+xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
+logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
+wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules1 N 100
+[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2 N 100
+
+}
+
 adbyby_start () {
 nvram set adbybylazy="【adbyby未启动】lazy更新："
 nvram set adbybyvideo="【adbyby未启动】video更新："
@@ -365,16 +385,17 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	sed -Ei '/.*update.adbyby.com\/180.76.76.76.*/d' /etc/storage/dnsmasq/dnsmasq.servers
 	sed -e '/^$/d' -i /etc/storage/dnsmasq/dnsmasq.servers
 	restart_dhcpd
+	[ -s /tmp/bin/data/video.txt ] && rm -f /tmp/bin/data/video.txt /tmp/bin/data/video_B.txt
+	[ -s /tmp/bin/data/lazy.txt ] && rm -f /tmp/bin/data/lazy.txt /tmp/bin/data/lazy_B.txt
 	logger -t "【Adbyby】" "测试下载规则"
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg
+		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
-		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
 	else
-		check=`curl -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
+		check=`curl --connect-timeout 10 -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
 		[ "$check" != "200" ] && {
-		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg
+		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 		}
 	fi
@@ -385,19 +406,8 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	else
 		mkdir -p /tmp/bin/data
 		logger -t "【Adbyby】" "测试下载规则失败, 强制 手动同步更新规则"
-		xwhyc_rules="$hiboyfile/video.txt"
-		xwhyc_rules3="$hiboyfile2/video.txt"
-		xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"
-		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-		wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules2 N 5
-		[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2 N 5
+		update_ad_rules
 		[ -s /tmp/bin/data/video.txt ] && mv -f /tmp/bin/data/video.txt /tmp/bin/data/video_B.txt
-		xwhyc_rules="$hiboyfile/lazy.txt"
-		xwhyc_rules3="$hiboyfile2/lazy.txt"
-		xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
-		logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-		wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules2 N 5
-		[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2 N 5
 		[ -s /tmp/bin/data/lazy.txt ] && mv -f /tmp/bin/data/lazy.txt /tmp/bin/data/lazy_B.txt
 	fi
 	chmod 777 /tmp/bin/adbyby
@@ -463,6 +473,16 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		sleep 10
 	else
 		sleep 5
+	fi
+	# 检测规则下载
+	rules_nu="`cat /tmp/bin/data/lazy.txt | grep -v ! | wc -l`"
+	if [ $rules_nu -lt 100 ] ; then
+		logger -t "【Adbyby】" "错误！下载规则数 $rules_nu ，再次启用脚本手动下载更新。"
+		update_ad_rules
+		killall adbyby
+		killall -9 adbyby
+		/tmp/bin/adbyby >/dev/null 2>&1 &
+		sleep 10
 	fi
 fi
 [ ! -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "启动成功" && adbyby_restart o
@@ -901,16 +921,29 @@ update)
 	[ "$adbyby_enable" != "1" ] && exit 0
 	killall sh_ad_byby_keey_k.sh
 	killall -9 sh_ad_byby_keey_k.sh
-	checka="/tmp/var/video.txt"
-	rm -f /tmp/var/video.txt
-	urla="http://update.adbyby.com/rule3/video.jpg"
-	checkb="/tmp/bin/data/video.txt"
-	wgetcurl.sh $checka $urla $urla N 5
+	checka="/tmp/var/lazy.txt"
+	rm -f /tmp/var/lazy.txt
+	urla="http://update.adbyby.com/rule3/lazy.jpg"
+	urla2="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
+	checkb="/tmp/bin/data/lazy.txt"
+	wgetcurl.sh $checka $urla $urla2 N 100
 	if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
-		logger -t "【Adbyby】" "更新检查:有更新 $urla , 重启进程"
+		logger -t "【Adbyby】" "更新检查:lazy 有更新 $urla , 重启进程"
 		adbyby_restart
 	else
-		logger -t "【Adbyby】" "更新检查:不需更新 $urla "
+		logger -t "【Adbyby】" "更新检查:lazy 不需更新 $urla "
+		checka="/tmp/var/video.txt"
+		rm -f /tmp/var/video.txt
+		urla="http://update.adbyby.com/rule3/video.jpg"
+		urla2="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
+		checkb="/tmp/bin/data/video.txt"
+		wgetcurl.sh $checka $urla $urla2 N 5
+		if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
+			logger -t "【Adbyby】" "更新检查:video 有更新 $urla , 重启进程"
+			adbyby_restart
+		else
+			logger -t "【Adbyby】" "更新检查:video 不需更新 $urla "
+		fi
 	fi
 	[ -s /tmp/sh_ad_byby_keey_k.sh ] && /tmp/sh_ad_byby_keey_k.sh &
 	;;
