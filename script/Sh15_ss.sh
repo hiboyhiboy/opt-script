@@ -109,13 +109,37 @@ ss_s2_usage=`nvram get ss_s2_usage`
 # 混淆参数
 ssr_type_obfs_custom=`nvram get ssr_type_obfs_custom`
 ssr2_type_obfs_custom=`nvram get ssr2_type_obfs_custom`
+ss_usage_obfs_custom="$(echo $ss_usage | grep -Eo '\-g[^-]+')"
+if [ ! -z "$ss_usage_obfs_custom" ] ; then 
+logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_obfs_custom ，服务1优先使用此 混淆参数"
+ss_usage_json=""
+else
 [ ! -z "$ssr_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json=" -g $ssr_type_obfs_custom"
+fi
+ss_s2_usage_obfs_custom="$(echo $ss_s2_usage | grep -Eo '\-g[^-]+')"
+if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then 
+logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_obfs_custom ，服务1优先使用此 混淆参数"
+ss_s2_usage_json=""
+else
 [ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json=" -g $ssr2_type_obfs_custom"
+fi
 # 协议参数
 ssr_type_protocol_custom=`nvram get ssr_type_protocol_custom`
 ssr2_type_protocol_custom=`nvram get ssr2_type_protocol_custom`
+ss_usage_protocol_custom="$(echo $ss_usage | grep -Eo '\-G[^-]+')"
+if [ ! -z "$ss_usage_protocol_custom" ] ; then 
+logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_protocol_custom ，服务1优先使用此 协议参数"
+ss_usage_json="$ss_usage_json"
+else
 [ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -G $ssr_type_protocol_custom"
+fi
+ss_s2_usage_protocol_custom="$(echo $ss_s2_usage | grep -Eo '\-G[^-]+')"
+if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then 
+logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_protocol_custom ，服务2优先使用此 协议参数"
+ss_s2_usage_json="$ss_s2_usage_json"
+else
 [ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -G $ssr2_type_protocol_custom"
+fi
 # 插件参数
 ss_plugin_config="`nvram get ss_plugin_config`"
 ss2_plugin_config="`nvram get ss2_plugin_config`"
@@ -260,48 +284,11 @@ ss_usage="$ss_usage -u"
 ss_s2_usage="$ss_s2_usage -u"
 fi
 
-options1=""
-options1=${ss_usage//-o/}
-options1=${options1//-O/}
-options1=${options1//origin/}
-options1=${options1//verify_simple/}
-options1=${options1//verify_deflate/}
-options1=${options1//verify_sha1/}
-options1=${options1//auth_simple/}
-options1=${options1//auth_sha1_v2/}
-options1=${options1//auth_sha1_v4/}
-options1=${options1//auth_aes128_md5/}
-options1=${options1//auth_aes128_sha1/}
-options1=${options1//auth_chain_a/}
-options1=${options1//auth_chain_b/}
-options1=${options1//auth_sha1/}
-options1=${options1//plain/}
-options1=${options1//http_simple/}
-options1=${options1//http_post/}
-options1=${options1//tls_simple/}
-options1=${options1//random_head/}
-options1=${options1//tls1.2_ticket_auth/}
-options2=""
-options2=${ss_s2_usage//-o/}
-options2=${options2//-O/}
-options2=${options2//origin/}
-options2=${options2//verify_simple/}
-options2=${options2//verify_deflate/}
-options2=${options2//verify_sha1/}
-options2=${options2//auth_simple/}
-options2=${options2//auth_sha1_v2/}
-options2=${options2//auth_sha1_v4/}
-options2=${options2//auth_aes128_md5/}
-options2=${options2//auth_aes128_sha1/}
-options2=${options2//auth_chain_a/}
-options2=${options2//auth_chain_b/}
-options2=${options2//auth_sha1/}
-options2=${options2//plain/}
-options2=${options2//http_simple/}
-options2=${options2//http_post/}
-options2=${options2//tls_simple/}
-options2=${options2//random_head/}
-options2=${options2//tls1.2_ticket_auth/}
+options1=`echo "$ss_usage" | sed -e "s/$(echo "$ss_usage" | grep -Eo '\-G[^-]+')//g" | sed -e "s/$(echo "$ss_usage" | grep -Eo '\-g[^-]+')//g"`
+options1=`echo "$options1" | sed -e "s/$(echo "$options1" | grep -Eo '\-O[^-]+')//g" | sed -e "s/$(echo "$options1" | grep -Eo '\-o[^-]+')//g"`
+
+options2=`echo "$ss_s2_usage" | sed -e "s/$(echo "$ss_s2_usage" | grep -Eo '\-G[^-]+')//g" | sed -e "s/$(echo "$ss_s2_usage" | grep -Eo '\-g[^-]+')//g"`
+options2=`echo "$options2" | sed -e "s/$(echo "$options2" | grep -Eo '\-O[^-]+')//g" | sed -e "s/$(echo "$options2" | grep -Eo '\-o[^-]+')//g"`
 
 ss_plugin_config="`nvram get ss_plugin_config`"
 ss2_plugin_config="`nvram get ss2_plugin_config`"
@@ -1744,6 +1731,7 @@ if [ "$ss_enable" = "1" ] ; then
 		[ $ss_s1_method ] || logger -t "【SS】" "加密方式:未填写"
 		[ $ss_server1 ] && [ $ss_s1_port ] && [ $ss_s1_method ] \
 		 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1; }
+		ss_link_cron_job &
 		stop_SS
 		start_SS
 	else
@@ -1895,7 +1883,7 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -q -T 10 $ss_link_2
+	wget --continue --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
@@ -1974,7 +1962,7 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -q -T 10 $ss_link_2
+	wget --continue --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
@@ -2046,7 +2034,7 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -q -T 10 $ss_link_2
+	wget --continue --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
 		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
@@ -2076,6 +2064,128 @@ restart_dhcpd
 done
 
 }
+
+
+add_ss_link () {
+link="$1"
+ss_link_methodpassword=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | base64 -d  | awk -F '@' '{print $1}')
+ss_link_usage=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | base64 -d  | awk -F '@' '{print $2}')
+
+ss_link_name="#"$(echo -n "$ss_link_usage" | cut -d ':' -f1)
+ss_link_server=$(echo -n "$ss_link_usage" | cut -d ':' -f1)
+ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
+ss_link_password=$(echo -n "$ss_link_methodpassword"  | cut -d ':' -f2 )
+ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
+
+}
+
+add_ssr_link () {
+link="$1"
+ss_link_name=$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}' | cut -d '&' -f3 | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | base64 -d )
+ss_link_usage=$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')
+
+ss_link_server=`echo -n "$ss_link_usage" | cut -d ':' -f1 `
+ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
+ss_link_password=$(echo -n "$ss_link_usage"  | cut -d ':' -f6 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | base64 -d)
+ss_link_method=`echo -n "$ss_link_usage" | cut -d ':' -f4 `
+ss_link_obfs=`echo -n "$ss_link_usage" | cut -d ':' -f5 ` # -o
+ss_link_protocol=`echo -n "$ss_link_usage" | cut -d ':' -f3 ` # -O
+
+}
+
+add_0 () {
+ss_link_name=""
+ss_link_server=""
+ss_link_port=""
+ss_link_password=""
+ss_link_method=""
+ss_link_obfs=""
+ss_link_protocol=""
+}
+
+ss_link_cron_job(){
+
+ssr_link="`nvram get ssr_link`"
+[ -z "$ssr_link" ] && ssr_link="" && nvram set ssr_link=""
+if [ -z "$ssr_link" ]  ; then
+	cru.sh d ss_link_update
+	logger -t "【SS】" "停止 SSR 服务器订阅"
+	return
+fi
+
+A_restart=`nvram get ss_link_status`
+B_restart="$ssr_link"
+B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+if [ "$A_restart" != "$B_restart" ] ; then
+	nvram set ss_link_status=$B_restart
+	cru.sh a ss_link_update "*/12 */3 * * * $scriptfilepath uplink &" &
+	logger -t "【SS】" "启动 SSR 服务器订阅: $ssr_link"
+fi
+mkdir -p /tmp/ss/link
+wgetcurl.sh /tmp/ss/link/1_link.txt "$ssr_link" "$ssr_link" N
+base64 -d /tmp/ss/link/1_link.txt > /tmp/ss/link/2_link.txt
+sed -e "s/_/\//g" -i /tmp/ss/link/2_link.txt
+sed -e "s/\-/\+/g" -i /tmp/ss/link/2_link.txt
+sed -e '/^$/d' -i /tmp/ss/link/2_link.txt
+echo >> /tmp/ss/link/2_link.txt
+rm -f /tmp/ss/link/ssr_link.txt  /tmp/ss/link/ss_link.txt
+while read line
+do
+ssr_line=`echo -n $line | sed -n '1p' | grep 'ssr://'`
+if [ ! -z "$ssr_line" ] ; then
+	echo  "$ssr_line" | awk -F 'ssr://' '{print $2}' >> /tmp/ss/link/ssr_link.txt
+
+fi
+ss_line=`echo -n $line | sed -n '1p' |grep 'ss://'`
+if [ ! -z "$ss_line" ] ; then
+	echo  "$ss_line" | awk -F 'ss://' '{print $2}'  >> /tmp/ss/link/ss_link.txt
+fi
+done < /tmp/ss/link/2_link.txt
+
+
+[ -f /tmp/ss/link/ssr_link.txt ] && awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ssr_link.txt > /tmp/ss/link/ssr_link2.txt
+
+[ -f /tmp/ss/link/ss_link.txt ] && awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ss_link.txt > /tmp/ss/link/ss_link2.txt
+
+#echo > /tmp/ss/link/c_link.txt
+i=0
+while read line
+do
+if [ ! -z "$line" ] && [ ! -z /tmp/ss/link/ssr_link2.txt ] ; then
+	add_0
+	add_ssr_link "$line"
+	#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
+	eval "nvram set rt_ss_name_x$i=\"$ss_link_name\""
+	eval "nvram set rt_ss_port_x$i=$ss_link_port"
+	eval "nvram set rt_ss_password_x$i=\"$ss_link_password\""
+	eval "nvram set rt_ss_server_x$i=$ss_link_server"
+	eval "nvram set rt_ss_usage_x$i=\"-o $ss_link_obfs  -O $ss_link_protocol\""
+	eval "nvram set rt_ss_method_x$i=$ss_link_method"
+	i=$(( i + 1 ))
+fi
+done < /tmp/ss/link/ssr_link2.txt
+
+while read line
+do
+if [ ! -z "$line" ] && [ ! -z /tmp/ss/link/ss_link2.txt ] ; then
+	add_0
+	add_ss_link "$line"
+	#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
+	eval "nvram set rt_ss_name_x$i=\"$ss_link_name\""
+	eval "nvram set rt_ss_port_x$i=$ss_link_port"
+	eval "nvram set rt_ss_password_x$i=\"$ss_link_password\""
+	eval "nvram set rt_ss_server_x$i=$ss_link_server"
+	eval "nvram set rt_ss_method_x$i=$ss_link_method"
+	i=$(( i + 1 ))
+fi
+done < /tmp/ss/link/ss_link2.txt
+rt_ssnum_x=`nvram get rt_ssnum_x`
+[ -z $rt_ssnum_x ] && rt_ssnum_x=0 && nvram set rt_ssnum_x=0
+[ $rt_ssnum_x -lt $i ] && nvram set rt_ssnum_x=$i
+rm -rf /tmp/ss/link
+
+}
+
 
 ss_cron_job(){
 	[ -z $ss_update ] && ss_update=0 && nvram set ss_update=$ss_update
@@ -2160,6 +2270,9 @@ updatess)
 	nvram set ss_updatess2=1
 	update_gfwlist
 	update_chnroutes
+	;;
+uplink)
+	ss_link_cron_job
 	;;
 stop)
 	stop_SS
