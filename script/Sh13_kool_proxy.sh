@@ -976,7 +976,7 @@ koolproxy_cron_job(){
 	[ $koolproxy_update_min -gt 59 ] && koolproxy_update_min=59 && nvram set koolproxy_update_min=$koolproxy_update_min
 	[ $koolproxy_update_min -lt 0 ] && koolproxy_update_min=0 && nvram set koolproxy_update_min=$koolproxy_update_min
 		logger -t "【koolproxy】" "开启规则定时更新，每隔"$koolproxy_update_inter_hour"时"$koolproxy_update_inter_min"分，检查在线规则更新..."
-		cru.sh a koolproxy_update "*/$koolproxy_update_min */$koolproxy_update_hour * * * $scriptfilepath update &" &
+		cru.sh a koolproxy_update "$koolproxy_update_min */$koolproxy_update_hour * * * $scriptfilepath update &" &
 	else
 		logger -t "【koolproxy】" "规则自动更新关闭状态，不启用自动更新..."
 	fi

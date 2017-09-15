@@ -240,13 +240,6 @@ gen_prerouting_rules nat tcp $wifidognx
 # iptables -t nat -D OUTPUT -p tcp -j SS_SPEC_V2RAY_LAN_DG
 
 
-# 加载 mangle 规则
-ip rule add fwmark 1 lookup 100
-ip route add local default dev lo table 100
-include_ac_rules mangle
-iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $v2ray_door --tproxy-mark 0x01/0x01
-get_wifidognx_mangle
-gen_prerouting_rules mangle udp $wifidognx
 
 iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $v2ray_door
 iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $v2ray_door
@@ -256,6 +249,16 @@ NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
 hash su 2>/dev/null && su_x="1"
 hash su 2>/dev/null || su_x="0"
 if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
+
+logger -t "【v2ray】" "支持游戏模式（UDP转发）"
+# 加载 mangle 规则
+ip rule add fwmark 1 lookup 100
+ip route add local default dev lo table 100
+include_ac_rules mangle
+iptables -t mangle -A SS_SPEC_WAN_FW -m owner ! --uid-owner 777 -p udp -j TPROXY --on-port $v2ray_door --tproxy-mark 0x01/0x01
+get_wifidognx_mangle
+gen_prerouting_rules mangle udp $wifidognx
+
 logger -t "【v2ray】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
 	useradd -u 777 v2
 	killall v2ray
