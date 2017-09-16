@@ -352,15 +352,15 @@ xwhyc_rules3="$hiboyfile2/video.txt"
 xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"
 xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules1 N 5
-[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules3 $xwhyc_rules2 N 5
+wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules1 $xwhyc_rules  N 5
+[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules2 N $xwhyc_rules3 5
 xwhyc_rules="$hiboyfile/lazy.txt"
 xwhyc_rules3="$hiboyfile2/lazy.txt"
 xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
 xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules1 N 100
-[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules3 $xwhyc_rules2 N 100
+wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules1 $xwhyc_rules  N 100
+[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules2 $xwhyc_rules3 N 100
 
 }
 
