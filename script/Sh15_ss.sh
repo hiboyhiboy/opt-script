@@ -106,47 +106,6 @@ fi
 ss_usage=`nvram get ss_usage`
 ss_s2_usage=`nvram get ss_s2_usage`
 
-# 混淆参数
-ssr_type_obfs_custom=`nvram get ssr_type_obfs_custom`
-ssr2_type_obfs_custom=`nvram get ssr2_type_obfs_custom`
-ss_usage_obfs_custom="$(echo $ss_usage | grep -Eo '\-g[^-]+')"
-if [ ! -z "$ss_usage_obfs_custom" ] ; then 
-logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_obfs_custom ，服务1优先使用此 混淆参数"
-ss_usage_json=""
-else
-[ ! -z "$ssr_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json=" -g $ssr_type_obfs_custom"
-fi
-ss_s2_usage_obfs_custom="$(echo $ss_s2_usage | grep -Eo '\-g[^-]+')"
-if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then 
-logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_obfs_custom ，服务1优先使用此 混淆参数"
-ss_s2_usage_json=""
-else
-[ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json=" -g $ssr2_type_obfs_custom"
-fi
-# 协议参数
-ssr_type_protocol_custom=`nvram get ssr_type_protocol_custom`
-ssr2_type_protocol_custom=`nvram get ssr2_type_protocol_custom`
-ss_usage_protocol_custom="$(echo $ss_usage | grep -Eo '\-G[^-]+')"
-if [ ! -z "$ss_usage_protocol_custom" ] ; then 
-logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_protocol_custom ，服务1优先使用此 协议参数"
-ss_usage_json="$ss_usage_json"
-else
-[ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -G $ssr_type_protocol_custom"
-fi
-ss_s2_usage_protocol_custom="$(echo $ss_s2_usage | grep -Eo '\-G[^-]+')"
-if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then 
-logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_protocol_custom ，服务2优先使用此 协议参数"
-ss_s2_usage_json="$ss_s2_usage_json"
-else
-[ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -G $ssr2_type_protocol_custom"
-fi
-# 插件参数
-ss_plugin_config="`nvram get ss_plugin_config`"
-ss2_plugin_config="`nvram get ss2_plugin_config`"
-[ "$ss_type" = "1" ] && ss_plugin_config=""
-[ "$ss_type" = "1" ] && ss2_plugin_config=""
-# [ ! -z "$ss_plugin_config" ] && [ "$ss_type" = "0" ] && ss_usage_json="$ss_usage_json $ss_plugin_config"
-# [ ! -z "$ss2_plugin_config" ] && [ "$ss_type" = "0" ] && ss_s2_usage_json="$ss_s2_usage_json $ss2_plugin_config"
 
 touch /etc/storage/shadowsocks_mydomain_script.sh
 LAN_AC_IP=`nvram get LAN_AC_IP`
@@ -164,7 +123,11 @@ ss_updatess=`nvram get ss_updatess`
 [ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
 
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
-
+chinadns_enable=`nvram get app_1`
+[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+if [ "$chinadns_enable" != "0" ] ; then
+ss_dnsproxy_x=2
+fi
 fi
 ##  bigandy modify 
 ##  1. 增加xbox的支持 （未实现，下一版本）
@@ -284,13 +247,59 @@ ss_usage="$ss_usage -u"
 ss_s2_usage="$ss_s2_usage -u"
 fi
 
-options1="`echo "$ss_usage" | sed -r 's/\-G[^-]+//g' | sed -r 's/\-g[^-]+//g' | sed -r 's/\-O[^-]+//g' | sed -r 's/\-o[^-]+//g' `"
-options1="`echo "$ss_s2_usage" | sed -r 's/\-G[^-]+//g' | sed -r 's/\-g[^-]+//g' | sed -r 's/\-O[^-]+//g' | sed -r 's/\-o[^-]+//g' `"
 
-ss_plugin_config="`nvram get ss_plugin_config`"
-ss2_plugin_config="`nvram get ss2_plugin_config`"
-[ "$ss_type" = "1" ] && ss_plugin_config=""
-[ "$ss_type" = "1" ] && ss2_plugin_config=""
+if [ "$ss_type" = "1" ] ; then 
+# 混淆参数
+ssr_type_obfs_custom="`nvram get ssr_type_obfs_custom`"
+ssr2_type_obfs_custom="`nvram get ssr2_type_obfs_custom`"
+ss_usage_json=""
+ss_s2_usage_json=""
+ss_usage_obfs_custom="$(echo $ss_usage | grep -Eo '\-g[ ]+[^-]+')"
+if [ ! -z "$ss_usage_obfs_custom" ] ; then 
+	logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_obfs_custom ，服务1优先使用此 混淆参数"
+else
+	[ ! -z "$ssr_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json=" -g $ssr_type_obfs_custom"
+fi
+ss_s2_usage_obfs_custom="$(echo $ss_s2_usage | grep -Eo '\-g[ ]+[^-]+')"
+if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then 
+	logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_obfs_custom ，服务1优先使用此 混淆参数"
+else
+	[ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json=" -g $ssr2_type_obfs_custom"
+fi
+
+# 协议参数
+ssr_type_protocol_custom="`nvram get ssr_type_protocol_custom`"
+ssr2_type_protocol_custom="`nvram get ssr2_type_protocol_custom`"
+ss_usage_protocol_custom="$(echo $ss_usage | grep -Eo '\-G[ ]+[^-]+')"
+if [ ! -z "$ss_usage_protocol_custom" ] ; then 
+	logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_protocol_custom ，服务1优先使用此 协议参数"
+else
+	[ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -G $ssr_type_protocol_custom"
+fi
+ss_s2_usage_protocol_custom="$(echo $ss_s2_usage | grep -Eo '\-G[ ]+[^-]+')"
+if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then 
+	logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_protocol_custom ，服务2优先使用此 协议参数"
+else
+	[ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -G $ssr2_type_protocol_custom"
+fi
+else
+ssr_type_obfs_custom=""
+ssr2_type_obfs_custom=""
+ssr_type_protocol_custom=""
+ssr2_type_protocol_custom=""
+fi
+
+# 插件参数
+if [ "$ss_type" = "0" ] ; then 
+	ss_plugin_config="`nvram get ss_plugin_config`"
+	ss2_plugin_config="`nvram get ss2_plugin_config`"
+else
+	ss_plugin_config=""
+	ss2_plugin_config=""
+fi
+
+options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g' `"
+options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g' `"
 
 # 启动程序
 /tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -k $ss_s1_key -m $ss_s1_method -h ss_plugin_config
@@ -546,7 +555,15 @@ fi
 pdnsd -c $pdnsd_conf -p /var/run/pdnsd.pid &
 fi
 if [ "$ss_dnsproxy_x" = "2" ] ; then
-	logger -t "【SS】" "使用 dnsmasq ，请开启 ChinaDNS 防止域名污染"
+	chinadns_path=`nvram get app_4`
+	[ -z $chinadns_path ] && chinadns_path="/opt/bin/chinadns" && nvram set app_4=$chinadns_path
+	if [ -z "$(ps -w | grep "$chinadns_path" | grep -v grep )" ] ; then
+		logger -t "【SS】" "使用 dnsmasq ，自动开启 ChinaDNS 防止域名污染"
+		nvram set app_1=1
+		nvram set chinadns_status=""
+		/etc/storage/script/Sh19_chinadns.sh
+		sleep 15
+	fi
 fi
 }
 
@@ -1728,7 +1745,7 @@ if [ "$ss_enable" = "1" ] ; then
 		[ $ss_s1_method ] || logger -t "【SS】" "加密方式:未填写"
 		[ $ss_server1 ] && [ $ss_s1_port ] && [ $ss_s1_method ] \
 		 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1; }
-		ss_link_cron_job &
+		# ss_link_cron_job &
 		stop_SS
 		start_SS
 	else
@@ -1777,6 +1794,7 @@ ss_mode_x=`nvram get ss_mode_x`
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 rm -f /tmp/cron_ss.lock
 ss_enable=`nvram get ss_enable`
+sleep 60
 while [ "$ss_enable" = "1" ];
 do
 ss_internet=`nvram get ss_internet`
@@ -1784,7 +1802,7 @@ sleep 19
 #随机延时
 if [ "$ss_internet" = "1" ] ; then
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-	RND_NUM=`echo $SEED 150 230|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	RND_NUM=`echo $SEED 200 300|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 	sleep $RND_NUM
 fi
 /etc/storage/ez_buttons_script.sh 3 &
@@ -2096,8 +2114,8 @@ ss_cron_job(){
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
-if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -2155,7 +2173,7 @@ updatess)
 	update_chnroutes
 	;;
 uplink)
-	ss_link_cron_job
+	ss_link_cron_job &
 	;;
 stop)
 	stop_SS

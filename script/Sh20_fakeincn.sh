@@ -105,7 +105,7 @@ cat >> "/tmp/script/_opt_script_check" <<-OSC
 OSC
 #return
 fi
-
+sleep 60
 fakeincn_enable=`nvram get app_7` #fakeincn_enable
 while [ "$fakeincn_enable" = "1" ]; do
 	NUM=`ps -w | grep "$fakeincn_path" | grep -v grep |wc -l`
@@ -298,8 +298,8 @@ eval "$scriptfilepath keep &"
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
-if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }

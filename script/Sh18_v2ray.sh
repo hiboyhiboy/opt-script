@@ -111,7 +111,7 @@ cat >> "/tmp/script/_opt_script_check" <<-OSC
 OSC
 #return
 fi
-
+sleep 60
 v2ray_enable=`nvram get v2ray_enable`
 while [ "$v2ray_enable" = "1" ]; do
 	NUM=`ps -w | grep "$v2ray_path" | grep -v grep |wc -l`
@@ -390,8 +390,8 @@ get_wifidognx_mangle() {
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
-if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }

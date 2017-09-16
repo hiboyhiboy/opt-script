@@ -114,7 +114,7 @@ cat >> "/tmp/script/_opt_script_check" <<-OSC
 OSC
 #return
 fi
-
+sleep 60
 chinadns_enable=`nvram get app_1` #chinadns_enable
 while [ "$chinadns_enable" = "1" ]; do
 	NUM=`ps -w | grep "$chinadns_path" | grep -v grep |wc -l`
@@ -188,8 +188,8 @@ chmod 755 "/opt/bin/chinadns"
 chinadns_v=`chinadns -V | grep ChinaDNS`
 nvram set chinadns_v="$chinadns_v"
 
-pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
-pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
+killall dnsproxy && killall -9 dnsproxy 2>/dev/null
+killall pdnsd && killall -9 pdnsd 2>/dev/null
 logger -t "【chinadns】" "运行 $SVC_PATH"
 $chinadns_path -p $chinadns_port -s $chinadns_dnss -l /opt/app/chinadns/chinadns_iplist.txt -c /etc/storage/china_ip_list.txt $usage &
 sleep 2
@@ -216,8 +216,8 @@ eval "$scriptfilepath keep &"
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
-if [ -z "$(echo $scriptfilepath | grep "/tmp/script/")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
