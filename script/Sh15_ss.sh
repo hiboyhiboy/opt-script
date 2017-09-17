@@ -298,8 +298,11 @@ else
 	ss2_plugin_config=""
 fi
 
-options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g' `"
-options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g' `"
+options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g'`"
+options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g'`"
+
+ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
+ss_s2_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
 
 # 启动程序
 /tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -k $ss_s1_key -m $ss_s1_method -h ss_plugin_config
