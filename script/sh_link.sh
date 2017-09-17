@@ -17,7 +17,13 @@ ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
 
 add_ssr_link () {
 link="$1"
-ss_link_name=$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}' | cut -d '&' -f3 | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )
+ex_params="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}')"
+ex_obfsparam=$(echo "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
+ex_protoparam=$(echo "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
+ex_remarks=$(echo "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
+ex_group=$(echo "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
+
+ss_link_name="$ex_remarks"
 ss_link_usage=$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')
 
 ss_link_server=`echo -n "$ss_link_usage" | cut -d ':' -f1 `
@@ -26,6 +32,8 @@ ss_link_password=$(echo -n "$ss_link_usage"  | cut -d ':' -f6 | sed -e "s/_/\//g
 ss_link_method=`echo -n "$ss_link_usage" | cut -d ':' -f4 `
 ss_link_obfs=`echo -n "$ss_link_usage" | cut -d ':' -f5 ` # -o
 ss_link_protocol=`echo -n "$ss_link_usage" | cut -d ':' -f3 ` # -O
+[ ! -z "$ex_obfsparam" ] && ss_link_obfsparam=" -g $ex_obfsparam" # -g
+[ ! -z "$ex_protoparam" ] && ss_link_protoparam=" -G $ex_protoparam" # -G
 
 }
 
@@ -37,6 +45,8 @@ ss_link_password=""
 ss_link_method=""
 ss_link_obfs=""
 ss_link_protocol=""
+ss_link_obfsparam=""
+ss_link_protoparam=""
 }
 
 
@@ -112,7 +122,7 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 		eval "nvram set rt_ss_port_x$i=$ss_link_port"
 		eval "nvram set rt_ss_password_x$i=\"$ss_link_password\""
 		eval "nvram set rt_ss_server_x$i=$ss_link_server"
-		eval "nvram set rt_ss_usage_x$i=\"-o $ss_link_obfs  -O $ss_link_protocol\""
+		eval "nvram set rt_ss_usage_x$i=\"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam\""
 		eval "nvram set rt_ss_method_x$i=$ss_link_method"
 		i=$(( i + 1 ))
 	fi
