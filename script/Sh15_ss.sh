@@ -425,10 +425,10 @@ if [ "$ss_check" = "1" ] ; then
 			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80' -o -O
 			sleep 1
 			hash check_network 2>/dev/null && {
-			check_network 3
+			check_network 0
 			[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 				if [ "$check" == "404" ] ; then
-					check_network 3
+					check_network 0
 					[ "$?" == "0" ] && check=200 || check=404
 				fi
 			}
