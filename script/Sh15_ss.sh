@@ -201,6 +201,8 @@ while getopts ":o:O:g:G:s:p:b:l:k:m:f:h:" arg; do
 			;;
 	esac
 done
+plugin_c=""
+[ ! -z "$obfs_plugin" ] && plugin_c="obfs-local"
 cat > "$config_file" <<-SSJSON
 {
 "server": "$server",
@@ -214,7 +216,8 @@ cat > "$config_file" <<-SSJSON
 "protocol_param": "$protocol_param",
 "obfs": "$obfs",
 "obfs_param": "$obfs_param",
-"plugin": "$obfs_plugin"
+"plugin": "$plugin_c",
+"plugin_opts": "$obfs_plugin"
 }
 SSJSON
 SSJSONSH
@@ -302,7 +305,7 @@ options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]
 options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g'`"
 
 ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
-ss_s2_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
+ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
 
 # 启动程序
 /tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -k $ss_s1_key -m $ss_s1_method -h ss_plugin_config
@@ -424,8 +427,9 @@ if [ "$ss_check" = "1" ] ; then
 		if [ ! -z "$action_ssip" ] ; then
 			logger -t "【ss-redir】" "check_ip 检查 SS 服务器$action_port是否能用"
 			lan_ipaddr=`nvram get lan_ipaddr`
-			BP_IP="$ss_s1_ip,$ss_s2_ip,$kcptun_server"
-			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80' -o -O
+			[ -z "$kcptun_server" ] && BP_IP="$ss_s1_ip,$ss_s2_ip"
+			[ ! -z "$kcptun_server" ] && BP_IP="$ss_s1_ip,$ss_s2_ip,$kcptun_server"
+			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,5353' -o -O
 			sleep 1
 			hash check_network 2>/dev/null && {
 			check_network 0
@@ -557,16 +561,13 @@ if ! test -f "$CACHE"; then
 fi
 pdnsd -c $pdnsd_conf -p /var/run/pdnsd.pid &
 fi
-if [ "$ss_dnsproxy_x" = "2" ] ; then
-	chinadns_path=`nvram get app_4`
-	[ -z $chinadns_path ] && chinadns_path="/opt/bin/chinadns" && nvram set app_4=$chinadns_path
-	if [ -z "$(ps -w | grep "$chinadns_path" | grep -v grep )" ] ; then
-		logger -t "【SS】" "使用 dnsmasq ，自动开启 ChinaDNS 防止域名污染"
-		nvram set app_1=1
-		nvram set chinadns_status=""
-		/etc/storage/script/Sh19_chinadns.sh
-		sleep 15
-	fi
+if [ "$ss_dnsproxy_x" = "2" ] && [ -s /etc/storage/script/Sh19_chinadns.sh ] ; then
+	/etc/storage/script/Sh19_chinadns.sh stop
+	logger -t "【SS】" "使用 dnsmasq ，自动开启 ChinaDNS 防止域名污染"
+	nvram set app_1=1
+	nvram set chinadns_status=""
+	/etc/storage/script/Sh19_chinadns.sh
+	sleep 5
 fi
 }
 
@@ -1410,8 +1411,8 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ss-local 2>/dev/null || optssredir="2"
 fi
-check_ss_plugin=`echo $ss_plugin_config |  grep obfs-local`
-check_ss_plugin2=`echo $ss2_plugin_config |  grep obfs-local`
+check_ss_plugin="`echo $ss_plugin_config`"
+check_ss_plugin2="`echo $ss2_plugin_config`"
 if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
 	hash obfs-local 2>/dev/null || optssredir="4"
 fi
@@ -1599,8 +1600,8 @@ fi
 	ss_cron_job
 	#ss_get_status
 if [ "$ss_dnsproxy_x" = "2" ] ; then
-	logger -t "【SS】" "使用 dnsmasq ，请开启 ChinaDNS 防止域名污染"
-	if [ ! -f "/etc/storage/script/Sh19_chinadns.sh" ] || [ ! -s "/etc/storage/script/Sh19_chinadns.sh" ] ; then
+	logger -t "【SS】" "使用 dnsmasq ，开启 ChinaDNS 防止域名污染"
+	if [ -f "/etc/storage/script/Sh19_chinadns.sh" ] || [ -s "/etc/storage/script/Sh19_chinadns.sh" ] ; then
 		/etc/storage/script/Sh19_chinadns.sh &
 	fi
 fi

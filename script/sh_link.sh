@@ -23,8 +23,9 @@ ex_protoparam=$(echo "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f
 ex_remarks=$(echo "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
 ex_group=$(echo "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
 
-ss_link_name="$ex_remarks"
+[ ! -z "$ex_remarks" ] && ss_link_name="$ex_remarks"
 ss_link_usage=$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')
+[ -z "$ex_remarks" ] && ss_link_name="#""`echo -n "$ss_link_usage" | cut -d ':' -f1 `"
 
 ss_link_server=`echo -n "$ss_link_usage" | cut -d ':' -f1 `
 ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
