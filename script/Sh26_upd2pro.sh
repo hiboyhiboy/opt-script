@@ -10,12 +10,11 @@ if [ "$upd2pro_enable" != "0" ] || [ "$upd2pro2_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep '=' | grep upd2pro | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 upd2pro_enable=`nvram get app_8`
 [ -z $upd2pro_enable ] && upd2pro_enable=0 && nvram set app_8=0
-upd2pro_path="/etc/storage/app_3.sh"
 upd2pro2_enable=`nvram get app_9`
 [ -z $upd2pro2_enable ] && upd2pro2_enable=0 && nvram set app_9=0
-upd2pro2_path="/etc/storage/app_4.sh"
 fi
-
+upd2pro_path="/etc/storage/app_3.sh"
+upd2pro2_path="/etc/storage/app_4.sh"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep upd2pro)" ] && [ ! -s /tmp/script/_app3 ] ; then
 	mkdir -p /tmp/script
@@ -259,6 +258,7 @@ EOF
 fi
 
 chmod 777 /etc/storage/app_3.sh /etc/storage/app_4.sh
+mkdir -p /opt/app/upd2pro
 # 加载程序配置页面
 if [ ! -f "/opt/app/upd2pro/Advanced_Extensions_upd2pro.asp" ] || [ ! -s "/opt/app/upd2pro/Advanced_Extensions_upd2pro.asp" ] ; then
 	wgetcurl.sh /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp "$hiboyfile/Advanced_Extensions_upd2proasp" "$hiboyfile2/Advanced_Extensions_upd2proasp"
@@ -290,7 +290,7 @@ updateapp3)
 	[ "$upd2pro_enable" = "1" ] && nvram set upd2pro_status="updateupd2pro" && logger -t "【upd2pro】" "重启 udp2raw" && upd2pro_restart
 	[ "$upd2pro_enable" != "1" ] && nvram set upd2pro_v="" && logger -t "【upd2pro】" "更新 udp2raw" && update_app del1
 	;;
-updateapp4)
+updateapp_3)
 	upd2pro_restart o
 	[ "$upd2pro2_enable" = "1" ] && nvram set upd2pro_status="updateupd2pro2" && logger -t "【upd2pro】" "重启 speeder" && upd2pro_restart
 	[ "$upd2pro2_enable" != "1" ] && nvram set upd2pro2_v="" && logger -t "【upd2pro】" "更新 speeder" && update_app del2

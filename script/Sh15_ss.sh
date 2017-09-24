@@ -379,6 +379,12 @@ EOF
 
 start_ss_redir_check
 
+port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
+if [ "$port"x = 0x ] ; then
+	logger -t "【SS】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
+	eval "$scriptfilepath rules &"
+fi
+
 }
 check_ssr()
 {
@@ -470,6 +476,7 @@ if [ "$ss_check" = "1" ] ; then
 			fi
 		fi
 		ss-rules -f
+		sleep 1
 	done
 	echo "checkip: "$checkip
 	if [ "$checkip" == "0" ] ; then
@@ -481,6 +488,7 @@ if [ "$ss_check" = "1" ] ; then
 		exit 0
 	fi
 fi
+sleep 1
 }
 
 start_dnsproxy()

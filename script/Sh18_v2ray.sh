@@ -134,6 +134,11 @@ done
 
 v2ray_close () {
 flush_r
+ss_enable=`nvram get ss_enable`
+[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
+if [ "$ss_enable" = "1" ] ; then
+/etc/storage/script/Sh15_ss.sh &
+fi
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$v2ray_path" ] && eval $(ps -w | grep "$v2ray_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall v2ray v2ray_script.sh

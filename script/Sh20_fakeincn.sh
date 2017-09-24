@@ -8,9 +8,8 @@ if [ "$fakeincn_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep '=' | grep fakeincn | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fakeincn_enable=`nvram get app_7`
 [ -z $fakeincn_enable ] && fakeincn_enable=0 && nvram set app_7=0
-fakeincn_path="/etc/storage/app_1.sh"
 fi
-
+fakeincn_path="/etc/storage/app_1.sh"
 
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep fakeincn)" ]  && [ ! -s /tmp/script/_app2 ]; then
@@ -561,6 +560,7 @@ EOF
 fi
 
 chmod 777 /etc/storage/app_1.sh /etc/storage/app_2.sh
+mkdir -p /opt/app/fakeincn
 # 加载程序配置页面
 if [ ! -f "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] || [ ! -s "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] ; then
 	wgetcurl.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp "$hiboyfile/Advanced_Extensions_fakeincnasp" "$hiboyfile2/Advanced_Extensions_fakeincnasp"
