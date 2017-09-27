@@ -125,8 +125,14 @@ ss_updatess=`nvram get ss_updatess`
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_port=`nvram get app_6`
+[ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
 if [ "$chinadns_enable" != "0" ] ; then
-ss_dnsproxy_x=2
+	if [ "$chinadns_port" = "8053" ] ; then
+	ss_dnsproxy_x=2
+	else
+	[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0
+	fi
 fi
 fi
 ##  bigandy modify 
@@ -151,6 +157,7 @@ confdir=`grep conf-dir /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
 if [ -z "$confdir" ] ; then 
 	confdir="/tmp/ss/dnsmasq.d"
 fi
+confdir_x="$(echo -e $confdir | sed -e "s/\//"'\\'"\//g")"
 [ ! -d "$confdir" ] && mkdir -p $confdir
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss)" ]  && [ ! -s /tmp/script/_ss ]; then
@@ -381,7 +388,7 @@ start_ss_redir_check
 
 port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 if [ "$port"x = 0x ] ; then
-	logger -t "【SS】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
+	logger -t "【SS】" "检测1:找不到 SS_SPEC 转发规则, 重新添加"
 	eval "$scriptfilepath rules &"
 fi
 
@@ -476,7 +483,6 @@ if [ "$ss_check" = "1" ] ; then
 			fi
 		fi
 		ss-rules -f
-		sleep 1
 	done
 	echo "checkip: "$checkip
 	if [ "$checkip" == "0" ] ; then
@@ -488,7 +494,7 @@ if [ "$ss_check" = "1" ] ; then
 		exit 0
 	fi
 fi
-sleep 1
+
 }
 
 start_dnsproxy()
@@ -814,8 +820,14 @@ fi
 
 # 外网(WAN)访问控制
 	logger -t "【SS】" "外网(WAN)访问控制，设置 WAN IP 转发或忽略代理中转"
-	sed -e '/.*opt.cn2k.net/d' -i /etc/storage/shadowsocks_ss_spec_wan.sh
-	echo "WAN!opt.cn2k.net" >> /etc/storage/shadowsocks_ss_spec_wan.sh
+	sed -e '/.*opt.cn2qq.com/d' -i /etc/storage/shadowsocks_ss_spec_wan.sh
+	echo "WAN!opt.cn2qq.com" >> /etc/storage/shadowsocks_ss_spec_wan.sh
+	speedup_enable=`nvram get app_10`
+	[ -z $speedup_enable ] && speedup_enable=0 && nvram set app_10=0
+	if [ "$speedup_enable" != "0" ] ; then
+		sed -e '/.*api.cloud.189.cn/d' -i /etc/storage/shadowsocks_ss_spec_wan.sh
+		echo "WAN!api.cloud.189.cn" >> /etc/storage/shadowsocks_ss_spec_wan.sh
+	fi
 	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
 	rm -f /tmp/ss/wantoss.list
 	rm -f /tmp/ss/wannoss.list
@@ -1126,15 +1138,14 @@ else
 	touch /tmp/cron_ss.lock
 	mkdir -p /tmp/ss/dnsmasq.d
 	logger -t "【SS】" "正在处理 gfwlist 列表，此时 SS 未能使用，请稍候...."
-	sed -Ei '/conf-dir=/d' /etc/storage/dnsmasq/dnsmasq.conf
+	sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
 	[ ! -z "$confdir" ] && echo "conf-dir=$confdir" >> /etc/storage/dnsmasq/dnsmasq.conf
 	echo "从代理获取list"
-	sed -Ei '/github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
-	cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\_CONF
+	rm -f $confdir/r.wantoss.conf
+	cat >> "$confdir/r.wantoss.conf" <<-\_CONF
 ipset=/githubusercontent.com/gfwlist
 server=/githubusercontent.com/127.0.0.1#8053
 ipset=/github.io/gfwlist
-#ipset=/ipip.net/gfwlist
 server=/github.io/127.0.0.1#8053
 _CONF
 	restart_dhcpd
@@ -1176,7 +1187,9 @@ else
 	cat /etc/storage/basedomain.txt /tmp/ss/gfwdomain_0.txt | 
 		sort -u > /tmp/ss/gfwall_domain.txt
 fi
-
+	# 临时添加的域名
+	echo "whatsapp.net" >> /tmp/ss/gfwall_domain.txt
+	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
 	#删除忽略的域名
 	while read line
 	do
@@ -1266,6 +1279,7 @@ fi
 	lines=`cat $confdir/* | wc -l`
 	logger -t "【SS】" "GFWlist 规则 $lines 行  $gfwlist3"
 	logger -t "【SS】" "所有规则处理完毕，SS即将开始工作"
+	logger -t "【SS】" "GFWlist规则目录：$confdir"
 	nvram set gfwlist3="$Update 规则 $lines 行  $gfwlist3"
 	echo `nvram get gfwlist3`
 	rm -f /tmp/cron_ss.lock
@@ -1388,7 +1402,7 @@ dnsmasq_reconf()
 	# for dnsmasq 
 #启动PDNSD防止域名污染
 start_pdnsd
-	sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|github/d' /etc/storage/dnsmasq/dnsmasq.conf
+	sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 if [ "$ss_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
 #   #方案三
 	cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
@@ -1398,8 +1412,10 @@ dns-forward-max=1000
 min-cache-ttl=1800
 EOF
 fi
-sed -Ei '/github/d' /etc/storage/dnsmasq/dnsmasq.conf
-cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\_CONF
+sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
+[ ! -z "$confdir" ] && echo "conf-dir=$confdir" >> /etc/storage/dnsmasq/dnsmasq.conf
+rm -f $confdir/r.wantoss.conf
+cat >> "$confdir/r.wantoss.conf" <<-\_CONF
 server=/githubusercontent.com/127.0.0.1#8053
 server=/github.io/127.0.0.1#8053
 _CONF
@@ -1558,14 +1574,14 @@ echo "Debug: $DNS_Server"
 	start_ss_redir
 	start_ss_redir_check
 	start_ss_rules
-	sleep 1
+
 	nvram set ss_updatess2=0
 	update_gfwlist
 	update_chnroutes
 	nvram set ss_updatess2=1
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
-	sleep 1
+
 	hash check_network 2>/dev/null && {
 	check_link="www.163.com"
 	check_network 3
@@ -1623,8 +1639,7 @@ clean_SS()
 # 重置 SS IP 规则文件并重启 SS
 logger -t "【SS】" "重置 SS IP 规则文件并重启 SS"
 stop_SS
-sed -Ei '/adbyby_host.conf|cflist.conf|AiDisk_00|server=/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
 rm -f /tmp/ss/dnsmasq.d/*
 restart_dhcpd
 rm -rf /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt /tmp/ss/*
@@ -1646,7 +1661,9 @@ ss-rules -f
 nvram set ss_internet="0"
 nvram set ss_working_port="1090" #恢复主服务器端口
 ss_working_port=`nvram get ss_working_port`
-sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
+rm -f $confdir/r.wantoss.conf
+sed -Ei '/conf-dir=\/tmp\/ss\/dnsmasq.d|github|ipip.net|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 clean_ss_rules
 killall_ss_redir
@@ -1715,6 +1732,7 @@ B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
 	needed_restart=1
+	ss_get_status2
 	#/etc/storage/ez_buttons_script.sh ping &
 else
 	needed_restart=0
@@ -1724,20 +1742,25 @@ fi
 
 ss_get_status2 () {
 
-A_restart=`nvram get ss_status2`
+A_restart="$(nvram get ss_status2)"
 B_restart="$ss_server1$ss_server2$ss_s1_port$ss_s2_port$ss_s1_method$ss_s2_method$ss_s1_key$ss_s2_key$ss_usage$ss_s2_usage"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+nvram set ss_status2="$B_restart"
+if [ "$needed_restart" = "1" ] ; then
+	nvram set ss_status2="$B_restart"
+else
 if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set ss_status2=$B_restart
+	nvram set ss_status2="$B_restart"
 	needed_restart=2
 else
 	needed_restart=0
+fi
 fi
 }
 
 check_setting()
 {
-
+needed_restart=0
 ss_get_status
 if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "停止 ss-redir" && stop_SS
@@ -1745,18 +1768,18 @@ if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
 if [ "$ss_enable" = "1" ] ; then
+	hash getopts 2>/dev/null ||  { logger -t "【SS】" "错误！Shell未加载getopts，请检查固件和busybox配置"; stop_SS; exit 1; }
+	[ $ss_server1 ] || logger -t "【SS】" "服务器地址:未填写"
+	[ $ss_s1_port ] || logger -t "【SS】" "服务器端口:未填写"
+	[ $ss_s1_method ] || logger -t "【SS】" "加密方式:未填写"
+	[ $ss_server1 ] && [ $ss_s1_port ] && [ $ss_s1_method ] \
+	 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1; }
 	if [ "$needed_restart" = "2" ] ; then
 		logger -t "【SS】" "检测:更换线路配置，进行快速切换服务器。"
 		swap_ss_redir
 		logger -t "【SS】" "切换服务器完成。"
 	fi
 	if [ "$needed_restart" = "1" ] ; then
-		hash getopts 2>/dev/null ||  { logger -t "【SS】" "错误！Shell未加载getopts，请检查固件和busybox配置"; stop_SS; exit 1; }
-		[ $ss_server1 ] || logger -t "【SS】" "服务器地址:未填写"
-		[ $ss_s1_port ] || logger -t "【SS】" "服务器端口:未填写"
-		[ $ss_s1_method ] || logger -t "【SS】" "加密方式:未填写"
-		[ $ss_server1 ] && [ $ss_s1_port ] && [ $ss_s1_method ] \
-		 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1; }
 		# ss_link_cron_job &
 		stop_SS
 		start_SS
@@ -1768,8 +1791,24 @@ if [ "$ss_enable" = "1" ] ; then
 		if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" ] ; then
 			port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 			if [ "$port"x = 0x ] ; then
-				logger -t "【SS】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
+				logger -t "【SS】" "检测2:找不到 SS_SPEC 转发规则, 重新添加"
 				eval "$scriptfilepath rules &"
+			fi
+		fi
+		if [ "$ss_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
+			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+			if [ "$port" = 0 ] ; then
+				logger -t "【SS】" "检测2:找不到 dnsmasq 转发规则, 重新添加"
+				#   #方案三
+				sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+				cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
+no-resolv
+server=127.0.0.1#8053
+dns-forward-max=1000
+min-cache-ttl=1800
+EOF
+				sed -Ei '/accelerated-domains/d' /etc/storage/dnsmasq/dnsmasq.conf
+				[ -s /tmp/ss/accelerated-domains.china.conf ] && echo "conf-file=/tmp/ss/accelerated-domains.china.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 			fi
 		fi
 	fi
@@ -1876,6 +1915,22 @@ if [ -z "`pidof pdnsd`" ] || [ ! -s "`which pdnsd`" ] ; then
 	sleep 10
 fi
 fi
+if [ "$ss_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
+	port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【SS】" "检测3:找不到 dnsmasq 转发规则, 重新添加"
+		#   #方案三
+		sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+		cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
+no-resolv
+server=127.0.0.1#8053
+dns-forward-max=1000
+min-cache-ttl=1800
+EOF
+		sed -Ei '/accelerated-domains/d' /etc/storage/dnsmasq/dnsmasq.conf
+		[ -s /tmp/ss/accelerated-domains.china.conf ] && echo "conf-file=/tmp/ss/accelerated-domains.china.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
+	fi
+fi
 #SS进程监控和双线切换
 #思路：
 #先将所有ss通道全部拉起来，默认服务器为1090端口，新服务器为1091端口，默认走通道0，DNS的ss-tunnel 走8053 和 8054
@@ -1971,7 +2026,7 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 	fi
 	port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 	if [ "$port" = 0 ] ; then
-		logger -t "【SS】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
+		logger -t "【SS】" "检测3:找不到 SS_SPEC 转发规则, 重新添加"
 		eval "$scriptfilepath rules &"
 		restart_dhcpd
 		sleep 5

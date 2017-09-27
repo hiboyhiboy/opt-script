@@ -95,7 +95,15 @@ if [ "$chinadns_enable" = "1" ] ; then
 		port=$(grep "server=127.0.0.1#$chinadns_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 		if [ "$port" = 0 ] ; then
 			logger -t "【chinadns】" "检测:找不到 dnsmasq 转发规则, 重新添加"
-			chinadns_restart
+			# 写入dnsmasq配置
+			sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+			cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
+no-resolv
+server=127.0.0.1#$chinadns_port
+dns-forward-max=1000
+min-cache-ttl=1800
+EOF
+			restart_dhcpd
 		fi
 	fi
 fi
@@ -125,7 +133,15 @@ while [ "$chinadns_enable" = "1" ]; do
 	port=$(grep "server=127.0.0.1#$chinadns_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 	if [ "$port" = 0 ] ; then
 		logger -t "【chinadns】" "检测:找不到 dnsmasq 转发规则, 重新添加"
-		chinadns_restart
+		# 写入dnsmasq配置
+		sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+		cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
+no-resolv
+server=127.0.0.1#$chinadns_port
+dns-forward-max=1000
+min-cache-ttl=1800
+EOF
+		restart_dhcpd
 	fi
 sleep 69
 chinadns_enable=`nvram get app_1` #chinadns_enable

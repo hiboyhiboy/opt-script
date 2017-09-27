@@ -2,21 +2,29 @@
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
+TAG="SS_SPEC"		  # iptables tag
+FWI="/tmp/firewall.v2ray.pdcn"
 v2ray_enable=`nvram get v2ray_enable`
 [ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
 if [ "$v2ray_enable" != "0" ] ; then
 nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
+
+ss_enable=`nvram get ss_enable`
+[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
+chinadns_enable=`nvram get app_1`
+[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_port=`nvram get app_6`
+[ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
+# v2ray_port=`nvram get v2ray_port`
+# [ -z $v2ray_port ] && v2ray_port=1088 && nvram set v2ray_port=1088
+nvram set v2ray_port=`cat /etc/storage/v2ray_config_script.sh | grep -Eo '"port": [0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
+
 fi
 v2ray_path=`nvram get v2ray_path`
 [ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
 v2ray_door=`nvram get v2ray_door`
 [ -z $v2ray_door ] && v2ray_door=1099 && nvram set v2ray_door=1099
-# v2ray_port=`nvram get v2ray_port`
-# [ -z $v2ray_port ] && v2ray_port=1088 && nvram set v2ray_port=1088
-nvram set v2ray_port=`cat /etc/storage/v2ray_config_script.sh | grep -Eo '"port": [0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
-
-
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep v2ray)" ]  && [ ! -s /tmp/script/_v2ray ]; then
 	mkdir -p /tmp/script
@@ -121,11 +129,26 @@ while [ "$v2ray_enable" = "1" ]; do
 	fi
 	v2ray_follow=`nvram get v2ray_follow`
 	if [ "$v2ray_follow" = "1" ] ; then
-	port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
-	if [ "$port" = 0 ] ; then
-		logger -t "【v2ray】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
-		v2ray_restart
-	fi
+		port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
+		if [ "$port" = 0 ] ; then
+			logger -t "【v2ray】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
+			v2ray_restart
+		fi
+		if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
+			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+			if [ "$port" = 0 ] ; then
+				logger -t "【v2ray】" "检测:找不到 dnsmasq 转发规则, 重新添加"
+				# 写入dnsmasq配置
+				sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+				cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
+no-resolv
+server=127.0.0.1#$8053
+dns-forward-max=1000
+min-cache-ttl=1800
+EOF
+				restart_dhcpd
+			fi
+		fi
 	fi
 sleep 218
 v2ray_enable=`nvram get v2ray_enable`
@@ -134,8 +157,6 @@ done
 
 v2ray_close () {
 flush_r
-ss_enable=`nvram get ss_enable`
-[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
 if [ "$ss_enable" = "1" ] ; then
 /etc/storage/script/Sh15_ss.sh &
 fi
@@ -199,9 +220,7 @@ flush_r
 
 # 透明代理
 logger -t "【v2ray】" "启动 透明代理"
-chinadns_enable=`nvram get app_1`
-[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
-if [ "$chinadns_enable" != "0" ] ; then
+if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 logger -t "【v2ray】" "chinadns 已经启动 防止域名污染"
 else
 logger -t "【v2ray】" "启动 dnsproxy 防止域名污染"
@@ -212,15 +231,15 @@ if [ -s /sbin/dnsproxy ] ; then
 else
 	dnsproxy -d
 fi
-fi
 #防火墙转发规则加载
-sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
 no-resolv
 server=127.0.0.1#8053
 dns-forward-max=1000
 min-cache-ttl=1800
 EOF
+fi
 
 restart_dhcpd
 
@@ -271,7 +290,8 @@ logger -t "【v2ray】" "同时将透明代理规则应用到 OUTPUT 链, 让路
 	su v2 -c "$v2ray_path -config /etc/storage/v2ray_config_script.sh &" &
 	iptables -t nat -A OUTPUT -m owner ! --uid-owner 777 -p tcp -j SS_SPEC_V2RAY_LAN_DG
 fi
-
+	logger -t "【v2ray】" "完成 透明代理 转发规则设置"
+	gen_include &
 
 # 透明代理
 fi
@@ -280,11 +300,22 @@ v2ray_get_status
 eval "$scriptfilepath keep &"
 }
 
+gen_include() {
+[ -n "$FWI" ] || return 0
+cat <<-CAT >>$FWI
+iptables-restore -n <<-EOF
+$(iptables-save | sed  "s/webstr--url/webstr --url/g" | grep -E "$TAG|^\*|^COMMIT" |sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/")
+EOF
+CAT
+return $?
+}
+
 gen_prerouting_rules() {
 	iptables -t $1 -I PREROUTING $3 -p $2 -j SS_SPEC_V2RAY_LAN_DG
 }
 
 flush_r() {
+	[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
 	iptables-save -c | sed  "s/webstr--url/webstr --url/g" | grep -v "SS_SPEC" | iptables-restore -c
 	ip rule del fwmark 1 lookup 100 2>/dev/null
 	ip route del local default dev lo table 100 2>/dev/null
@@ -304,7 +335,10 @@ flush_r() {
 	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port 1091
 	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j RETURN
 	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j RETURN
-	sed -Ei '/no-resolv|server=|server=127.0.0.1|server=208.67.222.222|dns-forward-max=1000|min-cache-ttl=1800|github/d' /etc/storage/dnsmasq/dnsmasq.conf
+	if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
+		sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+	fi
+	[ "$ss_enable" != "1" ] && sed -Ei '/github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
 	restart_dhcpd
 	return 0
 }
