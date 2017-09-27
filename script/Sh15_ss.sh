@@ -1778,6 +1778,7 @@ if [ "$ss_enable" = "1" ] ; then
 		logger -t "【SS】" "检测:更换线路配置，进行快速切换服务器。"
 		swap_ss_redir
 		logger -t "【SS】" "切换服务器完成。"
+		exit 0
 	fi
 	if [ "$needed_restart" = "1" ] ; then
 		# ss_link_cron_job &
