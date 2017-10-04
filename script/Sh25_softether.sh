@@ -149,6 +149,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 else
 	logger -t "【softether】" "找到 $SVC_PATH"
 fi
+[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【softether】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【softether】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && softether_restart x

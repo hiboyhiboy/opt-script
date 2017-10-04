@@ -152,7 +152,7 @@ fi
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/wifidog"
 fi
-hash wifidog 2>/dev/null || rm -rf /opt/bin/wifidog
+[[ "$(wifidog -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/wifidog
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【wifidog】" "找不到 $SVC_PATH ，安装 opt 程序"
 	/tmp/script/_mountopt start

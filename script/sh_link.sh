@@ -82,7 +82,11 @@ if [ -z "$ssr_link" ] ; then
 fi
 mkdir -p /tmp/ss/link
 wgetcurl.sh /tmp/ss/link/1_link.txt "$ssr_link" "$ssr_link" N
-if [ ! -f /tmp/ss/link/1_link.txt ] ; then
+if [ ! -s /tmp/ss/link/1_link.txt ] ; then
+	rm -f /tmp/ss/link/1_link.txt
+	wget --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3427.400 QQBrowser/9.6.12088.400' -O /tmp/ss/link/1_link.txt "$ssr_link"
+fi
+if [ ! -s /tmp/ss/link/1_link.txt ] ; then
 	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载失败！请检查服务器配置"
 fi
 sed -e '/^$/d' -i /tmp/ss/link/1_link.txt

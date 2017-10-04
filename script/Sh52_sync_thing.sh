@@ -152,6 +152,7 @@ if [ ! -s "$SVC_PATH" ] && [ -d "$upanPath/syncthing/Downloads" ] ; then
 	cp -r -f -a  $upanPath/syncthing/syncthing-linux-mipsle?*/* $upanPath/syncthing/syncthing-linux-mipsle/
 	rm -rf $upanPath/syncthing/syncthing-linux-mipsle?*/
 fi
+[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【syncthing】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【syncthing】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && syncthing_restart x

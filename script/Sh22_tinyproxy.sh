@@ -135,7 +135,7 @@ fi
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/tinyproxy"
 fi
-hash tinyproxy 2>/dev/null || rm -rf /opt/bin/tinyproxy
+[[ "$(tinyproxy -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/tinyproxy
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【tinyproxy】" "找不到 tinyproxy，安装 opt 程序"
 	/tmp/script/_mountopt start

@@ -165,7 +165,7 @@ SVC_PATH="$chinadns_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/chinadns"
 fi
-hash chinadns 2>/dev/null || rm -rf /opt/bin/chinadns
+[[ "$(chinadns -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/chinadns
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget

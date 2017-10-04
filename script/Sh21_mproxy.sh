@@ -127,7 +127,7 @@ fi
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/mproxy"
 fi
-hash mproxy 2>/dev/null || rm -rf /opt/bin/mproxy
+[[ "$(mproxy -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/mproxy
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【mproxy】" "找不到 mproxy，安装 opt 程序"
 	/tmp/script/_mountopt start

@@ -118,7 +118,7 @@ eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";"
 
 vpnproxy_start () {
 SVC_PATH="/opt/bin/nvpproxy"
-hash nvpproxy 2>/dev/null || rm -rf /opt/bin/nvpproxy
+[[ "$(nvpproxy -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/nvpproxy
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 nvpproxy，安装 opt 程序"
 	/tmp/script/_mountopt start

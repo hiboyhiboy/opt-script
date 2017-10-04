@@ -112,7 +112,7 @@ SVC_PATH="/usr/bin/ngrokc"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/ngrokc"
 fi
-hash ngrokc 2>/dev/null || rm -rf /opt/bin/ngrokc
+[[ "$(ngrokc 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ngrokc
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ngrok】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start

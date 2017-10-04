@@ -155,7 +155,7 @@ fi
 
 cp -f /etc/storage/display_lcd4linux_script.sh /tmp/lcd4linux.conf
 SVC_PATH=/opt/bin/lcd4linux
-hash lcd4linux 2>/dev/null || rm -rf /opt/bin/lcd4linux /opt/opti.txt
+[[ "$(lcd4linux -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/lcd4linux /opt/opti.txt
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget
@@ -274,7 +274,7 @@ getaqidata () {
 #获取AQI数据和数据绘图。http://www.aqicn.org
 rm -f /tmp/aqicn
 aqicnorg="http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
-#wget -c -O /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --continue --no-check-certificate
+#wget -c -O /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --no-check-certificate
 wgetcurl.sh /tmp/aqicn "$aqicnorg" "$aqicnorg" N
 if [ ! -s /tmp/aqicn ]; then
 	logger -t "【相框显示】" "获取AQI数据错误！请检查链接："

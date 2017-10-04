@@ -94,7 +94,7 @@ else
 	fi
 fi
 export PATH='/tmp/7620koolproxy:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
-hash koolproxy 2>/dev/null || rm -rf /tmp/7620koolproxy/*
+[[ "$(/tmp/7620koolproxy/koolproxy -h | wc -l)" -lt 2 ]] && rm -rf /tmp/7620koolproxy/*
 }
 
 koolproxy_restart () {
@@ -230,10 +230,10 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	[ "$check" == "404" ] && {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404;  sleep 3; }
 		if [ "$check" == "404" ] ; then
-			wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
@@ -998,7 +998,7 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		Address=`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
 		if [ $? -eq 0 ]; then
 		echo $Address |  sed s/\;/"\n"/g
 		fi

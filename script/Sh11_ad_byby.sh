@@ -88,7 +88,7 @@ else
 	fi
 fi
 export PATH='/tmp/bin:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
-hash adbyby 2>/dev/null || rm -rf /tmp/bin/*
+[[ "$(/tmp/bin/adbyby --help | wc -l)" -lt 2 ]] && rm -rf /tmp/bin/*
 if [ ! -s "/tmp/bin/adbyby" ] ; then
 	rm -rf /tmp/bin/*
 	logger -t "【Adbyby】" "下载失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && adbyby_restart x
@@ -224,10 +224,10 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	[ "$check" == "404" ] && {
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404;  sleep 3; }
 		if [ "$check" == "404" ] ; then
-			wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
@@ -391,12 +391,12 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	logger -t "【Adbyby】" "测试下载规则"
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg -O /dev/null
+		wget --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	else
 		check=`curl --connect-timeout 10 -k -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
 		[ "$check" != "200" ] && {
-		wget --continue --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg -O /dev/null
+		wget --no-check-certificate -q -T 10 http://update.adbyby.com/rule3/video.jpg -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 		}
 	fi
@@ -872,7 +872,7 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		Address=`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
 		if [ $? -eq 0 ]; then
 		echo $Address |  sed s/\;/"\n"/g
 		fi

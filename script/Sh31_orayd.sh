@@ -149,8 +149,7 @@ if [ ! -s "$SVC_PATH" ] || [ ! -s "$SVC_PATH2" ] ; then
 SVC_PATH="/opt/bin/oraysl"
 SVC_PATH2="/opt/bin/oraynewph"
 fi
-hash oraysl 2>/dev/null || rm -rf /opt/bin/oraysl
-hash oraynewph 2>/dev/null || rm -rf /opt/bin/oraynewph
+[[ "$(oraysl -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/oraysl /opt/bin/oraynewph
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【花生壳内网版】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start

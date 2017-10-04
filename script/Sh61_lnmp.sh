@@ -231,10 +231,12 @@ SVC_PATH="/opt/lnmp.txt"
 if [ ! -f "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt optwget
 fi
+[[ "$(nginx -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/lnmp.txt
 if [ ! -s "`which nginx`" ] ; then
 	logger -t "【LNMP】" "找不到 nginx ，需要手动安装 opt-lnmp"
 	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
 fi
+[[ "$(mysqld -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/lnmp.txt
 if [ ! -s "`which mysqld`" ] ; then
 	logger -t "【LNMP】" "找不到 mysqld ，需要手动安装 opt-lnmp"
 	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x

@@ -456,10 +456,10 @@ if [ "$ss_check" = "1" ] ; then
 			[ "$check" == "404" ] && {
 			curltest=`which curl`
 			if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-				wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+				wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 				[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 				if [ "$check" == "404" ] ; then
-					wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+					wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 					[ "$?" == "0" ] && check=200 || check=404
 				fi
 			else
@@ -873,7 +873,7 @@ TELEGRAM
 		sed -e "s/^/-A ss_spec_dst_fw &/g" -e "1 i\-N ss_spec_dst_fw hash:net " /tmp/ss/wantoss.list | ipset -R -!
 	fi
 	logger -t "【SS】" "完成 SS 转发规则设置"
-	gen_include &
+	gen_include
 }
 
 dns_redirect() {
@@ -920,7 +920,7 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		Address=`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
 		if [ $? -eq 0 ]; then
 		echo $Address |  sed s/\;/"\n"/g
 		fi
@@ -1119,6 +1119,7 @@ gen_prerouting_rules() {
 
 gen_include() {
 [ -n "$FWI" ] || return 0
+[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
 cat <<-CAT >>$FWI
 iptables-restore -n <<-EOF
 $(iptables-save | sed  "s/webstr--url/webstr --url/g" | grep -E "$TAG|^\*|^COMMIT" |sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/")
@@ -1311,11 +1312,11 @@ else
 if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 	# 启动时先用高春辉的这个列表，更新交给守护进程去做。
 	# 完整apnic 列表更新指令，不需要去重，ipset -! 会自动去重。此指令暂时屏蔽，这个列表获取10~90秒不等，有时候甚至卡住不动。
-	# wget --continue --no-check-certificate -q -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' | sed -e "s/^/-A nogfwnet &/g" | ipset -R -!
+	# wget --no-check-certificate -q -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' | sed -e "s/^/-A nogfwnet &/g" | ipset -R -!
 	logger -t "【SS】" "下载 chnroutes"
 	ip_list="ss_spec_dst_sh"
 		echo ss_spec_dst_sh
-		# wget --continue --no-check-certificate -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > /tmp/ss/chnroute.txt
+		# wget --no-check-certificate -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > /tmp/ss/chnroute.txt
 		# echo ""  >> /tmp/ss/chnroute.txt
 		wgetcurl.sh /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt N
 		cat /tmp/ss/tmp_chnroute.txt > /tmp/ss/chnroute.txt
@@ -1470,10 +1471,10 @@ optssredir="0"
 if [ "$ss_type" != "1" ] ; then
 # SS
 if [ "$ss_mode_x" != "3" ] ; then
-	hash ss-redir 2>/dev/null || rm -rf /opt/bin/ss-redir
+	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
 	hash ss-redir 2>/dev/null || optssredir="1"
 else
-	hash ss-local 2>/dev/null || rm -rf /opt/bin/ss-local
+	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="2"
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
@@ -1506,10 +1507,10 @@ fi
 if [ "$ss_type" = "1" ] ; then
 # SSR
 if [ "$ss_mode_x" != "3" ] ; then
-	hash ssr-redir 2>/dev/null || rm -rf /opt/bin/ssr-redir
+	[[ "$(ssr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-redir
 	hash ssr-redir 2>/dev/null || optssredir="1"
 else
-	hash ssr-local 2>/dev/null || rm -rf /opt/bin/ssr-local
+	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
@@ -1596,10 +1597,10 @@ echo "Debug: $DNS_Server"
 	check_link="$ss_link_1"
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 		if [ "$check" == "404" ] ; then
-			wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
@@ -1966,10 +1967,10 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
+	wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
+		wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
@@ -1998,10 +1999,10 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+	wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
@@ -2045,10 +2046,10 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
+	wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
+		wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else
@@ -2095,13 +2096,8 @@ if [ ! -z $ss_rdd_server ] ; then
 	#检查切换后的状态
 	TAG="SS_SPEC"		  # iptables tag
 	FWI="/tmp/firewall.shadowsocks.pdcn" # firewall include file
-
-cat <<-CATIP >>$FWI
-iptables-restore -n <<-EOFIP
-$(iptables-save | sed  "s/webstr--url/webstr --url/g" | grep -E "$TAG|^\*|^COMMIT" |sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/")
-EOFIP
-CATIP
-
+	[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
+	gen_include
 fi
 restart_dhcpd
 sleep 5
@@ -2117,10 +2113,10 @@ hash check_network 2>/dev/null || check=404
 [ "$check" == "404" ] && {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --continue --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
+	wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
 	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
 	if [ "$check" == "404" ] ; then
-		wget --continue --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
+		wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
 else

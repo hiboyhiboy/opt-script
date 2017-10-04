@@ -138,7 +138,7 @@ SVC_PATH="$kcptun_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/client_linux_mips"
 fi
-hash client_linux_mips 2>/dev/null || rm -rf /opt/bin/client_linux_mips
+[[ "$(client_linux_mips -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/client_linux_mips
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $kcptun_path，安装 opt 程序"
 	/tmp/script/_mountopt start
@@ -214,7 +214,7 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address=`wget --continue --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
+		Address=`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`
 		if [ $? -eq 0 ]; then
 		echo $Address |  sed s/\;/"\n"/g
 		fi

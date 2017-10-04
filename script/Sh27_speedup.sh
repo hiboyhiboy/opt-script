@@ -110,13 +110,15 @@ OSC
 fi
 sleep 60
 speedup_enable=`nvram get app_10` #speedup_enable
+i=1
 while [ "$speedup_enable" = "1" ]; do
 	NUM=`ps -w | grep "$speedup_path" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ ! -s "$speedup_path" ] ; then
+	if [ "$NUM" -lt "1" ] || [ ! -s "$speedup_path" ] || [ "$i" -ge 369 ] ; then
 		logger -t "【speedup】" "重新启动$NUM"
 		speedup_restart
 	fi
 sleep 69
+i=$((i+1))
 speedup_enable=`nvram get app_10` #speedup_enable
 done
 }
