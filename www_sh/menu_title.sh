@@ -14,7 +14,7 @@ source /etc/storage/script/init.sh
 
 if [ ! -s /tmp/script/_menu_title ] && [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep menu_title)" ] ; then
     mkdir -p /tmp/script
-    cp -Hsf $scriptfilepath /tmp/script/_menu_title
+    { echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_menu_title
     ln -sf /etc/storage/www_sh/menu_title.sh /etc/storage/menu_title_script.sh
 fi
 
@@ -43,7 +43,7 @@ do
     for title in $menu_title
     do
         #echo 'menu'$i'_title'$ii'='$title
-        eval 'nvram set menu'$i'_title'$ii'='$title';'
+        [ ! -z "$title" ] && eval 'nvram set menu'$i'_title'$ii'='$title';'
         i=$((i+1))
     done
 done
@@ -66,7 +66,7 @@ do
         if [ ! -z "$nvramrun" ] && [ ! -z "$(echo "$menu_title_all" | grep "$nvramrun")" ] && [ -s "/etc/storage/www_sh/$nvramrun" ] ; then
         #dos2unix "./$nvramrun"
         eval $(ps -w | grep "/etc/storage/www_sh/$nvramrun" | grep -v grep | awk '{print "kill "$1";";}')
-        eval /etc/storage/www_sh/$nvramrun "$i$ii" "$i" "$ii" &
+        eval /etc/storage/www_sh/$nvramrun "$i$ii" "$i" "$ii"
         #echo "/etc/storage/www_sh/$nvramrun $i$ii $i $ii"
         fi
     done
