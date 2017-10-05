@@ -66,7 +66,7 @@ do
         if [ ! -z "$nvramrun" ] && [ ! -z "$(echo "$menu_title_all" | grep "$nvramrun")" ] && [ -s "/etc/storage/www_sh/$nvramrun" ] ; then
         #dos2unix "./$nvramrun"
         eval $(ps -w | grep "/etc/storage/www_sh/$nvramrun" | grep -v grep | awk '{print "kill "$1";";}')
-        /etc/storage/www_sh/$nvramrun "$i$ii" "$i" "$ii"
+        eval /etc/storage/www_sh/$nvramrun "$i$ii" "$i" "$ii" &
         #echo "/etc/storage/www_sh/$nvramrun $i$ii $i $ii"
         fi
     done
@@ -162,7 +162,7 @@ check)
     check_www_sh
     ;;
 upver)
-    www_upver
+    www_upver &
     ;;
 upre)
     www_upwww_sh
