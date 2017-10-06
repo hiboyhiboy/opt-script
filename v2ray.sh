@@ -295,7 +295,7 @@ read -p "是否启用HTTP伪装?（默认开启） [y/n]:" ifhttpheader
             "method": "GET",
             "path": ["/"],
             "headers": {
-              "Host": ["www.163.com", "www.sogou.com/"],
+              "Host": ["www.163.com", "www.sogou.com"],
               "User-Agent": [
                 "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36",
                         "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46"
