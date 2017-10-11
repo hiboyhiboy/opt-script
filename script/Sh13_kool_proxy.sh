@@ -42,7 +42,7 @@ fi
 # echo "$mode_video"
 fi
 #检查 dnsmasq 目录参数
-confdir=`grep conf-dir /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
+confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
 if [ -z "$confdir" ] ; then 
 	confdir="/tmp/ss/dnsmasq.d"
 fi
