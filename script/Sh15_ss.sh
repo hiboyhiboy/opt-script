@@ -153,10 +153,10 @@ ip_list=""
 wifidognx=""
 
 #检查 dnsmasq 目录参数
-confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
-if [ -z "$confdir" ] ; then 
+#confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
+#if [ -z "$confdir" ] ; then 
 	confdir="/tmp/ss/dnsmasq.d"
-fi
+f#i
 confdir_x="$(echo -e $confdir | sed -e "s/\//"'\\'"\//g")"
 [ ! -d "$confdir" ] && mkdir -p $confdir
 
@@ -1663,7 +1663,7 @@ nvram set ss_internet="0"
 nvram set ss_working_port="1090" #恢复主服务器端口
 ss_working_port=`nvram get ss_working_port`
 rm -f $confdir/r.wantoss.conf
-sed -Ei '/conf-dir=\/tmp\/ss\/dnsmasq.d|github|ipip.net|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei '/github|ipip.net|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 clean_ss_rules
