@@ -284,7 +284,8 @@ get_wifidognx_mangle
 gen_prerouting_rules mangle udp $wifidognx
 
 logger -t "【v2ray】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
-	useradd -u 777 v2
+	#useradd -u 777 v2
+	adduser -u 777 v2 -D -S -H -s /bin/sh
 	killall v2ray
 	iptables -t nat -D OUTPUT -m owner ! --uid-owner 777 -p tcp -j SS_SPEC_V2RAY_LAN_DG
 	su v2 -c "$v2ray_path -config /etc/storage/v2ray_config_script.sh &" &
