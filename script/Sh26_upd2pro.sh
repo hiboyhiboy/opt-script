@@ -154,8 +154,8 @@ eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";"
 upd2pro_start () {
 
 optupd2pro="0"
-[ "$upd2pro_enable" = "1" ] && hash udp2raw 2>/dev/null || optupd2pro="1"
-[ "$upd2pro2_enable" = "1" ] && hash speeder 2>/dev/null || optupd2pro="2"
+[ "$upd2pro_enable" = "1" ] && { hash udp2raw 2>/dev/null || optupd2pro="1" ; }
+[ "$upd2pro2_enable" = "1" ] && { hash speeder 2>/dev/null || optupd2pro="2" ; }
 if [ "$optupd2pro" != "0" ] ; then
 	# 找不到udp2raw、speeder，安装opt
 	logger -t "【SS】" "找不到 udp2raw 或 speeder ，挂载opt"
@@ -163,7 +163,7 @@ if [ "$optupd2pro" != "0" ] ; then
 	initopt
 fi
 optupd2pro="0"
-[ "$upd2pro_enable" = "1" ] && hash udp2raw 2>/dev/null || optupd2pro="1"
+[ "$upd2pro_enable" = "1" ] && { hash udp2raw 2>/dev/null || optupd2pro="1" ; }
 if [ "$optupd2pro" = "1" ] ; then
 	logger -t "【SS】" "找不到 udp2raw. opt下载程序"
 	[ ! -s /opt/bin/udp2raw ] && wgetcurl.sh "/opt/bin/udp2raw" "$hiboyfile/udp2raw" "$hiboyfile2/udp2raw"
@@ -172,7 +172,7 @@ if [ "$optupd2pro" = "1" ] ; then
 hash udp2raw 2>/dev/null || { logger -t "【SS】" "找不到 udp2raw, 请检查系统"; upd2pro_restart x ; }
 fi
 optupd2pro="0"
-[ "$upd2pro2_enable" = "1" ] && hash speeder 2>/dev/null || optupd2pro="2"
+[ "$upd2pro2_enable" = "1" ] && { hash speeder 2>/dev/null || optupd2pro="2" ; }
 if [ "$optupd2pro" = "2" ] ; then
 	logger -t "【SS】" "找不到 speeder. opt下载程序"
 	[ ! -s /opt/bin/speeder ] && wgetcurl.sh "/opt/bin/speeder" "$hiboyfile/speeder" "$hiboyfile2/speeder"
