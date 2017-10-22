@@ -198,7 +198,6 @@ arDdnsUpdate() {
 		myIP=$hostIP
 		logger -t "【dns_com_pod动态域名】" "添加子域名 ${2} 记录IP: $myIP"
 		recordRS=$(arApiPost "Record.Create" "domain_id=${domainID}&sub_domain=${2}&record_type=A&value=${myIP}&record_line=default")
-		sleep 5
 	else
 		# 更新记录IP
 		myIP=$hostIP
@@ -208,6 +207,7 @@ arDdnsUpdate() {
 	recordIP=$(echo $recordRS | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
 	# 输出记录IP
 	if [ "$recordIP" = "" ] ; then
+		sleep 10
 		# 获得记录ID
 		recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
 		recordID=$(echo $recordID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
@@ -218,8 +218,8 @@ arDdnsUpdate() {
 	fi
 	if [ "$recordIP" = "$myIP" ]; then
 		if [ "$recordCD" = "1" ] ; then
-			echo $recordRS | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"'
-			logger -t "【dns_com_pod动态域名】" "`echo $recordRS | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"'`"
+			echo $recordIP
+			logger -t "【dns_com_pod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
 			return 0
 		fi
 		# 输出错误信息
