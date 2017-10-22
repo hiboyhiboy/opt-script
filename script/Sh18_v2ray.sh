@@ -175,6 +175,7 @@ SVC_PATH="$v2ray_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/v2ray"
 fi
+chmod 777 "$SVC_PATH"
 [[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/v2ray
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【v2ray】" "找不到 $SVC_PATH，安装 opt 程序"

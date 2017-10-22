@@ -128,6 +128,7 @@ SVC_PATH=/usr/sbin/ss-server
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/ss-server"
 fi
+chmod 777 "$SVC_PATH"
 [[ "$(ss-server -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-server
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH，安装 opt 程序"

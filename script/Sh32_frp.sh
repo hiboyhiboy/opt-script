@@ -132,6 +132,7 @@ action_for=""
 for action_frp in $action_for
 do
 	SVC_PATH="/opt/bin/$action_frp"
+	chmod 777 "$SVC_PATH"
 	[[ "$($action_frp -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/$action_frp
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【frp】" "找不到 $SVC_PATH ，安装 opt 程序"

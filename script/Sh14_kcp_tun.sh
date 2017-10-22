@@ -138,6 +138,7 @@ SVC_PATH="$kcptun_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/client_linux_mips"
 fi
+chmod 777 "$SVC_PATH"
 [[ "$(client_linux_mips -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/client_linux_mips
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $kcptun_path，安装 opt 程序"
@@ -157,6 +158,7 @@ fi
 if [ -s "$SVC_PATH" ] ; then
 	nvram set kcptun_path="$SVC_PATH"
 fi
+chmod 777 "$SVC_PATH"
 kcptun_path="$SVC_PATH"
 kcptun_v=`$SVC_PATH -v | awk '{print $3}'`
 nvram set kcptun_v=$kcptun_v

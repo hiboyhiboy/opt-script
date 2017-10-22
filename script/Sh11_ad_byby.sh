@@ -88,6 +88,7 @@ else
 	fi
 fi
 export PATH='/tmp/bin:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
+chmod 777 /tmp/bin/adbyby
 [[ "$(/tmp/bin/adbyby --help | wc -l)" -lt 2 ]] && rm -rf /tmp/bin/*
 if [ ! -s "/tmp/bin/adbyby" ] ; then
 	rm -rf /tmp/bin/*

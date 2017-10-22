@@ -157,6 +157,7 @@ sleep 5
 fi
 if [ "$shellinabox_enable" = "1" ] ; then
 SVC_PATH="/opt/sbin/shellinaboxd"
+chmod 777 "$SVC_PATH"
 [[ "$(shellinaboxd -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/shellinaboxd /opt/opti.txt
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "$shell_log" "找不到 $SVC_PATH，安装 opt 程序"

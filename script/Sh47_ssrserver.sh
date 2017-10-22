@@ -127,6 +127,7 @@ if [ -z "$upanPath" ] ; then
 fi
 
 SVC_PATH=/opt/bin/python
+chmod 777 "$SVC_PATH"
 [[ "$(python -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/python /opt/opti.txt
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SSR_server】" "找不到 $SVC_PATH，安装 opt 程序"
@@ -144,23 +145,19 @@ hash python 2>/dev/null || {  logger -t "【SSR_server】" "无法运行 python 
 mkdir -p /opt/shadowsocksr-manyuser/shadowsocks/crypto/
 if [ ! -f /opt/shadowsocksr-manyuser/shadowsocks/server.py ] ; then
 	logger -t "【SSR_server】" "找不到 shadowsocks/server.py"
-	logger -t "【SSR_server】" "下载:$hiboyfile/manyuser.zip"
-	rm -rf /opt/manyuser.zip
-	wgetcurl.sh /opt/manyuser.zip "$hiboyfile/manyuser.zip" "$hiboyfile2/manyuser.zip"
-	unzip -o /opt/manyuser.zip  -d /opt/
+	[ "$ssrserver_update" == "0" ] && ssrserver_update=2
+	echo "" > /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
 fi
 if [ "$ssrserver_update" != "0" ] ; then
 logger -t "【SSR_server】" "SSR_server 检测更新"
 	rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb
-	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb "$hiboyfile/util.py" "$hiboyfile2/util.py"
-	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc "$hiboyfile/util_code.py" "$hiboyfile2/util_code.py"
 	A_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py`
-	B_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb`
-	C_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc`
 	A_util=`echo -n "$A_util" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	if [ "$ssrserver_update" = "1" ] ; then
+	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb "$hiboyfile/util.py" "$hiboyfile2/util.py"
+	B_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilb`
 	B_util=`echo -n "$B_util" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-	C_util=`echo -n "$C_util" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-	if [ "$A_util" != "$B_util" ] && [ "$ssrserver_update" = "1" ] ; then
+	if [ "$A_util" != "$B_util" ] ; then
 		logger -t "【SSR_server】" "SSR_server github.com需要更新"
 		logger -t "【SSR_server】" "下载:https://github.com/esdeathlove/shadowsocks/archive/ssr_origin.zip"
 		rm -rf /opt/manyuser.zip
@@ -175,7 +172,12 @@ logger -t "【SSR_server】" "SSR_server 检测更新"
 	else
 		logger -t "【SSR_server】" "SSR_server github.com暂时没更新"
 	fi
-	if [ "$A_util" != "$C_util" ] && [ "$ssrserver_update" = "2" ] ; then
+	fi
+	if [ "$ssrserver_update" = "2" ] ; then
+	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc "$hiboyfile/util_code.py" "$hiboyfile2/util_code.py"
+	C_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/utilc`
+	C_util=`echo -n "$C_util" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	if [ "$A_util" != "$C_util" ] ; then
 		logger -t "【SSR_server】" "SSR_server code需要更新"
 		logger -t "【SSR_server】" "下载:$hiboyfile/manyuser.zip"
 		rm -rf /opt/manyuser.zip
@@ -186,6 +188,27 @@ logger -t "【SSR_server】" "SSR_server 检测更新"
 		logger -t "【SSR_server】" "SSR_server code更新完成"
 	else
 		logger -t "【SSR_server】" "SSR_server code暂时没更新"
+	fi
+	fi
+	if [ "$ssrserver_update" = "3" ] ; then
+	wgetcurl.sh /opt/shadowsocksr-manyuser/shadowsocks/crypto/utild "$hiboyfile/util_ssrr.py" "$hiboyfile2/util_ssrr.py"
+	D_util=`cat /opt/shadowsocksr-manyuser/shadowsocks/crypto/utild`
+	D_util=`echo -n "$D_util" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	if [ "$A_util" != "$D_util" ] ; then
+		logger -t "【SSR_server】" "SSRR需要更新"
+		logger -t "【SSR_server】" "下载:https://github.com/shadowsocksrr/shadowsocksr/archive/akkariiin/dev.zip"
+		rm -rf /opt/manyuser.zip
+		wgetcurl.sh /opt/manyuser.zip "https://github.com/shadowsocksrr/shadowsocksr/archive/akkariiin/dev.zip" "https://github.com/shadowsocksrr/shadowsocksr/archive/akkariiin/dev.zip"
+		unzip -o /opt/manyuser.zip  -d /opt/
+		mkdir -p /opt/shadowsocksr-manyuser
+		cp -r -f -a /opt/shadowsocksr-akkariiin-dev/* /opt/shadowsocksr-manyuser
+		rm -rf /opt/shadowsocksr-akkariiin-dev/
+		rm -rf /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
+		cp -af /opt/shadowsocksr-manyuser/shadowsocks/crypto/utild /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
+		logger -t "【SSR_server】" "SSRR code更新完成"
+	else
+		logger -t "【SSR_server】" "SSRR code暂时没更新"
+	fi
 	fi
 fi
 logger -t "【SSR_server】" "启动 SSR_server 服务"

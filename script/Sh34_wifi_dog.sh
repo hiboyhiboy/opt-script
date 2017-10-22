@@ -152,6 +152,8 @@ fi
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/wifidog"
 fi
+chmod 777 "$SVC_PATH"
+chmod 777 /opt/bin/wdctl
 [[ "$(wifidog -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/wifidog
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【wifidog】" "找不到 $SVC_PATH ，安装 opt 程序"
@@ -246,6 +248,7 @@ FirewallRuleSet locked-users {
 	FirewallRule block to 0.0.0.0/0
 FWD
 
+chmod 777 "$SVC_PATH"
 $SVC_PATH -c /etc/storage/wifidog.conf &
 
 sleep 2

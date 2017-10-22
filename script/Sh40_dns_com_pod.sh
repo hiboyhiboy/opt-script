@@ -1,77 +1,102 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-dnspod_enable=`nvram get dnspod_enable`
-[ -z $dnspod_enable ] && dnspod_enable=0 && nvram set dnspod_enable=0
-if [ "$dnspod_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep dnspod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+dns_com_pod_enable=`nvram get dns_com_pod_enable`
+[ -z $dns_com_pod_enable ] && dns_com_pod_enable=0 && nvram set dns_com_pod_enable=0
+if [ "$dns_com_pod_enable" != "0" ] ; then
+nvramshow=`nvram showall | grep '=' | grep dns_com_pod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 hostIP=""
 myIP=""
-[ -z $dnspod_interval ] && dnspod_interval=600 && nvram set dnspod_interval=$dnspod_interval
+[ -z $dns_com_pod_interval ] && dns_com_pod_interval=600 && nvram set dns_com_pod_interval=$dns_com_pod_interval
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep dnspod)" ]  && [ ! -s /tmp/script/_dnspod ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep dns_com_pod)" ]  && [ ! -s /tmp/script/_dns_com_pod ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_dnspod
-	chmod 777 /tmp/script/_dnspod
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_dns_com_pod
+	chmod 777 /tmp/script/_dns_com_pod
 fi
 
-dnspod_get_status () {
+dns_com_pod_get_status () {
 
-A_restart=`nvram get dnspod_status`
-B_restart="$dnspod_enable$dnspod_username$dnspod_password$dnspod_Token$dnspod_domian$dnspod_host$dnspod_domian2$dnspod_host2$dnspod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
+A_restart=`nvram get dns_com_pod_status`
+B_restart="$dns_com_pod_enable$dns_com_pod_username$dns_com_pod_password$dns_com_pod_user_token$dns_com_pod_domian$dns_com_pod_host$dns_com_pod_domian2$dns_com_pod_host2$dns_com_pod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set dnspod_status=$B_restart
+	nvram set dns_com_pod_status=$B_restart
 	needed_restart=1
 else
 	needed_restart=0
 fi
 }
 
-dnspod_check () {
+dns_com_pod_get_status2 () {
 
-dnspod_get_status
-if [ "$dnspod_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【DNSPod动态域名】" "停止 dnspod" && dnspod_close
+[ "x${dns_com_pod_username}" = "x" ] && [ "x${dns_com_pod_password}" = "x" ] && return 0
+A_restart=`nvram get dns_com_pod_status2`
+B_restart="$dns_com_pod_username$dns_com_pod_password"
+B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+if [ "$A_restart" != "$B_restart" ] ; then
+	nvram set dns_com_pod_status2=$B_restart
+	dns_com_pod_user_token=""
+fi
+if [ "x${dns_com_pod_user_token}" = "x" ] ; then # undefine token
+	user_token=`curl -k -X POST https://api.dnspod.com/Auth -d 'login_email='"$dns_com_pod_username"'&login_password='"$dns_com_pod_password"'&format=json'`
+	dns_com_pod_user_token="$(echo $user_token  | grep -Eo '"user_token":"[^"]*"' | cut -d':' -f2 | tr -d '"')"
+	if [ "x${dns_com_pod_user_token}" = "x" ] ; then # undefine token
+		# 输出错误信息
+		message=$(echo $user_token | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+		logger -t "【dns_com_pod动态域名】" "获取 user_token 错误: ${message}"
+		logger -t "【dns_com_pod动态域名】" "获取 user_token 错误，10 秒后自动尝试重新启动" && sleep 10; nvram set dns_com_pod_status=00; eval "$scriptfilepath &"; exit 0;
+	fi
+	nvram set dns_com_pod_user_token="$dns_com_pod_user_token"
+fi
+}
+
+dns_com_pod_check () {
+
+dns_com_pod_get_status
+dns_com_pod_get_status2
+if [ "$dns_com_pod_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
+	[ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【dns_com_pod动态域名】" "停止 dns_com_pod" && dns_com_pod_close
 	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
 fi
-if [ "$dnspod_enable" = "1" ] ; then
-[ "x${dnspod_Token}" = "x" ] && [ "x${dnspod_username}" = "x" ] && [ "x${dnspod_password}" = "x" ] && { logger -t "【DNSPod动态域名】" "用户名密码或者 Token 等设置未填写, 10 秒后自动尝试重新启动" && sleep 10; nvram set dnspod_status=00; eval "$scriptfilepath &"; exit 0; }
+if [ "$dns_com_pod_enable" = "1" ] ; then
+[ "x${dns_com_pod_user_token}" = "x" ] && [ "x${dns_com_pod_username}" = "x" ] && [ "x${dns_com_pod_password}" = "x" ] && { logger -t "【dns_com_pod动态域名】" "用户名密码或者 Token 等设置未填写, 10 秒后自动尝试重新启动" && sleep 10; nvram set dns_com_pod_status=00; eval "$scriptfilepath &"; exit 0; }
 	if [ "$needed_restart" = "1" ] ; then
-		dnspod_close
+		dns_com_pod_get_status
+		dns_com_pod_close
 		eval "$scriptfilepath keep &"
 	else
-		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && nvram set dnspod_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && nvram set dns_com_pod_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi
 fi
 }
 
-dnspod_keep () {
-dnspod_start
-logger -t "【DNSPod动态域名】" "守护进程启动"
+dns_com_pod_keep () {
+dns_com_pod_start
+logger -t "【dns_com_pod动态域名】" "守护进程启动"
 while true; do
 sleep 41
-sleep $dnspod_interval
-nvramshow=`nvram showall | grep '=' | grep dnspod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-[ "$dnspod_enable" = "0" ] && dnspod_close && exit 0;
-if [ "$dnspod_enable" = "1" ] ; then
-	dnspod_start
+sleep $dns_com_pod_interval
+nvramshow=`nvram showall | grep '=' | grep dns_com_pod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+[ "$dns_com_pod_enable" = "0" ] && dns_com_pod_close && exit 0;
+if [ "$dns_com_pod_enable" = "1" ] ; then
+	dns_com_pod_start
 fi
 done
 }
 
-dnspod_close () {
-eval $(ps -w | grep "_dnspod keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_dnspod.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
+dns_com_pod_close () {
+eval $(ps -w | grep "_dns_com_pod keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_dns_com_pod.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
-dnspod_start () {
-arDdnsCheck $dnspod_domian $dnspod_host
-if [ "$dnspod_domian2"x != "x" ] && [ "$dnspod_domian2" != "baidu.com" ] ; then
+dns_com_pod_start () {
+arDdnsCheck $dns_com_pod_domian $dns_com_pod_host
+if [ "$dns_com_pod_domian2"x != "x" ] && [ "$dns_com_pod_domian2" != "baidu.com" ] ; then
 	sleep 1
-	arDdnsCheck $dnspod_domian2 $dnspod_host2
+	arDdnsCheck $dns_com_pod_domian2 $dns_com_pod_host2
 fi
 }
 
@@ -119,7 +144,7 @@ arDdnsInfo() {
 		;;
 	*)
 		echo "Get Record Info Failed!"
-		#logger -t "【DNSPod动态域名】" "获取记录信息失败！"
+		#logger -t "【dns_com_pod动态域名】" "获取记录信息失败！"
 		return 1
 		;;
 	esac
@@ -145,18 +170,13 @@ arNslookup() {
 # 读取接口数据
 # 参数: 接口类型 待提交数据
 arApiPost() {
-	local agent="AnripDdns/5.07(mail@anrip.com)"
-	local inter="https://dnsapi.cn/${1:?'Info.Version'}"
-	if [ "x${dnspod_Token}" = "x" ] ; then # undefine token
-		local param="login_email=${dnspod_username}&login_password=${dnspod_password}&format=json&${2}"
-	else
-		local param="login_token=${dnspod_Token}&format=json&${2}"
-	fi
+	local inter="https://api.dnspod.com/${1:?'Info.Version'}"
 	
+	local param="user_token=${dns_com_pod_user_token}&format=json&${2}"
 	
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --quiet --no-check-certificate --output-document=- --user-agent=$agent --post-data $param $inter
+		wget --quiet --no-check-certificate --output-document=- --post-data $param $inter
 	else
 		curl -k -X POST $inter -d $param
 	fi
@@ -176,13 +196,13 @@ arDdnsUpdate() {
 	if [ "$recordID" = "" ] ; then
 		# 添加子域名记录IP
 		myIP=$hostIP
-		logger -t "【DNSPod动态域名】" "添加子域名 ${2} 记录IP"
-		recordRS=$(arApiPost "Record.Create" "domain_id=${domainID}&sub_domain=${2}&record_type=A&value=${myIP}&record_line=默认")
+		logger -t "【dns_com_pod动态域名】" "添加子域名 ${2} 记录IP: $myIP"
+		recordRS=$(arApiPost "Record.Create" "domain_id=${domainID}&sub_domain=${2}&record_type=A&value=${myIP}&record_line=default")
 		sleep 5
 	else
 		# 更新记录IP
 		myIP=$hostIP
-		recordRS=$(arApiPost "Record.Ddns" "domain_id=${domainID}&record_id=${recordID}&sub_domain=${2}&record_type=A&value=${myIP}&record_line=默认")
+		recordRS=$(arApiPost "Record.Ddns" "domain_id=${domainID}&record_id=${recordID}&sub_domain=${2}&record_type=A&value=${myIP}&record_line=default")
 	fi
 	recordCD=$(echo $recordRS | grep -Eo '"code":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
 	recordIP=$(echo $recordRS | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
@@ -199,17 +219,17 @@ arDdnsUpdate() {
 	if [ "$recordIP" = "$myIP" ]; then
 		if [ "$recordCD" = "1" ] ; then
 			echo $recordRS | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"'
-			logger -t "【DNSPod动态域名】" "`echo $recordRS | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"'`"
+			logger -t "【dns_com_pod动态域名】" "`echo $recordRS | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"'`"
 			return 0
 		fi
 		# 输出错误信息
 		echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'
-		logger -t "【DNSPod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
+		logger -t "【dns_com_pod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
 		return 1
 	fi
 	# 输出错误信息
 	echo "Update Failed! Please check your network."
-	logger -t "【DNSPod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
+	logger -t "【dns_com_pod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
 	return 1
 }
 
@@ -228,7 +248,7 @@ arDdnsCheck() {
 			hostIP=`curl -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		fi
 		if [ "$hostIP"x ="x"  ] ; then
-			logger -t "【DNSPod动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
+			logger -t "【dns_com_pod动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
 			return 1
 		fi
 	fi
@@ -241,18 +261,18 @@ arDdnsCheck() {
 	fi
 	echo "lastIP: ${lastIP}"
 	if [ "$lastIP" != "$hostIP" ] ; then
-		logger -t "【DNSPod动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
-		logger -t "【DNSPod动态域名】" "目前 IP: ${hostIP}"
-		logger -t "【DNSPod动态域名】" "上次 IP: ${lastIP}"
+		logger -t "【dns_com_pod动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
+		logger -t "【dns_com_pod动态域名】" "目前 IP: ${hostIP}"
+		logger -t "【dns_com_pod动态域名】" "上次 IP: ${lastIP}"
 		sleep 1
 		postRS=$(arDdnsUpdate $1 $2)
 		if [ $? -eq 0 ]; then
 			echo "postRS: ${postRS}"
-			logger -t "【DNSPod动态域名】" "更新动态DNS记录成功！提交的IP: ${postRS}"
+			logger -t "【dns_com_pod动态域名】" "更新动态DNS记录成功！提交的IP: ${postRS}"
 			return 0
 		else
 			echo ${postRS}
-			logger -t "【DNSPod动态域名】" "更新动态DNS记录失败！请检查您的网络。提交的IP: ${postRS}"
+			logger -t "【dns_com_pod动态域名】" "更新动态DNS记录失败！请检查您的网络。提交的IP: ${postRS}"
 			return 1
 		fi
 	fi
@@ -265,20 +285,20 @@ arDdnsCheck() {
 
 case $ACTION in
 start)
-	dnspod_close
-	dnspod_check
+	dns_com_pod_close
+	dns_com_pod_check
 	;;
 check)
-	dnspod_check
+	dns_com_pod_check
 	;;
 stop)
-	dnspod_close
+	dns_com_pod_close
 	;;
 keep)
-	dnspod_keep
+	dns_com_pod_keep
 	;;
 *)
-	dnspod_check
+	dns_com_pod_check
 	;;
 esac
 

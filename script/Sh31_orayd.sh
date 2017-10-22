@@ -149,6 +149,8 @@ if [ ! -s "$SVC_PATH" ] || [ ! -s "$SVC_PATH2" ] ; then
 SVC_PATH="/opt/bin/oraysl"
 SVC_PATH2="/opt/bin/oraynewph"
 fi
+chmod 777 "$SVC_PATH"
+chmod 777 "$SVC_PATH2"
 [[ "$(oraysl -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/oraysl /opt/bin/oraynewph
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【花生壳内网版】" "找不到 $SVC_PATH，安装 opt 程序"

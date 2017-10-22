@@ -128,6 +128,7 @@ SVC_PATH="$meow_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/meow"
 fi
+chmod 777 "$SVC_PATH"
 [[ "$(meow -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/meow
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【meow】" "找不到 $SVC_PATH，安装 opt 程序"

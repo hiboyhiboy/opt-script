@@ -163,22 +163,26 @@ if [ "$optupd2pro" != "0" ] ; then
 	initopt
 fi
 optupd2pro="0"
-[ "$upd2pro_enable" = "1" ] && { hash udp2raw 2>/dev/null || optupd2pro="1" ; }
+if [ "$upd2pro_enable" = "1" ] ; then
+chmod 777 "/opt/bin/udp2raw"
+[[ "$(udp2raw -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/udp2raw
+hash udp2raw 2>/dev/null || optupd2pro="1"
 if [ "$optupd2pro" = "1" ] ; then
 	logger -t "【SS】" "找不到 udp2raw. opt下载程序"
 	[ ! -s /opt/bin/udp2raw ] && wgetcurl.sh "/opt/bin/udp2raw" "$hiboyfile/udp2raw" "$hiboyfile2/udp2raw"
-	chmod 777 "/opt/bin/udp2raw"
-	[[ "$(udp2raw -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/udp2raw
 hash udp2raw 2>/dev/null || { logger -t "【SS】" "找不到 udp2raw, 请检查系统"; upd2pro_restart x ; }
 fi
+fi
 optupd2pro="0"
-[ "$upd2pro2_enable" = "1" ] && { hash speeder 2>/dev/null || optupd2pro="2" ; }
+if [ "$upd2pro2_enable" = "1" ] ; then
+chmod 777 "/opt/bin/speeder"
+[[ "$(speeder -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/speeder
+hash speeder 2>/dev/null || optupd2pro="2"
 if [ "$optupd2pro" = "2" ] ; then
 	logger -t "【SS】" "找不到 speeder. opt下载程序"
 	[ ! -s /opt/bin/speeder ] && wgetcurl.sh "/opt/bin/speeder" "$hiboyfile/speeder" "$hiboyfile2/speeder"
-	chmod 777 "/opt/bin/speeder"
-	[[ "$(speeder -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/speeder
 hash speeder 2>/dev/null || { logger -t "【SS】" "找不到 speeder, 请检查系统"; upd2pro_restart x ; }
+fi
 fi
 
 update_app

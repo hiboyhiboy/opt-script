@@ -152,6 +152,15 @@ SH_TARGET=""
 ip_list=""
 wifidognx=""
 
+#检查 ssrr 协议
+if [ "$ss_type" != "1" ] ; then
+ssrr_custom="$(echo $ss_usage | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
+ssrr_s2_custom="$(echo $ss_s2_usage | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
+if [ ! -z "$ssrr_custom" ] || [ ! -z "$ssrr_s2_custom" ] ; then 
+ssrr_type=1
+fi
+fi
+
 #检查 dnsmasq 目录参数
 #confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
 #if [ -z "$confdir" ] ; then 
@@ -402,31 +411,57 @@ fi
 }
 check_ssr()
 {
+
+if [ ! -z "$ssrr_custom" ] || [ ! -z "$ssrr_s2_custom" ] ; then 
+logger -t "【SS】" "高级启动参数选项内容含有 ssrr 协议: $ssrr_custom $ssrr_s2_custom"
+ssrr_type=1
+fi
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
 if [ "$ss_type" != "1" ] ; then
 	if [ ! -s "/usr/sbin/ss-redir" ] ; then
 		[ ! -s "/opt/bin/ss0-redir" ] && cp -f /opt/bin/ss-redir /opt/bin/ss0-redir
 		[ -s "/opt/bin/ss0-redir" ] && cp -f /opt/bin/ss0-redir /opt/bin/ss-redir
+		chmod 777 "/opt/bin/ss-redir"
 	fi
 	if [ ! -s "/usr/sbin/ssr-local" ] ; then
 		[ ! -s "/opt/bin/ss0-local" ] && cp -f /opt/bin/ss-local /opt/bin/ss0-local
 		[ -s "/opt/bin/ss0-local" ] && cp -f /opt/bin/ss0-local /opt/bin/ss-local
+		chmod 777 "/opt/bin/ss-local"
 	fi
 fi
 if [ "$ss_type" = "1" ] ; then
+if [ "$ssrr_type" = "1" ] ; then
+	if [ -s "/usr/sbin/ssrr-redir" ] ; then
+		mount --bind /usr/sbin/ssrr-redir /usr/sbin/ss-redir
+	else
+		[ ! -s "/opt/bin/ss0-redir" ] && cp -f /opt/bin/ss-redir /opt/bin/ss0-redir
+		[ -s "/opt/bin/ssrr-redir" ] && cp -f /opt/bin/ssrr-redir /opt/bin/ss-redir
+		chmod 777 "/opt/bin/ss-redir"
+	fi
+	if [ -s "/usr/sbin/ssrr-local" ] ; then
+		mount --bind /usr/sbin/ssrr-local /usr/sbin/ss-local
+	else
+		[ ! -s "/opt/bin/ss0-local" ] && cp -f /opt/bin/ss-local /opt/bin/ss0-local
+		[ -s "/opt/bin/ssrr-local" ] && cp -f /opt/bin/ssrr-local /opt/bin/ss-local
+		chmod 777 "/opt/bin/ss-local"
+	fi
+else
 	if [ -s "/usr/sbin/ssr-redir" ] ; then
 		mount --bind /usr/sbin/ssr-redir /usr/sbin/ss-redir
 	else
 		[ ! -s "/opt/bin/ss0-redir" ] && cp -f /opt/bin/ss-redir /opt/bin/ss0-redir
 		[ -s "/opt/bin/ssr-redir" ] && cp -f /opt/bin/ssr-redir /opt/bin/ss-redir
+		chmod 777 "/opt/bin/ss-redir"
 	fi
 	if [ -s "/usr/sbin/ssr-local" ] ; then
 		mount --bind /usr/sbin/ssr-local /usr/sbin/ss-local
 	else
 		[ ! -s "/opt/bin/ss0-local" ] && cp -f /opt/bin/ss-local /opt/bin/ss0-local
 		[ -s "/opt/bin/ssr-local" ] && cp -f /opt/bin/ssr-local /opt/bin/ss-local
+		chmod 777 "/opt/bin/ss-local"
 	fi
+fi
 fi
 }
 
@@ -836,6 +871,18 @@ fi
 		echo "WAN!api.cloud.189.cn" >> /etc/storage/shadowsocks_ss_spec_wan.sh
 	fi
 	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
+	sed -e '/.*members.3322.org/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!members.3322.org" >> /tmp/ss_spec_wan.txt
+	sed -e '/.*www.cloudxns.net/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!www.cloudxns.net" >> /tmp/ss_spec_wan.txt
+	sed -e '/.*dnsapi.cn/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!dnsapi.cn" >> /tmp/ss_spec_wan.txt
+	sed -e '/.*api.dnspod.com/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!api.dnspod.com" >> /tmp/ss_spec_wan.txt
+	sed -e '/.*www.ipip.net/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!www.ipip.net" >> /tmp/ss_spec_wan.txt
+	sed -e '/.*alidns.aliyuncs.com/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!alidns.aliyuncs.com" >> /tmp/ss_spec_wan.txt
 	rm -f /tmp/ss/wantoss.list
 	rm -f /tmp/ss/wannoss.list
 	while read line
@@ -1452,15 +1499,27 @@ fi
 fi
 
 if [ "$ss_type" = "1" ] ; then
+if [ "$ssrr_type" = "1" ] ; then
+# SSRR
+if [ "$ss_mode_x" != "3" ] ; then
+	hash ssrr-redir 2>/dev/null || optssredir="1"
+else
+	hash ssrr-local 2>/dev/null || optssredir="2"
+fi
+# SSRR
+else
 # SSR
 if [ "$ss_mode_x" != "3" ] ; then
 	hash ssr-redir 2>/dev/null || optssredir="1"
 else
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
+fi
 # SSR
 fi
-
+if [ "$ss_run_ss_local" = "1" ] ; then
+	hash ss-local 2>/dev/null || optssredir="3"
+fi
 if [ "$ss_dnsproxy_x" = "0" ] ; then
 hash dnsproxy 2>/dev/null || optssredir="5"
 elif [ "$ss_dnsproxy_x" = "1" ] ; then
@@ -1478,13 +1537,17 @@ optssredir="0"
 if [ "$ss_type" != "1" ] ; then
 # SS
 if [ "$ss_mode_x" != "3" ] ; then
+chmod 777 "`which ss-redir`"
 	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
 	hash ss-redir 2>/dev/null || optssredir="1"
 else
+chmod 777 "`which ss-local`"
 	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="2"
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
+chmod 777 "`which ss-local`"
+	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "1" ] ; then
@@ -1512,15 +1575,47 @@ fi
 fi
 
 if [ "$ss_type" = "1" ] ; then
+if [ "$ssrr_type" = "1" ] ; then
+# SSRR
+if [ "$ss_mode_x" != "3" ] ; then
+chmod 777 "`which ssrr-redir`"
+	[[ "$(ssrr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-redir
+	hash ssrr-redir 2>/dev/null || optssredir="1"
+else
+chmod 777 "`which ssrr-local`"
+	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
+	hash ssrr-local 2>/dev/null || optssredir="2"
+fi
+if [ "$ss_run_ss_local" = "1" ] ; then
+chmod 777 "`which ssrr-local`"
+	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
+	hash ssrr-local 2>/dev/null || optssredir="3"
+fi
+if [ "$optssredir" = "1" ] ; then
+	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl.sh "/opt/bin/ssrr-redir" "$hiboyfile/ssrr-redir" "$hiboyfile2/ssrr-redir"
+	chmod 777 "/opt/bin/ssrr-redir"
+hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
+fi
+if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
+	[ ! -s /opt/bin/ssrr-local ] && wgetcurl.sh "/opt/bin/ssrr-local" "$hiboyfile/ssrr-local" "$hiboyfile2/ssrr-local"
+	chmod 777 "/opt/bin/ssrr-local"
+	hash ssrr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-local, 请检查系统"; ss_restart x ; }
+fi
+# SSRR
+else
 # SSR
 if [ "$ss_mode_x" != "3" ] ; then
+chmod 777 "`which ssr-redir`"
 	[[ "$(ssr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-redir
 	hash ssr-redir 2>/dev/null || optssredir="1"
 else
+chmod 777 "`which ssr-local`"
 	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
+chmod 777 "`which ssr-local`"
+	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
 	hash ssr-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "1" ] ; then
@@ -1534,6 +1629,7 @@ if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
 	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; ss_restart x ; }
 fi
 # SSR
+fi
 fi
 
 if [ "$ss_dnsproxy_x" = "0" ] ; then

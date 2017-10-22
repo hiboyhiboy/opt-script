@@ -149,6 +149,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 else
 	logger -t "【softether】" "找到 $SVC_PATH"
 fi
+chmod 777 "$SVC_PATH"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【softether】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"

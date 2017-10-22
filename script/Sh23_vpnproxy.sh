@@ -118,6 +118,7 @@ eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";"
 
 vpnproxy_start () {
 SVC_PATH="/opt/bin/nvpproxy"
+chmod 777 "$SVC_PATH"
 [[ "$(nvpproxy -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/nvpproxy
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 nvpproxy，安装 opt 程序"
@@ -134,6 +135,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【vpnproxy】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && vpnproxy_restart x
 fi
+chmod 777 "$SVC_PATH"
 logger -t "【vpnproxy】" "运行 $SVC_PATH"
 $SVC_PATH -port=$vpnproxy_wan_port -proxy=127.0.0.1:$vpnproxy_vpn_port &
 restart_dhcpd

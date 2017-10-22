@@ -152,6 +152,7 @@ if [ ! -s "$SVC_PATH" ] && [ -d "$upanPath/syncthing/Downloads" ] ; then
 	cp -r -f -a  $upanPath/syncthing/syncthing-linux-mipsle?*/* $upanPath/syncthing/syncthing-linux-mipsle/
 	rm -rf $upanPath/syncthing/syncthing-linux-mipsle?*/
 fi
+chmod 777 "$SVC_PATH"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【syncthing】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
@@ -159,7 +160,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 logger -t "【syncthing】" "运行 syncthing"
 
-
+syncthing_upanPath="$upanPath"
 nvram set syncthing_upanPath="$upanPath"
 "$upanPath/syncthing/syncthing-linux-mipsle/syncthing" -home "$upanPath/syncthing" -gui-address 0.0.0.0:$syncthing_wan_port &
 
