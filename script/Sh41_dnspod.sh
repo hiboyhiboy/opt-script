@@ -220,14 +220,14 @@ arDdnsCheck() {
 	local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
-	if [ "$hostIP"x ="x"  ] ; then
+	if [ "$hostIP"x = "x"  ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 			hostIP=`wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		else
 			hostIP=`curl -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		fi
-		if [ "$hostIP"x ="x"  ] ; then
+		if [ "$hostIP"x = "x"  ] ; then
 			logger -t "【DNSPod动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
 			return 1
 		fi
