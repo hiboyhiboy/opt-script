@@ -14,9 +14,12 @@ check_Qos=`nvram get app_12`
 [ -z "$check_Qos" ] && check_Qos="" && nvram set app_12=""
 Start_Qos=`nvram get app_13`
 [ -z "$Start_Qos" ] && Start_Qos="" && nvram set app_13=""
+Heart_Qos=`nvram get app_17`
+[ -z "$Heart_Qos" ] && Heart_Qos="" && nvram set app_17=""
 Info="$speedup_Info"
 [ -z "$Info" ] && Info=0
 STATUS="N"
+SN=""
 fi
 speedup_path="/opt/app/speedup/speedup"
 
@@ -68,7 +71,7 @@ speedup_get_status () {
 
 #lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get speedup_status`
-B_restart="$speedup_enable$speedup_Info$check_Qos$Start_Qos"
+B_restart="$speedup_enable$speedup_Info$check_Qos$Start_Qos$Heart_Qos"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set speedup_status=$B_restart
@@ -139,7 +142,7 @@ speedup_start () {
 [ -z "$Start_Qos" ] && logger -t "【speedup】" "错误！！！【Start代码】未填写" && sleep 10 && exit
 
 update_app
-speedup_vv=2017-9-24
+speedup_vv=2017-10-25
 speedup_v=$(grep 'speedup_vv=' /etc/storage/script/Sh27_speedup.sh | grep -v 'speedup_v=' | awk -F '=' '{print $2;}')
 nvram set speedup_v="$speedup_v"
 logger -t "【speedup】" "运行 $speedup_path"
@@ -218,15 +221,21 @@ do
 			logger -t "【speedup】" "Start_ERROR!!!"
 		else
 			logger -t "【speedup】" "Start Speedup, SN: $SN"
-			sleep 60
+			[ ! -z "$Heart_Qos" ] && QOS_Heart
+			sleep 57
 			QOS_Status
 			logger -t "【speedup】" "包【$Info】 提速状态【$re_STATUS】 重置时间【$remaining_Time】 提速包名称【$prod_Name】 提速包代码【$prod_Code】 提速包时间【$used_Minutes/$total_Minutes】"
+			if [[ "$STATUS"x == "Y"x ]]; then
+				[ ! -z "$Heart_Qos" ] && QOS_Heart
+				sleep 57
+			fi
 		fi
 	fi
 	QOS_Status
 	#logger -t "【speedup】" "包【$Info】 提速状态【$re_STATUS】 重置时间【$remaining_Time】 提速包名称【$prod_Name】 提速包代码【$prod_Code】 提速包时间【$used_Minutes/$total_Minutes】"
 	if [[ "$STATUS"x == "Y"x ]]; then
-		sleep 60
+		[ ! -z "$Heart_Qos" ] && QOS_Heart
+		sleep 57
 	fi
 	speedup_enable=`nvram get app_10`
 	[ -z $speedup_enable ] && speedup_enable=0 && nvram set app_10=0
@@ -254,12 +263,14 @@ remaining_Time="$(echo "$qos_Info_x" | awk -F"\<remainingTime\>|\<\/remainingTim
 QOS_Status()
 {
 
-Session_Key="$(echo "$check_Qos" | grep -Eo "SessionKey:[ A-Za-z0-9_-]+" | cut -d ':' -f2 | sed -e "s/ //g" )"
-Signa_ture="$(echo "$check_Qos" | grep -Eo "Signature:[ A-Za-z0-9_-]+" | cut -d ':' -f2 | sed -e "s/ //g" )"
-GMT_Date="$(echo "$check_Qos" | grep -Eo "Date:[ A-Za-z0-9_-]+,[ A-Za-z0-9_-]+:[0-9]+:[ A-Za-z0-9_-]+" | awk -F 'Date: ' '{print $2}')"
-family_Id="$(echo "$check_Qos" | grep -Eo "familyId=[0-9]+" | awk -F '=' '{print $2}')"
+#Session_Key="$(echo "$check_Qos" | grep -Eo "SessionKey:[ A-Za-z0-9_-]+" | cut -d ':' -f2 | sed -e "s/ //g" )"
+#Signa_ture="$(echo "$check_Qos" | grep -Eo "Signature:[ A-Za-z0-9_-]+" | cut -d ':' -f2 | sed -e "s/ //g" )"
+#GMT_Date="$(echo "$check_Qos" | grep -Eo "Date:[ A-Za-z0-9_-]+,[ A-Za-z0-9_-]+:[0-9]+:[ A-Za-z0-9_-]+" | awk -F 'Date: ' '{print $2}')"
+#family_Id="$(echo "$check_Qos" | grep -Eo "familyId=[0-9]+" | awk -F '=' '{print $2}')"
 
-check_Qos_x="curl -s -H 'SessionKey: ""$Session_Key""' -H 'Signature: ""$Signa_ture""' -H 'Date: ""$GMT_Date""' -H 'Content-Type: text/xml; charset=utf-8' -H 'Host: api.cloud.189.cn' -H 'User-Agent: Apache-HttpClient/UNAVAILABLE (java 1.4)' 'http://api.cloud.189.cn/family/qos/checkQosAbility.action?familyId=""$family_Id""'"
+#check_Qos_x="curl -s -H 'SessionKey: ""$Session_Key""' -H 'Signature: ""$Signa_ture""' -H 'Date: ""$GMT_Date""' -H 'Content-Type: text/xml; charset=utf-8' -H 'Host: api.cloud.189.cn' -H 'User-Agent: Apache-HttpClient/UNAVAILABLE (java 1.4)' 'http://api.cloud.189.cn/family/qos/checkQosAbility.action?familyId=""$family_Id""'"
+
+check_Qos_x="$(echo "$check_Qos"" -s ")"
 
 re_STAT="$(eval "$check_Qos_x" | grep qosListResponse)"
 
@@ -300,11 +311,13 @@ sleep 3
 QOS_Start()
 {
 
-Session_Key="$(echo "$Start_Qos" | grep -Eo "SessionKey:[ A-Za-z0-9_-]+" | cut -d ':' -f2 | sed -e "s/ //g" )"
-Signa_ture="$(echo "$Start_Qos" | grep -Eo "Signature:[ A-Za-z0-9_-]+" | cut -d ':' -f2 | sed -e "s/ //g" )"
-GMT_Date="$(echo "$Start_Qos" | grep -Eo "Date:[ A-Za-z0-9_-]+,[ A-Za-z0-9_-]+:[0-9]+:[ A-Za-z0-9_-]+" | awk -F 'Date: ' '{print $2}')"
+#Session_Key="$(echo "$Start_Qos" | grep -Eo "SessionKey:[ A-Za-z0-9_-]+" | cut -d ':' -f2 | sed -e "s/ //g" )"
+#Signa_ture="$(echo "$Start_Qos" | grep -Eo "Signature:[ A-Za-z0-9_-]+" | cut -d ':' -f2 | sed -e "s/ //g" )"
+#GMT_Date="$(echo "$Start_Qos" | grep -Eo "Date:[ A-Za-z0-9_-]+,[ A-Za-z0-9_-]+:[0-9]+:[ A-Za-z0-9_-]+" | awk -F 'Date: ' '{print $2}')"
 
-start_Qos_x="curl -s -H 'SessionKey: ""$Session_Key""' -H 'Signature: ""$Signa_ture""' -H 'Date: ""$GMT_Date""' -H 'Content-Type: text/xml; charset=utf-8' -H 'Host: api.cloud.189.cn' -H 'User-Agent: Apache-HttpClient/UNAVAILABLE (java 1.4)' 'http://api.cloud.189.cn/family/qos/startQos.action?prodCode=""$prod_Code""'"
+#start_Qos_x="curl -s -H 'SessionKey: ""$Session_Key""' -H 'Signature: ""$Signa_ture""' -H 'Date: ""$GMT_Date""' -H 'Content-Type: text/xml; charset=utf-8' -H 'Host: api.cloud.189.cn' -H 'User-Agent: Apache-HttpClient/UNAVAILABLE (java 1.4)' 'http://api.cloud.189.cn/family/qos/startQos.action?prodCode=""$prod_Code""'"
+
+start_Qos_x="$(echo "$Start_Qos"" -s ")"
 
 SN_STAT="$(eval "$start_Qos_x" | grep qosInfo)"
 
@@ -312,6 +325,18 @@ SN="$(echo "$SN_STAT" | awk -F"\<qosSn\>|\<\/qosSn\>" '{if($2!="") print $2}')"
 
 echo `date "+%Y-%m-%d %H:%M:%S"` "Start Speedup, SN: $SN"
 sleep 3
+}
+
+QOS_Heart()
+{
+
+if [ "$SN"x != "x" ] && [ "$SN" != "0" ] ; then
+	Heart_Qos_x="$(echo "$Heart_Qos" | sed -e "s|^\(.*qosSn.*\)=[^=]*$|\1=$SN|")"
+	Heart_Qos_x="$(echo "$Heart_Qos_x""' -s ")"
+	eval "$Heart_Qos_x"
+
+fi
+
 }
 
 initopt () {
