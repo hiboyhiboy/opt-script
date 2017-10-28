@@ -17,7 +17,7 @@ Start_Qos=`nvram get app_13`
 Heart_Qos=`nvram get app_17`
 [ -z "$Heart_Qos" ] && Heart_Qos="" && nvram set app_17=""
 Info="$speedup_Info"
-[ -z "$Info" ] && Info=0
+[ -z "$Info" ] && Info=1
 STATUS="N"
 SN=""
 fi
@@ -140,6 +140,20 @@ speedup_start () {
 
 [ -z "$check_Qos" ] && logger -t "【speedup】" "错误！！！【Check代码】未填写" && sleep 10 && exit
 [ -z "$Start_Qos" ] && logger -t "【speedup】" "错误！！！【Start代码】未填写" && sleep 10 && exit
+
+curltest=`which curl`
+if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+	logger -t "【speedup】" "找不到 curl ，安装 opt 程序"
+	/tmp/script/_mountopt optwget
+	#initopt
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		logger -t "【speedup】" "找不到 curl ，需要手动安装 opt 后输入[opkg install curl]安装"
+		logger -t "【speedup】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && speedup_restart x
+	else
+		speedup_restart o
+	fi
+fi
 
 update_app
 speedup_vv=2017-10-25
@@ -363,7 +377,7 @@ umount /www/Advanced_Extensions_app04.asp
 mount --bind /opt/app/speedup/Advanced_Extensions_speedup.asp /www/Advanced_Extensions_app04.asp
 # 更新程序启动脚本
 
-[ "$1" = "del" ] && /etc/storage/www_sh/假装在中国 del &
+[ "$1" = "del" ] && /etc/storage/www_sh/家庭云提速 del &
 }
 
 case $ACTION in
