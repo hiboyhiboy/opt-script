@@ -103,8 +103,8 @@ fi
 # 单机但限定目的端口  192.168.123.10 --dport 3000:30010
 # 如果需要更加细节的设置，可以让用户自己修改一个iptables 文件来处理。
 
-ss_usage=`nvram get ss_usage`
-ss_s2_usage=`nvram get ss_s2_usage`
+ss_usage=" `nvram get ss_usage`"
+ss_s2_usage=" `nvram get ss_s2_usage`"
 
 
 touch /etc/storage/shadowsocks_mydomain_script.sh
@@ -269,8 +269,8 @@ ss_s2_ip=$ss_server2
 fi
 [ ! -z "$ss_s2_ip" ] && ss_ip="$ss_s1_ip,$ss_s2_ip" || ss_ip=$ss_s1_ip
 if [ "$ss_udp_enable" == 1 ] ; then
-ss_usage="$ss_usage -u"
-ss_s2_usage="$ss_s2_usage -u"
+ss_usage="$ss_usage -u "
+ss_s2_usage="$ss_s2_usage -u "
 fi
 
 
@@ -282,13 +282,23 @@ ss_usage_json=""
 ss_s2_usage_json=""
 ss_usage_obfs_custom="$(echo $ss_usage | grep -Eo '\-g[ ]+[^-]+')"
 if [ ! -z "$ss_usage_obfs_custom" ] ; then 
-	logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_obfs_custom ，服务1优先使用此 混淆参数"
+	ss_usage_obfs_custom_tmp="${ss_usage##* -g }"
+	ss_usage_obfs_custom_tmp="echo ${ss_usage_obfs_custom_tmp%% -*}"
+	nvram set ss_usage_obfs_custom_tmp="$ss_usage_obfs_custom_tmp"
+	ss_usage_json=" -a 1 -g ss_usage_obfs_custom_tmp"
+	ss_usage="`echo "$ss_usage" | sed -e "s/$ss_usage_obfs_custom_tmp//g" `"
+	logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
 else
 	[ ! -z "$ssr_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="-a 1 -g ssr_type_obfs_custom"
 fi
 ss_s2_usage_obfs_custom="$(echo $ss_s2_usage | grep -Eo '\-g[ ]+[^-]+')"
 if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then 
-	logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_obfs_custom ，服务1优先使用此 混淆参数"
+	ss_s2_usage_obfs_custom_tmp="${ss_s2_usage##* -g }"
+	ss_s2_usage_obfs_custom_tmp="echo ${ss_s2_usage_obfs_custom_tmp%% -*}"
+	nvram set ss_s2_usage_obfs_custom_tmp="$ss_s2_usage_obfs_custom_tmp"
+	ss_s2_usage_json=" -a 1 -g ss_s2_usage_obfs_custom_tmp"
+	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/$ss_s2_usage_obfs_custom_tmp//g" `"
+	logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
 else
 	[ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="-a 1 -g ssr2_type_obfs_custom"
 fi
@@ -298,13 +308,23 @@ ssr_type_protocol_custom="`nvram get ssr_type_protocol_custom`"
 ssr2_type_protocol_custom="`nvram get ssr2_type_protocol_custom`"
 ss_usage_protocol_custom="$(echo $ss_usage | grep -Eo '\-G[ ]+[^-]+')"
 if [ ! -z "$ss_usage_protocol_custom" ] ; then 
-	logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_protocol_custom ，服务1优先使用此 协议参数"
+	ss_usage_protocol_custom_tmp="${ss_usage##* -G }"
+	ss_usage_protocol_custom_tmp="echo ${ss_usage_protocol_custom_tmp%% -*}"
+	nvram set ss_usage_protocol_custom_tmp="$ss_usage_protocol_custom_tmp"
+	ss_usage_json="$ss_usage_json -a 2 -G ss_usage_protocol_custom_tmp"
+	ss_usage="`echo "$ss_usage" | sed -e "s/$ss_usage_protocol_custom_tmp//g" `"
+	logger -t "【SS】" "高级启动参数选项内容含有 $ss_usage_protocol_custom_tmp ，服务1优先使用此 协议参数"
 else
 	[ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -a 2 -G ssr_type_protocol_custom"
 fi
 ss_s2_usage_protocol_custom="$(echo $ss_s2_usage | grep -Eo '\-G[ ]+[^-]+')"
 if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then 
-	logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_protocol_custom ，服务2优先使用此 协议参数"
+	ss_s2_usage_protocol_custom_tmp="${ss_s2_usage##* -G }"
+	ss_s2_usage_protocol_custom_tmp="echo ${ss_s2_usage_protocol_custom_tmp%% -*}"
+	nvram set ss_s2_usage_protocol_custom_tmp="$ss_s2_usage_protocol_custom_tmp"
+	ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ss_s2_usage_protocol_custom_tmp"
+	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/$ss_s2_usage_protocol_custom_tmp//g" `"
+	logger -t "【SS】" "高级启动参数选项内容含有 $ss_s2_usage_protocol_custom_tmp ，服务2优先使用此 协议参数"
 else
 	[ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ssr2_type_protocol_custom"
 fi
