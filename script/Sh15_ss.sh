@@ -154,6 +154,8 @@ wifidognx=""
 
 #检查 ssrr 协议
 if [ "$ss_type" != "1" ] ; then
+ssrr_type=0
+else
 ssrr_custom="$(echo $ss_usage | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
 ssrr_s2_custom="$(echo $ss_s2_usage | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
 if [ ! -z "$ssrr_custom" ] || [ ! -z "$ssrr_s2_custom" ] ; then 
@@ -336,7 +338,7 @@ ssr2_type_protocol_custom=""
 fi
 
 # 插件参数
-if [ "$ss_type" = "0" ] ; then 
+if [ "$ss_type" != "1" ] ; then 
 	ss_plugin_config="`nvram get ss_plugin_config`"
 	ss2_plugin_config="`nvram get ss2_plugin_config`"
 else
@@ -432,7 +434,7 @@ fi
 check_ssr()
 {
 
-if [ ! -z "$ssrr_custom" ] || [ ! -z "$ssrr_s2_custom" ] ; then 
+if [ "$ssrr_type" = "1" ] ; then 
 logger -t "【SS】" "高级启动参数选项内容含有 ssrr 协议: $ssrr_custom $ssrr_s2_custom"
 ssrr_type=1
 fi
@@ -903,6 +905,8 @@ fi
 	echo "WAN!www.ipip.net" >> /tmp/ss_spec_wan.txt
 	sed -e '/.*alidns.aliyuncs.com/d' -i /tmp/ss_spec_wan.txt
 	echo "WAN!alidns.aliyuncs.com" >> /tmp/ss_spec_wan.txt
+	sed -e '/.*googleapis.cn/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!googleapis.cn" >> /tmp/ss_spec_wan.txt
 	rm -f /tmp/ss/wantoss.list
 	rm -f /tmp/ss/wannoss.list
 	while read line
@@ -1510,6 +1514,9 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ss-local 2>/dev/null || optssredir="2"
 fi
+if [ "$ss_run_ss_local" = "1" ] ; then
+	hash ss-local 2>/dev/null || optssredir="3"
+fi
 check_ss_plugin="`echo $ss_plugin_config`"
 check_ss_plugin2="`echo $ss2_plugin_config`"
 if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
@@ -1526,6 +1533,9 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ssrr-local 2>/dev/null || optssredir="2"
 fi
+if [ "$ss_run_ss_local" = "1" ] ; then
+	hash ssrr-local 2>/dev/null || optssredir="3"
+fi
 # SSRR
 else
 # SSR
@@ -1534,11 +1544,11 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
+if [ "$ss_run_ss_local" = "1" ] ; then
+	hash ssr-local 2>/dev/null || optssredir="3"
+fi
 fi
 # SSR
-fi
-if [ "$ss_run_ss_local" = "1" ] ; then
-	hash ss-local 2>/dev/null || optssredir="3"
 fi
 if [ "$ss_dnsproxy_x" = "0" ] ; then
 hash dnsproxy 2>/dev/null || optssredir="5"
