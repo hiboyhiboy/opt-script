@@ -169,6 +169,12 @@ if [ ! -f "/opt/opti.txt" ] ; then
 	if [ -s "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "opt 解压完成"
 		chmod 777 /opt -R
+		if [ -d /opt/home/admin/.ssh ];then
+			chmod 700 /opt/home/admin/.ssh
+		fi
+		if [ -f /opt/home/admin/.ssh/authorized_keys ];then
+			chmod 600 /opt/home/admin/.ssh/authorized_keys
+		fi
 	else
 		logger -t "【opt】" "opt 解压失败"
 	fi
@@ -176,6 +182,12 @@ if [ ! -f "/opt/opti.txt" ] ; then
 	if [ -z "$optPath" ] && [ -s "/opt/opt.tgz" ] ; then
 		logger -t "【opt】" "opt 解压完成"
 		chmod 777 /opt -R
+		if [ -d /opt/home/admin/.ssh ];then
+			chmod 700 /opt/home/admin/.ssh
+		fi
+		if [ -f /opt/home/admin/.ssh/authorized_keys ];then
+			chmod 600 /opt/home/admin/.ssh/authorized_keys
+		fi
 		logger -t "【opt】" "备份文件到 /opt/opt_backup"
 		mkdir -p /opt/opt_backup
 		tar -xzvf /opt/opt.tgz -C /opt/opt_backup
