@@ -31,7 +31,7 @@ mountp=mountp
 mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs| awk '{print $1}'`"
 if [ "$mountp" = "0" ] && [ -z "$optPath" ] ; then
-	optPath="`df -m | grep $(df -m | grep /opt | awk '{print $1}') | grep "/media"| awk '{print $NF}' | awk 'NR==1' `"
+	optPath="`df -m | grep $(df -m | grep /opt | awk '{print $1}') | grep "/media"| awk '{print $NF}' | sort | awk 'NR==1' `"
 	if [ -z "$optPath" ] ; then
 		logger -t "【opt】" "opt 挂载异常，重新挂载：umount -l /opt"
 		umount -l /opt
@@ -49,10 +49,10 @@ AiDisk00
 
 mount_opt () {
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort |awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort | awk 'NR==1' `"
 if [ ! -z "$upanPath" ] ; then
 	mkdir -p "$upanPath/opt"
 	mount -o bind "$upanPath/opt" /opt
@@ -103,10 +103,10 @@ mkdir -p /opt/bin
 AiDisk00 () {
 [ -d /tmp/AiDisk_00/opt ] && return
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort | awk 'NR==1' `"
 if [ ! -z "$upanPath" ] ; then
 	mkdir -p "$upanPath/opt"
 	ln -sf "$upanPath" /tmp/AiDisk_00
