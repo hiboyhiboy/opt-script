@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2017-10-22"
+Builds="/etc/storage/Builds-2017-11-10"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -54,223 +54,223 @@ script_ezbtn="$dir_storage/ez_buttons_script.sh"
 
 func_get_mtd()
 {
-    local mtd_part mtd_char mtd_idx mtd_hex
-    mtd_part=`cat /proc/mtd | grep \"$mtd_part_name\"`
-    mtd_char=`echo $mtd_part | cut -d':' -f1`
-    mtd_hex=`echo $mtd_part | cut -d' ' -f2`
-    mtd_idx=`echo $mtd_char | cut -c4-5`
-    if [ -n "$mtd_idx" ] && [ $mtd_idx -ge 4 ] ; then
-        mtd_part_dev="/dev/mtdblock${mtd_idx}"
-        mtd_part_size=`echo $((0x$mtd_hex))`
-    else
-        logger -t "Storage" "Cannot find MTD partition: $mtd_part_name"
-        exit 1
-    fi
+	local mtd_part mtd_char mtd_idx mtd_hex
+	mtd_part=`cat /proc/mtd | grep \"$mtd_part_name\"`
+	mtd_char=`echo $mtd_part | cut -d':' -f1`
+	mtd_hex=`echo $mtd_part | cut -d' ' -f2`
+	mtd_idx=`echo $mtd_char | cut -c4-5`
+	if [ -n "$mtd_idx" ] && [ $mtd_idx -ge 4 ] ; then
+		mtd_part_dev="/dev/mtdblock${mtd_idx}"
+		mtd_part_size=`echo $((0x$mtd_hex))`
+	else
+		logger -t "Storage" "Cannot find MTD partition: $mtd_part_name"
+		exit 1
+	fi
 }
 
 func_mdir()
 {
-    [ ! -d "$dir_storage" ] && mkdir -p -m 755 $dir_storage
+	[ ! -d "$dir_storage" ] && mkdir -p -m 755 $dir_storage
 }
 
 func_stop_apps()
 {
-    killall -q rstats
-    [ $? -eq 0 ] && sleep 1
+	killall -q rstats
+	[ $? -eq 0 ] && sleep 1
 }
 
 func_start_apps()
 {
-    /sbin/rstats
+	/sbin/rstats
 }
 
 func_load()
 {
-    local fsz
+	local fsz
 
-    bzcat $mtd_part_dev > $tmp 2>/dev/null
-    fsz=`stat -c %s $tmp 2>/dev/null`
-    if [ -n "$fsz" ] && [ $fsz -gt 0 ] ; then
-        md5sum $tmp > $hsh
-        tar xf $tmp -C $dir_storage 2>/dev/null
-    else
-        result=1
-        rm -f $hsh
-        logger -t "Storage load" "Invalid storage data in MTD partition: $mtd_part_dev"
-    fi
-    rm -f $tmp
-    rm -f $slk
+	bzcat $mtd_part_dev > $tmp 2>/dev/null
+	fsz=`stat -c %s $tmp 2>/dev/null`
+	if [ -n "$fsz" ] && [ $fsz -gt 0 ] ; then
+		md5sum $tmp > $hsh
+		tar xf $tmp -C $dir_storage 2>/dev/null
+	else
+		result=1
+		rm -f $hsh
+		logger -t "Storage load" "Invalid storage data in MTD partition: $mtd_part_dev"
+	fi
+	rm -f $tmp
+	rm -f $slk
 }
 
 func_tarb()
 {
-    rm -f $tmp
-    cd $dir_storage
-    find * -print0 | xargs -0 touch -c -h -t 201001010000.00
-    find * ! -type d -print0 | sort -z | xargs -0 tar -cf $tmp 2>/dev/null
-    cd - >>/dev/null
-    if [ ! -f "$tmp" ] ; then
-        logger -t "Storage" "Cannot create tarball file: $tmp"
-        exit 1
-    fi
+	rm -f $tmp
+	cd $dir_storage
+	find * -print0 | xargs -0 touch -c -h -t 201001010000.00
+	find * ! -type d -print0 | sort -z | xargs -0 tar -cf $tmp 2>/dev/null
+	cd - >>/dev/null
+	if [ ! -f "$tmp" ] ; then
+		logger -t "Storage" "Cannot create tarball file: $tmp"
+		exit 1
+	fi
 }
 
 func_save()
 {
-    local fsz
+	local fsz
 
-    echo "Save storage files to MTD partition \"$mtd_part_dev\""
-    rm -f $tbz
-    md5sum -c -s $hsh 2>/dev/null
-    if [ $? -eq 0 ] ; then
-        echo "Storage hash is not changed, skip write to MTD partition. Exit."
-        rm -f $tmp
-        return 0
-    fi
-    md5sum $tmp > $hsh
-    bzip2 -9 $tmp 2>/dev/null
-    fsz=`stat -c %s $tbz 2>/dev/null`
-    if [ -n "$fsz" ] && [ $fsz -ge 16 ] && [ $fsz -le $mtd_part_size ] ; then
-        mtd_write write $tbz $mtd_part_name
-        if [ $? -eq 0 ] ; then
-            echo "Done."
-        else
-            result=1
-            echo "Error! MTD write FAILED"
-            logger -t "Storage save" "Error write to MTD partition: $mtd_part_dev"
-        fi
-    else
-        result=1
-        echo "Error! Invalid storage final data size: $fsz"
-        logger -t "Storage save" "Invalid storage final data size: $fsz"
-    fi
-    rm -f $tmp
-    rm -f $tbz
+	echo "Save storage files to MTD partition \"$mtd_part_dev\""
+	rm -f $tbz
+	md5sum -c -s $hsh 2>/dev/null
+	if [ $? -eq 0 ] ; then
+		echo "Storage hash is not changed, skip write to MTD partition. Exit."
+		rm -f $tmp
+		return 0
+	fi
+	md5sum $tmp > $hsh
+	bzip2 -9 $tmp 2>/dev/null
+	fsz=`stat -c %s $tbz 2>/dev/null`
+	if [ -n "$fsz" ] && [ $fsz -ge 16 ] && [ $fsz -le $mtd_part_size ] ; then
+		mtd_write write $tbz $mtd_part_name
+		if [ $? -eq 0 ] ; then
+			echo "Done."
+		else
+			result=1
+			echo "Error! MTD write FAILED"
+			logger -t "Storage save" "Error write to MTD partition: $mtd_part_dev"
+		fi
+	else
+		result=1
+		echo "Error! Invalid storage final data size: $fsz"
+		logger -t "Storage save" "Invalid storage final data size: $fsz"
+	fi
+	rm -f $tmp
+	rm -f $tbz
 }
 
 func_backup()
 {
-    rm -f $tbz
-    bzip2 -9 $tmp 2>/dev/null
-    if [ $? -ne 0 ] ; then
-        result=1
-        logger -t "Storage backup" "Cannot create BZ2 file!"
-    fi
-    rm -f $tmp
+	rm -f $tbz
+	bzip2 -9 $tmp 2>/dev/null
+	if [ $? -ne 0 ] ; then
+		result=1
+		logger -t "Storage backup" "Cannot create BZ2 file!"
+	fi
+	rm -f $tmp
 }
 
 func_restore()
 {
-    local fsz tmp_storage
+	local fsz tmp_storage
 
-    [ ! -f "$tbz" ] && exit 1
+	[ ! -f "$tbz" ] && exit 1
 
-    fsz=`stat -c %s $tbz 2>/dev/null`
-    if [ -z "$fsz" ] || [ $fsz -lt 16 ] || [ $fsz -gt $mtd_part_size ] ; then
-        result=1
-        rm -f $tbz
-        logger -t "Storage restore" "Invalid BZ2 file size: $fsz"
-        return 1
-    fi
+	fsz=`stat -c %s $tbz 2>/dev/null`
+	if [ -z "$fsz" ] || [ $fsz -lt 16 ] || [ $fsz -gt $mtd_part_size ] ; then
+		result=1
+		rm -f $tbz
+		logger -t "Storage restore" "Invalid BZ2 file size: $fsz"
+		return 1
+	fi
 
-    tmp_storage="/tmp/storage"
-    rm -rf $tmp_storage
-    mkdir -p -m 755 $tmp_storage
-    tar xjf $tbz -C $tmp_storage 2>/dev/null
-    if [ $? -ne 0 ] ; then
-        result=1
-        rm -f $tbz
-        rm -rf $tmp_storage
-        logger -t "Storage restore" "Unable to extract BZ2 file: $tbz"
-        return 1
-    fi
-    if [ ! -f "$tmp_storage/start_script.sh" ] ; then
-        result=1
-        rm -f $tbz
-        rm -rf $tmp_storage
-        logger -t "Storage restore" "Invalid content of BZ2 file: $tbz"
-        return 1
-    fi
+	tmp_storage="/tmp/storage"
+	rm -rf $tmp_storage
+	mkdir -p -m 755 $tmp_storage
+	tar xjf $tbz -C $tmp_storage 2>/dev/null
+	if [ $? -ne 0 ] ; then
+		result=1
+		rm -f $tbz
+		rm -rf $tmp_storage
+		logger -t "Storage restore" "Unable to extract BZ2 file: $tbz"
+		return 1
+	fi
+	if [ ! -f "$tmp_storage/start_script.sh" ] ; then
+		result=1
+		rm -f $tbz
+		rm -rf $tmp_storage
+		logger -t "Storage restore" "Invalid content of BZ2 file: $tbz"
+		return 1
+	fi
 
-    func_stop_apps
+	func_stop_apps
 
-    rm -f $slk
-    rm -f $tbz
-    rm -rf $dir_storage
-    mkdir -p -m 755 $dir_storage
-    cp -rf $tmp_storage /etc
-    rm -rf $tmp_storage
+	rm -f $slk
+	rm -f $tbz
+	rm -rf $dir_storage
+	mkdir -p -m 755 $dir_storage
+	cp -rf $tmp_storage /etc
+	rm -rf $tmp_storage
 
-    func_start_apps
+	func_start_apps
 }
 
 func_erase()
 {
-    mtd_write erase $mtd_part_name
-    if [ $? -eq 0 ] ; then
-        rm -f $hsh
-        rm -rf $dir_storage
-        mkdir -p -m 755 $dir_storage
-        touch "$slk"
-    else
-        result=1
-    fi
+	mtd_write erase $mtd_part_name
+	if [ $? -eq 0 ] ; then
+		rm -f $hsh
+		rm -rf $dir_storage
+		mkdir -p -m 755 $dir_storage
+		touch "$slk"
+	else
+		result=1
+	fi
 }
 
 func_reset()
 {
-    rm -f $slk
-    rm -rf $dir_storage
-    mkdir -p -m 755 $dir_storage
+	rm -f $slk
+	rm -rf $dir_storage
+	mkdir -p -m 755 $dir_storage
 }
 
 func_resetsh()
 {
-    rm -f $slk
-    rm -f /etc/storage/Builds-*
-    # 删除UI配置文件
-    #rm -f $jbls_script $vlmcsdini_script $config_tinyproxy $config_mproxy $shadowsocks_ss_spec_lan $shadowsocks_ss_spec_wan $kcptun_script $SSRconfig_script 
-    #rm -f $ngrok_script $frp_script $ddns_script $ad_config_script $adbyby_rules_script $adm_rules_script $koolproxy_rules_list $koolproxy_rules_script
-    #rm -f /etc/storage/v2ray_config_script.sh /etc/storage/cow_config_script.sh /etc/storage/meow_config_script.sh /etc/storage/meow_direct_script.sh 
-    # rm -f $koolproxy_rules_list $vlmcsdini_script
-    
-    # 删除UI脚本文件
-    #rm -f /etc/storage/v2ray_script.sh /etc/storage/cow_script.sh /etc/storage/meow_script.sh /etc/storage/softether_script.sh
-    
-    # 删除内部脚本文件
-    # rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $kmskey $DNSPOD_script $cloudxns_script $aliddns_script
-    # rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
-    
-    mkdir -p -m 755 $dir_storage
-    rm -f /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt
-    [ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
-    [ ! -f /etc/storage/basedomain.txt ] && tar -xzvf /etc_ro/basedomain.tgz -C /tmp && ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
-    
-    # 解压覆盖脚本
-    tar -xzvf /etc_ro/script.tgz -C /etc/storage/
-    tar -xzvf /etc_ro/www_sh.tgz -C /etc/storage/
-    # 重置菜单
-    sleep 1
-    #eval /etc/storage/www_sh/menu_title.sh re
-    touch /tmp/menu_title_re
+	rm -f $slk
+	rm -f /etc/storage/Builds-*
+	# 删除UI配置文件
+	#rm -f $jbls_script $vlmcsdini_script $config_tinyproxy $config_mproxy $shadowsocks_ss_spec_lan $shadowsocks_ss_spec_wan $kcptun_script $SSRconfig_script 
+	#rm -f $ngrok_script $frp_script $ddns_script $ad_config_script $adbyby_rules_script $adm_rules_script $koolproxy_rules_list $koolproxy_rules_script
+	#rm -f /etc/storage/v2ray_config_script.sh /etc/storage/cow_config_script.sh /etc/storage/meow_config_script.sh /etc/storage/meow_direct_script.sh 
+	# rm -f $koolproxy_rules_list $vlmcsdini_script
+	
+	# 删除UI脚本文件
+	#rm -f /etc/storage/v2ray_script.sh /etc/storage/cow_script.sh /etc/storage/meow_script.sh /etc/storage/softether_script.sh
+	
+	# 删除内部脚本文件
+	# rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $kmskey $DNSPOD_script $cloudxns_script $aliddns_script
+	# rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
+	
+	mkdir -p -m 755 $dir_storage
+	rm -f /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt
+	[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
+	[ ! -f /etc/storage/basedomain.txt ] && tar -xzvf /etc_ro/basedomain.tgz -C /tmp && ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
+	
+	# 解压覆盖脚本
+	tar -xzvf /etc_ro/script.tgz -C /etc/storage/
+	tar -xzvf /etc_ro/www_sh.tgz -C /etc/storage/
+	# 重置菜单
+	sleep 1
+	#eval /etc/storage/www_sh/menu_title.sh re
+	touch /tmp/menu_title_re
 
 }
 
 func_fill()
 {
-    mkdir -p -m 777 "/etc/storage/lib"
-    mkdir -p -m 777 "/etc/storage/bin"
-    mkdir -p -m 777 "/etc/storage/tinyproxy"
+	mkdir -p -m 777 "/etc/storage/lib"
+	mkdir -p -m 777 "/etc/storage/bin"
+	mkdir -p -m 777 "/etc/storage/tinyproxy"
 
-    dir_httpssl="$dir_storage/https"
-    dir_dnsmasq="$dir_storage/dnsmasq"
-    dir_ovpnsvr="$dir_storage/openvpn/server"
-    dir_ovpncli="$dir_storage/openvpn/client"
-    dir_sswan="$dir_storage/strongswan"
-    dir_sswan_crt="$dir_sswan/ipsec.d"
-    dir_inadyn="$dir_storage/inadyn"
-    dir_crond="$dir_storage/cron/crontabs"
-    dir_wlan="$dir_storage/wlan"
+	dir_httpssl="$dir_storage/https"
+	dir_dnsmasq="$dir_storage/dnsmasq"
+	dir_ovpnsvr="$dir_storage/openvpn/server"
+	dir_ovpncli="$dir_storage/openvpn/client"
+	dir_sswan="$dir_storage/strongswan"
+	dir_sswan_crt="$dir_sswan/ipsec.d"
+	dir_inadyn="$dir_storage/inadyn"
+	dir_crond="$dir_storage/cron/crontabs"
+	dir_wlan="$dir_storage/wlan"
 {
 [ ! -s /etc/storage/china_ip_list.txt ] && [ -s /etc_ro/china_ip_list.tgz ] && { tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp ; ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt ; }
 [ ! -s /etc/storage/basedomain.txt ] && [ -s /etc_ro/basedomain.tgz ] && { tar -xzvf /etc_ro/basedomain.tgz -C /tmp ; ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt ; }
@@ -283,30 +283,30 @@ ln -sf /etc/storage/init.status /etc/init.status &
 [ -s /etc/storage/www_sh/menu_title.sh ] && chmod 777 /etc/storage/www_sh -R
 [ ! -s /etc/storage/bin/daydayup ] && [ -s /etc_ro/daydayup ] && ln -sf /etc_ro/daydayup /etc/storage/bin/daydayup
 } &
-    user_hosts="$dir_dnsmasq/hosts"
-    user_dnsmasq_conf="$dir_dnsmasq/dnsmasq.conf"
-    user_dnsmasq_serv="$dir_dnsmasq/dnsmasq.servers"
-    user_ovpnsvr_conf="$dir_ovpnsvr/server.conf"
-    user_ovpncli_conf="$dir_ovpncli/client.conf"
-    user_inadyn_conf="$dir_inadyn/inadyn.conf"
-    user_sswan_conf="$dir_sswan/strongswan.conf"
-    user_sswan_ipsec_conf="$dir_sswan/ipsec.conf"
-    user_sswan_secrets="$dir_sswan/ipsec.secrets"
+	user_hosts="$dir_dnsmasq/hosts"
+	user_dnsmasq_conf="$dir_dnsmasq/dnsmasq.conf"
+	user_dnsmasq_serv="$dir_dnsmasq/dnsmasq.servers"
+	user_ovpnsvr_conf="$dir_ovpnsvr/server.conf"
+	user_ovpncli_conf="$dir_ovpncli/client.conf"
+	user_inadyn_conf="$dir_inadyn/inadyn.conf"
+	user_sswan_conf="$dir_sswan/strongswan.conf"
+	user_sswan_ipsec_conf="$dir_sswan/ipsec.conf"
+	user_sswan_secrets="$dir_sswan/ipsec.secrets"
 
-    # create crond dir
-    [ ! -d "$dir_crond" ] && mkdir -p -m 730 "$dir_crond"
+	# create crond dir
+	[ ! -d "$dir_crond" ] && mkdir -p -m 730 "$dir_crond"
 
-    # create https dir
-    [ ! -d "$dir_httpssl" ] && mkdir -p -m 700 "$dir_httpssl"
+	# create https dir
+	[ ! -d "$dir_httpssl" ] && mkdir -p -m 700 "$dir_httpssl"
 
-    # create start script
-    if [ ! -f "$script_start" ] ; then
-        reset_ss.sh -a
-    fi
+	# create start script
+	if [ ! -f "$script_start" ] ; then
+		reset_ss.sh -a
+	fi
 
-    # create started script
-    if [ ! -f "$script_started" ] ; then
-        cat > "$script_started" <<-\EEE
+	# create started script
+	if [ ! -f "$script_started" ] ; then
+		cat > "$script_started" <<-\EEE
 #!/bin/sh
 
 ### Custom user script
@@ -438,10 +438,10 @@ fi
 
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
 echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then 
     #已挂载储存设备
@@ -465,12 +465,12 @@ wget --no-check-certificate -O /dev/null http://pdcn.cn2k.net:8080/create?pn=$PN
 fi
 
 EEE
-        chmod 755 "$script_started"
-    fi
+		chmod 755 "$script_started"
+	fi
 
-    # create shutdown script
-    if [ ! -f "$script_shutd" ] ; then
-        cat > "$script_shutd" <<-\EEE
+	# create shutdown script
+	if [ ! -f "$script_shutd" ] ; then
+		cat > "$script_shutd" <<-\EEE
 #!/bin/sh
 
 ### Custom user script
@@ -478,12 +478,12 @@ EEE
 ### $1 - action (0: reboot, 1: halt, 2: power-off)
 
 EEE
-        chmod 755 "$script_shutd"
-    fi
+		chmod 755 "$script_shutd"
+	fi
 
-    # create post-iptables script
-    if [ ! -f "$script_postf" ] ; then
-        cat > "$script_postf" <<-\EEE
+	# create post-iptables script
+	if [ ! -f "$script_postf" ] ; then
+		cat > "$script_postf" <<-\EEE
 #!/bin/sh
 #copyright by Emong's Qos update hiboy
 /etc/storage/crontabs_script.sh &
@@ -838,12 +838,12 @@ fi
 logger -t "【防火墙规则】" "脚本完成"
 
 EEE
-        chmod 755 "$script_postf"
-    fi
+		chmod 755 "$script_postf"
+	fi
 
 
-    if [ ! -f "$ap_script" ] || [ ! -s "$ap_script" ] ; then
-    cat > "$ap_script" <<-\EEE
+	if [ ! -f "$ap_script" ] || [ ! -s "$ap_script" ] ; then
+	cat > "$ap_script" <<-\EEE
 #!/bin/sh
 #/etc/storage/ap_script.sh
 #copyright by hiboy
@@ -905,14 +905,15 @@ cat >/tmp/sh_apauto.sh <<-\EOF
             fi
             if [[ $(cat /tmp/apauto.lock) == 0 ]] ; then
             #【2】 Internet互联网断线后自动搜寻
-            curltest=`which curl`
-            if [ -z "$curltest" ] ; then
-                wget --no-check-certificate  -q -T 10 http://www.163.com
-                [ "$?" == "0" ] && check=200 || check=404
-            else
-                check=`curl -k -s -w "%{http_code}" "http://www.163.com" -o /dev/null`
+            ping_text=`ping -4 114.114.114.111 -c 1 -w 2 -q`
+            ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+            ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
+            if [ ! -z "$ping_time" ] ; then
+                echo "ping：$ping_time ms 丢包率：$ping_loss"
+             else
+                echo "ping：失效"
             fi
-            if [ "$check" == "200" ] ; then
+            if [ ! -z "$ping_time" ] ; then
             echo "online"
             else
                 echo "Internet互联网断线后自动搜寻"
@@ -934,13 +935,13 @@ fi
 
 
 EEE
-        chmod 755 "$ap_script"
-    fi
+		chmod 755 "$ap_script"
+	fi
 
 
-    # create inet-state script
-    if [ ! -f "$script_inets" ] || [ ! -s "$script_inets" ] ; then
-        cat > "$script_inets" <<-\EEE
+	# create inet-state script
+	if [ ! -f "$script_inets" ] || [ ! -s "$script_inets" ] ; then
+		cat > "$script_inets" <<-\EEE
 #!/bin/sh
 #/etc/storage/inet_state_script.sh
 ### Custom user script
@@ -1131,14 +1132,15 @@ if [ ! -f /tmp/apc.lock ] && [ "$1" != "1" ] && [ -s /tmp/ap2g5g ] ; then
                     ap=`iwconfig | grep 'apclii0' | grep 'ESSID:""' | wc -l`
                 fi
                 if [ "$ap" = "0" ] && [ "$apauto2" = "1" ] ; then
-                    curltest=`which curl`
-                    if [ -z "$curltest" ] ; then
-                        wget --no-check-certificate  -q -T 10 http://www.163.com
-                        [ "$?" == "0" ] && check=200 || check=404
-                    else
-                        check=`curl -k -s -w "%{http_code}" "http://www.163.com" -o /dev/null`
+                    ping_text=`ping -4 114.114.114.111 -c 1 -w 2 -q`
+                    ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+                    ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
+                    if [ ! -z "$ping_time" ] ; then
+                        echo "ping：$ping_time ms 丢包率：$ping_loss"
+                     else
+                        echo "ping：失效"
                     fi
-                    if [ "$check" == "200" ] ; then
+                    if [ ! -z "$ping_time" ] ; then
                         logger -t "【连接 AP】" "$ap 已连接上 $rtwlt_sta_ssid, 成功联网"
                         ap=0
                     else
@@ -1151,14 +1153,15 @@ if [ ! -f /tmp/apc.lock ] && [ "$1" != "1" ] && [ -s /tmp/ap2g5g ] ; then
                 else
                     logger -t "【连接 AP】" "$ap 已连接上 $rtwlt_sta_ssid"
                     if [ "$apblack" = "1" ] ; then
-                        curltest=`which curl`
-                        if [ -z "$curltest" ] ; then
-                            wget --no-check-certificate  -q -T 10 http://www.163.com
-                            [ "$?" == "0" ] && check=200 || check=404
-                        else
-                            check=`curl -k -s -w "%{http_code}" "http://www.163.com" -o /dev/null`
+                        ping_text=`ping -4 114.114.114.111 -c 1 -w 2 -q`
+                        ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+                        ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
+                        if [ ! -z "$ping_time" ] ; then
+                            echo "ping：$ping_time ms 丢包率：$ping_loss"
+                         else
+                            echo "ping：失效"
                         fi
-                        if [ "$check" == "200" ] ; then
+                        if [ ! -z "$ping_time" ] ; then
                         echo "online"
                         else
                             apblacktxt="$ap AP不联网列入黑名单:【Ch:$Ch】【SSID:$SSID】【BSSID:$BSSID】【Security:$Security】【Signal(%):$Signal】【WMode:$WMode】"
@@ -1217,12 +1220,12 @@ fi
 logger -t "【连接 AP】" "脚本完成"
 
 EEE
-        chmod 755 "$script_inets"
-    fi
+		chmod 755 "$script_inets"
+	fi
 
-    # create vpn server action script
-    if [ ! -f "$script_vpnsc" ] ; then
-        cat > "$script_vpnsc" <<EOF
+	# create vpn server action script
+	if [ ! -f "$script_vpnsc" ] ; then
+		cat > "$script_vpnsc" <<EOF
 #!/bin/sh
 
 ### Custom user script
@@ -1269,12 +1272,12 @@ down)
 esac
 
 EOF
-        chmod 755 "$script_vpnsc"
-    fi
+		chmod 755 "$script_vpnsc"
+	fi
 
-    # create vpn client action script
-    if [ ! -f "$script_vpncs" ] ; then
-        cat > "$script_vpncs" <<-\EEE
+	# create vpn client action script
+	if [ ! -f "$script_vpncs" ] ; then
+		cat > "$script_vpncs" <<-\EEE
 #!/bin/sh
 source /etc/storage/script/init.sh
 ### Custom user script
@@ -1389,14 +1392,14 @@ down)
 esac
 
 EEE
-        chmod 755 "$script_vpncs"
-    fi
+		chmod 755 "$script_vpncs"
+	fi
 
 
 
-    # create Ez-Buttons script
-    if [ ! -f "$script_ezbtn" ] ; then
-        cat > "$script_ezbtn" <<-\EEE
+	# create Ez-Buttons script
+	if [ ! -f "$script_ezbtn" ] ; then
+		cat > "$script_ezbtn" <<-\EEE
 #!/bin/sh
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
@@ -1772,16 +1775,16 @@ sleep 1
 rm -f /tmp/button_script.lock
 
 EEE
-        chmod 755 "$script_ezbtn"
-    fi
+		chmod 755 "$script_ezbtn"
+	fi
 
-    # create user dnsmasq.conf
-    [ ! -d "$dir_dnsmasq" ] && mkdir -p -m 755 "$dir_dnsmasq"
-    for i in dnsmasq.conf hosts ; do
-        [ -f "$dir_storage/$i" ] && mv -n "$dir_storage/$i" "$dir_dnsmasq"
-    done
-    if [ ! -f "$user_dnsmasq_conf" ] ; then
-        cat > "$user_dnsmasq_conf" <<EOF
+	# create user dnsmasq.conf
+	[ ! -d "$dir_dnsmasq" ] && mkdir -p -m 755 "$dir_dnsmasq"
+	for i in dnsmasq.conf hosts ; do
+		[ -f "$dir_storage/$i" ] && mv -n "$dir_storage/$i" "$dir_dnsmasq"
+	done
+	if [ ! -f "$user_dnsmasq_conf" ] ; then
+		cat > "$user_dnsmasq_conf" <<EOF
 # Custom user conf file for dnsmasq
 # Please add needed params only!
 
@@ -1809,12 +1812,12 @@ dhcp-option=252,"\n"
 #dhcp-boot=pxelinux.0
 
 EOF
-        chmod 644 "$user_dnsmasq_conf"
-    fi
+		chmod 644 "$user_dnsmasq_conf"
+	fi
 
-    # create user dns servers
-    if [ ! -f "$user_dnsmasq_serv" ] ; then
-        cat > "$user_dnsmasq_serv" <<EOF
+	# create user dns servers
+	if [ ! -f "$user_dnsmasq_serv" ] ; then
+		cat > "$user_dnsmasq_serv" <<EOF
 # Custom user servers file for dnsmasq
 # Example:
 # 特定域名的自定义DNS设置例子:
@@ -1824,13 +1827,13 @@ server=/update.adbyby.com/180.76.76.76#53
 
 
 EOF
-        chmod 644 "$user_dnsmasq_serv"
-    fi
+		chmod 644 "$user_dnsmasq_serv"
+	fi
 
-    # create user inadyn.conf"
-    [ ! -d "$dir_inadyn" ] && mkdir -p -m 755 "$dir_inadyn"
-    if [ ! -f "$user_inadyn_conf" ] ; then
-        cat > "$user_inadyn_conf" <<EOF
+	# create user inadyn.conf"
+	[ ! -d "$dir_inadyn" ] && mkdir -p -m 755 "$dir_inadyn"
+	if [ ! -f "$user_inadyn_conf" ] ; then
+		cat > "$user_inadyn_conf" <<EOF
 # Custom user conf file for inadyn DDNS client
 # Please add only new custom system!
 
@@ -1846,48 +1849,48 @@ EOF
 #  alias example.dd-dns.de
 
 EOF
-        chmod 644 "$user_inadyn_conf"
-    fi
+		chmod 644 "$user_inadyn_conf"
+	fi
 
-    # create user hosts
-    if [ ! -f "$user_hosts" ] || [ ! -s "$user_hosts" ] ; then
-        cat > "$user_hosts" <<EOF
+	# create user hosts
+	if [ ! -f "$user_hosts" ] || [ ! -s "$user_hosts" ] ; then
+		cat > "$user_hosts" <<EOF
 # Custom user hosts file
 # Example:
 # 192.168.123.100        Boo
 
 EOF
-        chmod 644 "$user_hosts"
-    fi
+		chmod 644 "$user_hosts"
+	fi
 
-    # create user AP confs
-    [ ! -d "$dir_wlan" ] && mkdir -p -m 755 "$dir_wlan"
-    if [ ! -f "$dir_wlan/AP.dat" ] ; then
-        cat > "$dir_wlan/AP.dat" <<EOF
+	# create user AP confs
+	[ ! -d "$dir_wlan" ] && mkdir -p -m 755 "$dir_wlan"
+	if [ ! -f "$dir_wlan/AP.dat" ] ; then
+		cat > "$dir_wlan/AP.dat" <<EOF
 # Custom user AP conf file
 
 EOF
-        chmod 644 "$dir_wlan/AP.dat"
-    fi
+		chmod 644 "$dir_wlan/AP.dat"
+	fi
 
-    if [ ! -f "$dir_wlan/AP_5G.dat" ] ; then
-        cat > "$dir_wlan/AP_5G.dat" <<EOF
+	if [ ! -f "$dir_wlan/AP_5G.dat" ] ; then
+		cat > "$dir_wlan/AP_5G.dat" <<EOF
 # Custom user AP conf file
 
 EOF
-        chmod 644 "$dir_wlan/AP_5G.dat"
-    fi
+		chmod 644 "$dir_wlan/AP_5G.dat"
+	fi
 
-    # create openvpn files
-    if [ -x /usr/sbin/openvpn ] ; then
-        [ ! -d "$dir_ovpncli" ] && mkdir -p -m 700 "$dir_ovpncli"
-        [ ! -d "$dir_ovpnsvr" ] && mkdir -p -m 700 "$dir_ovpnsvr"
-        dir_ovpn="$dir_storage/openvpn"
-        for i in ca.crt dh1024.pem server.crt server.key server.conf ta.key ; do
-            [ -f "$dir_ovpn/$i" ] && mv -n "$dir_ovpn/$i" "$dir_ovpnsvr"
-        done
-        if [ ! -f "$user_ovpnsvr_conf" ] ; then
-            cat > "$user_ovpnsvr_conf" <<EOF
+	# create openvpn files
+	if [ -x /usr/sbin/openvpn ] ; then
+		[ ! -d "$dir_ovpncli" ] && mkdir -p -m 700 "$dir_ovpncli"
+		[ ! -d "$dir_ovpnsvr" ] && mkdir -p -m 700 "$dir_ovpnsvr"
+		dir_ovpn="$dir_storage/openvpn"
+		for i in ca.crt dh1024.pem server.crt server.key server.conf ta.key ; do
+			[ -f "$dir_ovpn/$i" ] && mv -n "$dir_ovpn/$i" "$dir_ovpnsvr"
+		done
+		if [ ! -f "$user_ovpnsvr_conf" ] ; then
+			cat > "$user_ovpnsvr_conf" <<EOF
 # Custom user conf file for OpenVPN server
 # Please add needed params only!
 
@@ -1911,11 +1914,11 @@ verb 0
 mute 10
 
 EOF
-            chmod 644 "$user_ovpnsvr_conf"
-        fi
+			chmod 644 "$user_ovpnsvr_conf"
+		fi
 
-        if [ ! -f "$user_ovpncli_conf" ] ; then
-            cat > "$user_ovpncli_conf" <<EOF
+		if [ ! -f "$user_ovpncli_conf" ] ; then
+			cat > "$user_ovpncli_conf" <<EOF
 # Custom user conf file for OpenVPN client
 # Please add needed params only!
 
@@ -1930,43 +1933,43 @@ verb 0
 mute 10
 
 EOF
-            chmod 644 "$user_ovpncli_conf"
-        fi
-    fi
+			chmod 644 "$user_ovpncli_conf"
+		fi
+	fi
 
-    # create strongswan files
-    if [ -x /usr/sbin/ipsec ] ; then
-        [ ! -d "$dir_sswan" ] && mkdir -p -m 700 "$dir_sswan"
-        [ ! -d "$dir_sswan_crt" ] && mkdir -p -m 700 "$dir_sswan_crt"
-        [ ! -d "$dir_sswan_crt/cacerts" ] && mkdir -p -m 700 "$dir_sswan_crt/cacerts"
-        [ ! -d "$dir_sswan_crt/certs" ] && mkdir -p -m 700 "$dir_sswan_crt/certs"
-        [ ! -d "$dir_sswan_crt/private" ] && mkdir -p -m 700 "$dir_sswan_crt/private"
+	# create strongswan files
+	if [ -x /usr/sbin/ipsec ] ; then
+		[ ! -d "$dir_sswan" ] && mkdir -p -m 700 "$dir_sswan"
+		[ ! -d "$dir_sswan_crt" ] && mkdir -p -m 700 "$dir_sswan_crt"
+		[ ! -d "$dir_sswan_crt/cacerts" ] && mkdir -p -m 700 "$dir_sswan_crt/cacerts"
+		[ ! -d "$dir_sswan_crt/certs" ] && mkdir -p -m 700 "$dir_sswan_crt/certs"
+		[ ! -d "$dir_sswan_crt/private" ] && mkdir -p -m 700 "$dir_sswan_crt/private"
 
-        if [ ! -f "$user_sswan_conf" ] ; then
-            cat > "$user_sswan_conf" <<EOF
+		if [ ! -f "$user_sswan_conf" ] ; then
+			cat > "$user_sswan_conf" <<EOF
 ### strongswan.conf - user strongswan configuration file
 
 EOF
-            chmod 644 "$user_sswan_conf"
-        fi
-        if [ ! -f "$user_sswan_ipsec_conf" ] ; then
-            cat > "$user_sswan_ipsec_conf" <<EOF
+			chmod 644 "$user_sswan_conf"
+		fi
+		if [ ! -f "$user_sswan_ipsec_conf" ] ; then
+			cat > "$user_sswan_ipsec_conf" <<EOF
 ### ipsec.conf - user strongswan IPsec configuration file
 
 EOF
-            chmod 644 "$user_sswan_ipsec_conf"
-        fi
-        if [ ! -f "$user_sswan_secrets" ] ; then
-            cat > "$user_sswan_secrets" <<EOF
+			chmod 644 "$user_sswan_ipsec_conf"
+		fi
+		if [ ! -f "$user_sswan_secrets" ] ; then
+			cat > "$user_sswan_secrets" <<EOF
 ### ipsec.secrets - user strongswan IPsec secrets file
 
 EOF
-            chmod 644 "$user_sswan_secrets"
-        fi
-    fi
+			chmod 644 "$user_sswan_secrets"
+		fi
+	fi
 
 if [ ! -f "$script0_script" ] ; then
-    cat > "$script0_script" <<-\EEE
+	cat > "$script0_script" <<-\EEE
 #!/bin/sh
 #copyright by hiboy
 [ -f /tmp/script0.lock ] && exit 0
@@ -1996,13 +1999,13 @@ logger -t "【自定义脚本0】" "脚本完成"
 rm -f /tmp/script0.lock
 
 EEE
-    chmod 755 "$script0_script"
+	chmod 755 "$script0_script"
 fi
 
 
 
 if [ ! -f "$ad_config_script" ] || [ ! -s "$ad_config_script" ] ; then
-    cat > "$ad_config_script" <<-\EEE
+	cat > "$ad_config_script" <<-\EEE
 # 广告过滤 访问控制功能
 
 # 内网(LAN)访问控制的默认代理转发设置，
@@ -2047,12 +2050,12 @@ cat > "/tmp/rule_DOMAIN.txt" <<-\EOF
 EOF
 
 EEE
-    chmod 755 "$ad_config_script"
+	chmod 755 "$ad_config_script"
 fi
 
 
 if [ ! -f "$shadowsocks_ss_spec_lan" ] || [ ! -s "$shadowsocks_ss_spec_lan" ] ; then
-    cat > "$shadowsocks_ss_spec_lan" <<-\EEE
+	cat > "$shadowsocks_ss_spec_lan" <<-\EEE
 #b,192.168.123.115
 #g,192.168.123.116
 #n,192.168.123.117
@@ -2064,12 +2067,12 @@ if [ ! -f "$shadowsocks_ss_spec_lan" ] || [ ! -s "$shadowsocks_ss_spec_lan" ] ; 
 
 
 EEE
-    chmod 755 "$shadowsocks_ss_spec_lan"
+	chmod 755 "$shadowsocks_ss_spec_lan"
 fi
 
 
 if [ ! -f "$shadowsocks_ss_spec_wan" ] || [ ! -s "$shadowsocks_ss_spec_wan" ] ; then
-    cat > "$shadowsocks_ss_spec_wan" <<-\EEE
+	cat > "$shadowsocks_ss_spec_wan" <<-\EEE
 WAN@raw.githubusercontent.com
 #WAN+8.8.8.8
 #WAN@www.google.com
@@ -2111,13 +2114,13 @@ WAN!alidns.aliyuncs.com
 
 
 EEE
-    chmod 755 "$shadowsocks_ss_spec_wan"
+	chmod 755 "$shadowsocks_ss_spec_wan"
 fi
 
 
 
 if [ ! -f "$adbyby_rules_script" ] || [ ! -s "$adbyby_rules_script" ] ; then
-    cat > "$adbyby_rules_script" <<-\EEE
+	cat > "$adbyby_rules_script" <<-\EEE
 !  ------------------------------ ADByby 自定义过滤语法简--------------------------------
 !  --------------  规则基于abp规则，并进行了字符替换部分的扩展-----------------------------
 !  ABP规则请参考 https://adblockplus.org/zh_CN/filters ，下面为大致摘要
@@ -2188,11 +2191,11 @@ if [ ! -f "$adbyby_rules_script" ] || [ ! -s "$adbyby_rules_script" ] ; then
 ! 参考以上规则格式添加指定过滤网址
 
 EEE
-    chmod 755 "$adbyby_rules_script"
+	chmod 755 "$adbyby_rules_script"
 fi
 
 if [ ! -f "$adm_rules_script" ] || [ ! -s "$adm_rules_script" ] ; then
-    cat > "$adm_rules_script" <<-\EEE
+	cat > "$adm_rules_script" <<-\EEE
 [ADM]
 !  ------------------------------ 阿呆喵[ADM] 自定义过滤语法简表---------------------------------
 !  --------------  规则语法基于ABP规则，并进行了字符替换部分的扩展-----------------------------
@@ -2239,11 +2242,11 @@ if [ ! -f "$adm_rules_script" ] || [ ! -s "$adm_rules_script" ] ; then
 
 
 EEE
-    chmod 755 "$adm_rules_script"
+	chmod 755 "$adm_rules_script"
 fi
 
 if [ ! -f "$koolproxy_rules_script" ] || [ ! -s "$koolproxy_rules_script" ] ; then
-    cat > "$koolproxy_rules_script" <<-\EEE
+	cat > "$koolproxy_rules_script" <<-\EEE
 !  ******************************* koolproxy 自定义过滤语法简表 *******************************
 !  ------------------------ 规则基于adblock规则，并进行了语法部分的扩展 ------------------------
 !  ABP规则请参考https://adblockplus.org/zh_CN/filters，下面为大致摘要
@@ -2292,21 +2295,21 @@ if [ ! -f "$koolproxy_rules_script" ] || [ ! -s "$koolproxy_rules_script" ] ; th
 !  ******************************************************************************************
 
 EEE
-    chmod 755 "$koolproxy_rules_script"
+	chmod 755 "$koolproxy_rules_script"
 fi
 
 if [ ! -f "$koolproxy_rules_list" ] || [ ! -s "$koolproxy_rules_list" ] ; then
-    cat > "$koolproxy_rules_list" <<-\EEE
+	cat > "$koolproxy_rules_list" <<-\EEE
 # 【添加为#注释行，会自动忽略】
 # 【adbyby规则翻译的koolproxy兼容规则 by <dsyo2008> http://koolshare.cn/thread-83553-1-1.html】
 #https://raw.githubusercontent.com/dsyo2008/lazy_for_koolproxy/master/lazy_kp.txt
 
 EEE
-    chmod 755 "$koolproxy_rules_list"
+	chmod 755 "$koolproxy_rules_list"
 fi
 
 if [ ! -f "$FastDick_script" ] || [ ! -s "$FastDick_script" ] ; then
-    cat > "$FastDick_script" <<-\EEE
+	cat > "$FastDick_script" <<-\EEE
 #!/bin/sh
 # 迅雷快鸟【2免U盘启动】功能需到【自定义脚本0】配置【FastDicks=2】，并在此输入swjsq_wget.sh文件内容
 #【2免U盘启动】需要填写在下方的【迅雷快鸟脚本】，生成脚本两种方法：
@@ -2315,12 +2318,12 @@ if [ ! -f "$FastDick_script" ] || [ ! -s "$FastDick_script" ] ; then
 # 生成后需要到【系统管理】 - 【恢复/导出/上传设置】 - 【路由器内部存储 (/etc/storage)】【写入】保存脚本
 
 EEE
-    chmod 755 "$FastDick_script"
+	chmod 755 "$FastDick_script"
 fi
 
 
 if [ ! -f "$ddns_script" ] || [ ! -s "$ddns_script" ] ; then
-    cat > "$ddns_script" <<-\EEE
+	cat > "$ddns_script" <<-\EEE
 # 获得外网地址
 # 自行测试哪个代码能获取正确的IP，删除前面的#可生效
 arIpAddress () {
@@ -2331,7 +2334,7 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
     #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
 else
-    curl -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
@@ -2339,12 +2342,12 @@ fi
 }
 arIpAddress=$(arIpAddress)
 EEE
-    chmod 755 "$ddns_script"
+	chmod 755 "$ddns_script"
 fi
 
 
 if [ ! -f "$ngrok_script" ] || [ ! -s "$ngrok_script" ] ; then
-    cat > "$ngrok_script" <<-\EEE
+	cat > "$ngrok_script" <<-\EEE
 #!/bin/sh
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
@@ -2373,13 +2376,13 @@ killall ngrokc
 
 
 EEE
-    chmod 755 "$ngrok_script"
+	chmod 755 "$ngrok_script"
 fi
 
 
 
 if [ ! -f "$frp_script" ] || [ ! -s "$frp_script" ] ; then
-    cat > "$frp_script" <<-\EEE
+	cat > "$frp_script" <<-\EEE
 #!/bin/sh
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
@@ -2445,13 +2448,13 @@ if [ "$frps_enable" = "1" ] ; then
 fi
 
 EEE
-    chmod 755 "$frp_script"
+	chmod 755 "$frp_script"
 fi
 
 
 
 if [ ! -f "$SSRconfig_script" ] || [ ! -s "$SSRconfig_script" ] ; then
-    cat > "$SSRconfig_script" <<-\EEE
+	cat > "$SSRconfig_script" <<-\EEE
 {
     "server": "0.0.0.0",
     "server_ipv6": "::",
@@ -2476,12 +2479,12 @@ if [ ! -f "$SSRconfig_script" ] || [ ! -s "$SSRconfig_script" ] ; then
     "fast_open": false
 }
 EEE
-    chmod 755 "$SSRconfig_script"
+	chmod 755 "$SSRconfig_script"
 fi
 
 
 if [ ! -f "$serverchan_script" ] || [ ! -s "$serverchan_script" ] ; then
-    cat > "$serverchan_script" <<-\EEE
+	cat > "$serverchan_script" <<-\EEE
 #!/bin/sh
 # 此脚本路径：/etc/storage/serverchan_script.sh
 # 自定义设置 - 脚本 - 自定义 Crontab 定时任务配置，可自定义启动时间
@@ -2526,13 +2529,15 @@ serverchan_notify_2=`nvram get serverchan_notify_2`
 serverchan_notify_3=`nvram get serverchan_notify_3`
 serverchan_notify_4=`nvram get serverchan_notify_4`
 curltest=`which curl`
-if [ -z "$curltest" ] ; then
-    wget --no-check-certificate  -q -T 10 http://www.163.com
-    [ "$?" == "0" ] && check=200 || check=404
-else
-    check=`curl -k -s -w "%{http_code}" "http://www.163.com" -o /dev/null`
+ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
+ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
+if [ ! -z "$ping_time" ] ; then
+    echo "ping：$ping_time ms 丢包率：$ping_loss"
+ else
+    echo "ping：失效"
 fi
-if [ "$check" == "200" ] ; then
+if [ ! -z "$ping_time" ] ; then
 echo "online"
 if [ "$serverchan_notify_1" = "1" ] ; then
     local hostIP=$(arIpAddress)
@@ -2621,13 +2626,13 @@ continue
 done
 
 EEE
-    chmod 755 "$serverchan_script"
+	chmod 755 "$serverchan_script"
 fi
 
 
 
 if [ ! -f "$kcptun_script" ] || [ ! -s "$kcptun_script" ] ; then
-    cat > "$kcptun_script" <<-\EEE
+	cat > "$kcptun_script" <<-\EEE
 #!/bin/sh
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
@@ -2674,12 +2679,12 @@ killall client_linux_mips
 #
 ################################################################
 EEE
-    chmod 755 "$kcptun_script"
+	chmod 755 "$kcptun_script"
 fi
 
 
 if [ ! -f "$jbls_script" ] || [ ! -s "$jbls_script" ] ; then
-    cat > "$jbls_script" <<-\EEE
+	cat > "$jbls_script" <<-\EEE
 #!/bin/sh
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
@@ -2721,12 +2726,12 @@ jblicsvr -d -p 1027
 restart_dhcpd
 
 EEE
-    chmod 755 "$jbls_script"
+	chmod 755 "$jbls_script"
 fi
 
 
 if [ ! -f "$vlmcsdini_script" ] || [ ! -s "$vlmcsdini_script" ] ; then
-    cat > "$vlmcsdini_script" <<-\EEE
+	cat > "$vlmcsdini_script" <<-\EEE
 # Office手动激活命令：
 
 # cd C:\Program Files\Microsoft Office\Office15
@@ -2878,13 +2883,13 @@ if [ ! -f "$vlmcsdini_script" ] || [ ! -s "$vlmcsdini_script" ] ; then
 ;UseBTFN = true
 
 EEE
-    chmod 755 "$vlmcsdini_script"
+	chmod 755 "$vlmcsdini_script"
 fi
 
 
 
 if [ ! -f "$kmskey" ] ; then
-    cat > "$kmskey" <<-\EEE
+	cat > "$kmskey" <<-\EEE
 # Office手动激活命令：
 
 # cd C:\Program Files\Microsoft Office\Office15
@@ -3180,7 +3185,7 @@ if [ ! -f "$kmskey" ] ; then
 # 4DWFP-JF3DJ-B7DTH-78FJB-PDRHK
 
 EEE
-    chmod 666 "$kmskey"
+	chmod 666 "$kmskey"
 fi
 
 
@@ -3188,11 +3193,11 @@ fi
 
 # create qos config file
 if [ ! -f "$config_qos" ] && [ -f "/lib/modules/$(uname -r)/kernel/net/sched/sch_htb.ko" ] ; then
-        cp -f /etc_ro/qos.conf /etc/storage
+		cp -f /etc_ro/qos.conf /etc/storage
 fi
 
 if [ ! -f "$config_tinyproxy" ] || [ ! -s "$config_tinyproxy" ] ; then
-        cat > "$config_tinyproxy" <<-\END
+		cat > "$config_tinyproxy" <<-\END
 ## tinyproxy.conf -- tinyproxy daemon configuration file
 ## https://github.com/tinyproxy/tinyproxy/blob/master/etc/tinyproxy.conf.in
 #User nobody
@@ -3227,7 +3232,7 @@ END
 fi
 
 if [ ! -f "$config_mproxy" ] || [ ! -s "$config_mproxy" ] ; then
-        cat > "$config_mproxy" <<-\END
+		cat > "$config_mproxy" <<-\END
 #!/bin/sh
 killall -9 mproxy
 logger -t "【mproxy】" "运行 mproxy"
@@ -3258,11 +3263,11 @@ chmod 777 "$config_mproxy"
 func_fill2
 
 if [ ! -f "$Builds" ] ; then
-#    强制更新脚本reset
-    /sbin/mtd_storage.sh resetsh
-    nvram set ss_multiport="22,80,443"
+#	强制更新脚本reset
+	/sbin/mtd_storage.sh resetsh
+	nvram set ss_multiport="22,80,443"
 fi
-    
+
 }
 
 func_fill2()
@@ -3270,9 +3275,9 @@ func_fill2()
 
 
 
-    # create post-wan script
-    if [ ! -f "$script_postw" ] ; then
-        cat > "$script_postw" <<-\EEE
+	# create post-wan script
+	if [ ! -f "$script_postw" ] ; then
+		cat > "$script_postw" <<-\EEE
 #!/bin/sh
 
 ### Custom user script
@@ -3288,13 +3293,13 @@ if [ $1 == "up" ] ; then
 fi
 
 EEE
-        chmod 755 "$script_postw"
-    fi
+		chmod 755 "$script_postw"
+	fi
 
 
 
 if [ ! -f "$crontabs_script" ] ; then
-    cat > "$crontabs_script" <<-\EEE
+	cat > "$crontabs_script" <<-\EEE
 #!/bin/sh
 #copyright by hiboy
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
@@ -3467,14 +3472,14 @@ chmod 777 "/tmp/sh_wan_wips.sh"
 rm -f /tmp/crontabs.lock
 
 EEE
-    chmod 755 "$crontabs_script"
+	chmod 755 "$crontabs_script"
 fi
 
 
 
 
 if [ ! -f "$script_script" ] ; then
-    cat > "$script_script" <<-\EEE
+	cat > "$script_script" <<-\EEE
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
@@ -3496,40 +3501,40 @@ B_restart="$theme_enable"
 #B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 B_restart=`echo -n "$B_restart"`
 if [ "$A_restart" != "$B_restart" ] ; then
-    nvram set theme_status=$B_restart
-    needed_restart=1
+	nvram set theme_status=$B_restart
+	needed_restart=1
 else
-    needed_restart=0
+	needed_restart=0
 fi
 if [ "$theme_enable" = "0" ] && [ "$needed_restart" = "1" ] ; then
 logger -t "【主题界面】" "停止下载主题包"
 fi
 SVC_PATH="/opt/share/www/custom/f.js"
 if [ "$theme_enable" != "0" ] && [ ! -f "$SVC_PATH" ] ; then
-    needed_restart=1
+	needed_restart=1
 fi
 if [ "$theme_enable" != "0" ] && [ "$needed_restart" = "1" ] ; then
 rm -f $SVC_PATH
 logger -t "【主题界面】" "部署主题风格包"
 if [ ! -f "$SVC_PATH" ] ; then
-    /tmp/script/_mountopt start
+	/tmp/script/_mountopt start
 fi
 if [ ! -f "$SVC_PATH" ] ; then
-    mkdir -p /opt/share/www/custom
-    rm -f $SVC_PATH
-    if [ ! -f "$SVC_PATH" ] ; then
-        logger -t "【主题界面】" "主题风格包下载 $theme_enable"
-        rm -f /opt/share/www/custom/theme.tgz
-        [ "$theme_enable" = "1" ] && wgetcurl.sh /opt/share/www/custom/theme.tgz "$hiboyfile/theme-big.tgz" "$hiboyfile2/theme-big.tgz"
-        [ "$theme_enable" = "2" ] && wgetcurl.sh /opt/share/www/custom/theme.tgz "$hiboyfile/theme-lit.tgz" "$hiboyfile2/theme-lit.tgz"
-        tar -xzvf /opt/share/www/custom/theme.tgz -C /opt/share/www/custom
-        if [ ! -s "$SVC_PATH" ] ; then
-            logger -t "【主题界面】" "解压不正常:/opt/share/www/custom"
-            #nvram set theme_status=00
-            exit 1
-        fi
-        rm -f /opt/share/www/custom/theme.tgz
-    fi
+	mkdir -p /opt/share/www/custom
+	rm -f $SVC_PATH
+	if [ ! -f "$SVC_PATH" ] ; then
+		logger -t "【主题界面】" "主题风格包下载 $theme_enable"
+		rm -f /opt/share/www/custom/theme.tgz
+		[ "$theme_enable" = "1" ] && wgetcurl.sh /opt/share/www/custom/theme.tgz "$hiboyfile/theme-big.tgz" "$hiboyfile2/theme-big.tgz"
+		[ "$theme_enable" = "2" ] && wgetcurl.sh /opt/share/www/custom/theme.tgz "$hiboyfile/theme-lit.tgz" "$hiboyfile2/theme-lit.tgz"
+		tar -xzvf /opt/share/www/custom/theme.tgz -C /opt/share/www/custom
+		if [ ! -s "$SVC_PATH" ] ; then
+			logger -t "【主题界面】" "解压不正常:/opt/share/www/custom"
+			#nvram set theme_status=00
+			exit 1
+		fi
+		rm -f /opt/share/www/custom/theme.tgz
+	fi
 fi
 fi
 EEF
@@ -3559,41 +3564,41 @@ echo 0 >/tmp/qos_scheduler.lock
 logger -t "【QOS】" "终端在线检查启动"
 while [ "1" ];
 do
-    if [ "$(cat /tmp/qoss_state)" == "0" ] ; then
-    logger -t "【QOS】" "终端在线检查暂停"
-    rm -f /tmp/qos_scheduler.lock
-    exit
-    fi
-    #qos_t=`cat /proc/net/arp|fgrep -c 0x2`
-    qos_t=`cat /tmp/static_ip.num`
-    qos_t=`expr $qos_t + 1`
-    if [ $((qos_t)) -le $qosc ] ; then
-        if [ $(ifconfig |grep -c imq0) -gt 0 ] ; then
-        logger -t "【QOS】" "取消限速, 当在线 $qos_t台, 小于或等于 $qosc 台"
-            ip link set imq0 down
-            ip link set imq1 down
-        fi
-    else
-        if [ $(ifconfig |grep -c imq0) -eq 0 ] ; then
-            logger -t "【QOS】" "开始限速, 当在线 $qos_t台, 大于 $qosc 台"
-            ip link set imq0 up
-            ip link set imq1 up
-            sleep 6
-            port=$(iptables -t mangle -L | grep 'IMQ: todev 0' | wc -l)
-            if [ "$port" = 0 ] ; then
-                logger -t "【QOS】" "找不到 QOS 规则, 重新添加"
-                /etc/storage/post_iptables_script.sh &
-            fi
-            
-        fi
-    fi
-    sleep 69
+	if [ "$(cat /tmp/qoss_state)" == "0" ] ; then
+	logger -t "【QOS】" "终端在线检查暂停"
+	rm -f /tmp/qos_scheduler.lock
+	exit
+	fi
+	#qos_t=`cat /proc/net/arp|fgrep -c 0x2`
+	qos_t=`cat /tmp/static_ip.num`
+	qos_t=`expr $qos_t + 1`
+	if [ $((qos_t)) -le $qosc ] ; then
+		if [ $(ifconfig |grep -c imq0) -gt 0 ] ; then
+		logger -t "【QOS】" "取消限速, 当在线 $qos_t台, 小于或等于 $qosc 台"
+			ip link set imq0 down
+			ip link set imq1 down
+		fi
+	else
+		if [ $(ifconfig |grep -c imq0) -eq 0 ] ; then
+			logger -t "【QOS】" "开始限速, 当在线 $qos_t台, 大于 $qosc 台"
+			ip link set imq0 up
+			ip link set imq1 up
+			sleep 6
+			port=$(iptables -t mangle -L | grep 'IMQ: todev 0' | wc -l)
+			if [ "$port" = 0 ] ; then
+				logger -t "【QOS】" "找不到 QOS 规则, 重新添加"
+				/etc/storage/post_iptables_script.sh &
+			fi
+			
+		fi
+	fi
+	sleep 69
 continue
 done
 EOF
 chmod 777 "/tmp/qos_scheduler.sh"
 
-    if [ ! -f "/etc/storage/cow_script.sh" ] || [ ! -s "/etc/storage/cow_script.sh" ] ; then
+	if [ ! -f "/etc/storage/cow_script.sh" ] || [ ! -s "/etc/storage/cow_script.sh" ] ; then
 cat > "/etc/storage/cow_script.sh" <<-\FOF
 #!/bin/sh
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
@@ -3633,8 +3638,8 @@ fi
 fi
 FOF
 chmod 777 "/etc/storage/cow_script.sh"
-    fi
-    if [ ! -f "/etc/storage/cow_config_script.sh" ] || [ ! -s "/etc/storage/cow_config_script.sh" ] ; then
+	fi
+	if [ ! -f "/etc/storage/cow_config_script.sh" ] || [ ! -s "/etc/storage/cow_config_script.sh" ] ; then
 cat > "/etc/storage/cow_config_script.sh" <<-\COWCON
 # 配置文件中 # 开头的行为注释
 #
@@ -3802,10 +3807,10 @@ blockedFile = /etc/storage/basedomain.txt
 #
 COWCON
 chmod 777 "/etc/storage/cow_config_script.sh"
-    fi
+	fi
 
 
-    if [ ! -f "/etc/storage/meow_script.sh" ] || [ ! -s "/etc/storage/meow_script.sh" ] ; then
+	if [ ! -f "/etc/storage/meow_script.sh" ] || [ ! -s "/etc/storage/meow_script.sh" ] ; then
 cat > "/etc/storage/meow_script.sh" <<-\FOF
 #!/bin/sh
 source /etc/storage/script/init.sh
@@ -3851,8 +3856,8 @@ fi
 fi
 FOF
 chmod 777 "/etc/storage/meow_script.sh"
-    fi
-    if [ ! -f "/etc/storage/meow_config_script.sh" ] || [ ! -s "/etc/storage/meow_config_script.sh" ] ; then
+	fi
+	if [ ! -f "/etc/storage/meow_config_script.sh" ] || [ ! -s "/etc/storage/meow_config_script.sh" ] ; then
 cat > "/etc/storage/meow_config_script.sh" <<-\MECON
 # 配置文件中 # 开头的行为注释
 #
@@ -3999,11 +4004,11 @@ directFile = /etc/storage/meow_direct_script.sh
 proxyFile = /etc/storage/basedomain.txt
 MECON
 chmod 777 "/etc/storage/meow_config_script.sh"
-    fi
+	fi
 
 
 
-    if [ ! -f "/etc/storage/softether_script.sh" ] || [ ! -s "/etc/storage/softether_script.sh" ] ; then
+	if [ ! -f "/etc/storage/softether_script.sh" ] || [ ! -s "/etc/storage/softether_script.sh" ] ; then
 cat > "/etc/storage/softether_script.sh" <<-\FOF
 #!/bin/sh
 export PATH='/opt/softether:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
@@ -4038,7 +4043,7 @@ restart_dhcpd
 mtd_storage.sh save &
 FOF
 chmod 777 "/etc/storage/softether_script.sh"
-    fi
+	fi
 
 
 
@@ -4048,24 +4053,24 @@ sleep 20
 confdir=/tmp/ss/dnsmasq.d
 ss_sub4=`nvram get ss_sub4`
 mkdir /tmp/ss -p
-    # adblock hosts广告过滤规则
-    #处理最基础的广告域名替换为127.0.0.1 感谢 phrnet 的原帖：http://www.right.com.cn/forum/thread-184121-1-4.html
+	# adblock hosts广告过滤规则
+	#处理最基础的广告域名替换为127.0.0.1 感谢 phrnet 的原帖：http://www.right.com.cn/forum/thread-184121-1-4.html
 if [ "$ss_sub4" = "1" ] ; then
-    wgetcurl.sh /tmp/ss/tmp_adhost.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/malwaredomainlist.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/malwaredomainlist.txt N
-    cat /tmp/ss/tmp_adhost.txt | grep 127.0.0.1 | sed 's/127.0.0.1  //g' | dos2unix > /tmp/ss/adhost.txt
-    wgetcurl.sh /tmp/ss/tmp_adhost.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/yhosts.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/yhosts.txt N
-    cat /tmp/ss/tmp_adhost.txt | grep 127.0.0.1 | sed 's/127.0.0.1 //g' | dos2unix >> /tmp/ss/adhost.txt
-    wgetcurl.sh /tmp/ss/tmp_adhost.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/easylistchina.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/easylistchina.txt N
-    cat /tmp/ss/tmp_adhost.txt | grep 127.0.0.1 | sed 's/address=\///g; s/\/127.0.0.1//g' | dos2unix >> /tmp/ss/adhost.txt
-    cat /tmp/ss/adhost.txt | sort -u | sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d; s/^/address=\//; s/$/\/127.0.0.1/' > $confdir/r.adhost.conf
-    rm -rf /tmp/ss/tmp_adhost.txt
-    sed -Ei "/conf-dir=\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
-    [ ! -z "$confdir" ] && echo "conf-dir=$confdir" >> /etc/storage/dnsmasq/dnsmasq.conf
+	wgetcurl.sh /tmp/ss/tmp_adhost.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/malwaredomainlist.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/malwaredomainlist.txt N
+	cat /tmp/ss/tmp_adhost.txt | grep 127.0.0.1 | sed 's/127.0.0.1  //g' | dos2unix > /tmp/ss/adhost.txt
+	wgetcurl.sh /tmp/ss/tmp_adhost.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/yhosts.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/yhosts.txt N
+	cat /tmp/ss/tmp_adhost.txt | grep 127.0.0.1 | sed 's/127.0.0.1 //g' | dos2unix >> /tmp/ss/adhost.txt
+	wgetcurl.sh /tmp/ss/tmp_adhost.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/easylistchina.txt http://c.nnjsx.cn/GL/dnsmasq/update/adblock/easylistchina.txt N
+	cat /tmp/ss/tmp_adhost.txt | grep 127.0.0.1 | sed 's/address=\///g; s/\/127.0.0.1//g' | dos2unix >> /tmp/ss/adhost.txt
+	cat /tmp/ss/adhost.txt | sort -u | sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d; s/^/address=\//; s/$/\/127.0.0.1/' > $confdir/r.adhost.conf
+	rm -rf /tmp/ss/tmp_adhost.txt
+	sed -Ei "/conf-dir=\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
+	[ ! -z "$confdir" ] && echo "conf-dir=$confdir" >> /etc/storage/dnsmasq/dnsmasq.conf
 else
-    rm -f $confdir/r.adhost.conf
+	rm -f $confdir/r.adhost.conf
 fi
-    logger -t "【Adblock hosts】" "规则： `sed -n '$=' $confdir/r.adhost.conf | sed s/[[:space:]]//g ` 行"
-    nvram set adhosts="ad hosts规则： `sed -n '$=' $confdir/r.adhost.conf | sed s/[[:space:]]//g ` 行"
+	logger -t "【Adblock hosts】" "规则： `sed -n '$=' $confdir/r.adhost.conf | sed s/[[:space:]]//g ` 行"
+	nvram set adhosts="ad hosts规则： `sed -n '$=' $confdir/r.adhost.conf | sed s/[[:space:]]//g ` 行"
 restart_dhcpd
 EOFH
 chmod 755 "/tmp/sh_adblock_hosts.sh"
@@ -4096,9 +4101,9 @@ ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 if [ ! -z "$ping_time" ] ; then
-    echo "ping：$ping_time ms 丢包率：$ping_loss"
+	echo "ping：$ping_time ms 丢包率：$ping_loss"
  else
-    echo "ping：失效"
+	echo "ping：失效"
 fi
 rb=1
 while [ -z "$ping_time" ];
@@ -4110,20 +4115,20 @@ ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 if [ ! -z "$ping_time" ] ; then
-    echo "ping：$ping_time ms 丢包率：$ping_loss"
+	echo "ping：$ping_time ms 丢包率：$ping_loss"
  else
-    echo "ping：失效"
+	echo "ping：失效"
 fi
 rb=`expr $rb + 1`
 if [ "$rb" -gt 5 ] ; then
-    logger -t "【自定义脚本】" "等待联网超时"
-    ping_time=200
-    break
+	logger -t "【自定义脚本】" "等待联网超时"
+	ping_time=200
+	break
 fi
 done
 if [[ $(cat /tmp/apauto.lock) == 1 ]] ; then
-    killall sh_apauto.sh
-    /tmp/sh_apauto.sh &
+	killall sh_apauto.sh
+	/tmp/sh_apauto.sh &
 fi
 [ -d /etc/storage/script ] && chmod 777 /etc/storage/script -R
 /etc/storage/script/sh_upscript.sh
@@ -4155,7 +4160,7 @@ restart_firewall &
 rm -f /tmp/script.lock
 logger -t "【自定义脚本】" "脚本完成"
 EEE
-    chmod 755 "$script_script"
+	chmod 755 "$script_script"
 fi
 
 }

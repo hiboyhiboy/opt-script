@@ -47,12 +47,23 @@ fi
 AiDisk00
 }
 
+prepare_authorized_keys () {
+
+# prepare ssh authorized_keys
+if [ -f /etc/storage/authorized_keys ] && [ ! -f /opt/home/admin/.ssh/authorized_keys ] ; then
+	mkdir -p /opt/home/admin/.ssh
+	cp -f /etc/storage/authorized_keys /opt/home/admin/.ssh
+fi
+[ -d /opt/home/admin/.ssh ] && chmod 700 /opt/home/admin/.ssh
+[ -f /opt/home/admin/.ssh/authorized_keys ] && chmod 600 /opt/home/admin/.ssh/authorized_keys
+}
+
 mount_opt () {
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
 if [ ! -z "$upanPath" ] ; then
 	mkdir -p "$upanPath/opt"
 	mount -o bind "$upanPath/opt" /opt
@@ -65,12 +76,7 @@ if [ ! -z "$upanPath" ] ; then
 	fi
 
 	# prepare ssh authorized_keys
-	if [ -f /etc/storage/authorized_keys ] && [ ! -f /opt/home/admin/.ssh/authorized_keys ] ; then
-		mkdir -p /opt/home/admin/.ssh
-		cp -f /etc/storage/authorized_keys /opt/home/admin/.ssh
-		chmod 700 /opt/home/admin/.ssh
-		chmod 600 /opt/home/admin/.ssh/authorized_keys
-	fi
+	prepare_authorized_keys
 	
 	#使用文件创建swap分区
 	#bs  blocksize ，每个块大小为1k.count=204800。则总大小为200M的文件
@@ -78,7 +84,7 @@ if [ ! -z "$upanPath" ] ; then
 	#mkswap /opt/.swap
 	# 挂载 /opt/.swap
 	# check swap file exist
-	if [ -z "$mtd_device" ] && [ -f /opt/.swap ] ; then
+	if [ -f /opt/.swap ] ; then
 		swap_part=`cat /proc/swaps | grep 'partition' 2>/dev/null`
 		swap_file=`cat /proc/swaps | grep 'file' 2>/dev/null`
 		if [ -z "$swap_part" ] && [ -z "$swap_file" ] ; then
@@ -103,10 +109,10 @@ mkdir -p /opt/bin
 AiDisk00 () {
 [ -d /tmp/AiDisk_00/opt ] && return
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | sort -u | awk '{print $NF}' | awk 'NR==1' `"
 if [ ! -z "$upanPath" ] ; then
 	mkdir -p "$upanPath/opt"
 	ln -sf "$upanPath" /tmp/AiDisk_00
@@ -169,6 +175,7 @@ if [ ! -f "/opt/opti.txt" ] ; then
 	if [ -s "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "opt 解压完成"
 		chmod 777 /opt -R
+		prepare_authorized_keys
 	else
 		logger -t "【opt】" "opt 解压失败"
 	fi
@@ -176,6 +183,7 @@ if [ ! -f "/opt/opti.txt" ] ; then
 	if [ -z "$optPath" ] && [ -s "/opt/opt.tgz" ] ; then
 		logger -t "【opt】" "opt 解压完成"
 		chmod 777 /opt -R
+		prepare_authorized_keys
 		logger -t "【opt】" "备份文件到 /opt/opt_backup"
 		mkdir -p /opt/opt_backup
 		tar -xzvf /opt/opt.tgz -C /opt/opt_backup
@@ -279,6 +287,9 @@ start)
 check)
 	mount_check
 	[ "$optinstall" = "1" ] && opt_wget
+	;;
+check_opt)
+	mount_check
 	;;
 optwget)
 	mount_check

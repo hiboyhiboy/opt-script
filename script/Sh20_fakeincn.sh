@@ -189,6 +189,7 @@ iptables -t nat -A PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --t
 iptables -t nat -A OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-port 1008
 
 while read line ; do ipset add tocn $line ;done <<-EOF
+120.92.96.181
 101.227.139.217
 101.227.169.200
 103.7.30.89
