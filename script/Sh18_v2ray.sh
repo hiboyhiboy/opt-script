@@ -196,9 +196,21 @@ if [ -s "$SVC_PATH" ] ; then
 	nvram set v2ray_path="$SVC_PATH"
 fi
 v2ray_path="$SVC_PATH"
-
+geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
+if [ ! -s "$geoip_path" ] ; then
+	logger -t "【v2ray】" "找不到 $geoip_path 下载程序"
+	wgetcurl.sh $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
+	chmod 755 "$geoip_path"
+fi
+geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
+if [ ! -s "$geosite_path" ] ; then
+	logger -t "【v2ray】" "找不到 $geosite_path 下载程序"
+	wgetcurl.sh $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
+	chmod 755 "$geosite_path"
+fi
 logger -t "【v2ray】" "运行 v2ray_script"
 /etc/storage/v2ray_script.sh
+cd "$(dirname "$v2ray_path")"
 $v2ray_path  -config /etc/storage/v2ray_config_script.sh &
 restart_dhcpd
 v2ray_v=`v2ray -version | grep V2Ray`

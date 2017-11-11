@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v2.45
+version=v2.47
 
 SYSTEMCTL_CMD=$(command -v systemctl)
 SERVICE_CMD=$(command -v service)
@@ -119,6 +119,7 @@ function check_daemon(){
 hash start-stop-daemon 2>/dev/null || daemon_x=1
 echo $daemon_x
 if [ ! -f "/etc/init.d/v2ray" ] || [ "$daemon_x" = "1" ] ; then
+rm -f /root/keey.sh /etc/init.d/v2ray
 cat > "/etc/init.d/v2ray" <<-\VVRinit
 #!/bin/sh
 ### BEGIN INIT INFO
@@ -162,6 +163,7 @@ do_start(){
         keep
         exit 0
     else
+    	cd /usr/bin/v2ray/
         $DAEMON $DAEMON_OPTS &
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
@@ -206,6 +208,7 @@ do_restart(){
 }
 
 keep () {
+if [ ! -f "/root/keey.sh" ]; then
 cat > "/root/keey.sh" <<-\SSMK
 #!/bin/sh
 #/usr/bin/v2ray/v2ray
@@ -213,6 +216,7 @@ sleep 60
 service v2ray start
 SSMK
 chmod +x "/root/keey.sh"
+fi
 killall keey.sh
 /root/keey.sh &
 
