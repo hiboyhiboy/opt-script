@@ -289,7 +289,7 @@ if [ ! -z "$ss_usage_obfs_custom" ] ; then
 	nvram set ss_usage_obfs_custom_tmp="$ss_usage_obfs_custom_tmp"
 	ss_usage_json=" -a 1 -g ss_usage_obfs_custom_tmp"
 	[ ! -z "$ss_usage_obfs_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s/$ss_usage_obfs_custom_tmp//g" `"
-	ss_usage="`echo "$ss_usage" | sed -e "s/ -g / /g" `"
+	ss_usage="`echo "$ss_usage" | sed -e "s/ -g //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
 else
 	[ ! -z "$ssr_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="-a 1 -g ssr_type_obfs_custom"
@@ -301,7 +301,7 @@ if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then
 	nvram set ss_s2_usage_obfs_custom_tmp="$ss_s2_usage_obfs_custom_tmp"
 	ss_s2_usage_json=" -a 1 -g ss_s2_usage_obfs_custom_tmp"
 	[ ! -z "$ss_s2_usage_obfs_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/$ss_s2_usage_obfs_custom_tmp//g" `"
-	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g / /g" `"
+	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_s2_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
 else
 	[ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="-a 1 -g ssr2_type_obfs_custom"
@@ -317,7 +317,7 @@ if [ ! -z "$ss_usage_protocol_custom" ] ; then
 	nvram set ss_usage_protocol_custom_tmp="$ss_usage_protocol_custom_tmp"
 	ss_usage_json="$ss_usage_json -a 2 -G ss_usage_protocol_custom_tmp"
 	[ ! -z "$ss_usage_protocol_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s/$ss_usage_protocol_custom_tmp//g" `"
-	ss_usage="`echo "$ss_usage" | sed -e "s/ -G / /g" `"
+	ss_usage="`echo "$ss_usage" | sed -e "s/ -G //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_usage_protocol_custom_tmp ，服务1优先使用此 协议参数"
 else
 	[ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -a 2 -G ssr_type_protocol_custom"
@@ -329,7 +329,7 @@ if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then
 	nvram set ss_s2_usage_protocol_custom_tmp="$ss_s2_usage_protocol_custom_tmp"
 	ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ss_s2_usage_protocol_custom_tmp"
 	[ ! -z "$ss_s2_usage_protocol_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/$ss_s2_usage_protocol_custom_tmp//g" `"
-	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G / /g" `"
+	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_s2_usage_protocol_custom_tmp ，服务2优先使用此 协议参数"
 else
 	[ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ssr2_type_protocol_custom"
