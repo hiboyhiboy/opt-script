@@ -302,7 +302,7 @@ if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then
 	ss_s2_usage_json=" -a 1 -g ss_s2_usage_obfs_custom_tmp"
 	[ ! -z "$ss_s2_usage_obfs_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/$ss_s2_usage_obfs_custom_tmp//g" `"
 	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g //g" `"
-	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_s2_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
+	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_s2_usage_obfs_custom_tmp ，服务2优先使用此 混淆参数"
 else
 	[ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="-a 1 -g ssr2_type_obfs_custom"
 fi
