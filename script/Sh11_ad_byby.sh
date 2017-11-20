@@ -353,16 +353,20 @@ xwhyc_rules="$hiboyfile/video.txt"
 xwhyc_rules3="$hiboyfile2/video.txt"
 xwhyc_rules2="http://update.adbyby.com/rule3/video.jpg"
 xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
+xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules1 $xwhyc_rules  N 5
-[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules2 N $xwhyc_rules3 5
+wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules0 $xwhyc_rules1 N 5
+[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules2 $xwhyc_rules2 N 5
+[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules3 N 5
 xwhyc_rules="$hiboyfile/lazy.txt"
 xwhyc_rules3="$hiboyfile2/lazy.txt"
 xwhyc_rules2="http://update.adbyby.com/rule3/lazy.jpg"
 xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
+xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules1 $xwhyc_rules  N 100
-[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules2 $xwhyc_rules3 N 100
+wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules0 $xwhyc_rules1 N 100
+[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules2 $xwhyc_rules2 N 100
+[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules3 N 100
 
 }
 
@@ -926,9 +930,11 @@ update)
 	checka="/tmp/var/lazy.txt"
 	rm -f /tmp/var/lazy.txt
 	urla="http://update.adbyby.com/rule3/lazy.jpg"
+	urla1="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 	urla2="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
 	checkb="/tmp/bin/data/lazy.txt"
-	wgetcurl.sh $checka $urla $urla2 N 100
+	wgetcurl.sh $checka $urla $urla1 N 100
+	[ ! -s $checka ] && wgetcurl.sh $checka $urla $urla2 N 100
 	if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
 		logger -t "【Adbyby】" "更新检查:lazy 有更新 $urla , 重启进程"
 		adbyby_restart
@@ -937,9 +943,11 @@ update)
 		checka="/tmp/var/video.txt"
 		rm -f /tmp/var/video.txt
 		urla="http://update.adbyby.com/rule3/video.jpg"
+		urla1="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 		urla2="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
 		checkb="/tmp/bin/data/video.txt"
-		wgetcurl.sh $checka $urla $urla2 N 5
+		wgetcurl.sh $checka $urla $urla1 N 5
+		[ ! -s $checka ] && wgetcurl.sh $checka $urla $urla2 N 5
 		if [ "`md5sum $checka|cut -d" " -f1`" != "`md5sum $checkb|cut -d" " -f1`" ] ; then
 			logger -t "【Adbyby】" "更新检查:video 有更新 $urla , 重启进程"
 			adbyby_restart
