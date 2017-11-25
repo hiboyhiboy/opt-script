@@ -1988,11 +1988,11 @@ sleep 60
 while [ "$ss_enable" = "1" ];
 do
 ss_internet=`nvram get ss_internet`
-sleep 19
+sleep 9
 #随机延时
 if [ "$ss_internet" = "1" ] ; then
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-	RND_NUM=`echo $SEED 200 300|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	RND_NUM=`echo $SEED 60 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 	sleep $RND_NUM
 fi
 /etc/storage/ez_buttons_script.sh 3 &
@@ -2088,6 +2088,8 @@ ss_upd_rules=`nvram get ss_upd_rules`
 ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代理
 
 [ ${CURRENT:=1090} ] && [ $CURRENT == 1091 ] && Server=1090 || Server=1091
+[ $Server == 1090 ] && Server_ip=$ss_server1 && CURRENT_ip=$ss_server2
+[ $Server == 1091 ] && Server_ip=$ss_server2 && CURRENT_ip=$ss_server1
 
 #检查是否存在SS备份服务器, 这里通过判断 ss_rdd_server 是否填写来检查是否存在备用服务器
 
@@ -2207,12 +2209,12 @@ fi
 if [ "$kcptun2_enable" = "1" ] ; then
 	nvram set ss_internet="2"
 	rebss=`expr $rebss + 2`
-	logger -t "【SS】" "[$LOGTIME] SS 服务器 $CURRENT 检测到问题, $rebss"
+	logger -t "【SS】" "[$LOGTIME] SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
 	#跳出当前循环
 	continue
 fi
 if [ ! -z $ss_rdd_server ] ; then
-	logger -t "【SS】" "[$LOGTIME] SS $CURRENT 检测到问题, 尝试切换到 SS $Server"
+	logger -t "【SS】" "[$LOGTIME] SS $CURRENT 检测到问题, 尝试切换到 $Server_ip 【$Server】"
 	nvram set ss_internet="2"
 	#端口切换
 	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $CURRENT
@@ -2263,7 +2265,7 @@ else
 fi
 }
 if [ "$check" == "200" ] ; then
-	logger -t "【SS】" "[$LOGTIME] SS 服务器 `nvram get ss_working_port` 连接."
+	logger -t "【SS】" "[$LOGTIME] SS 服务器 $Server_ip 【$Server】 连接√"
 	rebss="1"
 	#跳出当前循环
 	continue

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2017-11-12"
+Builds="/etc/storage/Builds-2017-11-25"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -905,7 +905,7 @@ cat >/tmp/sh_apauto.sh <<-\EOF
             fi
             if [[ $(cat /tmp/apauto.lock) == 0 ]] ; then
             #【2】 Internet互联网断线后自动搜寻
-            ping_text=`ping -4 114.114.114.111 -c 1 -w 2 -q`
+            ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
             ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
             ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
             if [ ! -z "$ping_time" ] ; then
@@ -1132,7 +1132,7 @@ if [ ! -f /tmp/apc.lock ] && [ "$1" != "1" ] && [ -s /tmp/ap2g5g ] ; then
                     ap=`iwconfig | grep 'apclii0' | grep 'ESSID:""' | wc -l`
                 fi
                 if [ "$ap" = "0" ] && [ "$apauto2" = "1" ] ; then
-                    ping_text=`ping -4 114.114.114.111 -c 1 -w 2 -q`
+                    ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
                     ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
                     ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
                     if [ ! -z "$ping_time" ] ; then
@@ -1153,7 +1153,7 @@ if [ ! -f /tmp/apc.lock ] && [ "$1" != "1" ] && [ -s /tmp/ap2g5g ] ; then
                 else
                     logger -t "【连接 AP】" "$ap 已连接上 $rtwlt_sta_ssid"
                     if [ "$apblack" = "1" ] ; then
-                        ping_text=`ping -4 114.114.114.111 -c 1 -w 2 -q`
+                        ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
                         ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
                         ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
                         if [ ! -z "$ping_time" ] ; then
