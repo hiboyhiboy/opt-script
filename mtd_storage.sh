@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2017-11-25"
+Builds="/etc/storage/Builds-2017-11-30"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -240,7 +240,7 @@ func_resetsh()
 	# 删除内部脚本文件
 	# rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $kmskey $DNSPOD_script $cloudxns_script $aliddns_script
 	# rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
-	
+	rm -f $script_script
 	mkdir -p -m 755 $dir_storage
 	rm -f /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt
 	[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
@@ -341,9 +341,10 @@ stop_ftpsamba
 sleep 3
 #mdev -s
 # 挂载SD卡
-for mmc_mount in `ls -p /dev | grep -E mmcblk[0-9]`
+for mmc_mount in `/usr/bin/find  /dev -name 'mmcblk[0-9]*' | awk '{print $1}'`
 do
 [ ! -z "$(df -m | grep $mmc_mount )" ] && continue
+mmc_mount=$(basename $mmc_mount | awk '{print $1}')
 echo $mmc_mount
 device_name=`echo ${mmc_mount:6:1}`
 partno=`echo ${mmc_mount:8:1}`
@@ -352,9 +353,10 @@ partno=`echo ${mmc_mount:8:1}`
 done
 
 # 挂载存储设备
-for sd_mount in `ls -p /dev | grep -E sd[a-z]`
+for sd_mount in `/usr/bin/find  /dev -name 'sd[a-z]*' | awk '{print $1}'`
 do
 [ ! -z "$(df -m | grep $sd_mount )" ] && continue
+sd_mount=$(basename $sd_mount | awk '{print $1}')
 echo $sd_mount
 device_name=`echo ${sd_mount:2:1}`
 partno=`echo ${sd_mount:3:1}`
@@ -393,9 +395,6 @@ logger -t "【运行路由器启动后】" "脚本完成"
 mkdir -p /tmp/bwmon
 /usr/sbin/bwmon &
 
-if [ -f /opt/bin/speedup.sh ] ; then 
-chmod 777 /opt/bin/speedup.sh ; killall speedup.sh ; /opt/bin/speedup.sh >> /tmp/syslog.log &
-fi
 
 # 固件将加入使用情况统计 （感谢bigandy提供）
 
@@ -1974,7 +1973,7 @@ if [ ! -f "$script0_script" ] ; then
 #copyright by hiboy
 [ -f /tmp/script0.lock ] && exit 0
 touch /tmp/script0.lock
-#脚本修改日期：2017-3-18
+#脚本修改日期：2017-11-29
 #↓↓↓功能详细设置(应用设置重启后生效，不能断电重启，要点击右上角重启按钮)↓↓↓
 #多次检测断线后自动重启功能 0关闭；1启动
 echo "0" > /tmp/reb.lock
@@ -3273,8 +3272,6 @@ fi
 func_fill2()
 {
 
-
-
 	# create post-wan script
 	if [ ! -f "$script_postw" ] ; then
 		cat > "$script_postw" <<-\EEE
@@ -3475,19 +3472,7 @@ EEE
 	chmod 755 "$crontabs_script"
 fi
 
-
-
-
-if [ ! -f "$script_script" ] ; then
-	cat > "$script_script" <<-\EEE
-#!/bin/sh
-#copyright by hiboy
-source /etc/storage/script/init.sh
-[ -f /tmp/script.lock ] && exit 0
-touch /tmp/script.lock
-### 创建子程序脚本【https://coding.net/u/hiboyhiboy/p/padavan-opt/git/】
-
-
+### 创建子程序脚本
 cat > "/tmp/sh_theme.sh" <<-\EEF
 #!/bin/sh
 source /etc/storage/script/init.sh
@@ -4075,6 +4060,16 @@ restart_dhcpd
 EOFH
 chmod 755 "/tmp/sh_adblock_hosts.sh"
 
+
+
+if [ ! -f "$script_script" ] ; then
+	cat > "$script_script" <<-\EEE
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+[ -f /tmp/script.lock ] && exit 0
+touch /tmp/script.lock
+
 . /etc/storage/script0_script.sh
 ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
 ln -sf "/etc/storage/init.status" "/etc/init.status"
@@ -4136,6 +4131,8 @@ fi
 /etc/storage/script/Sh01_mountopt.sh upopt
 /etc/storage/script/Sh01_mountopt.sh libmd5_check
 /tmp/sh_theme.sh &
+run_aria
+run_transmission
 rm -f /tmp/cron_adb.lock
 [ ! -f /etc/storage/PhMain.ini ] && touch /etc/storage/PhMain.ini
 [ ! -f /etc/storage/init.status ] && touch /etc/storage/init.status

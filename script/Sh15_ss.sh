@@ -2214,7 +2214,7 @@ if [ "$kcptun2_enable" = "1" ] ; then
 	continue
 fi
 if [ ! -z $ss_rdd_server ] ; then
-	logger -t "【SS】" "[$LOGTIME] SS $CURRENT 检测到问题, 尝试切换到 $Server_ip 【$Server】"
+	logger -t "【SS】" "[$LOGTIME] SS 服务器 $CURRENT_ip 【$CURRENT】检测到问题, 尝试切换到 $Server_ip 【$Server】"
 	nvram set ss_internet="2"
 	#端口切换
 	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $CURRENT
@@ -2274,7 +2274,7 @@ fi
 #404
 nvram set ss_internet="0"
 [ ! -z $ss_rdd_server ] && logger -t "【SS】" "[$LOGTIME] 两个 SS 服务器检测到问题, $rebss"
-[ -z $ss_rdd_server ] && logger -t "【SS】" "[$LOGTIME]  SS 服务器 $CURRENT 检测到问题, $rebss"
+[ -z $ss_rdd_server ] && logger -t "【SS】" "[$LOGTIME] SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
 rebss=`expr $rebss + 1`
 restart_dhcpd
 #/etc/storage/crontabs_script.sh &
