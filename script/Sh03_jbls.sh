@@ -3,7 +3,7 @@
 source /etc/storage/script/init.sh
 jbls_enable=`nvram get jbls_enable`
 [ -z $jbls_enable ] && jbls_enable=0 && nvram set jbls_enable=0
-[ "$jbls_enable" != "0" ] && nvramshow=`nvram showall | grep '=' | grep jbls | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#[ "$jbls_enable" != "0" ] && nvramshow=`nvram showall | grep '=' | grep jbls | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep jbls)" ]  && [ ! -s /tmp/script/_jbls ]; then
 	mkdir -p /tmp/script

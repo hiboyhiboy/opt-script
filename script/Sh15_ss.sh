@@ -5,9 +5,17 @@ TAG="SS_SPEC"		  # iptables tag
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
 if [ "$ss_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
+kcptun_server=`nvram get kcptun_server`
+koolproxy_enable=`nvram get koolproxy_enable`
+ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
+ss_link_1=`nvram get ss_link_1`
+ss_link_2=`nvram get ss_link_2`
+ss_update=`nvram get ss_update`
+ss_update_hour=`nvram get ss_update_hour`
+ss_update_min=`nvram get ss_update_min`
 
 #================华丽的分割线====================================
 #set -x
@@ -505,6 +513,8 @@ if [ "$ss_check" = "1" ] ; then
 		echo $action_port
 		[ $action_port == 1090 ] && action_ssip=$ss_s1_ip
 		[ $action_port == 1091 ] && action_ssip=$ss_s2_ip
+		[ $action_port == 1090 ] && Server_ip=$ss_server1 && CURRENT_ip=$ss_server2
+		[ $action_port == 1091 ] && Server_ip=$ss_server2 && CURRENT_ip=$ss_server1
 		if [ ! -z "$action_ssip" ] ; then
 			logger -t "【ss-redir】" "check_ip 检查 SS 服务器$action_port是否能用"
 			lan_ipaddr=`nvram get lan_ipaddr`
@@ -537,12 +547,12 @@ if [ "$ss_check" = "1" ] ; then
 			fi
 			}
 			if [ "$check" == "200" ] ; then
-				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 www.163.com 成功"
-				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 $ss_link_1 成功"
+				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 www.163.com 成功"
+				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1 成功"
 				checkip=1
 			else
-				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 www.163.com 失败"
-				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $action_port 代理连接 $ss_link_1 失败"
+				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 www.163.com 失败"
+				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1 失败"
 				[ ${action_port:=1090} ] && [ $action_port == 1091 ] && Server=1090 || Server=1091
 				#加上切换标记
 				nvram set ss_working_port=$Server
@@ -801,6 +811,8 @@ done
 done < /tmp/ss_spec_lan.txt
 
 # 加载 nat 规则
+nvram set ss_internet="2"
+ss_working_port=`nvram get ss_working_port`
 echo "ss_multiport:$ss_multiport"
 EXT_ARGS_TCP="$ss_multiport"
 include_ac_rules nat
@@ -885,6 +897,11 @@ else
 	iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j RETURN
 fi
 
+nvram set ss_internet="1"
+ss_working_port=`nvram get ss_working_port`
+[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
+[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
+nvram set button_script_2_s="$ss_info"
 
 # 外网(WAN)访问控制
 	logger -t "【SS】" "外网(WAN)访问控制，设置 WAN IP 转发或忽略代理中转"
@@ -1706,6 +1723,7 @@ echo "Debug: $DNS_Server"
 		logger -t "【ss-local】" "shadowsocks 进程守护启动"
 		ss_cron_job
 		#ss_get_status
+		nvram set button_script_2_s="SS"
 		eval "$scriptfilepath keep &"
 		exit 0
 	fi
@@ -1768,6 +1786,10 @@ if [ "$ss_dnsproxy_x" = "2" ] ; then
 		/etc/storage/script/Sh19_chinadns.sh &
 	fi
 fi
+ss_working_port=`nvram get ss_working_port`
+[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
+[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
+nvram set button_script_2_s="$ss_info"
 eval "$scriptfilepath keep &"
 }
 
@@ -1800,6 +1822,9 @@ ss-rules -f
 nvram set ss_internet="0"
 nvram set ss_working_port="1090" #恢复主服务器端口
 ss_working_port=`nvram get ss_working_port`
+[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
+[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
+nvram set button_script_2_s="$ss_info"
 rm -f $confdir/r.wantoss.conf
 sed -Ei '/github|ipip.net|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
@@ -1866,7 +1891,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server`nvram get wan0_dns |cut -d ' ' -f1`$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
@@ -2233,6 +2258,10 @@ if [ ! -z $ss_rdd_server ] ; then
 	fi
 	#加上切换标记
 	nvram set ss_working_port=$Server
+	ss_working_port=`nvram get ss_working_port`
+	[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
+	[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
+	nvram set button_script_2_s="$ss_info"
 	#检查切换后的状态
 	TAG="SS_SPEC"		  # iptables tag
 	FWI="/tmp/firewall.shadowsocks.pdcn" # firewall include file
@@ -2291,6 +2320,62 @@ ss_link_cron_job(){
 
 }
 
+SS_swap(){
+
+
+CURRENT=`nvram get ss_working_port`
+[ ${CURRENT:=1090} ] && [ $CURRENT == 1091 ] && Server=1090 || Server=1091
+[ $Server == 1090 ] && Server_ip=$ss_server1 && CURRENT_ip=$ss_server2
+[ $Server == 1091 ] && Server_ip=$ss_server2 && CURRENT_ip=$ss_server1
+ss_info=`nvram get button_script_2_s`
+ss_internet=`nvram get ss_internet`
+ss_rdd_server=`nvram get ss_server2`
+kcptun2_enable=`nvram get kcptun2_enable`
+[ -z $kcptun2_enable ] && kcptun2_enable=0 && nvram set kcptun2_enable=$kcptun2_enable
+kcptun2_enable2=`nvram get kcptun2_enable2`
+[ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
+ss_mode_x=`nvram get ss_mode_x`
+[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
+[ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
+[ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
+if [ "$ss_internet" != "1" ] ; then
+	logger -t "【ss】" "注意！各线路正在启动，请等待启动后再尝试切换"
+fi
+if [ -z $ss_rdd_server ] ; then
+	logger -t "【ss】" "错误！备用线路未启用，请配置启用后再尝试切换"
+fi
+if [ ! -z $ss_rdd_server ] && [ "$ss_internet" = "1" ] ; then
+	logger -t "【SS】" "手动切换 $ss_info 服务器 $CURRENT_ip 【$CURRENT】"
+	nvram set ss_internet="2"
+	#端口切换
+	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $CURRENT
+	iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $Server
+	if [ "$ss_udp_enable" == 1 ] ; then
+		iptables -t mangle -D SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $CURRENT --tproxy-mark 0x01/0x01
+		iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $Server --tproxy-mark 0x01/0x01
+	fi
+	if [ "$ss_pdnsd_wo_redir" == 0 ] ; then
+	# pdnsd 是否直连  1、直连；0、走代理
+		iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $CURRENT
+		iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $CURRENT
+		iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $Server
+		iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $Server
+	fi
+	#加上切换标记
+	nvram set ss_working_port=$Server
+	ss_working_port=`nvram get ss_working_port`
+	[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
+	[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
+	nvram set button_script_2_s="$ss_info"
+	nvram set ss_internet="1"
+	logger -t "【SS】" "当前使用 $ss_info 服务器 $Server_ip 【$Server】"
+	#检查切换后的状态
+	TAG="SS_SPEC"		  # iptables tag
+	FWI="/tmp/firewall.shadowsocks.pdcn" # firewall include file
+	[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
+	gen_include
+fi
+}
 
 ss_cron_job(){
 	[ -z $ss_update ] && ss_update=0 && nvram set ss_update=$ss_update
@@ -2394,6 +2479,9 @@ update_optss)
 	ss_restart o
 	clean_SS
 	exit 0
+	;;
+swapss)
+	SS_swap
 	;;
 *)
 	check_setting

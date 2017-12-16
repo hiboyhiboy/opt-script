@@ -5,7 +5,13 @@ ssserver_port=`nvram get ssserver_port`
 ssserver_enable=`nvram get ssserver_enable`
 [ -z $ssserver_enable ] && ssserver_enable=0 && nvram set ssserver_enable=0
 if [ "$ssserver_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep ssserver | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep ssserver | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+ssserver_method=`nvram get ssserver_method`
+ssserver_password=`nvram get ssserver_password`
+ssserver_time=`nvram get ssserver_time`
+ssserver_udp=`nvram get ssserver_udp`
+ssserver_usage=" `nvram get ssserver_usage` "
 
 [ -z $ssserver_password ] && ssserver_password="m" && nvram set ssserver_password=$ssserver_password
 [ -z $ssserver_time ] && ssserver_time=120 && nvram set ssserver_time=$ssserver_time
@@ -147,12 +153,10 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 fi
 logger -t "【SS_server】" "启动 ss-server 服务"
-key_password=""
-[ ! -z "$ssserver_password" ] && key_password="-k $ssserver_password" || key_password=""
 if [ "$ssserver_udp" == "1" ] ; then
-	ss-server -s 0.0.0.0 -p $ssserver_port $key_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage  -f /tmp/ssserver.pid
+	ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage  -f /tmp/ssserver.pid
 else
-	ss-server -s 0.0.0.0 -p $ssserver_port $key_password -m $ssserver_method -t $ssserver_time $ssserver_usage -f /tmp/ssserver.pid
+	ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_usage -f /tmp/ssserver.pid
 fi
 
 sleep 2

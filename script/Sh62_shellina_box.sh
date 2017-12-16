@@ -5,8 +5,11 @@ shellinabox_port=`nvram get shellinabox_port`
 shellinabox_enable=`nvram get shellinabox_enable`
 [ -z $shellinabox_enable ] && shellinabox_enable=0 && nvram set shellinabox_enable=$shellinabox_enable
 if [ "$shellinabox_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep shellinabox | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep shellinabox | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
+shellinabox_css=`nvram get shellinabox_css`
+shellinabox_wan=`nvram get shellinabox_wan`
+shellinabox_options_ttyd=`nvram get shellinabox_options_ttyd`
 
 [ -z $shellinabox_port ] && shellinabox_port="4200" && nvram set shellinabox_port=$shellinabox_port
 [ -z $shellinabox_css ] && shellinabox_css="white-on-black" && nvram set shellinabox_css=$shellinabox_css

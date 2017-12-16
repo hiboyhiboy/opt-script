@@ -4,7 +4,21 @@ source /etc/storage/script/init.sh
 wifidog_enable=`nvram get wifidog_enable`
 [ -z $wifidog_enable ] && wifidog_enable=0 && nvram set wifidog_enable=0
 if [ "$wifidog_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep wifidog | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep wifidog | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+wifidog_Daemon=`nvram get wifidog_Daemon`
+wifidog_Hostname=`nvram get wifidog_Hostname`
+wifidog_HTTPPort=`nvram get wifidog_HTTPPort`
+wifidog_Path=`nvram get wifidog_Path`
+wifidog_id=`nvram get wifidog_id`
+wifidog_lanif=`nvram get wifidog_lanif`
+wifidog_wanif=`nvram get wifidog_wanif`
+wifidog_Port=`nvram get wifidog_Port`
+wifidog_Interval=`nvram get wifidog_Interval`
+wifidog_Timeout=`nvram get wifidog_Timeout`
+wifidog_MaxConn=`nvram get wifidog_MaxConn`
+wifidog_MACList=`nvram get wifidog_MACList`
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wifi_dog)" ]  && [ ! -s /tmp/script/_wifi_dog ]; then

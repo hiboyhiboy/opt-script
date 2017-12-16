@@ -18,13 +18,13 @@ ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
 add_ssr_link () {
 link="$1"
 ex_params="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}')"
-ex_obfsparam=$(echo "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
-ex_protoparam=$(echo "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
-ex_remarks=$(echo "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
-ex_group=$(echo "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d );
+ex_obfsparam="$(echo "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+ex_protoparam="$(echo "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+ex_remarks="$(echo "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+ex_group="$(echo "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
 
-[ ! -z "$ex_remarks" ] && ss_link_name="$ex_remarks"
-ss_link_usage=$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')
+[ ! -z "$ex_remarks" ] && ss_link_name="$(echo "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )"
+ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')"
 [ -z "$ex_remarks" ] && ss_link_name="#""`echo -n "$ss_link_usage" | cut -d ':' -f1 `"
 
 ss_link_server=`echo -n "$ss_link_usage" | cut -d ':' -f1 `

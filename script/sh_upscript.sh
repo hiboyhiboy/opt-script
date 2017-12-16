@@ -1,8 +1,10 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-#nvramshow=`nvram showall | grep '=' | grep upscript_enable | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-nvramshow=`nvram showall | grep '=' | grep script | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep script | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+upscript_enable=`nvram get upscript_enable`
+scriptt=`nvram get scriptt`
+scripto=`nvram get scripto`
 [ "$ACTION" = "upscript" ] && upscript_enable=1
 
 file_o_check () {
@@ -17,7 +19,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2017-12-4"
+	nvram set scripto="2017-12-16"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi

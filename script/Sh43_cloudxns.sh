@@ -4,7 +4,16 @@ source /etc/storage/script/init.sh
 cloudxns_enable=`nvram get cloudxns_enable`
 [ -z $cloudxns_enable ] && cloudxns_enable=0 && nvram set cloudxns_enable=0
 if [ "$cloudxns_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+cloudxns_username=`nvram get cloudxns_username`
+cloudxns_password=`nvram get cloudxns_password`
+cloudxns_domian=`nvram get cloudxns_domian`
+cloudxns_host=`nvram get cloudxns_host`
+cloudxns_domian2=`nvram get cloudxns_domian2`
+cloudxns_host2=`nvram get cloudxns_host2`
+cloudxns_interval=`nvram get cloudxns_interval`
+
 hostIP=""
 IP=""
 API_KEY="$cloudxns_username"
@@ -93,7 +102,8 @@ while true; do
 sleep 43
 sleep $cloudxns_interval
 [ ! -s "`which curl`" ] && cloudxns_restart
-nvramshow=`nvram showall | grep '=' | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep cloudxns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+cloudxns_enable=`nvram get cloudxns_enable`
 [ "$cloudxns_enable" = "0" ] && cloudxns_close && exit 0;
 if [ "$cloudxns_enable" = "1" ] ; then
 	cloudxns_start

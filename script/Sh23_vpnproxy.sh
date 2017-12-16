@@ -5,7 +5,8 @@ vpnproxy_wan_port=`nvram get vpnproxy_wan_port`
 vpnproxy_enable=`nvram get vpnproxy_enable`
 [ -z $vpnproxy_enable ] && vpnproxy_enable=0 && nvram set vpnproxy_enable=0
 if [ "$vpnproxy_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep vpnproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep vpnproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+vpnproxy_vpn_port=`nvram get vpnproxy_vpn_port`
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep vpnproxy)" ]  && [ ! -s /tmp/script/_vpnproxy ]; then

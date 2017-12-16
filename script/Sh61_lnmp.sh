@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 lnmp_enable=`nvram get lnmp_enable`
 [ -z $lnmp_enable ] && lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
 if [ "$lnmp_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep lnmp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep lnmp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 
 default_enable=`nvram get default_enable`
@@ -209,9 +209,8 @@ if [ "$wifidog_server_enable" = "4" ] ; then
 	wifidog_server_enable=0 && nvram set wifidog_server_enable=$wifidog_server_enable
 	nvram commit
 fi
-logger -t "【LNMP】" "/opt 已用数据空间`df -m|grep "% /opt" | awk ' {print $5F}'`/100%"
-logger -t "【LNMP】" "/opt 已用节点空间`df -i|grep "% /opt" | awk ' {print $5F}'`/100%"
-logger -t "【LNMP】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 LNMP 运行，请重新正确格式化 U盘。"
+
+lnmp_Available
 
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
@@ -219,6 +218,18 @@ upanPath=""
 [ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 [ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 [ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "5" ] ; then
+	# 指定目录
+	opt_cifs_dir=`nvram get opt_cifs_dir`
+	if [ -d $opt_cifs_dir ] ; then
+		upanPath="$opt_cifs_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
+		upanPath=""
+		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	fi
+fi
 echo "$upanPath"
 if [ -z "$upanPath" ] ; then 
 	logger -t "【LNMP】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
@@ -244,7 +255,9 @@ if [ ! -s "`which mysqld`" ] ; then
 	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
 fi
 
-optava=`df -m|grep "% /opt" | awk ' {print $4F}'`
+Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+[ ! -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $3}')
+optava="$Available_M"
 if [ $optava -le 300 ] || [ -z "$optava" ] ; then
 	logger -t "【LNMP】" "/opt剩余空间: $optava M，不足300M, 停止启用 LNMP, 请尝试重启"
 	lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
@@ -254,13 +267,15 @@ if [ $optava -le 300 ] || [ -z "$optava" ] ; then
 fi
 touch /opt/testchmod
 chmod 644 /opt/testchmod
-optava=`ls /opt -al | grep testchmod| grep 'rw-r--r--'`
-if [ -z "$optava" ] ; then
-	logger -t "【LNMP】" "/opt 修改文件权限失败, 停止启用 LNMP"
+opt_testchmod=`ls /opt -al | grep testchmod| grep 'rw-r--r--'`
+if [ -z "$opt_testchmod" ] ; then
+	logger -t "【LNMP】" "错误！/opt 修改文件权限失败, LNMP 一些功能会启动失败"
+	logger -t "【LNMP】" "错误！/opt 修改文件权限失败, LNMP 一些功能会启动失败"
+	logger -t "【LNMP】" "错误！/opt 修改文件权限失败, LNMP 一些功能会启动失败"
 	logger -t "【LNMP】" "注意: U 盘 或 储存设备 格式不支持 FAT32, 请格式化 U 盘, 要用 EXT4 或 NTFS 格式。"
-	lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
-	nvram commit
-	exit 1
+	#lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
+	#nvram commit
+	#exit 1
 fi
 
 logger -t "【LNMP】" "运行 nginx+php+mysql 环境"
@@ -355,9 +370,8 @@ fi
 /opt/etc/init.d/S70mysqld restart
 /opt/etc/init.d/S79php-fpm restart
 /opt/etc/init.d/S80nginx restart
-logger -t "【LNMP】" "/opt 已用数据空间`df -m|grep "% /opt" | awk ' {print $5F}'`/100%"
-logger -t "【LNMP】" "/opt 已用节点空间`df -i|grep "% /opt" | awk ' {print $5F}'`/100%"
-logger -t "【LNMP】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 LNMP 运行，请重新正确格式化 U盘。"
+
+lnmp_Available
 
 [ -f /opt/lnmpi.txt ] && nvram set lnmpt=`cat /tmp/lnmpi.txt`
 [ -f /opt/lnmp.txt ] && nvram set lnmpo=`cat /opt/lnmp.txt`
@@ -371,6 +385,18 @@ fi
 initopt
 lnmp_get_status
 eval "$scriptfilepath keep &"
+}
+
+
+lnmp_Available () {
+
+Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
+[ -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【LNMP】" "/opt 已用数据空间$Available_M/100%"
+Available_I=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
+[ -z "$(echo $Available_I | grep '%')" ] && Available_I=$(df -i | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【LNMP】" "/opt 已用节点空间$Available_I/100%"
+logger -t "【LNMP】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 LNMP 运行，请重新正确格式化 U盘。"
 }
 
 initopt () {

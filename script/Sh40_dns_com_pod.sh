@@ -4,7 +4,17 @@ source /etc/storage/script/init.sh
 dns_com_pod_enable=`nvram get dns_com_pod_enable`
 [ -z $dns_com_pod_enable ] && dns_com_pod_enable=0 && nvram set dns_com_pod_enable=0
 if [ "$dns_com_pod_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep dns_com_pod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep dns_com_pod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+dns_com_pod_username=`nvram get dns_com_pod_username`
+dns_com_pod_password=`nvram get dns_com_pod_password`
+dns_com_pod_user_token=`nvram get dns_com_pod_user_token`
+dns_com_pod_domian=`nvram get dns_com_pod_domian`
+dns_com_pod_host=`nvram get dns_com_pod_host`
+dns_com_pod_domian2=`nvram get dns_com_pod_domian2`
+dns_com_pod_host2=`nvram get dns_com_pod_host2`
+dns_com_pod_interval=`nvram get dns_com_pod_interval`
+
 hostIP=""
 myIP=""
 [ -z $dns_com_pod_interval ] && dns_com_pod_interval=600 && nvram set dns_com_pod_interval=$dns_com_pod_interval
@@ -78,7 +88,8 @@ logger -t "【dns_com_pod动态域名】" "守护进程启动"
 while true; do
 sleep 41
 sleep $dns_com_pod_interval
-nvramshow=`nvram showall | grep '=' | grep dns_com_pod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep dns_com_pod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+dns_com_pod_enable=`nvram get dns_com_pod_enable`
 [ "$dns_com_pod_enable" = "0" ] && dns_com_pod_close && exit 0;
 if [ "$dns_com_pod_enable" = "1" ] ; then
 	dns_com_pod_start

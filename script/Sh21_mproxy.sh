@@ -5,7 +5,8 @@ mproxyport=`nvram get mproxyport`
 mproxy_enable=`nvram get mproxy_enable`
 [ -z $mproxy_enable ] && mproxy_enable=0 && nvram set mproxy_enable=0
 if [ "$mproxy_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep mproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep mproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+mproxy_port=`nvram get mproxy_port`
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mproxy)" ]  && [ ! -s /tmp/script/_mproxy ]; then

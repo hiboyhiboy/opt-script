@@ -4,7 +4,27 @@ source /etc/storage/script/init.sh
 ngrok_enable=`nvram get ngrok_enable`
 [ -z $ngrok_enable ] && ngrok_enable=0 && nvram set ngrok_enable=0
 if [ "$ngrok_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep ngrok | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep ngrok | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+ngrok_server=`nvram get ngrok_server`
+ngrok_port=`nvram get ngrok_port`
+ngrok_token=`nvram get ngrok_token`
+ngrok_domain=`nvram get ngrok_domain`
+ngrok_domain_type=`nvram get ngrok_domain_type`
+ngrok_domain_lhost=`nvram get ngrok_domain_lhost`
+ngrok_domain_lport=`nvram get ngrok_domain_lport`
+ngrok_domain_sdname=`nvram get ngrok_domain_sdname`
+ngrok_tcp=`nvram get ngrok_tcp`
+ngrok_tcp_type=`nvram get ngrok_tcp_type`
+ngrok_tcp_lhost=`nvram get ngrok_tcp_lhost`
+ngrok_tcp_lport=`nvram get ngrok_tcp_lport`
+ngrok_tcp_rport=`nvram get ngrok_tcp_rport`
+ngrok_custom=`nvram get ngrok_custom`
+ngrok_custom_type=`nvram get ngrok_custom_type`
+ngrok_custom_lhost=`nvram get ngrok_custom_lhost`
+ngrok_custom_lport=`nvram get ngrok_custom_lport`
+ngrok_custom_hostname=`nvram get ngrok_custom_hostname`
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ngrok)" ]  && [ ! -s /tmp/script/_ngrok ]; then

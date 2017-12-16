@@ -4,7 +4,17 @@ source /etc/storage/script/init.sh
 aliddns_enable=`nvram get aliddns_enable`
 [ -z $aliddns_enable ] && aliddns_enable=0 && nvram set aliddns_enable=0
 if [ "$aliddns_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep aliddns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep aliddns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+aliddns_interval=`nvram get aliddns_interval`
+aliddns_ak=`nvram get aliddns_ak`
+aliddns_sk=`nvram get aliddns_sk`
+aliddns_domain=`nvram get aliddns_domain`
+aliddns_name=`nvram get aliddns_name`
+aliddns_domain2=`nvram get aliddns_domain2`
+aliddns_name2=`nvram get aliddns_name2`
+aliddns_ttl=`nvram get aliddns_ttl`
+
 hostIP=""
 domain=""
 name=""
@@ -94,7 +104,8 @@ while true; do
 sleep 43
 sleep $aliddns_interval
 [ ! -s "`which curl`" ] && aliddns_restart
-nvramshow=`nvram showall | grep '=' | grep aliddns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep aliddns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+aliddns_enable=`nvram get aliddns_enable`
 [ "$aliddns_enable" = "0" ] && aliddns_close && exit 0;
 if [ "$aliddns_enable" = "1" ] ; then
 	aliddns_start

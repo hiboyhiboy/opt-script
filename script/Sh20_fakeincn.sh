@@ -5,7 +5,7 @@ source /etc/storage/script/init.sh
 fakeincn_enable=`nvram get app_7`
 [ -z $fakeincn_enable ] && fakeincn_enable=0 && nvram set app_7=0
 if [ "$fakeincn_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep fakeincn | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep fakeincn | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fakeincn_enable=`nvram get app_7`
 [ -z $fakeincn_enable ] && fakeincn_enable=0 && nvram set app_7=0
 fi

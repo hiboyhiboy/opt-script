@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2017-11-30"
+Builds="/etc/storage/Builds-2017-12-16"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -328,13 +328,12 @@ modprobe xt_set
 #fi
 [ ! -d "$confdir" ] && mkdir -p $confdir
 ### SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
-### 说明：共享路径填写时，【\】要写成【\\】。
+### 说明：username=、password=填账号密码，删除代码前面的#启用功能。
 #sleep 10
 #modprobe des_generic
 #modprobe cifs CIFSMaxBufSize=64512
 #mkdir -p /media/cifs
-#mount -t cifs \\\\{host}\\{share} /media/cifs -o username={user},password={pass}
-#mount -t cifs \\\\192.168.1.66\\nas /media/cifs -o username=guest,password=guest
+#mount -t cifs //192.168.123.66/nas /media/cifs -o username=user,password=pass,dynperm,nounix,noserverino,file_mode=0777,dir_mode=0777
 
 sleep 5
 stop_ftpsamba
@@ -4087,7 +4086,7 @@ killall crond
 restart_dhcpd ; sleep 1
 [ -f /tmp/menu_title_re ] && /etc/storage/www_sh/menu_title.sh re &
 mkdir -p /tmp/script
-{ echo '#!/bin/sh' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' '&' ; } > /tmp/script/_mountopt
+{ echo '#!/bin/sh' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' ; } > /tmp/script/_mountopt
 chmod 777 /tmp/script/_mountopt
 nvram set ss_internet="0"
 /etc/storage/inet_state_script.sh 12 t

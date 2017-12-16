@@ -4,7 +4,12 @@ source /etc/storage/script/init.sh
 FastDick_enable=`nvram get FastDick_enable`
 [ -z $FastDick_enable ] && FastDick_enable=0 && nvram set FastDick_enable=0
 if [ "$FastDick_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep FastDick | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep FastDick | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+FastDick_uid=`nvram get FastDick_uid`
+FastDick_pwd=`nvram get FastDick_pwd`
+FastDicks=`nvram get FastDicks`
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ]  && [ ! -s /tmp/script/_Fast_Dick ]; then
@@ -118,6 +123,18 @@ else
 	[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	if [ "$ss_opt_x" = "5" ] ; then
+		# 指定目录
+		opt_cifs_dir=`nvram get opt_cifs_dir`
+		if [ -d $opt_cifs_dir ] ; then
+			upanPath="$opt_cifs_dir"
+		else
+			logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
+			upanPath=""
+			[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+			[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		fi
+	fi
 	echo "$upanPath"
 	if [ -z "$upanPath" ] ; then 
 		logger -t "【迅雷快鸟】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"

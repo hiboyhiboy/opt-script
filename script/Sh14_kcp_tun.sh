@@ -6,8 +6,23 @@ kcptun_enable=`nvram get kcptun_enable`
 kcptun_path=`nvram get kcptun_path`
 [ -z $kcptun_path ] && kcptun_path="/opt/bin/client_linux_mips" && nvram set kcptun_path=$kcptun_path
 if [ "$kcptun_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+kcptun_sport=`nvram get kcptun_sport`
+kcptun_crypt=`nvram get kcptun_crypt`
+kcptun_lport=`nvram get kcptun_lport`
+kcptun_sndwnd=`nvram get kcptun_sndwnd`
+kcptun_rcvwnd=`nvram get kcptun_rcvwnd`
+kcptun_mode=`nvram get kcptun_mode`
+kcptun_mtu=`nvram get kcptun_mtu`
+kcptun_dscp=`nvram get kcptun_dscp`
+kcptun_datashard=`nvram get kcptun_datashard`
+kcptun_parityshard=`nvram get kcptun_parityshard`
+kcptun_autoexpire=`nvram get kcptun_autoexpire`
+kcptun_key=`nvram get kcptun_key`
+kcptun_server=`nvram get kcptun_server`
+kcptun_user=`nvram get kcptun_user`
 
 
 kcptun_s_server=""

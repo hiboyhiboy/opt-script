@@ -3,7 +3,7 @@
 source /etc/storage/script/init.sh
 kms_enable=`nvram get kms_enable`
 [ -z $kms_enable ] && kms_enable=0 && nvram set kms_enable=0
-[ "$kms_enable" != "0" ] && nvramshow=`nvram showall | grep '=' | grep kms | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#[ "$kms_enable" != "0" ] && nvramshow=`nvram showall | grep '=' | grep kms | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kms)" ]  && [ ! -s /tmp/script/_kms ]; then
 	mkdir -p /tmp/script

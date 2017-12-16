@@ -7,8 +7,11 @@ FWI="/tmp/firewall.v2ray.pdcn"
 v2ray_enable=`nvram get v2ray_enable`
 [ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
 if [ "$v2ray_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
+
+v2ray_follow=`nvram get v2ray_follow`
+v2ray_optput=`nvram get v2ray_optput`
 
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
@@ -196,6 +199,12 @@ if [ -s "$SVC_PATH" ] ; then
 	nvram set v2ray_path="$SVC_PATH"
 fi
 v2ray_path="$SVC_PATH"
+v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
+if [ ! -s "$v2ctl_path" ] ; then
+	logger -t "【v2ray】" "找不到 $v2ctl_path 下载程序"
+	wgetcurl.sh $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
+	chmod 755 "$v2ctl_path"
+fi
 geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
 if [ ! -s "$geoip_path" ] ; then
 	logger -t "【v2ray】" "找不到 $geoip_path 下载程序"
@@ -285,6 +294,7 @@ iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j
 NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
 hash su 2>/dev/null && su_x="1"
 hash su 2>/dev/null || su_x="0"
+[ "$su_x" != "1" ] && logger -t "【v2ray】" "缺少 su 命令, 停止路由自身流量走透明代理"
 if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
 
 logger -t "【v2ray】" "支持游戏模式（UDP转发）"

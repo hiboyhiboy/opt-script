@@ -5,7 +5,7 @@ source /etc/storage/script/init.sh
 speedup_enable=`nvram get app_10`
 [ -z $speedup_enable ] && speedup_enable=0 && nvram set app_10=0
 if [ "$speedup_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep speedup | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep speedup | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 speedup_enable=`nvram get app_10`
 [ -z $speedup_enable ] && speedup_enable=0 && nvram set app_10=0
 speedup_Info=`nvram get app_11`

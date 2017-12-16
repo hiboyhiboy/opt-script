@@ -4,7 +4,17 @@ source /etc/storage/script/init.sh
 dnspod_enable=`nvram get dnspod_enable`
 [ -z $dnspod_enable ] && dnspod_enable=0 && nvram set dnspod_enable=0
 if [ "$dnspod_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep '=' | grep dnspod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep dnspod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+dnspod_username=`nvram get dnspod_username`
+dnspod_password=`nvram get dnspod_password`
+dnspod_Token=`nvram get dnspod_Token`
+dnspod_domian=`nvram get dnspod_domian`
+dnspod_host=`nvram get dnspod_host`
+dnspod_domian2=`nvram get dnspod_domian2`
+dnspod_host2=`nvram get dnspod_host2`
+dnspod_interval=`nvram get dnspod_interval`
+
 hostIP=""
 myIP=""
 [ -z $dnspod_interval ] && dnspod_interval=600 && nvram set dnspod_interval=$dnspod_interval
@@ -53,7 +63,8 @@ logger -t "【DNSPod动态域名】" "守护进程启动"
 while true; do
 sleep 41
 sleep $dnspod_interval
-nvramshow=`nvram showall | grep '=' | grep dnspod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep dnspod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+dnspod_enable=`nvram get dnspod_enable`
 [ "$dnspod_enable" = "0" ] && dnspod_close && exit 0;
 if [ "$dnspod_enable" = "1" ] ; then
 	dnspod_start
