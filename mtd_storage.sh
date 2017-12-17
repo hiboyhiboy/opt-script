@@ -1414,7 +1414,10 @@ ad=`nvram get button_script_1_s`
 [ -z "$ad" ] && { ad="Adbyby" ; nvram set button_script_1_s="Adbyby" ; }
 # 按钮名称可自定义
 # [ "$ad" = "ADM" ] && nvram set button_script_1_s="ADM"
-nvram set button_script_2_s="SS"
+ss_working_port=`nvram get ss_working_port`
+[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
+[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
+[ ${ss_info:=SS} ] && nvram set button_script_2_s="$ss_info"
 case "$1" in
 1)
 # 按钮①子程序 名称可自定义
