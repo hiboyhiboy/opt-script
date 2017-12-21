@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2017-12-16"
+Builds="/etc/storage/Builds-2017-12-19"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -240,7 +240,7 @@ func_resetsh()
 	# 删除内部脚本文件
 	# rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $kmskey $DNSPOD_script $cloudxns_script $aliddns_script
 	# rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
-	rm -f $script_script
+	rm -f $script_script $script_ezbtn
 	mkdir -p -m 755 $dir_storage
 	rm -f /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt
 	[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
