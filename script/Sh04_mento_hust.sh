@@ -187,13 +187,13 @@ fi
 mentohust_mode=`nvram get mentohust_mode`
 if [ "$mentohust_mode" = "0" ] ; then
 logger -t "【MentoHUST】" "标准模式"
-	$mentohust_path  > /dev/null 2>&1 
+	$mentohust_path &
 elif [ "$mentohust_mode" = "1" ] ; then
 logger -t "【MentoHUST】" "锐捷模式"
-   $mentohust_path  -y  > /dev/null 2>&1 
+   $mentohust_path  -y &
 elif [ "$mentohust_mode" = "2" ] ; then
 logger -t "【MentoHUST】" "赛尔模式"
-   $mentohust_path -s8.8.8.8 > /dev/null 2>&1 
+   $mentohust_path -s8.8.8.8 &
 fi
 sleep 2
 [ ! -z "`pidof mentohust`" ] && logger -t "【MentoHUST】" "启动成功" && mentohust_restart o

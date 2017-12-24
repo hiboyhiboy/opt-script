@@ -266,7 +266,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -15 adm
 			killall -9 adm
 			sleep 3
-			/tmp/7620adm/adm >/dev/null 2>&1 &
+			/tmp/7620adm/adm &
 			sleep 20
 			reb=`expr $reb + 1`
 		fi
@@ -276,7 +276,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -15 adm
 			killall -9 adm
 			sleep 3
-			/tmp/7620adm/adm >/dev/null 2>&1 &
+			/tmp/7620adm/adm &
 			sleep 20
 		fi
 		port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
@@ -412,7 +412,7 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 	cd /tmp/7620adm
 	export PATH='/tmp/7620adm:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 	export LD_LIBRARY_PATH=/tmp/7620adm/lib:/lib:/opt/lib
-	/tmp/7620adm/adm >/dev/null 2>&1 &
+	/tmp/7620adm/adm &
 	if [ "$adbyby_adblocks" = "1" ] ; then
 		logger -t "【ADM】" "加载 第三方自定义 规则, 等候15秒"
 		sleep 15

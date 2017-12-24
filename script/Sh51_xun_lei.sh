@@ -191,7 +191,7 @@ chmod 777 "$xunleis_dir/xunlei" -R
 logger -t "【迅雷下载】" "启动程序"
 cd "$xunleis_dir/xunlei"
 export LD_LIBRARY_PATH="$xunleis_dir/xunlei/lib:/lib:/opt/lib"
-"$xunleis_dir/xunlei/portal" >/dev/null 2>&1 &
+"$xunleis_dir/xunlei/portal" &
 sleep 2
 export LD_LIBRARY_PATH="/lib:/opt/lib"
 sleep 5

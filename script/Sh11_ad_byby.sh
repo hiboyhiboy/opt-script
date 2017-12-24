@@ -273,7 +273,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -15 adbyby
 			killall -9 adbyby
 			sleep 3
-			/tmp/bin/adbyby >/dev/null 2>&1 &
+			/tmp/bin/adbyby &
 			sleep 20
 			reb=`expr $reb + 1`
 		fi
@@ -283,7 +283,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			killall -15 adbyby
 			killall -9 adbyby
 			sleep 3
-			/tmp/bin/adbyby >/dev/null 2>&1 &
+			/tmp/bin/adbyby &
 			sleep 20
 		fi
 		port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
@@ -499,7 +499,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		[ -s /tmp/bin/data/video_B.txt ] && mv -f /tmp/bin/data/video_B.txt /tmp/bin/data/video.txt
 	fi
 	logger -t "【Adbyby】" "启动 adbyby 程序"
-	/tmp/bin/adbyby >/dev/null 2>&1 &
+	/tmp/bin/adbyby &
 	if [ "$adbyby_adblocks" = "1" ] ; then
 		logger -t "【Adbyby】" "加载 第三方自定义 规则, 等候10秒"
 		sleep 10
@@ -513,7 +513,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		update_ad_rules
 		killall adbyby
 		killall -9 adbyby
-		/tmp/bin/adbyby >/dev/null 2>&1 &
+		/tmp/bin/adbyby &
 		sleep 10
 	fi
 fi
