@@ -179,12 +179,10 @@ logger -t "【MentoHUST】" "运行 $mentohust_path"
 
 #保存配置到文件
 if [ ! -f "/etc/storage/mentohust.conf" ] ; then
-	$mentohust_path -u$mentohust_u -p$mentohust_p -n$mentohust_n -i$mentohust_i -m$mentohust_m -g$mentohust_g -s$mentohust_s -o$mentohust_o -t$mentohust_t -e$mentohust_e -r$mentohust_r -l$mentohust_l -a$mentohust_a -d$mentohust_d -b$mentohust_b -v$mentohust_v -f$mentohust_f  -c$mentohust_c -w &
+	$mentohust_path -u$mentohust_u -p$mentohust_p -n$mentohust_n -i$mentohust_i -m$mentohust_m -g$mentohust_g -s$mentohust_s -o$mentohust_o -t$mentohust_t -e$mentohust_e -r$mentohust_r -l$mentohust_l -a$mentohust_a -d$mentohust_d -b$mentohust_b -v$mentohust_v -f$mentohust_f  -c$mentohust_c -w 
 	sleep 2
 	pids=$(pidof process) && killall -9 $pids
 fi
-killall mentohust
-killall -9 mentohust
 mentohust_mode=`nvram get mentohust_mode`
 if [ "$mentohust_mode" = "0" ] ; then
 logger -t "【MentoHUST】" "标准模式"
