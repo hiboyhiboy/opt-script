@@ -96,6 +96,7 @@ echo "V2Ray 安装 $version"
 /root/go.sh --version $version
 check_daemon
 echo "安装完成"
+ntpdate us.pool.ntp.org
 if [ -f "/etc/v2ray/config.back0" ]; then
 cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
   if [ -n "${SYSTEMCTL_CMD}" ]; then
@@ -163,7 +164,8 @@ do_start(){
         keep
         exit 0
     else
-    	cd /usr/bin/v2ray/
+        cd /usr/bin/v2ray/
+        ntpdate us.pool.ntp.org
         $DAEMON $DAEMON_OPTS &
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
@@ -658,6 +660,7 @@ cat << EOF > /root/config.json
 EOF
 
 
+ntpdate us.pool.ntp.org
   if [ -n "${SYSTEMCTL_CMD}" ]; then
     if [ -f "/lib/systemd/system/v2ray.service" ]; then
       echo "Restarting V2Ray service."

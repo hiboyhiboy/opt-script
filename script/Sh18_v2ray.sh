@@ -172,33 +172,8 @@ eval $(ps -w | grep "_v2ray.sh keep" | grep -v grep | awk '{print "kill "$1";";}
 eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }
 
-v2ray_start () {
-initconfig
-SVC_PATH="$v2ray_path"
-if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/bin/v2ray"
-fi
-chmod 777 "$SVC_PATH"
-[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/v2ray
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【v2ray】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
-fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【v2ray】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/v2ray "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
-	chmod 755 "/opt/bin/v2ray"
-else
-	logger -t "【v2ray】" "找到 $SVC_PATH"
-fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【v2ray】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【v2ray】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
-fi
-if [ -s "$SVC_PATH" ] ; then
-	nvram set v2ray_path="$SVC_PATH"
-fi
-v2ray_path="$SVC_PATH"
+v2ray_wget_v2ctl () {
+
 v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
 if [ ! -s "$v2ctl_path" ] ; then
 	logger -t "【v2ray】" "找不到 $v2ctl_path 下载程序"
@@ -217,10 +192,62 @@ if [ ! -s "$geosite_path" ] ; then
 	wgetcurl.sh $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
 	chmod 755 "$geosite_path"
 fi
+}
+
+v2ray_start () {
+initconfig
+SVC_PATH="$v2ray_path"
+if [ ! -s "$SVC_PATH" ] ; then
+	SVC_PATH="/opt/bin/v2ray"
+	v2ray_path="$SVC_PATH"
+fi
+chmod 777 "$SVC_PATH"
+[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/v2ray
+if [ ! -s "$SVC_PATH" ] ; then
+	logger -t "【v2ray】" "找不到 $SVC_PATH，安装 opt 程序"
+	/tmp/script/_mountopt start
+fi
+optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
+if [ ! -z "$optPath" ] ; then
+	logger -t "【v2ray】" " /opt/ 在内存储存"
+	A_restart=`nvram get app_19`
+	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh)" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
+		rm -f /opt/bin/v2ray
+		rm -f /opt/bin/v2ray_config.pb
+		v2ray_wget_v2ctl
+		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置"
+		cd "$(dirname "$SVC_PATH")"
+		v2ctl config < /etc/storage/v2ray_config_script.sh > /opt/bin/v2ray_config.pb
+		[ -f /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
+		rm -f /opt/bin/v2ctl
+		rm -f /opt/bin/geoip.dat
+		rm -f /opt/bin/geosite.dat
+	fi
+else
+	v2ray_wget_v2ctl
+	rm -f /opt/bin/v2ray_config.pb
+fi
+if [ ! -s "$SVC_PATH" ] ; then
+	logger -t "【v2ray】" "找不到 $SVC_PATH 下载程序"
+	wgetcurl.sh /opt/bin/v2ray "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+	chmod 755 "/opt/bin/v2ray"
+else
+	logger -t "【v2ray】" "找到 $SVC_PATH"
+fi
+if [ ! -s "$SVC_PATH" ] ; then
+	logger -t "【v2ray】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
+	logger -t "【v2ray】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
+fi
+if [ -s "$SVC_PATH" ] ; then
+	nvram set v2ray_path="$SVC_PATH"
+fi
+v2ray_path="$SVC_PATH"
 logger -t "【v2ray】" "运行 v2ray_script"
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
-$v2ray_path  -config /etc/storage/v2ray_config_script.sh &
+[ ! -f /opt/bin/v2ray_config.pb ] && $v2ray_path -config /etc/storage/v2ray_config_script.sh -format json &
+[ -f /opt/bin/v2ray_config.pb ] && $v2ray_path -config /opt/bin/v2ray_config.pb -format pb &
 restart_dhcpd
 v2ray_v=`v2ray -version | grep V2Ray`
 nvram set v2ray_v="$v2ray_v"
