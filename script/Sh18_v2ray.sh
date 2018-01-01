@@ -527,7 +527,7 @@ keep)
 updatev2ray)
 	v2ray_restart o
 	[ "$v2ray_enable" = "1" ] && nvram set v2ray_status="updatev2ray" && logger -t "【v2ray】" "重启" && v2ray_restart
-	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && rm -rf $v2ray_path
+	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path ; rm -f /opt/bin/v2ctl ; rm -f /opt/bin/geoip.dat ; rm -f /opt/bin/geosite.dat ; }
 	;;
 *)
 	v2ray_check
