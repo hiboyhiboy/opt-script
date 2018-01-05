@@ -175,7 +175,7 @@ fi
 #confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
 #if [ -z "$confdir" ] ; then 
 	confdir="/tmp/ss/dnsmasq.d"
-f#i
+#fi
 confdir_x="$(echo -e $confdir | sed -e "s/\//"'\\'"\//g")"
 [ ! -d "$confdir" ] && mkdir -p $confdir
 
