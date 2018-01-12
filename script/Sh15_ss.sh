@@ -126,9 +126,9 @@ ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 
 ss_updatess=`nvram get ss_updatess`
 [ -z $ss_updatess ] && ss_updatess=0 && nvram set ss_updatess=$ss_updatess
-[ -z $ss_link_1 ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
+[ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
-[ $ss_link_1 == "www.163.com" ] && ss_link_1="email.163.com" && nvram set ss_link_1="email.163.com"
+[ $ss_link_1 == "email.163.com" ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
 
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 chinadns_enable=`nvram get app_1`
@@ -175,7 +175,7 @@ fi
 #confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
 #if [ -z "$confdir" ] ; then 
 	confdir="/tmp/ss/dnsmasq.d"
-f#i
+#fi
 confdir_x="$(echo -e $confdir | sed -e "s/\//"'\\'"\//g")"
 [ ! -d "$confdir" ] && mkdir -p $confdir
 
@@ -1430,6 +1430,8 @@ else
 fi
 		rm -rf /tmp/ss/tmp_chnroute.txt
 		ipset flush ss_spec_dst_sh
+		grep -v '^#' /tmp/ss/chnroute.txt | sort -u | grep -v "^$" > /tmp/ss/tmp_chnroute.txt
+		mv -f /tmp/ss/tmp_chnroute.txt /tmp/ss/chnroute.txt
 		grep -v '^#' /tmp/ss/chnroute.txt | sort -u | grep -v "^$" | sed -e "s/^/-A ss_spec_dst_sh &/g" | ipset -R -!
 	
 	nvram set gfwlist3="chnroutes规则`ipset list ss_spec_dst_sh -t | awk -F: '/Number/{print $2}'` 行 Update: $(date)"
