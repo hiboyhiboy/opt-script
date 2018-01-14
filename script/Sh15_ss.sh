@@ -522,36 +522,43 @@ if [ "$ss_check" = "1" ] ; then
 			[ ! -z "$kcptun_server" ] && BP_IP="$ss_s1_ip,$ss_s2_ip,$kcptun_server"
 			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,5353' -o -O
 			sleep 1
-			hash check_network 2>/dev/null && {
-			check_network 0
-			[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
+			check=0
+			hash check_network 2>/dev/null && check=1
+			if [ "$check" == "1" ] ; then
+				check_network 1
+				[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 				if [ "$check" == "404" ] ; then
-					check_network 0
+					check_network 1
 					[ "$?" == "0" ] && check=200 || check=404
 				fi
-			}
-			hash check_network 2>/dev/null || check=404
-			[ "$check" == "404" ] && {
-			curltest=`which curl`
-			if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-				wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-				[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
-				if [ "$check" == "404" ] ; then
-					wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-					[ "$?" == "0" ] && check=200 || check=404
-				fi
-			else
-				check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-				[ "$check" != "200" ] && sleep 3
-				[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+				logger -t "【ss-redir】" "check_network 检查 Google.com : $check"
+				ss_link_1_tmp=Google.com
 			fi
-			}
+			hash check_network 2>/dev/null || check=404
+			if [ "$check" == "404" ] ; then
+				curltest=`which curl`
+				if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+					wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+					[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
+					if [ "$check" == "404" ] ; then
+						wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+						[ "$?" == "0" ] && check=200 || check=404
+					fi
+					logger -t "【ss-redir】" "wget  检查 $ss_link_1 : $check"
+				else
+					check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+					[ "$check" != "200" ] && sleep 1
+					[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+					logger -t "【ss-redir】" "curl  检查 $ss_link_1 : $check"
+				fi
+				ss_link_1_tmp=$ss_link_1
+			fi
 			if [ "$check" == "200" ] ; then
-				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 www.163.com 成功"
+				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1_tmp 成功"
 				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1 成功"
 				checkip=1
 			else
-				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 www.163.com 失败"
+				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1_tmp 失败"
 				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1 失败"
 				[ ${action_port:=1090} ] && [ $action_port == 1091 ] && Server=1090 || Server=1091
 				#加上切换标记
@@ -1741,32 +1748,37 @@ echo "Debug: $DNS_Server"
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
 
-	hash check_network 2>/dev/null && {
-	check_link="www.163.com"
-	check_network 3
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
+	check=0
+	hash check_network 2>/dev/null && check=1
+	if [ "$check" == "1" ] ; then
+		check_link="Google.com"
+		check_network 1
+		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 		if [ "$check" == "404" ] ; then
-			check_network 3
+			check_network 1
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
-	}
-	hash check_network 2>/dev/null || check=404
-	[ "$check" == "404" ] && {
-	check_link="$ss_link_1"
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-		[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
-		if [ "$check" == "404" ] ; then
-			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-	else
-		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-		[ "$check" != "200" ] && sleep 3
-		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		logger -t "【ss-redir】" "check_network 检查 Google.com : $check"
 	fi
-	}
+	hash check_network 2>/dev/null || check=404
+	if [ "$check" == "404" ] ; then
+		check_link="$ss_link_1"
+		curltest=`which curl`
+		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+			[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
+			if [ "$check" == "404" ] ; then
+				wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+				[ "$?" == "0" ] && check=200 || check=404
+			fi
+			logger -t "【ss-redir】" "wget  检查 $ss_link_1 : $check"
+		else
+			check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			[ "$check" != "200" ] && sleep 1
+			[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			logger -t "【ss-redir】" "curl  检查 $ss_link_1 : $check"
+		fi
+	fi
 if [ "$check" != "200" ] ; then 
 	logger -t "【SS】" "连 $check_link 的域名都解析不了, 你的网络能用？？"
 	logger -t "【SS】" "SS 网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
@@ -2121,31 +2133,32 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 
 #检查是否存在SS备份服务器, 这里通过判断 ss_rdd_server 是否填写来检查是否存在备用服务器
 
-
-hash check_network 2>/dev/null && {
-check_network
-[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
+check=0
+hash check_network 2>/dev/null && check=1
+if [ "$check" == "1" ] ; then
+	check_network
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 	if [ "$check" == "404" ] ; then
 		check_network
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
-}
-hash check_network 2>/dev/null || check=404
-[ "$check" == "404" ] && {
-curltest=`which curl`
-if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
-	if [ "$check" == "404" ] ; then
-		wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
-		[ "$?" == "0" ] && check=200 || check=404
-	fi
-else
-	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	[ "$check" != "200" ] && sleep 3
-	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
-}
+hash check_network 2>/dev/null || check=404
+if [ "$check" == "404" ] ; then
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
+		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
+		if [ "$check" == "404" ] ; then
+			wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
+	else
+		check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check" != "200" ] && sleep 1
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+	fi
+fi
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
@@ -2154,30 +2167,32 @@ if [ "$check" == "200" ] ; then
 	continue
 fi
 
-hash check_network 2>/dev/null && {
-check_network 3
-[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
+check=0
+hash check_network 2>/dev/null && check=1
+if [ "$check" == "1" ] ; then
+	check_network 3
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 	if [ "$check" == "404" ] ; then
 		check_network 3
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
-}
-hash check_network 2>/dev/null || check=404
-[ "$check" == "404" ] && {
-curltest=`which curl`
-if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
-	if [ "$check" == "404" ] ; then
-		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-		[ "$?" == "0" ] && check=200 || check=404
-	fi
-else
-	check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-	[ "$check" != "200" ] && sleep 3
-	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 fi
-}
+hash check_network 2>/dev/null || check=404
+if [ "$check" == "404" ] ; then
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
+		if [ "$check" == "404" ] ; then
+			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
+	else
+		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check" != "200" ] && sleep 1
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+	fi
+fi
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] Internet have no problem."
 else
@@ -2201,30 +2216,32 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 		sleep 5
 	fi
 fi
-hash check_network 2>/dev/null && {
-check_network
-[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
+check=0
+hash check_network 2>/dev/null && check=1
+if [ "$check" == "1" ] ; then
+	check_network
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 	if [ "$check" == "404" ] ; then
 		check_network
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
-}
-hash check_network 2>/dev/null || check=404
-[ "$check" == "404" ] && {
-curltest=`which curl`
-if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
-	if [ "$check" == "404" ] ; then
-		wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
-		[ "$?" == "0" ] && check=200 || check=404
-	fi
-else
-	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	[ "$check" != "200" ] && sleep 3
-	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
-}
+hash check_network 2>/dev/null || check=404
+if [ "$check" == "404" ] ; then
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
+		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
+		if [ "$check" == "404" ] ; then
+			wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
+	else
+		check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check" != "200" ] && sleep 1
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+	fi
+fi
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
@@ -2272,30 +2289,32 @@ if [ ! -z $ss_rdd_server ] ; then
 fi
 restart_dhcpd
 sleep 5
-hash check_network 2>/dev/null && {
+check=0
+hash check_network 2>/dev/null && check=1
+if [ "$check" == "1" ] ; then
 check_network
-[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
+[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 	if [ "$check" == "404" ] ; then
 		check_network
 		[ "$?" == "0" ] && check=200 || check=404
 	fi
-}
-hash check_network 2>/dev/null || check=404
-[ "$check" == "404" ] && {
-curltest=`which curl`
-if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 3; }
-	if [ "$check" == "404" ] ; then
-		wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
-		[ "$?" == "0" ] && check=200 || check=404
-	fi
-else
-	check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	[ "$check" != "200" ] && sleep 3
-	[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 fi
-}
+hash check_network 2>/dev/null || check=404
+if [ "$check" == "404" ] ; then
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
+		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
+		if [ "$check" == "404" ] ; then
+			wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
+			[ "$?" == "0" ] && check=200 || check=404
+		fi
+	else
+		check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check" != "200" ] && sleep 1
+		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+	fi
+fi
 if [ "$check" == "200" ] ; then
 	logger -t "【SS】" "[$LOGTIME] SS 服务器 $Server_ip 【$Server】 连接√"
 	rebss="1"

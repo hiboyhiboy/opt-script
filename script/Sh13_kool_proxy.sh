@@ -251,30 +251,32 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		sleep 5
 		reboot
 	fi
-	hash check_network 2>/dev/null && {
-	check_network 3
-	[ "$?" == "0" ] && check=200 || { check=404;  sleep 3; }
+	check=0
+	hash check_network 2>/dev/null && check=1
+	if [ "$check" == "1" ] ; then
+		check_network 3
+		[ "$?" == "0" ] && check=200 || { check=404;  sleep 1; }
 		if [ "$check" == "404" ] ; then
 			check_network 3
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
-	}
-	hash check_network 2>/dev/null || check=404
-	[ "$check" == "404" ] && {
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-		[ "$?" == "0" ] && check=200 || { check=404;  sleep 3; }
-		if [ "$check" == "404" ] ; then
-			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-	else
-		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-		[ "$check" != "200" ] &&  sleep 3
-		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
-	}
+	hash check_network 2>/dev/null || check=404
+	if [ "$check" == "404" ] ; then
+		curltest=`which curl`
+		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+			[ "$?" == "0" ] && check=200 || { check=404;  sleep 1; }
+			if [ "$check" == "404" ] ; then
+				wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+				[ "$?" == "0" ] && check=200 || check=404
+			fi
+		else
+			check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			[ "$check" != "200" ] &&  sleep 1
+			[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		fi
+	fi
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
 		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
@@ -495,23 +497,23 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 			sleep 1
 	done
 	[ -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] && nvram set koolproxy_uprules=2
-	[ ! -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] && {
-	logger -t "【koolproxy】" "自动更新规则失效，启用脚本手动下载更新。"
-	nvram set koolproxy_uprules=1
-	mkdir -p /tmp/7620koolproxy/data/rules
-	cd /tmp/7620koolproxy/data/rules
-	hash daydayup 2>/dev/null && update_kp_rules_daydayup
-	hash daydayup 2>/dev/null || update_kp_rules
-	rules_nu="`cat /tmp/7620koolproxy/data/rules/koolproxy.txt | grep -v ! | wc -l`"
-	if [ $rules_nu -lt 5 ] ; then
-		logger -t "【koolproxy】" "错误！下载规则数 $rules_nu ，再次启用脚本手动下载更新。"
-		update_kp_rules 5
+	if [ ! -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] ; then
+		logger -t "【koolproxy】" "自动更新规则失效，启用脚本手动下载更新。"
+		nvram set koolproxy_uprules=1
+		mkdir -p /tmp/7620koolproxy/data/rules
+		cd /tmp/7620koolproxy/data/rules
+		hash daydayup 2>/dev/null && update_kp_rules_daydayup
+		hash daydayup 2>/dev/null || update_kp_rules
+		rules_nu="`cat /tmp/7620koolproxy/data/rules/koolproxy.txt | grep -v ! | wc -l`"
+		if [ $rules_nu -lt 5 ] ; then
+			logger -t "【koolproxy】" "错误！下载规则数 $rules_nu ，再次启用脚本手动下载更新。"
+			update_kp_rules 5
+		fi
+		killall koolproxy
+		cd /tmp/7620koolproxy/
+		/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
+		koolproxy_cron_job
 	fi
-	killall koolproxy
-	cd /tmp/7620koolproxy/
-	/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
-	koolproxy_cron_job
-	}
 	hash krdl 2>/dev/null && krdl_ipset
 fi
 if [ -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] ; then
