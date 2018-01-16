@@ -14,10 +14,10 @@ filemanager_upanPath=`nvram get filemanager_upanPath`
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep file_manager)" ]  && [ ! -s /tmp/script/_file_manager ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep file_manager)" ]  && [ ! -s /tmp/script/_app5 ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_file_manager
-	chmod 777 /tmp/script/_file_manager
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app5
+	chmod 777 /tmp/script/_app5
 fi
 
 upanPath=""
@@ -85,8 +85,11 @@ if [ "$filemanager_enable" = "1" ] ; then
 	else
 		[ -z "`pidof filemanager`" ] && filemanager_restart
 		if [ "$filemanager_wan" = "1" ] ; then
-			logger -t "【filemanager】" "WebGUI 允许 $filemanager_wan_port tcp端口通过防火墙"
-			iptables -t filter -I INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
+			port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$filemanager_wan_port | cut -d " " -f 1 | sort -nr | wc -l)
+			if [ "$port" = 0 ] ; then
+				logger -t "【filemanager】" "WebGUI 允许 $filemanager_wan_port tcp端口通过防火墙"
+				iptables -t filter -I INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
+			fi
 		fi
 	fi
 fi
@@ -117,7 +120,7 @@ sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 killall filemanager
 killall -9 filemanager
-eval $(ps -w | grep "_file_manager keep" | grep -v grep | awk '{print "kill "$1";";}')
+eval $(ps -w | grep "_app5 keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "_file_manager.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
 }

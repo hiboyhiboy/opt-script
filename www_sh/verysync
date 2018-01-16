@@ -1,0 +1,56 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app06.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_20=0 #verysync_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set verysync_L2="$(($3 + 10))"
+nvram set verysync_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "verysync_L2"); %>,<% nvram_get_x("", "verysync_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/verysync
+if [ ! -f "/opt/app/verysync/Advanced_Extensions_verysync.asp" ] || [ ! -s "/opt/app/verysync/Advanced_Extensions_verysync.asp" ] ; then
+	wgetcurl.sh /opt/app/verysync/Advanced_Extensions_verysync.asp "$hiboyfile/Advanced_Extensions_verysyncasp" "$hiboyfile2/Advanced_Extensions_verysyncasp"
+fi
+umount /www/Advanced_Extensions_app06.asp
+if [ -f "/opt/app/verysync/Advanced_Extensions_verysync.asp" ] ; then
+	mount --bind /opt/app/verysync/Advanced_Extensions_verysync.asp /www/Advanced_Extensions_app06.asp
+	app6_ver=$(grep 'app6_ver=' /opt/app/verysync/Advanced_Extensions_verysync.asp | awk -F '=' '{print $2;}')
+	nvram set app6_ver=${app6_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh55_very_sync.sh
+if [ ! -f "/etc/storage/script/Sh55_very_sync.sh" ] || [ ! -s "/etc/storage/script/Sh55_very_sync.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh55_very_sync.sh "$hiboyscript/script/Sh55_very_sync.sh" "$hiboyscript/script/Sh55_very_sync.sh"
+fi
+chmod 777 /etc/storage/script -R
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+
