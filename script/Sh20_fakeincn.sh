@@ -328,11 +328,12 @@ if [ ! -f "/etc/storage/app_1.sh" ] || [ ! -s "/etc/storage/app_1.sh" ] ; then
 # 如果是由于地区不同而导致检测服务器不同出现的地区限制，恕我无能为力。
 
 # bigANDY  gaocuo@gmail.com
-# 2017-8-11@DE
+# 2018-01-16@DE
+# Ver 0.2
 
 # 配置文件包括以下几个：
 # /etc/storage/script/Sh20_fakeincn.sh  ，启动脚本 和 用于初始化流量伪装表。
-# /etc/storage/app_2.sh  这个文件复制到 /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf ，其中的 ipinfo.io 是用于检测地区的，你也可以在模块运行后浏览器访问 ipinfo.io 看看到底流量伪装是否成功。
+# /etc/storage/app_2.sh  这个文件复制到 /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf ，其中的 https://api.ip.sb/geoip 是用于检测地区的，你也可以在模块运行后浏览器访问 https://api.ip.sb/geoip 看看到底流量伪装是否成功。
 # /etc/storage/app_1.sh  这个文件用于自动检测 ss 是否正常，自动切换ss 服务器。里面需要设置你自己的ss服务器参数，请保证各台ss-server 的端口、密码、加密方式的一致，我是个懒人，不想处理那么复杂的情况。
 
 # ↓↓↓↓↓配置你自己的ss服务器参数↓↓↓↓↓
@@ -353,39 +354,39 @@ let index+=1
 sleep 15
 fakeincn_enable=`nvram get app_7` #fakeincn_enable
 while [ "$fakeincn_enable" = "1" ]; do
-
-eval server="\$"server${index}
-if [  -n "$server" ]; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		country=`wget  -qt3T1 -O- http://ipinfo.io/country`
+		country=`wget -qO- https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	else
-		country=`curl -k -s http://ipinfo.io/country`
+		country=`curl -k -s https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	fi
 	if [ "$country" != "CN" ]; then
 		logger -t "【fakeincn】" "ChinaServer不正确：$country，尝试下一个服务器：$server。"
-		eval $(ps -w | grep '/opt/app/fakeincn/fakeincn' | grep -v grep | awk '{print "kill "$1";";}')
-		/opt/app/fakeincn/fakeincn -s $server -p $ss_router_port -l 1008 -b 0.0.0.0 -k $ss_passwd -m $method -u -f /tmp/tocn_ss.pid
 		let index+=1
+		eval server="\$"server${index}
+		if [ -z "$server" ]; then
+			index=0
+			logger -t "FIC:" "ChinaServer run over. Sleep 60sec."
+			sleep 60
+		else
+			eval $(ps -w | grep '/opt/app/fakeincn/fakeincn' | grep -v grep | awk '{print "kill "$1";";}')
+			/opt/app/fakeincn/fakeincn -s $server -p $ss_router_port -l 1008 -b 0.0.0.0 -k $ss_passwd -m $method -u -f /tmp/tocn_ss.pid
+			sleep 5
+			NUM=`ps -w | grep "/opt/app/fakeincn/fakeincn" | grep -v grep |wc -l`
+			if [ "$NUM" -lt "1" ] ; then
+				logger -t "【fakeincn】" "fakeincn没启动$NUM，启动下个服务器：$index"
+				fakeincn_enable=`nvram get app_7` #fakeincn_enable
+				#跳出当前循环
+				continue
+			fi
+		fi
+	else
+		logger -t "FIC" "Country Check: $country, next checkpoint: 120sec."
+		sleep 120 #等120秒继续监测地区代码
 	fi
-	sleep 10
-	NUM=`ps -w | grep "/opt/app/fakeincn/fakeincn" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] ; then
-		logger -t "【fakeincn】" "ss-redir没启动$NUM，启动下个服务器：$index"
-		fakeincn_enable=`nvram get app_7` #fakeincn_enable
-		#跳出当前循环
-		continue
-	fi
-	sleep 110
-else
-	index=1
-	logger -t "【fakeincn】" "server run over. Sleep 180sec."
-	sleep 180
-fi
-
 fakeincn_enable=`nvram get app_7` #fakeincn_enable
 done
-fakeincn_v=2017-8-20
+fakeincn_v=2018-1-18
 
 EOF
 fi
