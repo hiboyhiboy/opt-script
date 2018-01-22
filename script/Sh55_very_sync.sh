@@ -7,12 +7,10 @@ verysync_wan_port=`nvram get app_21`
 [ -z $verysync_wan_port ] && verysync_wan_port=8886 && nvram set app_21=$verysync_wan_port
 verysync_wan=`nvram get app_22`
 [ -z $verysync_wan ] && verysync_wan=0 && nvram set app_22=0
-if [ "$verysync_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep verysync | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
 verysync_upanPath=`nvram get verysync_upanPath`
-
-fi
+#if [ "$verysync_enable" != "0" ] ; then
+#nvramshow=`nvram showall | grep '=' | grep verysync | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep very_sync)" ]  && [ ! -s /tmp/script/_app6 ]; then
 	mkdir -p /tmp/script
@@ -219,6 +217,7 @@ update_app () {
 mkdir -p /opt/app/verysync
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/verysync/Advanced_Extensions_verysync.asp
+	[ -f $verysync_upanPath/verysync/verysync ] && rm -f $verysync_upanPath/verysync/verysync
 fi
 
 # 加载程序配置页面

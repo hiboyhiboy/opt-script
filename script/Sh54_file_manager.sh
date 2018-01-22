@@ -7,12 +7,10 @@ filemanager_enable=`nvram get app_15`
 [ -z $filemanager_enable ] && filemanager_enable=0 && nvram set app_15=0
 filemanager_wan=`nvram get app_16`
 [ -z $filemanager_wan ] && filemanager_wan=0 && nvram set app_16=0
-if [ "$filemanager_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep filemanager | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
 filemanager_upanPath=`nvram get filemanager_upanPath`
-
-fi
+#if [ "$filemanager_enable" != "0" ] ; then
+#nvramshow=`nvram showall | grep '=' | grep filemanager | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep file_manager)" ]  && [ ! -s /tmp/script/_app5 ]; then
 	mkdir -p /tmp/script
