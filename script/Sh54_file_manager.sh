@@ -164,7 +164,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【filemanager】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
 fi
 chmod 777 "$SVC_PATH"
-filemanager_v=$(filemanager -v | grep version | awk -F 'version' '{print $2;}')
+filemanager_v=$($SVC_PATH -v | grep version | awk -F 'version' '{print $2;}')
 nvram set filemanager_v="$filemanager_v"
 logger -t "【filemanager】" "运行 filemanager"
 
