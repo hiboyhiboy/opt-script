@@ -83,6 +83,8 @@ sysArch(){
         VDIS="mipsle"
     elif [[ "$ARCH" == *"mips"* ]]; then
         VDIS="mips"
+    elif [[ "$ARCH" == *"s390x"* ]]; then
+        VDIS="s390x"
     fi
     return 0
 }
@@ -90,7 +92,7 @@ sysArch(){
 downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
-    colorEcho ${BLUE} "Donwloading V2Ray."
+    colorEcho ${BLUE} "Downloading V2Ray."
     DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? != 0 ];then
@@ -99,7 +101,6 @@ downloadV2Ray(){
     fi
     return 0
 }
-
 
 installSoftware(){
     COMPONENT=$1
@@ -272,6 +273,7 @@ installInitScrip(){
 	hash start-stop-daemon 2>/dev/null || daemon_x=1
 	if [ "$daemon_x" = "1" ] ; then
 		rm -f /etc/init.d/v2ray
+		check_daemon
 	else
 	        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemv/v2ray" "/etc/init.d/v2ray"
 	        chmod +x "/etc/init.d/v2ray"
@@ -281,8 +283,139 @@ installInitScrip(){
     return
 }
 
+function check_daemon(){
+hash start-stop-daemon 2>/dev/null || daemon_x=1
+echo $daemon_x
+if [ ! -f "/etc/init.d/v2ray" ] || [ "$daemon_x" = "1" ] ; then
+rm -f /root/keey.sh /etc/init.d/v2ray
+cat > "/etc/init.d/v2ray" <<-\VVRinit
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          v2ray
+# Required-Start:    $network $local_fs $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: V2Ray proxy services
+# Description:       V2Ray proxy services
+### END INIT INFO
+
+# Acknowledgements: Isulew Li <netcookies@gmail.com>
+
+DESC=v2ray
+NAME=v2ray
+DAEMON=/usr/bin/v2ray/v2ray
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+DAEMON_OPTS="-config /etc/v2ray/config.json"
+
+# Exit if the package is not installed
+[ -x $DAEMON ] || exit 0
+
+RETVAL=0
+
+check_running(){
+    PID=`ps -ef | grep -v grep | grep -i "${DAEMON}" | awk '{print $2}'`
+    if [ ! -z $PID ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+do_start(){
+    check_running
+    if [ $? -eq 0 ]; then
+        echo "$NAME (pid $PID) is already running..."
+        keep
+        exit 0
+    else
+        cd /usr/bin/v2ray/
+        ntpdate us.pool.ntp.org
+        $DAEMON $DAEMON_OPTS &
+        RETVAL=$?
+        if [ $RETVAL -eq 0 ]; then
+            echo "Starting $NAME success"
+            keep
+        else
+            echo "Starting $NAME failed"
+        fi
+    fi
+}
+
+do_stop(){
+    check_running
+    if [ $? -eq 0 ]; then
+        killall keey.sh
+        killall v2ray
+        RETVAL=$?
+        if [ $RETVAL -eq 0 ]; then
+            echo "Stopping $NAME success"
+        else
+            echo "Stopping $NAME failed"
+        fi
+    else
+        echo "$NAME is stopped"
+        RETVAL=1
+    fi
+}
+
+do_status(){
+    check_running
+    if [ $? -eq 0 ]; then
+        echo "$NAME (pid $PID) is running..."
+    else
+        echo "$NAME is stopped"
+        RETVAL=1
+    fi
+}
+
+do_restart(){
+    do_stop
+    do_start
+}
+
+keep () {
+if [ ! -f "/root/keey.sh" ]; then
+cat > "/root/keey.sh" <<-\SSMK
+#!/bin/sh
+#/usr/bin/v2ray/v2ray
+sleep 60
+service v2ray start
+SSMK
+chmod +x "/root/keey.sh"
+fi
+killall keey.sh
+/root/keey.sh &
+
+}
+
+
+case "$1" in
+    start|stop|restart|status)
+    do_$1
+    ;;
+    *)
+    echo "Usage: $0 { start | stop | restart | status }"
+    RETVAL=1
+    ;;
+esac
+
+exit $RETVAL
+
+
+VVRinit
+
+chmod 755 /etc/init.d/v2ray
+
+fi
+
+
+}
+
 Help(){
-    echo "./install-release.sh [-h] [-c] [-p proxy] [-f] [-v vx.y.z] [-l file]"
+    echo "./install-release.sh [-h] [-c] [-p proxy] [-f] [--version vx.y.z] [-l file]"
     echo "  -h, --help            Show help"
     echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
     echo "  -f, --force           Force install"
