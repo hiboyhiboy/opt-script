@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-1-16"
+Builds="/etc/storage/Builds-2018-2-1"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -4106,7 +4106,7 @@ rb=1
 while [ -z "$ping_time" ];
 do
 logger -t "【自定义脚本】" "等待联网后开始脚本"
-sleep 10
+sleep 8
 
 ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
@@ -4117,7 +4117,7 @@ if [ ! -z "$ping_time" ] ; then
 	echo "ping：失效"
 fi
 rb=`expr $rb + 1`
-if [ "$rb" -gt 5 ] ; then
+if [ "$rb" -gt 3 ] ; then
 	logger -t "【自定义脚本】" "等待联网超时"
 	ping_time=200
 	break
