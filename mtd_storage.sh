@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-2-1"
+Builds="/etc/storage/Builds-2018-2-17"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -228,18 +228,23 @@ func_resetsh()
 {
 	rm -f $slk
 	rm -f /etc/storage/Builds-*
-	# 删除UI配置文件
-	#rm -f $jbls_script $vlmcsdini_script $config_tinyproxy $config_mproxy $shadowsocks_ss_spec_lan $shadowsocks_ss_spec_wan $kcptun_script $SSRconfig_script 
-	#rm -f $ngrok_script $frp_script $ddns_script $ad_config_script $adbyby_rules_script $adm_rules_script $koolproxy_rules_list $koolproxy_rules_script
-	#rm -f /etc/storage/v2ray_config_script.sh /etc/storage/cow_config_script.sh /etc/storage/meow_config_script.sh /etc/storage/meow_direct_script.sh 
-	# rm -f $koolproxy_rules_list $vlmcsdini_script
-	
-	# 删除UI脚本文件
-	#rm -f /etc/storage/v2ray_script.sh /etc/storage/cow_script.sh /etc/storage/meow_script.sh /etc/storage/softether_script.sh
-	
-	# 删除内部脚本文件
-	# rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $kmskey $DNSPOD_script $cloudxns_script $aliddns_script
-	# rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
+
+	if [ -z "$(grep /etc/storage/script_script.sh /etc/storage/started_script.sh)" ] ; then
+		logger -t "【mtd_storage.sh】" "由于【/etc/storage/started_script.sh】缺少关键启动命令：【/etc/storage/script_script.sh】，重置全部脚本！"
+		#删除UI配置文件
+		rm -f $jbls_script $vlmcsdini_script $config_tinyproxy $config_mproxy $shadowsocks_ss_spec_lan $shadowsocks_ss_spec_wan $kcptun_script $SSRconfig_script 
+		rm -f $ngrok_script $frp_script $ddns_script $ad_config_script $adbyby_rules_script $adm_rules_script $koolproxy_rules_list $koolproxy_rules_script
+		rm -f /etc/storage/v2ray_config_script.sh /etc/storage/cow_config_script.sh /etc/storage/meow_config_script.sh /etc/storage/meow_direct_script.sh 
+		rm -f $koolproxy_rules_list $vlmcsdini_script
+		
+		#删除UI脚本文件
+		rm -f /etc/storage/v2ray_script.sh /etc/storage/cow_script.sh /etc/storage/meow_script.sh /etc/storage/softether_script.sh
+		
+		#删除内部脚本文件
+		rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $kmskey $DNSPOD_script $cloudxns_script $aliddns_script
+		rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
+	fi
+
 	rm -f $script_script
 	mkdir -p -m 755 $dir_storage
 	rm -f /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt
@@ -4071,7 +4076,7 @@ if [ ! -f "$script_script" ] ; then
 source /etc/storage/script/init.sh
 [ -f /tmp/script.lock ] && exit 0
 touch /tmp/script.lock
-
+touch /tmp/script_script_yes
 . /etc/storage/script0_script.sh
 ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
 ln -sf "/etc/storage/init.status" "/etc/init.status"

@@ -1,6 +1,10 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.5
+version=v3.9
+
+[ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
+[ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
+[ ! -z "$( alias | grep 'alias rm=')" ] &&  unalias rm
 
 SYSTEMCTL_CMD=$(command -v systemctl)
 SERVICE_CMD=$(command -v service)
@@ -98,7 +102,6 @@ check_daemon
 echo "安装完成"
 ntpdate us.pool.ntp.org
 if [ -f "/etc/v2ray/config.back0" ]; then
-cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
   if [ -n "${SYSTEMCTL_CMD}" ]; then
     if [ -f "/lib/systemd/system/v2ray.service" ]; then
       echo "Restarting V2Ray service."
@@ -110,6 +113,7 @@ cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
       ${SERVICE_CMD} v2ray start
     fi
   fi
+cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
 exit
 else
   echo "未完成配置生成，请继续配置"
