@@ -290,6 +290,11 @@ iptables -t nat -A OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-p
 logger -t "【fakeincn】" "优酷IP规则设置完成"
 
 cp -f /etc/storage/app_2.sh /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
+echo >> /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
+sed -Ei '/^$|api.ip.sb/d' /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
+	cat >> "/etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf" <<-\_CONF
+ipset=/api.ip.sb/tocn
+_CONF
 
 restart_dhcpd
 
@@ -386,7 +391,7 @@ while [ "$fakeincn_enable" = "1" ]; do
 	fi
 fakeincn_enable=`nvram get app_7` #fakeincn_enable
 done
-fakeincn_v=2018-1-18
+fakeincn_v=2018-2-19
 
 EOF
 fi
@@ -573,7 +578,7 @@ fi
 umount /www/Advanced_Extensions_app02.asp
 mount --bind /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp /www/Advanced_Extensions_app02.asp
 # 更新程序启动脚本
-
+[ "$1" = "del" ] && rm -rf /etc/storage/app_2.sh
 [ "$1" = "del" ] && /etc/storage/www_sh/假装在中国 del &
 }
 

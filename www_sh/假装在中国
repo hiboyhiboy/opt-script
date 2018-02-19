@@ -38,7 +38,7 @@ get_app ()
 {
 
 # 更新程序启动脚本
-[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh20_fakeincn.sh
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh20_fakeincn.sh /etc/storage/app_2.sh
 if [ ! -f "/etc/storage/script/Sh20_fakeincn.sh" ] || [ ! -s "/etc/storage/script/Sh20_fakeincn.sh" ] ; then
 	wgetcurl.sh /etc/storage/script/Sh20_fakeincn.sh "$hiboyscript/script/Sh20_fakeincn.sh" "$hiboyscript/script/Sh20_fakeincn.sh"
 fi
