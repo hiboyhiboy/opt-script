@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-2-19"
+Builds="/etc/storage/Builds-2018-2-20"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -245,6 +245,8 @@ func_resetsh()
 		rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
 	fi
 
+	rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
+	rm -f /opt/bin/ss0-redir /opt/bin/ssr0-redir /opt/bin/ss0-local /opt/bin/ssr0-local
 	rm -f $script_script
 	mkdir -p -m 755 $dir_storage
 	rm -f /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt

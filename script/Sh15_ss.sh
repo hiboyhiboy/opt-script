@@ -2192,7 +2192,7 @@ ss_mode_x=`nvram get ss_mode_x`
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 rm -f /tmp/cron_ss.lock
 ss_enable=`nvram get ss_enable`
-sleep 60
+sleep 15
 while [ "$ss_enable" = "1" ];
 do
 ss_internet=`nvram get ss_internet`
