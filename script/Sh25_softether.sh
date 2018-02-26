@@ -124,6 +124,8 @@ iptables -D INPUT -p udp --destination-port 1701 -j ACCEPT
 [ ! -z "$softether_path" ] && eval $(ps -w | grep "$softether_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall vpnserver softether_script.sh
 killall -9 vpnserver softether_script.sh
+rm -f /etc/storage/dnsmasq/dnsmasq.d/softether.conf
+restart_dhcpd
 eval $(ps -w | grep "_softether keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "_softether.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
 eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
