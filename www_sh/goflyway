@@ -38,7 +38,7 @@ get_app ()
 {
 
 # 更新程序启动脚本
-[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh56_gofly_way.sh
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh56_gofly_way.sh /etc/storage/app_7.sh
 if [ ! -f "/etc/storage/script/Sh56_gofly_way.sh" ] || [ ! -s "/etc/storage/script/Sh56_gofly_way.sh" ] ; then
 	wgetcurl.sh /etc/storage/script/Sh56_gofly_way.sh "$hiboyscript/script/Sh56_gofly_way.sh" "$hiboyscript/script/Sh56_gofly_way.sh"
 fi

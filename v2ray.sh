@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.10
+version=v3.11
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -37,6 +37,7 @@ uuid=$(cat /proc/sys/kernel/random/uuid)
 
 function Install(){
 #Install Basic Packages
+echo '安装基本软件包，请稍候！'
 if [[ ${OS} == 'CentOS' ]];then
 	yum install curl wget unzip ntp ntpdate -y
 else

@@ -184,7 +184,7 @@ cd $(dirname ` which goflyway`)
 #./goflyway -k=KEY123 -l="0.0.0.0:8100" &
 
 #客户端命令（1.2.3.4要修改为服务器IP，默认监听8100）
-goflyway -k=KEY123 -up="1.2.3.4:18100" -l="0.0.0.0:8100" &
+goflyway -k=KEY123 -up="1.2.3.4:8100" -l="0.0.0.0:8100" &
 
 #可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用
 #请设置以上软件的本地代理为 192.168.123.1:8100（协议为HTTP或SOCKS5代理，192.168.123.1为路由器IP）
@@ -199,7 +199,7 @@ initconfig
 mkdir -p /opt/app/goflyway
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/goflyway/Advanced_Extensions_goflyway.asp
-	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway
+	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /etc/storage/app_7.sh
 fi
 
 # 加载程序配置页面
