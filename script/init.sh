@@ -16,3 +16,17 @@ scriptpath=$(cd "$(dirname "$0")"; pwd)
 #echo $scriptpath
 scriptname=$(basename $0)
 #echo $scriptname
+
+kill_ps () {
+
+COMMAND="$1"
+if [ ! -z "$COMMAND" ] ; then
+	eval $(ps -w | grep "$COMMAND" | grep -v $$ | grep -v grep | awk '{print "kill "$1";";}')
+	eval $(ps -w | grep "$COMMAND" | grep -v $$ | grep -v grep | awk '{print "kill -9 "$1";";}')
+fi
+if [ "$2" == "exit0" ] ; then
+	exit 0
+fi
+}
+
+

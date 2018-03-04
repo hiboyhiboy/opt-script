@@ -412,16 +412,14 @@ fi
 killall_ss_redir()
 {
 
-eval $(ps -w | grep "ss-redir_" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "ss-redir_" | grep -v grep | awk '{print "kill -9 "$1";";}')
+kill_ps "ss-redir_"
 
 }
 
 killall_ss_local()
 {
 
-eval $(ps -w | grep "ss-local_" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "ss-local_" | grep -v grep | awk '{print "kill -9 "$1";";}')
+kill_ps "ss-local_"
 
 }
 
@@ -855,23 +853,23 @@ grep -v '^#' /etc/storage/shadowsocks_ss_spec_lan.sh | sort -u | grep -v "^$" | 
 while read line
 do
 for host in $line; do
-    case "${host:0:1}" in
-        1|1)
-            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_CHN
-            ;;
-        2|2)
-            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_GFW
-            ;;
-        n|N)
-            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_AC
-            ;;
-        g|G)
-            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_FW
-            ;;
-        b|B)
-            iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') -j RETURN
-            ;;
-    esac
+	case "${host:0:1}" in
+		1|1)
+			iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_CHN
+			;;
+		2|2)
+			iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_GFW
+			;;
+		n|N)
+			iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_AC
+			;;
+		g|G)
+			iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') $EXT_ARGS_TCP -j SS_SPEC_WAN_FW
+			;;
+		b|B)
+			iptables -t nat -I SS_SPEC_WAN_DG 2 -p tcp -m mark --mark $(echo ${host:2} | awk -F "." '{printf ("0x%02x", $1)} {printf ("%02x", $2)} {printf ("%02x", $3)} {printf ("00/0xffffff00\n")}') -j RETURN
+			;;
+	esac
 done
 done < /tmp/ss_spec_lan.txt
 fi
@@ -2028,9 +2026,9 @@ nvram set gfwlist3="ss-redir stop."
 /etc/storage/ez_buttons_script.sh 3 &
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
-eval $(ps -w | grep "_ss keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_ss.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_ss"
+kill_ps "_ss.sh"
+kill_ps "$scriptname"
 }
 
 ss_restart () {
@@ -2111,7 +2109,7 @@ ss_get_status
 if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "停止 ss-redir" && stop_SS
 	[ ! -z "`pidof ss-local`" ] && logger -t "【SS】" "停止 ss-local" && stop_SS
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$ss_enable" = "1" ] ; then
 	hash getopts 2>/dev/null ||  { logger -t "【SS】" "错误！Shell未加载getopts，请检查固件和busybox配置"; stop_SS; exit 1; }
@@ -2166,11 +2164,11 @@ fi
 SS_keep () {
 cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
 #!/bin/sh
+source /etc/storage/script/init.sh
 sleep 919
 ss_enable=\`nvram get ss_enable\`
 if [ ! -f /tmp/cron_ss.lock ] && [ "\$ss_enable" = "1" ] ; then
-eval \$(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
-eval \$(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
+kill_ps "$scriptname"
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -2597,6 +2595,76 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/et
 fi
 
 }
+
+initconfig () {
+
+shadowsocks_ss_spec_lan="/etc/storage/shadowsocks_ss_spec_lan.sh"
+if [ ! -f "$shadowsocks_ss_spec_lan" ] || [ ! -s "$shadowsocks_ss_spec_lan" ] ; then
+	cat > "$shadowsocks_ss_spec_lan" <<-\EEE
+#b,192.168.123.115
+#g,192.168.123.116
+#n,192.168.123.117
+#1,192.168.123.118
+#2,192.168.123.119
+#b,099B9A909FD9
+#1,099B9A909FD9
+#2,A9:CB:3A:5F:1F:C7
+
+
+EEE
+	chmod 755 "$shadowsocks_ss_spec_lan"
+fi
+
+shadowsocks_ss_spec_wan="/etc/storage/shadowsocks_ss_spec_wan.sh"
+if [ ! -f "$shadowsocks_ss_spec_wan" ] || [ ! -s "$shadowsocks_ss_spec_wan" ] ; then
+	cat > "$shadowsocks_ss_spec_wan" <<-\EEE
+WAN@raw.githubusercontent.com
+#WAN+8.8.8.8
+#WAN@www.google.com
+#WAN!www.baidu.com
+#WAN-223.5.5.5
+#WAN-114.114.114.114
+WAN!members.3322.org
+WAN!www.cloudxns.net
+WAN!dnsapi.cn
+WAN!api.dnspod.com
+WAN!www.ipip.net
+WAN!alidns.aliyuncs.com
+
+
+#以下样板是四个网段分别对应BLZ的美/欧/韩/台服
+#WAN+24.105.0.0/18
+#WAN+80.239.208.0/20
+#WAN+182.162.0.0/16
+#WAN+210.242.235.0/24
+#以下样板是telegram
+#WAN+149.154.160.1/32
+#WAN+149.154.160.2/31
+#WAN+149.154.160.4/30
+#WAN+149.154.160.8/29
+#WAN+149.154.160.16/28
+#WAN+149.154.160.32/27
+#WAN+149.154.160.64/26
+#WAN+149.154.160.128/25
+#WAN+149.154.161.0/24
+#WAN+149.154.162.0/23
+#WAN+149.154.164.0/22
+#WAN+149.154.168.0/21
+#WAN+91.108.4.0/22
+#WAN+91.108.56.0/24
+#WAN+109.239.140.0/24
+#WAN+67.198.55.0/24
+#WAN+91.108.56.172
+#WAN+149.154.175.50
+
+
+EEE
+	chmod 755 "$shadowsocks_ss_spec_wan"
+fi
+
+}
+
+initconfig
 
 ##############################
 ### ready go

@@ -81,7 +81,7 @@ display_check () {
 display_get_status
 if [ "$display_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof lcd4linux`" ] && logger -t "【相框显示】" "停止 lcd4linux" && display_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$display_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -136,9 +136,9 @@ display_close () {
 sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
 killall lcd4linux getaqidata getweather displaykeep.sh
 killall -9 lcd4linux getaqidata getweather displaykeep.sh
-eval $(ps -w | grep "_display keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_display.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_display"
+kill_ps "_display.sh"
+kill_ps "$scriptname"
 }
 
 display_start () {

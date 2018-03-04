@@ -12,9 +12,6 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep gofly_way)" ] 
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app7
 	chmod 777 /tmp/script/_app7
 fi
-if [ ! -f "/etc/storage/app_7.sh" ] || [ ! -s "/etc/storage/app_7.sh" ] ; then
-initconfig
-fi
 
 goflyway_restart () {
 
@@ -55,7 +52,7 @@ exit 0
 goflyway_get_status () {
 
 A_restart=`nvram get goflyway_status`
-B_restart="$goflyway_enable"
+B_restart="$goflyway_enable$(cat /etc/storage/app_7.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set goflyway_status=$B_restart
@@ -70,7 +67,7 @@ goflyway_check () {
 goflyway_get_status
 if [ "$goflyway_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof goflyway`" ] && logger -t "【goflyway】" "停止 goflyway" && goflyway_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$goflyway_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -106,13 +103,13 @@ goflyway_close () {
 sed -Ei '/【goflyway】|^$/d' /tmp/script/_opt_script_check
 killall goflyway
 killall -9 goflyway
-eval $(ps -w | grep "_app7 keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_gofly_way.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_app7"
+kill_ps "_gofly_way.sh"
+kill_ps "$scriptname"
 }
 
 goflyway_start () {
-initconfig
+
 SVC_PATH="/opt/bin/goflyway"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【goflyway】" "找不到 $SVC_PATH，安装 opt 程序"
@@ -172,7 +169,7 @@ fi
 }
 
 initconfig () {
-    if [ ! -f "/etc/storage/app_7.sh" ] || [ ! -s "/etc/storage/app_7.sh" ] ; then
+	if [ ! -f "/etc/storage/app_7.sh" ] || [ ! -s "/etc/storage/app_7.sh" ] ; then
 cat > "/etc/storage/app_7.sh" <<-\VVR
 #!/bin/sh
 # 启动运行的脚本
@@ -190,17 +187,21 @@ goflyway -k=KEY123 -up="1.2.3.4:8100" -l="0.0.0.0:8100" &
 #请设置以上软件的本地代理为 192.168.123.1:8100（协议为HTTP或SOCKS5代理，192.168.123.1为路由器IP）
 
 VVR
-fi
+	fi
 
 }
 
-update_app () {
 initconfig
+
+update_app () {
+
 mkdir -p /opt/app/goflyway
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/goflyway/Advanced_Extensions_goflyway.asp
 	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /etc/storage/app_7.sh
 fi
+
+initconfig
 
 # 加载程序配置页面
 if [ ! -f "/opt/app/goflyway/Advanced_Extensions_goflyway.asp" ] || [ ! -s "/opt/app/goflyway/Advanced_Extensions_goflyway.asp" ] ; then

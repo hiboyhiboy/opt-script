@@ -55,7 +55,7 @@ exit 0
 ssrserver_get_status () {
 
 A_restart=`nvram get ssrserver_status`
-B_restart="$ssrserver_enable$ssrserver_update$(cat /etc/storage/SSRconfig_script.sh | grep -v "^$")"
+B_restart="$ssrserver_enable$ssrserver_update$(cat /etc/storage/SSRconfig_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ssrserver_status=$B_restart
@@ -70,7 +70,7 @@ ssrserver_check () {
 ssrserver_get_status
 if [ "$ssrserver_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`ps -w | grep manyuser/shadowsocks/server | grep -v grep `" ] && logger -t "【SSR_server】" "停止 ssrserver" && ssrserver_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$ssrserver_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -78,6 +78,7 @@ if [ "$ssrserver_enable" = "1" ] ; then
 		ssrserver_start
 	else
 		[ -z "`ps -w | grep manyuser/shadowsocks/server | grep -v grep `" ] || [ ! -s "`which python`" ] && ssrserver_restart
+		ssrserver_port_dpt
 	fi
 fi
 }
@@ -108,10 +109,12 @@ done
 
 ssrserver_close () {
 sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check
-eval $(ps -w | grep "manyuser/shadowsocks/server" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_ssrserver keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_ssrserver.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
+iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
+kill_ps "manyuser/shadowsocks/server"
+kill_ps "/tmp/script/_ssrserver"
+kill_ps "_ssrserver.sh"
+kill_ps "$scriptname"
 }
 
 ssrserver_start () {
@@ -241,6 +244,7 @@ fi
 sleep 2
 [ ! -z "$(ps -w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动成功" && ssrserver_restart o
 [ -z "$(ps -w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ssrserver_restart x
+ssrserver_port_dpt
 initopt
 ssrserver_get_status
 eval "$scriptfilepath keep &"
@@ -255,6 +259,22 @@ if [ "$optw_enable" != "2" ] ; then
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+fi
+
+}
+
+ssrserver_port_dpt () {
+
+ssserver_enable=`nvram get ssserver_enable`
+if [ "$ssserver_enable" = "1" ] ; then
+	ssserver_port=`nvram get ssserver_port`
+		echo "ssserver_port:$ssserver_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【ss-server】" "允许 $ssserver_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
+		iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
+	fi
 fi
 
 }

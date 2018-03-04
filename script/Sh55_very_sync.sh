@@ -74,7 +74,7 @@ verysync_check () {
 verysync_get_status
 if [ "$verysync_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof verysync`" ] && logger -t "【verysync】" "停止 verysync" && verysync_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$verysync_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -82,15 +82,7 @@ if [ "$verysync_enable" = "1" ] ; then
 		verysync_start
 	else
 		[ -z "`pidof verysync`" ] && verysync_restart
-		port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22330 | cut -d " " -f 1 | sort -nr | wc -l)
-		if [ "$port" = 0 ] ; then
-			iptables -t filter -I INPUT -p tcp --dport 22330 -j ACCEPT
-			iptables -t filter -I INPUT -p udp --dport 22331 -j ACCEPT
-			if [ "$verysync_wan" = "1" ] ; then
-				logger -t "【verysync】" "WebGUI 允许 $verysync_wan_port tcp端口通过防火墙"
-				iptables -t filter -I INPUT -p tcp --dport $verysync_wan_port -j ACCEPT
-			fi
-		fi
+		verysync_port_dpt
 	fi
 fi
 }
@@ -122,9 +114,9 @@ iptables -t filter -D INPUT -p udp --dport 22331 -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $verysync_wan_port -j ACCEPT
 killall verysync
 killall -9 verysync
-eval $(ps -w | grep "_app6 keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_very_sync.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_app6"
+kill_ps "_very_sync.sh"
+kill_ps "$scriptname"
 }
 
 verysync_start () {
@@ -185,19 +177,7 @@ sleep 2
 [ ! -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动成功" && verysync_restart o
 [ -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && verysync_restart x
 initopt
-
-if [ "$verysync_wan" = "1" ] ; then
-	logger -t "【verysync】" "WebGUI 允许 $verysync_wan_port tcp端口通过防火墙"
-	iptables -t filter -D INPUT -p tcp --dport $verysync_wan_port -j ACCEPT
-	iptables -t filter -I INPUT -p tcp --dport $verysync_wan_port -j ACCEPT
-fi
-
-#ports=22330/tcp|22331/udp
-iptables -t filter -D INPUT -p tcp --dport 22330 -j ACCEPT
-iptables -t filter -D INPUT -p udp --dport 22331 -j ACCEPT
-iptables -t filter -I INPUT -p tcp --dport 22330 -j ACCEPT
-iptables -t filter -I INPUT -p udp --dport 22331 -j ACCEPT
-
+verysync_port_dpt
 
 #verysync_get_status
 eval "$scriptfilepath keep &"
@@ -210,6 +190,22 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/et
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
+}
+
+verysync_port_dpt () {
+
+port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22330 | cut -d " " -f 1 | sort -nr | wc -l)
+if [ "$port" = 0 ] ; then
+	iptables -t filter -I INPUT -p tcp --dport 22330 -j ACCEPT
+	iptables -t filter -I INPUT -p udp --dport 22331 -j ACCEPT
+fi
+if [ "$verysync_wan" = "1" ] ; then
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:verysync_wan_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【verysync】" "WebGUI 允许 $verysync_wan_port tcp端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $verysync_wan_port -j ACCEPT
+	fi
+fi
 }
 
 update_app () {

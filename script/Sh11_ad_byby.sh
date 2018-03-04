@@ -177,7 +177,7 @@ adbyby_check () {
 adbyby_get_status
 if [ "$adbyby_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "停止 adbyby" && adbyby_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$adbyby_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -209,11 +209,11 @@ nvram set adbybyuser3="第三方规则行数:  `sed -n '$=' /tmp/bin/data/user3a
 nvram set adbybyuser="自定义规则行数:  `sed -n '$=' /tmp/bin/data/user_rules.txt | sed s/[[:space:]]//g ` 行"
 cat > "/tmp/sh_ad_byby_keey_k.sh" <<-ADMK
 #!/bin/sh
+source /etc/storage/script/init.sh
 sleep 919
 adbyby_enable=\`nvram get adbyby_enable\`
 if [ ! -f /tmp/cron_adb.lock ] && [ "\$adbyby_enable" = "1" ] ; then
-eval \$(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
-eval \$(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
+kill_ps "$scriptname"
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -369,9 +369,9 @@ killall -9 adbyby sh_ad_byby_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -15 koolproxy sh_ad_kp_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -9 koolproxy sh_ad_kp_keey_k.sh
 rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock /tmp/adbyby_host_backup.conf /tmp/sh_ad_byby_keey_k.sh
-eval $(ps -w | grep "_ad_byby keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_ad_byby.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_ad_byby"
+kill_ps "_ad_byby.sh"
+kill_ps "$scriptname"
 }
 
 
@@ -926,6 +926,138 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/et
 fi
 
 }
+
+initconfig () {
+
+ad_config_script="/etc/storage/ad_config_script.sh"
+if [ ! -f "$ad_config_script" ] || [ ! -s "$ad_config_script" ] ; then
+	cat > "$ad_config_script" <<-\EEE
+# 广告过滤 访问控制功能
+
+# 内网(LAN)访问控制的默认代理转发设置，
+#    0  默认值, 常规, 未在以下设定的 内网IP 根据 AD配置工作模式 走 AD
+#    1         全局, 未在以下设定的 内网IP 使用全局代理 走 AD
+#    2         绕过, 未在以下设定的 内网IP 不使用 AD
+AD_LAN_AC_IP=0
+nvram set AD_LAN_AC_IP=$AD_LAN_AC_IP
+# =========================================================
+# 内网(LAN)IP设定行为设置, 格式如 b,192.168.1.23, 多个值使用空格隔开
+#   使用 b/g/n 前缀定义主机行为模式, 使用英文逗号与主机 IP 分隔
+#   b: 绕过, 此前缀的主机IP 不使用 AD
+#   g: 全局, 此前缀的主机IP 忽略 AD配置工作模式 使用全局代理 走 AD
+#   n: 常规, 此前缀的主机IP 使用 AD配置工作模式 走 AD
+#   s: https, 此前缀的主机IP 使用 AD配置工作模式 https走 AD
+#   优先级: 绕过 > 全局 > 常规
+# （如多个设置则每一个ip一行,可选项：删除前面的#可生效）
+cat > "/tmp/ad_spec_lan_DOMAIN.txt" <<-\EOF
+#b,192.168.123.115
+#g,192.168.123.116
+#n,192.168.123.117
+#s,192.168.123.118
+#b,099B9A909FD9
+#s,099B9A909FD9
+#g,A9:CB:3A:5F:1F:C7
+
+
+
+EOF
+# =========================================================
+
+# adbyby加载第三方adblock规则 0关闭；1启动（可选项：删除前面的#可生效）
+#【不建议启用第三方规则,有可能破坏规则导致过滤失效】
+nvram set adbyby_adblocks=0
+adblocks=`nvram get adbyby_adblocks`
+cat > "/tmp/rule_DOMAIN.txt" <<-\EOF
+# 【可选多项，会占用内存：删除前面的#可生效，前面添加#停用规则】
+# https://easylist-downloads.adblockplus.org/easylistchina.txt
+
+
+
+EOF
+
+EEE
+	chmod 755 "$ad_config_script"
+fi
+
+adbyby_rules_script="/etc/storage/adbyby_rules_script.sh"
+if [ ! -f "$adbyby_rules_script" ] || [ ! -s "$adbyby_rules_script" ] ; then
+	cat > "$adbyby_rules_script" <<-\EEE
+!  ------------------------------ ADByby 自定义过滤语法简--------------------------------
+!  --------------  规则基于abp规则，并进行了字符替换部分的扩展-----------------------------
+!  ABP规则请参考 https://adblockplus.org/zh_CN/filters ，下面为大致摘要
+!  "!" 为行注释符，注释行以该符号起始作为一行注释语义，用于规则描述。
+!  "*" 为字符通配符，能够匹配0长度或任意长度的字符串，该通配符不能与正则语法混用。
+!  "^" 为分隔符，可以是除了字母、数字或者 _ - . % 之外的任何字符。
+!  "|" 为管线符号，来表示地址的最前端或最末端
+!  "||" 为子域通配符，方便匹配主域名下的所有子域。
+!  "~" 为排除标识符，通配符能过滤大多数广告，但同时存在误杀, 可以通过排除标识符修正误杀链接。
+!  "##" 为元素选择器标识符，后面跟需要隐藏元素的CSS样式例如 #ad_id  .ad_class
+!!  元素隐藏暂不支持全局规则和排除规则
+!! 字符替换扩展
+!  文本替换选择器标识符，后面跟需要替换的文本数据，格式：$s@模式字符串@替换后的文本@
+!  支持通配符*和?
+! 参考以下规则格式添加指定过滤网址
+! adbyby_list【模式二】指定网址过滤 功能
+|http://www.sohu.com/adbyby_list
+!百度广告
+||cbjs.baidu.com/adbyby
+||list.video.baidu.com/adbyby
+||nsclick.baidu.com/adbyby
+||play.baidu.com/adbyby
+||sclick.baidu.com/adbyby
+||tieba.baidu.com/adbyby
+||baidustatic.com/adbyby
+||bdimg.com/adbyby
+||bdstatic.com/adbyby
+||share.baidu.com/adbyby
+||hm.baidu.com/adbyby
+!视频广告
+||v.baidu.com/adbyby
+||1000fr.net/adbyby
+||56.com/adbyby
+||v-56.com/adbyby
+||acfun.com/adbyby
+||acfun.tv/adbyby
+||baofeng.com/adbyby
+||baofeng.net/adbyby
+||cntv.cn/adbyby
+||hoopchina.com.cn/adbyby
+||funshion.com/adbyby
+||fun.tv/adbyby
+||hitvs.cn/adbyby
+||hljtv.com/adbyby
+||iqiyi.com/adbyby
+||qiyi.com/adbyby
+||agn.aty.sohu.com/adbyby
+||itc.cn/adbyby
+||kankan.com/adbyby
+||ku6.com/adbyby
+||letv.com/adbyby
+||letvcloud.com/adbyby
+||letvimg.com/adbyby
+||pplive.cn/adbyby
+||pps.tv/adbyby
+||ppsimg.com/adbyby
+||pptv.com/adbyby
+||v.qq.com/adbyby
+||l.qq.com/adbyby
+||video.sina.com.cn/adbyby
+||tudou.com/adbyby
+||wasu.cn/adbyby
+||analytics-union.xunlei.com/adbyby
+||kankan.xunlei.com/adbyby
+||youku.com/adbyby
+||hunantv.com/adbyby
+||zimuzu.tv/adbyby_list
+! 参考以上规则格式添加指定过滤网址
+
+EEE
+	chmod 755 "$adbyby_rules_script"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

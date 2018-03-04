@@ -70,7 +70,7 @@ frp_get_status
 if [ "$frp_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof frpc`" ] && logger -t "【frp】" "停止 frpc" && frp_close
 	[ ! -z "`pidof frps`" ] && logger -t "【frp】" "停止 frps" && frp_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$frp_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -122,9 +122,9 @@ frp_close () {
 sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
 killall frpc frps frp_script.sh
 killall -9 frpc frps frp_script.sh
-eval $(ps -w | grep "_frp keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_frp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_frp"
+kill_ps "_frp.sh"
+kill_ps "$scriptname"
 }
 
 frp_start () {
@@ -184,6 +184,83 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/et
 fi
 
 }
+
+initconfig () {
+
+frp_script="/etc/storage/frp_script.sh"
+if [ ! -f "$frp_script" ] || [ ! -s "$frp_script" ] ; then
+	cat > "$frp_script" <<-\EEE
+#!/bin/sh
+export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
+export LD_LIBRARY_PATH=/lib:/opt/lib
+killall frpc frps
+mkdir -p /tmp/frp
+#启动frp功能后会运行以下脚本
+#使用方法请查看论坛教程地址: http://www.right.com.cn/forum/thread-191839-1-1.html
+#frp项目地址教程: https://github.com/fatedier/frp/blob/master/README_zh.md
+#请自行修改 auth_token 用于对客户端连接进行身份验证
+# IP查询： http://119.29.29.29/d?dn=github.com
+
+#客户端配置：
+cat > "/tmp/frp/myfrpc.ini" <<-\EOF
+[common]
+server_addr = 远端frp服务器ip
+server_port = 7000
+privilege_token = 12345
+
+[web]
+privilege_mode = true
+remote_port = 6000
+type = http
+local_ip = 192.168.123.1
+local_port = 80
+use_gzip = true
+#subdomain = test
+custom_domains = 你公网访问的域名
+#host_header_rewrite = 实际你内网访问的域名，可以供公网的域名不一致，如果一致可以不写
+log_file = /dev/null
+log_level = info
+log_max_days = 3
+EOF
+
+#服务端配置：
+#请手动配置【外部网络 (WAN) - 端口转发 (UPnP)】开启 WAN 外网端口
+cat > "/tmp/frp/myfrps.ini" <<-\EOF
+[common]
+bind_port = 7000
+dashboard_port = 7500
+# dashboard 用户名密码可选，默认都为 admin
+dashboard_user = admin
+dashboard_pwd = admin
+vhost_http_port = 88
+privilege_mode = true
+privilege_token = 12345
+#subdomain_host = frps.com
+max_pool_count = 50
+log_file = /dev/null
+log_level = info
+log_max_days = 3
+EOF
+
+#启动：
+frpc_enable=`nvram get frpc_enable`
+frpc_enable=${frpc_enable:-"0"}
+frps_enable=`nvram get frps_enable`
+frps_enable=${frps_enable:-"0"}
+if [ "$frpc_enable" = "1" ] ; then
+    frpc -c /tmp/frp/myfrpc.ini &
+fi
+if [ "$frps_enable" = "1" ] ; then
+    frps -c /tmp/frp/myfrps.ini &
+fi
+
+EEE
+	chmod 755 "$frp_script"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

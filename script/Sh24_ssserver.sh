@@ -78,7 +78,7 @@ ssserver_check () {
 ssserver_get_status
 if [ "$ssserver_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "停止 ss-server" && ssserver_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$ssserver_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -86,14 +86,7 @@ if [ "$ssserver_enable" = "1" ] ; then
 		ssserver_start
 	else
 		[ -z "`pidof ss-server`" ] && ssserver_restart
-		if [ -n "`pidof ss-server`" ] && [ "$ssserver_enable" = "1" ] ; then
-			port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
-			if [ "$port" = 0 ] ; then
-				logger -t "【SS_server】" "检测$port:找不到 ss-server 端口:$ssserver_port 规则, 重新添加"
-				iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
-				iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
-			fi
-		fi
+		ssserver_port_dpt
 	fi
 fi
 }
@@ -123,9 +116,9 @@ iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
 killall ss-server obfs-server
 killall -9 ss-server obfs-server
-eval $(ps -w | grep "_ssserver keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_ssserver.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_ssserver"
+kill_ps "_ssserver.sh"
+kill_ps "$scriptname"
 }
 
 ssserver_start () {
@@ -163,9 +156,7 @@ sleep 2
 [ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动成功" && ssserver_restart o
 [ -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 logger -t "【SS_server】" "`ps -w | grep ss-server | grep -v grep`"
-iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
-
-iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
+ssserver_port_dpt
 #ssserver_get_status
 eval "$scriptfilepath keep &"
 
@@ -176,6 +167,55 @@ optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+fi
+
+}
+
+initconfig () {
+
+SSRconfig_script="/etc/storage/SSRconfig_script.sh"
+if [ ! -f "$SSRconfig_script" ] || [ ! -s "$SSRconfig_script" ] ; then
+	cat > "$SSRconfig_script" <<-\EEE
+{
+    "server": "0.0.0.0",
+    "server_ipv6": "::",
+    "server_port": 8388,
+    "local_address": "127.0.0.1",
+    "local_port": 1080,
+
+    "password": "m",
+    "timeout": 120,
+    "udp_timeout": 60,
+    "method": "aes-128-ctr",
+    "protocol": "auth_aes128_md5",
+    "protocol_param": "",
+    "obfs": "tls1.2_ticket_auth_compatible",
+    "obfs_param": "",
+    "speed_limit_per_con": 0,
+    "speed_limit_per_user": 0,
+
+    "dns_ipv6": false,
+    "connect_verbose_info": 0,
+    "redirect": "",
+    "fast_open": false
+}
+EEE
+	chmod 755 "$SSRconfig_script"
+fi
+
+}
+
+initconfig
+
+ssserver_port_dpt () {
+
+if [ -n "`pidof ss-server`" ] && [ "$ssserver_enable" = "1" ] ; then
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【SS_server】" "检测$port:找不到 ss-server 端口:$ssserver_port 规则, 重新添加"
+		iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
+		iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
+	fi
 fi
 
 }
@@ -199,20 +239,5 @@ keep)
 	ssserver_check
 	;;
 esac
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

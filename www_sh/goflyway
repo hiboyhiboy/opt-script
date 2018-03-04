@@ -44,7 +44,7 @@ if [ ! -f "/etc/storage/script/Sh56_gofly_way.sh" ] || [ ! -s "/etc/storage/scri
 fi
 chmod 777 /etc/storage/script -R
 if [ ! -f "/etc/storage/app_7.sh" ] || [ ! -s "/etc/storage/app_7.sh" ] ; then
-/etc/storage/script/Sh56_gofly_way.sh initconfig
+/etc/storage/script/Sh56_gofly_way.sh update_app
 fi
 
 [ "$1" = "del" ] && exit

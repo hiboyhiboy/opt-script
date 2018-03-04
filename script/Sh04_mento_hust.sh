@@ -103,7 +103,7 @@ mentohust_check () {
 mentohust_get_status
 if [ "$mentohust_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof mentohust`" ] && logger -t "【MentoHUST】" "停止 mentohust" && mentohust_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$mentohust_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -139,9 +139,9 @@ mentohust_close () {
 sed -Ei '/【mentohust】|^$/d' /tmp/script/_opt_script_check
 killall mentohust
 killall -9 mentohust
-eval $(ps -w | grep "_mento_hust keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_mento_hust.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_mento_hust"
+kill_ps "_mento_hust.sh"
+kill_ps "$scriptname"
 }
 
 mentohust_start () {

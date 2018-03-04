@@ -74,7 +74,7 @@ fakeincn_check () {
 fakeincn_get_status
 if [ "$fakeincn_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$fakeincn_path" | grep -v grep )" ] && logger -t "【fakeincn】" "停止 fakeincn" && fakeincn_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$fakeincn_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -133,9 +133,9 @@ restart_dhcpd
 [ ! -z "$fakeincn_path" ] && eval $(ps -w | grep 'l 1008' | grep -v grep | awk '{print "kill "$1";";}')
 killall app_1.sh fakeincn
 killall -9 app_1.sh fakeincn
-eval $(ps -w | grep "_app2 keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_fakeincn.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_app2"
+kill_ps "_fakeincn.sh"
+kill_ps "$scriptname"
 }
 
 fakeincn_start () {
@@ -312,11 +312,7 @@ fi
 
 }
 
-update_app () {
-if [ "$1" = "del" ] ; then
-	rm -rf /etc/storage/app_1.sh /etc/storage/app_2.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
-fi
-
+initconfig () {
 
 # 说明和SS参数
 if [ ! -f "/etc/storage/app_1.sh" ] || [ ! -s "/etc/storage/app_1.sh" ] ; then
@@ -570,6 +566,18 @@ EOF
 fi
 
 chmod 777 /etc/storage/app_1.sh /etc/storage/app_2.sh
+
+}
+
+initconfig
+
+update_app () {
+if [ "$1" = "del" ] ; then
+	rm -rf /etc/storage/app_1.sh /etc/storage/app_2.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
+fi
+
+initconfig
+
 mkdir -p /opt/app/fakeincn
 # 加载程序配置页面
 if [ ! -f "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] || [ ! -s "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] ; then

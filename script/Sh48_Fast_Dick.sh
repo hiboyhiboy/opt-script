@@ -73,7 +73,7 @@ FastDick_get_status
 if [ "$FastDick_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	running=$(ps -w | grep "FastDick" | grep -v "grep" | wc -l)
 	[ $running -gt 1 ] && logger -t "【迅雷快鸟】" "停止 迅雷快鸟$running" && FastDick_clos
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$FastDick_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -102,10 +102,10 @@ done
 FastDick_close () {
 killall FastDick_script.sh
 killall -9 FastDick_script.sh
-eval $(ps -w | grep "/opt/FastDick/swjsq" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_Fast_Dick keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_Fast_Dick.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/opt/FastDick/swjsq"
+kill_ps "/tmp/script/_Fast_Dick"
+kill_ps "_Fast_Dick.sh"
+kill_ps "$scriptname"
 }
 
 
@@ -202,6 +202,25 @@ FastDick_get_status
 eval "$scriptfilepath keep &"
 }
 
+initconfig () {
+
+FastDick_script="/etc/storage/FastDick_script.sh"
+if [ ! -f "$FastDick_script" ] || [ ! -s "$FastDick_script" ] ; then
+	cat > "$FastDick_script" <<-\EEE
+#!/bin/sh
+# 迅雷快鸟【免U盘启动】功能需在此输入swjsq_wget.sh文件内容
+# swjsq_wget.sh文件脚本两种方法：
+# ①插入U盘，配置自定义脚本【插U盘启动】启动快鸟一次即可自动生成
+# ②打开https://github.com/fffonion/Xunlei-FastDick，按照网页的说明在PC上运行脚本，登陆成功后会生成swjsq_wget.sh，把swjsq_wget.sh的内容粘贴此处即可
+# 生成后需要到【系统管理】 - 【恢复/导出/上传设置】 - 【路由器内部存储 (/etc/storage)】【写入】保存脚本
+
+EEE
+	chmod 755 "$FastDick_script"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

@@ -102,7 +102,7 @@ if [ "$lnmp_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
 		[ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "停止 mysql 环境" && lnmp_close
 	fi
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$lnmp_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -113,6 +113,9 @@ if [ "$lnmp_enable" = "1" ] ; then
 			[ -z "`pidof mysqld`" ] || [ ! -s "`which mysqld`" ] && logger -t "【LNMP】" "mysqld 重新启动" && lnmp_restart
 		fi
 		[ -z "`pidof nginx`" ] || [ ! -s "`which nginx`" ] && logger -t "【LNMP】" "nginx 重新启动" && lnmp_restart
+		
+		lnmp_port_dpt
+		
 	fi
 fi
 }
@@ -150,9 +153,15 @@ sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
 /opt/etc/init.d/S80nginx stop
 killall spawn-fcgi nginx php-cgi mysqld
 killall -9 spawn-fcgi nginx php-cgi mysqld
-eval $(ps -w | grep "_lnmp keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_lnmp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+iptables -t filter -I INPUT -p tcp --dport $default_port -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport 3306 -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport $kodexplorer_port -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport $owncloud_port -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport $phpmyadmin_port -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport $wifidog_server_port -j ACCEPT
+kill_ps "/tmp/script/_lnmp"
+kill_ps "_lnmp.sh"
+kill_ps "$scriptname"
 }
 
 lnmp_start () {
@@ -382,6 +391,7 @@ fi
 [ -z "`pidof nginx`" ] && logger -t "【LNMP】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
 [ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "启动成功" && lnmp_restart o
 [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] && [ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "启动成功" && lnmp_restart o
+lnmp_port_dpt
 initopt
 lnmp_get_status
 eval "$scriptfilepath keep &"
@@ -408,6 +418,70 @@ if [ "$optw_enable" != "2" ] ; then
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+fi
+
+}
+
+lnmp_port_dpt () {
+
+lnmp_enable=`nvram get lnmp_enable`
+default_enable=`nvram get default_enable`
+if [ "$default_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	default_port=`nvram get default_port`
+		echo "default_port:$default_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$default_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【默认主页】" "默认服务网站允许远程访问, 允许 $default_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $default_port -j ACCEPT
+	fi
+fi
+mysql_enable=`nvram get mysql_enable`
+if [ "$mysql_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:3306 | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【MySQL】" "允许远程访问, 允许 3306 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport 3306 -j ACCEPT
+	fi
+fi
+kodexplorer_enable=`nvram get kodexplorer_enable`
+if [ "$kodexplorer_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	kodexplorer_port=`nvram get kodexplorer_port`
+		echo "kodexplorer_port:$kodexplorer_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$kodexplorer_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【芒果云】" "允许远程访问, 允许 $kodexplorer_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $kodexplorer_port -j ACCEPT
+	fi
+fi
+owncloud_enable=`nvram get owncloud_enable`
+if [ "$owncloud_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	owncloud_port=`nvram get owncloud_port`
+		echo "owncloud_port:$owncloud_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$owncloud_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【OwnCloud私有云】" "允许远程访问, 允许 $owncloud_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $owncloud_port -j ACCEPT
+	fi
+fi
+phpmyadmin_enable=`nvram get phpmyadmin_enable`
+if [ "$phpmyadmin_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	phpmyadmin_port=`nvram get phpmyadmin_port`
+		echo "phpmyadmin_port:$phpmyadmin_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$phpmyadmin_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【phpMyAdmin】" "允许远程访问, 允许 $phpmyadmin_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $phpmyadmin_port -j ACCEPT
+	fi
+fi
+wifidog_server_enable=`nvram get wifidog_server_enable`
+if [ "$wifidog_server_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	wifidog_server_port=`nvram get wifidog_server_port`
+		echo "wifidog_server_port:$wifidog_server_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$wifidog_server_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【wifidog_server】" "允许远程访问, 允许 $wifidog_server_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $wifidog_server_port -j ACCEPT
+	fi
 fi
 
 }

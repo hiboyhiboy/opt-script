@@ -105,7 +105,7 @@ wifidog_check () {
 wifidog_get_status
 if [ "$wifidog_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof wifidog`" ] && logger -t "【wifidog】" "停止 wifidog" && wifidog_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$wifidog_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -153,9 +153,9 @@ fi
 $WD_DIR/wdctl stop
 killall wifidog wdctl
 killall -9 wifidog wdctl
-eval $(ps -w | grep "_wifi_dog keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_wifi_dog.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_wifi_dog"
+kill_ps "_wifi_dog.sh"
+kill_ps "$scriptname"
 }
 
 wifidog_start () {

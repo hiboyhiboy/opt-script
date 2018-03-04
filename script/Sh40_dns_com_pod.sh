@@ -68,7 +68,7 @@ dns_com_pod_get_status
 dns_com_pod_get_status2
 if [ "$dns_com_pod_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【dns_com_pod动态域名】" "停止 dns_com_pod" && dns_com_pod_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$dns_com_pod_enable" = "1" ] ; then
 [ "x${dns_com_pod_user_token}" = "x" ] && [ "x${dns_com_pod_username}" = "x" ] && [ "x${dns_com_pod_password}" = "x" ] && { logger -t "【dns_com_pod动态域名】" "用户名密码或者 Token 等设置未填写, 10 秒后自动尝试重新启动" && sleep 10; nvram set dns_com_pod_status=00; eval "$scriptfilepath &"; exit 0; }
@@ -98,9 +98,9 @@ done
 }
 
 dns_com_pod_close () {
-eval $(ps -w | grep "_dns_com_pod keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_dns_com_pod.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_dns_com_pod"
+kill_ps "_dns_com_pod.sh"
+kill_ps "$scriptname"
 }
 
 dns_com_pod_start () {
@@ -110,28 +110,6 @@ if [ "$dns_com_pod_domian2"x != "x" ] && [ "$dns_com_pod_domian2" != "baidu.com"
 	arDdnsCheck $dns_com_pod_domian2 $dns_com_pod_host2
 fi
 }
-
-if [ ! -s "/etc/storage/ddns_script.sh" ] ; then
-cat > "/etc/storage/ddns_script.sh" <<-\EEE
-# 获得外网地址
-# 自行测试哪个代码能获取正确的IP，删除前面的#可生效
-arIpAddress () {
-curltest=`which curl`
-if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-    wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
-else
-    curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
-fi
-}
-arIpAddress=$(arIpAddress)
-EEE
-fi
 
 arDdnsInfo() {
 	local domainID recordID recordIP
@@ -292,7 +270,34 @@ arDdnsCheck() {
 
 }
 
+initconfig () {
 
+if [ ! -s "/etc/storage/ddns_script.sh" ] ; then
+cat > "/etc/storage/ddns_script.sh" <<-\EEE
+# 获得外网地址
+# 自行测试哪个代码能获取正确的IP，删除前面的#可生效
+arIpAddress () {
+curltest=`which curl`
+if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+    wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
+else
+    curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
+fi
+}
+arIpAddress=$(arIpAddress)
+EEE
+	chmod 755 "$ddns_script"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

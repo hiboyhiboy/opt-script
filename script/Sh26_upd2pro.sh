@@ -85,7 +85,7 @@ if  [ "$needed_restart" = "1" ] ; then
 	[ "$upd2pro_enable" != "1" ] && [ ! -z "$(ps -w | grep "/opt/bin/udp2raw" | grep -v grep )" ] && logger -t "【upd2pro】" "停止 udp2raw" && upd2pro_close
 	[ "$upd2pro2_enable" != "1" ] && [ ! -z "$(ps -w | grep "/opt/bin/speeder" | grep -v grep )" ] && logger -t "【upd2pro】" "停止 speeder" && upd2pro_close
 	[ "$upd2pro3_enable" != "1" ] && [ ! -z "$(ps -w | grep "/opt/bin/speederv2" | grep -v grep )" ] && logger -t "【upd2pro】" "停止 speederv2" && upd2pro_close
-	[ "$upd2pro_enable" != "1" ] && [ "$upd2pro2_enable" != "1" ] && [ "$upd2pro3_enable" != "1" ] && { eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	[ "$upd2pro_enable" != "1" ] && [ "$upd2pro2_enable" != "1" ] && [ "$upd2pro3_enable" != "1" ] && { kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$upd2pro_enable" = "1" ] || [ "$upd2pro2_enable" = "1" ] || [ "$upd2pro3_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -173,9 +173,9 @@ sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check
 # restart_dhcpd
 killall app_3.sh app_4.sh udp2raw speeder speederv2
 killall -9 app_3.sh app_4.sh udp2raw speeder speederv2
-eval $(ps -w | grep "_app3 keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_upd2pro.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps " /tmp/script/_app3"
+kill_ps "_upd2pro.sh"
+kill_ps "$scriptname"
 }
 
 upd2pro_start () {
@@ -269,16 +269,7 @@ fi
 
 }
 
-update_app () {
-if [ "$1" = "del1" ] ; then
-	rm -rf /etc/storage/app_3.sh /opt/bin/udp2raw /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
-fi
-if [ "$1" = "del2" ] ; then
-	rm -rf /etc/storage/app_4.sh /opt/bin/speeder /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
-fi
-if [ "$1" = "del3" ] ; then
-	rm -rf /etc/storage/app_6.sh /opt/bin/speederv2 /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
-fi
+initconfig () {
 
 if [ ! -f "/etc/storage/app_3.sh" ] || [ ! -s "/etc/storage/app_3.sh" ] ; then
 	cat >> "/etc/storage/app_3.sh" <<-\EOF
@@ -319,6 +310,24 @@ logger -t "【upd2pro】" "运行 speederv2" ; killall speederv2 ;
 EOF
 fi
 chmod 777 /etc/storage/app_3.sh /etc/storage/app_4.sh /etc/storage/app_6.sh
+
+}
+
+initconfig
+
+update_app () {
+if [ "$1" = "del1" ] ; then
+	rm -rf /etc/storage/app_3.sh /opt/bin/udp2raw /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
+fi
+if [ "$1" = "del2" ] ; then
+	rm -rf /etc/storage/app_4.sh /opt/bin/speeder /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
+fi
+if [ "$1" = "del3" ] ; then
+	rm -rf /etc/storage/app_6.sh /opt/bin/speederv2 /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
+fi
+
+initconfig
+
 mkdir -p /opt/app/upd2pro
 # 加载程序配置页面
 if [ ! -f "/opt/app/upd2pro/Advanced_Extensions_upd2pro.asp" ] || [ ! -s "/opt/app/upd2pro/Advanced_Extensions_upd2pro.asp" ] ; then

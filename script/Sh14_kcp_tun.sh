@@ -98,7 +98,7 @@ kcptun_check () {
 kcptun_get_status
 if [ "$kcptun_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "停止 $kcptun_path" && kcptun_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$kcptun_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -139,12 +139,12 @@ done
 kcptun_close () {
 
 sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
-[ ! -z "$kcptun_path" ] && eval $(ps -w | grep "$kcptun_path" | grep -v grep | awk '{print "kill "$1";";}')
+[ ! -z "$kcptun_path" ] && kill_ps "$kcptun_path"
 killall client_linux_mips kcptun_script.sh sh_kcpkeep.sh
 killall -9 client_linux_mips kcptun_script.sh sh_kcpkeep.sh
-eval $(ps -w | grep "_kcp_tun keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_kcp_tun.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_kcp_tun"
+kill_ps "_kcp_tun.sh"
+kill_ps "$scriptname"
 }
 
 kcptun_start () {
@@ -252,6 +252,64 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/et
 fi
 
 }
+
+initconfig () {
+
+kcptun_script="/etc/storage/kcptun_script.sh"
+if [ ! -f "$kcptun_script" ] || [ ! -s "$kcptun_script" ] ; then
+	cat > "$kcptun_script" <<-\EEE
+#!/bin/sh
+export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
+export LD_LIBRARY_PATH=/lib:/opt/lib
+# Kcptun 项目地址：https://github.com/xtaci/kcptun
+# 参数填写教程例子：https://github.com/xtaci/kcptun
+# Kcptun Server一键安装脚本:https://blog.kuoruan.com/110.html
+# kcptun服务端部署教程
+# https://blog.kuoruan.com/102.html
+# http://www.cmsky.com/kcptun/
+# kcptun服务端主程序下载：
+# 32位系统：wget --no-check-certificate http://opt.cn2qq.com/opt-file/server_linux_386 && chmod 755 server_linux_*
+# 64位系统：wget --no-check-certificate http://opt.cn2qq.com/opt-file/server_linux_amd64 && chmod 755 server_linux_*
+# 注意！！由于路由参数默认加上--nocomp，服务端也要加上--nocomp，在两端同时设定以关闭压缩。
+# 两端参数必须一致的有:
+# datashard
+# parityshard
+# nocomp
+# key
+# crypt
+#
+################################################################
+# Kcptun 客户端配置例子
+# 服务器地址（服务器自行购买）:111.111.111.111
+# 服务器端口:29900
+# 加密方式:none
+# 监听端口:8388
+# 服务器密码:自定义密码
+#
+# 备注：由于可用参数太多，不一一举例，其他参数可以参考项目主页的介绍。
+#
+################################################################
+# Shadowsocks 客户端配置例子
+# 服务端需要部署ss服务，新建SS服务端口：8388
+# 配置路由SS服务器地址：127.0.0.1
+# 配置路由SS服务器端口：8388
+# 正确填写你刚刚新建SS服务端口、密码、加密方式、协议和混淆方式。
+#
+# 备注：如果其他设备做 Kcptun 客户端，SS服务器地址填写那个设备的内网地址。
+# 
+################################################################
+# 客户端进程数量（守护脚本判断数据，请正确填写）
+KCPNUM=1
+killall client_linux_mips
+#
+################################################################
+EEE
+	chmod 755 "$kcptun_script"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

@@ -185,7 +185,7 @@ koolproxy_check () {
 koolproxy_get_status
 if [ "$koolproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "停止 koolproxy" && koolproxy_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$koolproxy_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -215,11 +215,11 @@ nvram set koolproxy_h="`/tmp/7620koolproxy/koolproxy -h | awk 'NR==1{print}'`】
 fi
 cat > "/tmp/sh_ad_kp_keey_k.sh" <<-ADMK
 #!/bin/sh
+source /etc/storage/script/init.sh
 sleep 919
 koolproxy_enable=\`nvram get koolproxy_enable\`
 if [ ! -f /tmp/cron_adb.lock ] && [ "\$koolproxy_enable" = "1" ] ; then
-eval \$(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
-eval \$(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
+kill_ps "$scriptname"
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -380,9 +380,9 @@ killall -15 koolproxy sh_ad_kp_keey_k.sh
 killall -9 koolproxy sh_ad_kp_keey_k.sh
 rm -f /tmp/adbyby_host.conf
 rm -f /tmp/7620koolproxy.tgz /tmp/cron_adb.lock /tmp/sh_ad_kp_keey_k.sh /tmp/cp_rules.lock
-eval $(ps -w | grep "_kool_proxy keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_kool_proxy.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_kool_proxy"
+kill_ps "_kool_proxy.sh"
+kill_ps "$scriptname"
 }
 
 koolproxy_start () {
@@ -1052,6 +1052,77 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/et
 fi
 
 }
+
+initconfig () {
+
+koolproxy_rules_script="/etc/storage/koolproxy_rules_script.sh"
+if [ ! -f "$koolproxy_rules_script" ] || [ ! -s "$koolproxy_rules_script" ] ; then
+	cat > "$koolproxy_rules_script" <<-\EEE
+!  ******************************* koolproxy 自定义过滤语法简表 *******************************
+!  ------------------------ 规则基于adblock规则，并进行了语法部分的扩展 ------------------------
+!  ABP规则请参考https://adblockplus.org/zh_CN/filters，下面为大致摘要
+!  "!" 为行注释符，注释行以该符号起始作为一行注释语义，用于规则描述
+!  "@@" 为白名单符，白名单具有最高优先级，放行过滤的网站，例如:@@||taobao.com
+!  ------------------------------------------------------------------------------------------
+!  "*" 为字符通配符，能够匹配0长度或任意长度的字符串，该通配符不能与正则语法混用。
+!  "^" 为分隔符，可以是除了字母、数字或者 _ - . % 之外的任何字符。
+!  "~" 为排除标识符，通配符能过滤大多数广告，但同时存在误杀, 可以通过排除标识符修正误杀链接。
+!  注：通配符仅在 url 规则中支持，html 规则中不支持
+!  ------------------------------------------------------------------------------------------
+!  "|" 为管线符号，来表示地址的最前端或最末端
+!  "||" 为子域通配符，方便匹配主域名下的所有子域
+!  用法及例子如下：(以下等号表示等价于)
+!  ||xx.com          =  http://xx.com || http://*.xx.com
+!  ||http://xx.com   =  http://xx.com || http://*.xx.com
+!  ||https://xx.com  =  https://xx.com || https://*.xx.com
+!  |xx.com           =  http://xx.com
+!  |http://xx.com    =  http://xx.com
+!  |https://xx.com   =  https://xx.com
+!  xx.com            =  http://*xx.com
+!  http://xx.com     =  http://*xx.com
+!  https://xx.com    =  https://xx.com
+!  ------------------------------------------------------------------------------------------
+!  支持html规则语法，例如：
+!  ||fulldls.com##.tp_reccomend_banner
+!  ||torrentzap.com##.tp_reccomend_banner
+!  但不支持adblock规则中，逗号合并符写法，例如：
+!  fulldls.com,torrentzap.com##.tp_reccomend_banner
+!  应该写成推荐样式或以下样式：
+!  fulldls.com##.tp_reccomend_banner
+!  torrentzap.com##.tp_reccomend_banner
+!  ------------------------------------------------------------------------------------------
+!  文本替换语法：$s@匹配内容@替换内容@
+!  文本替换例子：|http://cdn.pcbeta.js.inimc.com/data/cache/common.js?$s@var $banner = @@
+!  重定向语法：$r@匹配内容@替换内容@
+!  重定向例子：|http://koolshare.cn$r@http://koolshare.cn/*@http://www.qq.com@
+!  注：文本替换语法及重定向语法中的匹配内容不仅支持通配符功能，而且额外支持以下功能
+!  支持通配符 * 和 ? ，? 表示单个字符
+!  支持全正则匹配，/正则内容/ 表示应用正则匹配
+!  正则替换：替换内容支持 $1 $2 这样的符号
+!  普通替换：替换内容支持 * 这样的符号，表示把命中的内容复制到替换的内容。（类似 $1 $2，但是 * 号会自动计算数字）
+!  ------------------------------------------------------------------------------------------
+!  koolporxy支持https过滤功能，但考虑到https过滤的效率问题，目前仅允许非常明确的过滤指令。
+!  未来将逐步开放模糊https的相关语法，与普通语法同步，敬请期待。
+!  ******************************************************************************************
+
+EEE
+	chmod 755 "$koolproxy_rules_script"
+fi
+
+koolproxy_rules_list="/etc/storage/koolproxy_rules_list.sh"
+if [ ! -f "$koolproxy_rules_list" ] || [ ! -s "$koolproxy_rules_list" ] ; then
+	cat > "$koolproxy_rules_list" <<-\EEE
+# 【添加为#注释行，会自动忽略】
+# 【adbyby规则翻译的koolproxy兼容规则 by <dsyo2008> http://koolshare.cn/thread-83553-1-1.html】
+#https://raw.githubusercontent.com/dsyo2008/lazy_for_koolproxy/master/lazy_kp.txt
+
+EEE
+	chmod 755 "$koolproxy_rules_list"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

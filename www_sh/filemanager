@@ -45,27 +45,7 @@ fi
 chmod 777 /etc/storage/script -R
 # 初始配置脚本
 if [ ! -f "/etc/storage/app_5.sh" ] || [ ! -s "/etc/storage/app_5.sh" ] ; then
-	cat >> "/etc/storage/app_5.sh" <<-\EOF
-{
-  "port": 888,
-  "noAuth": false,
-  "baseURL": "",
-  "address": "",
-  "reCaptchaKey": "",
-  "reCaptchaSecret": "",
-  "database": "/etc/storage/database.db",
-  "log": "",
-  "plugin": "",
-  "scope": "/tmp/AiDisk_00",
-  "allowCommands": true,
-  "allowEdit": true,
-  "allowNew": true,
-  "commands": [
-    "git",
-    "svn"
-  ]
-}
-EOF
+	/etc/storage/script/Sh54_file_manager.sh update_app
 fi
 
 [ "$1" = "del" ] && exit

@@ -86,7 +86,7 @@ speedup_check () {
 speedup_get_status
 if [ "$speedup_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$speedup_path" | grep -v grep )" ] && logger -t "【speedup】" "停止 speedup" && speedup_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$speedup_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -130,10 +130,10 @@ speedup_close () {
 sed -Ei '/【speedup】|^$/d' /tmp/script/_opt_script_check
 killall speedup
 killall -9 speedup
-eval $(ps -w | grep "speedup start_path" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_app4 keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_speedup.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "speedup start_path"
+kill_ps "/tmp/script/_app4"
+kill_ps "_speedup.sh"
+kill_ps "$scriptname"
 }
 
 speedup_start () {

@@ -178,7 +178,7 @@ adm_check () {
 adm_get_status
 if [ "$adm_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof adm`" ] && logger -t "【ADM】" "停止 adm" && adm_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$adm_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -202,11 +202,11 @@ adm_keep () {
 
 cat > "/tmp/sh_ad_m_keey_k.sh" <<-ADMK
 #!/bin/sh
+source /etc/storage/script/init.sh
 sleep 919
 adm_enable=\`nvram get adm_enable\`
 if [ ! -f /tmp/cron_adb.lock ] && [ "\$adm_enable" = "1" ] ; then
-eval \$(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "\$1";";}')
-eval \$(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "\$1";";}')
+kill_ps "$scriptname"
 eval "$scriptfilepath keep &"
 exit 0
 fi
@@ -359,9 +359,9 @@ killall -9 adm sh_ad_m_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -9 koolproxy sh_ad_kp_keey_k.sh
 rm -f /tmp/adbyby_host.conf
 rm -f /tmp/7620adm.tgz /tmp/cron_adb.lock /tmp/sh_ad_m_keey_k.sh /tmp/cp_rules.lock
-eval $(ps -w | grep "_ad_m keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_ad_m.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_ad_m"
+kill_ps "_ad_m.sh"
+kill_ps "$scriptname"
 }
 
 adm_start () {
@@ -860,6 +860,64 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/et
 fi
 
 }
+
+initconfig () {
+
+adm_rules_script="/etc/storage/adm_rules_script.sh"
+if [ ! -f "$adm_rules_script" ] || [ ! -s "$adm_rules_script" ] ; then
+	cat > "$adm_rules_script" <<-\EEE
+[ADM]
+!  ------------------------------ 阿呆喵[ADM] 自定义过滤语法简表---------------------------------
+!  --------------  规则语法基于ABP规则，并进行了字符替换部分的扩展-----------------------------
+! ADM支持绝大多数ABP规则语法, 
+! 所以, 你可以装一个ABP浏览器插件, 然后用它来辅助写规则, 把写好的规则导入ADM自定义规则文件中保存即可正常使用了.
+
+!  ABP规则请参考https://adblockplus.org/zh_CN/filters，下面为大致摘要
+!  "!" 为行注释符，注释行以该符号起始作为一行注释语义，用于规则描述
+!  "*" 为字符通配符，能够匹配0长度或任意长度的字符串。
+!  "^" 为分隔符，可以匹配任何单个字符。
+!  "|" 为管线符号，来表示地址的最前端或最末端  比如 "|http://"  或  |http://www.abc.com/a.js|  
+!  "||" 为子域通配符，方便匹配主域名下的所有子域。比如 "||www.baidu.com"  就可以不要前面的 "http://"
+!  "~" 为排除标识符，通配符能过滤大多数广告，但同时存在误杀, 可以通过排除标识符修正误杀链接。
+!  "@@" 网址白名单, 例如不拦截此条地址   @@|http://www.baidu.com/js/u.js   或者 @@||www.baidu.com/js/u.js
+
+! ## #@# ##&  这3种为元素插入语法 (在语句末尾加 $B , 可以选择插入css语句在</body>前, 默认为</head>)
+!  "##" 为元素选择器标识符，后面跟需要隐藏元素的CSS样式例如 #ad_id  .ad_class
+! "#@#" 元素选择器白名单 
+! "##&" 为JQuery选择器标识符，后面跟需要隐藏元素的JQuery筛选语法, 如 ##&div:has(p)
+!  元素隐藏支持全局规则   ##.ad_text  不需要前面配置域名,对所有页面有效. 简单有效,但误杀会比较多, 慎用.
+
+! 文本替换规则一般人使用较少, 过滤视频规则一般必须使用之;
+!  文本替换选择器标识符, 支持通配符*和？，格式："页面C$s@内容A@内容B@"   意思为 <在使用"某正则模式" 在 "页面C"上用"内容A"替换"内容B" >  ; 
+! 文本替换方式1:  S@   使用正则匹配替换
+! 文本替换方式2:  s@   使用通配符 ?  *  匹配替换  
+!  -------------------------------------------------------------------------------------------
+
+!全局白名单
+!如果你有其他不想过滤的论坛或者网站类的, 可以在自定义里面仿造上面的规则写一条
+!例如 有些人不想过滤 http://www.baidu.com/
+!那么可以在user.txt 自定义中加一条规则  @@|http://$domain=.baidu.com|   保存即可
+
+!新增文本替换规则语法测试样例
+!样例1 使用正则删除某地方(替换 "<p...</p>" 字符串为 "http://www.admflt.com")
+!<p id="lg"><img src="http://www.baidu.com/img/bdlogo.gif" width="270" height="129"></p>
+!||www.baidu.com$S@<p.*<\/p>@http://www.admflt.com@
+!||kafan.cn$s@<div id="hd">@<div id="hd" style="display:none!important">@
+
+!ADM https黑名单写法;参考规则文件 https_black.txt
+!例如
+!B:baidu.com
+!B:taobao.com
+
+
+
+EEE
+	chmod 755 "$adm_rules_script"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

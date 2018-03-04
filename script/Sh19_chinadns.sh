@@ -84,7 +84,7 @@ chinadns_check () {
 chinadns_get_status
 if [ "$chinadns_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$chinadns_path" | grep -v grep )" ] && logger -t "【chinadns】" "停止 chinadns" && chinadns_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$chinadns_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -155,9 +155,9 @@ restart_dhcpd
 [ ! -z "$chinadns_path" ] && eval $(ps -w | grep "$chinadns_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall chinadns
 killall -9 chinadns
-eval $(ps -w | grep "_app1 keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_chinadns.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_app1"
+kill_ps "_chinadns.sh"
+kill_ps "$scriptname"
 }
 
 chinadns_start () {
@@ -276,6 +276,9 @@ updateapp1)
 	chinadns_restart o
 	[ "$chinadns_enable" = "1" ] && nvram set chinadns_status="updatechinadns" && logger -t "【chinadns】" "重启" && chinadns_restart
 	[ "$chinadns_enable" != "1" ] && nvram set chinadns_v="" && logger -t "【chinadns】" "更新" && update_app del
+	;;
+update_app)
+	update_app
 	;;
 *)
 	chinadns_check

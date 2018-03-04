@@ -59,7 +59,7 @@ exit 0
 filemanager_get_status () {
 
 A_restart=`nvram get filemanager_status`
-B_restart="$filemanager_enable$filemanager_wan$filemanager_wan_port"
+B_restart="$filemanager_enable$filemanager_wan$filemanager_wan_port$(cat /etc/storage/app_5.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set filemanager_status=$B_restart
@@ -74,7 +74,7 @@ filemanager_check () {
 filemanager_get_status
 if [ "$filemanager_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof filemanager`" ] && logger -t "【filemanager】" "停止 filemanager" && filemanager_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$filemanager_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -82,13 +82,7 @@ if [ "$filemanager_enable" = "1" ] ; then
 		filemanager_start
 	else
 		[ -z "`pidof filemanager`" ] && filemanager_restart
-		if [ "$filemanager_wan" = "1" ] ; then
-			port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$filemanager_wan_port | cut -d " " -f 1 | sort -nr | wc -l)
-			if [ "$port" = 0 ] ; then
-				logger -t "【filemanager】" "WebGUI 允许 $filemanager_wan_port tcp端口通过防火墙"
-				iptables -t filter -I INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
-			fi
-		fi
+		filemanager_port_dpt
 	fi
 fi
 }
@@ -118,9 +112,9 @@ sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 killall filemanager
 killall -9 filemanager
-eval $(ps -w | grep "_app5 keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_file_manager.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_app5"
+kill_ps "_file_manager.sh"
+kill_ps "$scriptname"
 }
 
 filemanager_start () {
@@ -168,6 +162,36 @@ filemanager_v=$($SVC_PATH -v | grep version | awk -F 'version' '{print $2;}')
 nvram set filemanager_v="$filemanager_v"
 logger -t "【filemanager】" "运行 filemanager"
 
+filemanager_wan_port=`cat /etc/storage/app_5.sh | grep -Eo '"port": [0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
+nvram set app_14=$filemanager_wan_port
+iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
+
+filemanager_upanPath="$upanPath"
+nvram set filemanager_upanPath="$upanPath"
+ln -sf /etc/storage/app_5.sh /tmp/filemanager.json
+"$upanPath/filemanager/filemanager" -c "/tmp/filemanager.json" &
+
+sleep 2
+[ ! -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动成功" && filemanager_restart o
+[ -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
+initopt
+filemanager_port_dpt
+#filemanager_get_status
+eval "$scriptfilepath keep &"
+}
+
+initopt () {
+optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
+[ ! -z "$optPath" ] && return
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+fi
+
+}
+
+initconfig () {
+
+# 初始配置脚本
 if [ ! -f "/etc/storage/app_5.sh" ] || [ ! -s "/etc/storage/app_5.sh" ] ; then
 	cat >> "/etc/storage/app_5.sh" <<-\EOF
 {
@@ -194,33 +218,18 @@ fi
 
 chmod 777 /etc/storage/app_5.sh
 
-filemanager_wan_port=`cat /etc/storage/app_5.sh | grep -Eo '"port": [0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
-nvram set app_14=$filemanager_wan_port
-iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
-
-filemanager_upanPath="$upanPath"
-nvram set filemanager_upanPath="$upanPath"
-ln -sf /etc/storage/app_5.sh /tmp/filemanager.json
-"$upanPath/filemanager/filemanager" -c "/tmp/filemanager.json" &
-
-sleep 2
-[ ! -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动成功" && filemanager_restart o
-[ -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
-initopt
-
-if [ "$filemanager_wan" = "1" ] ; then
-	logger -t "【filemanager】" "WebGUI 允许 $filemanager_wan_port tcp端口通过防火墙"
-	iptables -t filter -I INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
-fi
-#filemanager_get_status
-eval "$scriptfilepath keep &"
 }
 
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+initconfig
+
+filemanager_port_dpt () {
+
+if [ "$filemanager_wan" = "1" ] ; then
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$filemanager_wan_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【filemanager】" "WebGUI 允许 $filemanager_wan_port tcp端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
+	fi
 fi
 
 }
@@ -231,6 +240,8 @@ mkdir -p /opt/app/filemanager
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/filemanager/Advanced_Extensions_filemanager.asp
 fi
+
+initconfig
 
 # 加载程序配置页面
 if [ ! -f "/opt/app/filemanager/Advanced_Extensions_filemanager.asp" ] || [ ! -s "/opt/app/filemanager/Advanced_Extensions_filemanager.asp" ] ; then
@@ -261,6 +272,9 @@ updateapp5)
 	;;
 update_app)
 	update_app
+	;;
+initconfig)
+	initconfig
 	;;
 keep)
 	#filemanager_check

@@ -75,7 +75,7 @@ v2ray_get_status () {
 
 lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^$")"
+B_restart="$v2ray_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set v2ray_status=$B_restart
@@ -90,7 +90,7 @@ v2ray_check () {
 v2ray_get_status
 if [ "$v2ray_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "停止 v2ray" && v2ray_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$v2ray_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -164,12 +164,12 @@ if [ "$ss_enable" = "1" ] ; then
 /etc/storage/script/Sh15_ss.sh &
 fi
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
-[ ! -z "$v2ray_path" ] && eval $(ps -w | grep "$v2ray_path" | grep -v grep | awk '{print "kill "$1";";}')
+[ ! -z "$v2ray_path" ] && kill_ps "$v2ray_path"
 killall v2ray v2ray_script.sh
 killall -9 v2ray v2ray_script.sh
-eval $(ps -w | grep "_v2ray keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_v2ray.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_v2ray"
+kill_ps "_v2ray.sh"
+kill_ps "$scriptname"
 }
 
 v2ray_wget_v2ctl () {
@@ -195,7 +195,7 @@ fi
 }
 
 v2ray_start () {
-initconfig
+
 SVC_PATH="$v2ray_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/v2ray"
@@ -211,7 +211,7 @@ optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 if [ ! -z "$optPath" ] ; then
 	logger -t "【v2ray】" " /opt/ 在内存储存"
 	A_restart=`nvram get app_19`
-	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh)" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
 		rm -f /opt/bin/v2ray
 		rm -f /opt/bin/v2ray_config.pb
@@ -487,7 +487,8 @@ fi
 }
 
 initconfig () {
-    if [ ! -f "/etc/storage/v2ray_script.sh" ] || [ ! -s "/etc/storage/v2ray_script.sh" ] ; then
+
+	if [ ! -f "/etc/storage/v2ray_script.sh" ] || [ ! -s "/etc/storage/v2ray_script.sh" ] ; then
 cat > "/etc/storage/v2ray_script.sh" <<-\VVR
 #!/bin/sh
 # 启动前运行的脚本
@@ -501,12 +502,14 @@ lan_ipaddr=`nvram get lan_ipaddr`
 
 VVR
 fi
-    if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
+	if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
 cat > "/etc/storage/v2ray_config_script.sh" <<-\VVRCON
 VVRCON
 fi
 
 }
+
+initconfig
 
 case $ACTION in
 start)
@@ -527,6 +530,9 @@ updatev2ray)
 	v2ray_restart o
 	[ "$v2ray_enable" = "1" ] && nvram set v2ray_status="updatev2ray" && logger -t "【v2ray】" "重启" && v2ray_restart
 	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path ; rm -f /opt/bin/v2ctl ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat ; rm -f /opt/bin/geosite.dat ; }
+	;;
+initconfig)
+	initconfig
 	;;
 *)
 	v2ray_check
