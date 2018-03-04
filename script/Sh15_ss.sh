@@ -302,6 +302,7 @@ if [ ! -z "$ss_usage_obfs_custom" ] ; then
 	ss_usage="`echo "$ss_usage" | sed -e "s/ -g //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
 else
+	ss_usage="`echo "$ss_usage" | sed -e "s/ -g//g" `" # 删除空的混淆参数
 	[ ! -z "$ssr_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="-a 1 -g ssr_type_obfs_custom"
 fi
 ss_s2_usage_obfs_custom="$(echo $ss_s2_usage | grep -Eo '\-g[ ]+[^-]+')"
@@ -314,6 +315,7 @@ if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then
 	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_s2_usage_obfs_custom_tmp ，服务2优先使用此 混淆参数"
 else
+	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g//g" `" # 删除空的混淆参数
 	[ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="-a 1 -g ssr2_type_obfs_custom"
 fi
 
@@ -330,6 +332,7 @@ if [ ! -z "$ss_usage_protocol_custom" ] ; then
 	ss_usage="`echo "$ss_usage" | sed -e "s/ -G //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_usage_protocol_custom_tmp ，服务1优先使用此 协议参数"
 else
+	ss_usage="`echo "$ss_usage" | sed -e "s/ -G//g" `" # 删除空的协议参数
 	[ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -a 2 -G ssr_type_protocol_custom"
 fi
 ss_s2_usage_protocol_custom="$(echo $ss_s2_usage | grep -Eo '\-G[ ]+[^-]+')"
@@ -342,8 +345,21 @@ if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then
 	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_s2_usage_protocol_custom_tmp ，服务2优先使用此 协议参数"
 else
+	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G//g" `" # 删除空的协议参数
 	[ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ssr2_type_protocol_custom"
 fi
+
+ss_usage_custom="$(echo $ss_usage | grep -Eo '\-o[ ]+[^-]+')"
+if [ -z "$ss_usage_custom" ] ; then
+	logger -t "【SS】" "混淆插件方式:未填写"
+	logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1;
+fi
+ss_usage_custom="$(echo $ss_usage | grep -Eo '\-O[ ]+[^-]+')"
+if [ -z "$ss_usage_custom" ] ; then
+	logger -t "【SS】" "协议插件方式:未填写"
+	logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1;
+fi
+
 else
 ssr_type_obfs_custom=""
 ssr2_type_obfs_custom=""
@@ -360,8 +376,8 @@ else
 	ss2_plugin_config=""
 fi
 
-options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g'`"
-options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g'`"
+options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
+options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
 
 ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
 ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
