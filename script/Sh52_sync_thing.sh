@@ -192,7 +192,7 @@ syncthing_port_dpt () {
 
 port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22000 | cut -d " " -f 1 | sort -nr | wc -l)
 if [ "$port" = 0 ] ; then
-	logger -t "【syncthing】" "允许 22000 $syncthing_wan_port tcp、21025,21026,21027 udp端口通过防火墙"
+	logger -t "【syncthing】" "允许 22000 tcp、21025,21026,21027 udp端口通过防火墙"
 	iptables -t filter -I INPUT -p tcp --dport 22000 -j ACCEPT
 	iptables -t filter -I INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT
 fi

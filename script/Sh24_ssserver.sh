@@ -209,10 +209,13 @@ initconfig
 
 ssserver_port_dpt () {
 
-if [ -n "`pidof ss-server`" ] && [ "$ssserver_enable" = "1" ] ; then
+ssserver_enable=`nvram get ssserver_enable`
+if [ "$ssserver_enable" = "1" ] ; then
+	ssserver_port=`nvram get ssserver_port`
+		echo "ssserver_port:$ssserver_port"
 	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
 	if [ "$port" = 0 ] ; then
-		logger -t "【SS_server】" "检测$port:找不到 ss-server 端口:$ssserver_port 规则, 重新添加"
+		logger -t "【SS_server】" "允许 $ssserver_port 端口通过防火墙"
 		iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
 		iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
 	fi

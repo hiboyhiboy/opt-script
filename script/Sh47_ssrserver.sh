@@ -78,7 +78,6 @@ if [ "$ssrserver_enable" = "1" ] ; then
 		ssrserver_start
 	else
 		[ -z "`ps -w | grep manyuser/shadowsocks/server | grep -v grep `" ] || [ ! -s "`which python`" ] && ssrserver_restart
-		ssrserver_port_dpt
 	fi
 fi
 }
@@ -244,7 +243,6 @@ fi
 sleep 2
 [ ! -z "$(ps -w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动成功" && ssrserver_restart o
 [ -z "$(ps -w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ssrserver_restart x
-ssrserver_port_dpt
 initopt
 ssrserver_get_status
 eval "$scriptfilepath keep &"
@@ -263,21 +261,6 @@ fi
 
 }
 
-ssrserver_port_dpt () {
-
-ssserver_enable=`nvram get ssserver_enable`
-if [ "$ssserver_enable" = "1" ] ; then
-	ssserver_port=`nvram get ssserver_port`
-		echo "ssserver_port:$ssserver_port"
-	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$ssserver_port | cut -d " " -f 1 | sort -nr | wc -l)
-	if [ "$port" = 0 ] ; then
-		logger -t "【ss-server】" "允许 $ssserver_port 端口通过防火墙"
-		iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
-		iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
-	fi
-fi
-
-}
 
 case $ACTION in
 start)

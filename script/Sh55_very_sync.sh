@@ -196,6 +196,7 @@ verysync_port_dpt () {
 
 port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22330 | cut -d " " -f 1 | sort -nr | wc -l)
 if [ "$port" = 0 ] ; then
+	logger -t "【verysync】" "允许 22330、22331 tcp端口通过防火墙"
 	iptables -t filter -I INPUT -p tcp --dport 22330 -j ACCEPT
 	iptables -t filter -I INPUT -p udp --dport 22331 -j ACCEPT
 fi
