@@ -3,7 +3,7 @@
 # 一级菜单显示标题：空格隔开
 menu0_title="配置扩展环境  ShadowSocks 花生壳内网版 广告屏蔽功能 搭建Web环境"
 # 菜单页面排序：空格隔开
-menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端   相框设置 goflyway"
+menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端   相框设置 goflyway virtualhere"
 menu_title2="SS配置       SS节点   Kcptun  SS_Server SSR_Server COW       MEOW SoftEtherVPN"
 menu_title3="花生壳内网版 Ngrok    frp     DNSPod    CloudXNS   Aliddns"
 menu_title4="Adbyby       ADM      koolproxy"

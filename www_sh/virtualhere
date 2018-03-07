@@ -1,0 +1,59 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app08.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_24=0 #virtualhere_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set virtualhere_L2="$(($3 + 10))"
+nvram set virtualhere_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "virtualhere_L2"); %>,<% nvram_get_x("", "virtualhere_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/virtualhere
+if [ ! -f "/opt/app/virtualhere/Advanced_Extensions_virtualhere.asp" ] || [ ! -s "/opt/app/virtualhere/Advanced_Extensions_virtualhere.asp" ] ; then
+	wgetcurl.sh /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp "$hiboyfile/Advanced_Extensions_virtualhereasp" "$hiboyfile2/Advanced_Extensions_virtualhereasp"
+fi
+umount /www/Advanced_Extensions_app08.asp
+if [ -f "/opt/app/virtualhere/Advanced_Extensions_virtualhere.asp" ] ; then
+	mount --bind /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp /www/Advanced_Extensions_app08.asp
+	app8_ver=$(grep 'app8_ver=' /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp | awk -F '=' '{print $2;}')
+	nvram set app8_ver=${app8_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh57_virtual_here.sh
+if [ ! -f "/etc/storage/script/Sh57_virtual_here.sh" ] || [ ! -s "/etc/storage/script/Sh57_virtual_here.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh57_virtual_here.sh "$hiboyscript/script/Sh57_virtual_here.sh" "$hiboyscript/script/Sh57_virtual_here.sh"
+fi
+chmod 777 /etc/storage/script -R
+if [ ! -f "/etc/storage/app_8.sh" ] || [ ! -s "/etc/storage/app_8.sh" ] ; then
+/etc/storage/script/Sh57_virtual_here.sh update_app
+fi
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+
