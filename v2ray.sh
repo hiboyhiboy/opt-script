@@ -272,7 +272,7 @@ fi
 
 echo 'V2Ray 输入数字继续一键安装'
 while :; do echo
-	read -p "输入数字继续（【新安装或重新生成配置】请输入1，【更新并重启主程序】请输入0，【删除V2Ray】请输入3）:" up_vv
+	read -p "输入数字继续（【新安装或重新生成配置】请输入1，【更新V2Ray】请输入0，【删除V2Ray】请输入3）:" up_vv
 	if [[ ! $up_vv =~ ^[0-1]$ ]]; then
 		if [[ $up_vv == 3 ]]; then
 			remove_v2ray
@@ -312,7 +312,7 @@ read -p "输入主要端口（默认：$mainport_x ）:" mainport
 
 echo ''
 
-read -p "是否启用HTTP伪装?（默认开启） [y/n]:" ifhttpheader
+read -p "是否启用HTTP伪装?（默认开启y） [y/n]:" ifhttpheader
 	[ -z "$ifhttpheader" ] && ifhttpheader='y'
 	if [[ $ifhttpheader == 'y' ]];then
 		httpheader=',
@@ -353,7 +353,7 @@ read -p "是否启用HTTP伪装?（默认开启） [y/n]:" ifhttpheader
     }'
 	else
 		httpheader=''
-		read -p "是否启用mKCP协议?（默认开启） [y/n]:" ifmkcp
+		read -p "是否启用mKCP协议?（默认开启y） [y/n]:" ifmkcp
 		[ -z "$ifmkcp" ] && ifmkcp='y'
 		if [[ $ifmkcp == 'y' ]];then
         		mkcp=',
@@ -367,7 +367,7 @@ fi
 
 echo ''
 
-read -p "是否启用动态端口?（默认开启） [y/n]:" ifdynamicport
+read -p "是否启用动态端口?（默认开启y） [y/n]:" ifdynamicport
   [ -z "$ifdynamicport" ] && ifdynamicport='y'
   if [[ $ifdynamicport == 'y' ]];then
 subport1_x=$(($mainport_x + 1))
@@ -412,7 +412,7 @@ porttime_x=`echo $SEED 4 7|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'
 
 echo ''
 
-read -p "是否启用 Mux.Cool?（默认开启） [y/n]:" ifmux
+read -p "是否启用 Mux.Cool?（默认开启y） [y/n]:" ifmux
   [ -z "$ifmux" ] && ifmux='y'
   if [[ $ifmux == 'y' ]];then
     mux=',
@@ -425,7 +425,7 @@ read -p "是否启用 Mux.Cool?（默认开启） [y/n]:" ifmux
   fi
 
 while :; do echo
-  echo '1. HTTP代理（默认）'
+  echo '1. HTTP代理（默认1）'
   echo '2. Socks代理'
   read -p "请选择客户端代理类型: " chooseproxytype
   [ -z "$chooseproxytype" ] && chooseproxytype=1
@@ -456,7 +456,7 @@ if [ ! -f "/usr/bin/v2ray/v2ray" ]; then
 fi
 
 
-read -p "是否关闭iptables防火墙?（默认关闭） [y/n]:" ifoffiptables
+read -p "是否关闭iptables防火墙?（默认关闭y） [y/n]:" ifoffiptables
 [ -z "$ifoffiptables" ] && ifoffiptables='y'
 if [[ $ifoffiptables == 'y' ]];then
 	#Disable iptables
