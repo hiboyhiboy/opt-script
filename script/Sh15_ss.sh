@@ -441,8 +441,6 @@ kill_ps "ss-local_"
 
 swap_ss_redir()
 {
-# 启动新进程
-start_ss_redir
 
 # 重载rules规则
 ipset -! restore <<-EOF
@@ -450,7 +448,8 @@ create ss_spec_dst_sp hash:net hashsize 64
 $(gen_special_purpose_ip | sed -e "s/^/add ss_spec_dst_sp /")
 EOF
 
-
+# 启动新进程
+start_ss_redir
 start_ss_redir_check
 
 port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)

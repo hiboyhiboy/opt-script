@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.11
+version=v3.12
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -74,6 +74,23 @@ echo "V2Ray 安装 $version"
 /root/go.sh --version $version
 check_daemon
 echo "安装完成"
+
+}
+
+function remove_v2ray(){
+echo '删除 V2ray 请稍候！'
+
+cd /root
+
+curl -L  -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+if [ ! -s /root/go.sh ]; then
+  rm -f /root/go.sh
+  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+fi
+chmod +x "/root/go.sh"
+/root/go.sh --remove
+
+echo '删除 V2ray 完成！'
 
 }
 
@@ -255,8 +272,12 @@ fi
 
 echo 'V2Ray 输入数字继续一键安装'
 while :; do echo
-	read -p "输入数字继续（【安装并生成配置】请输入1，【更新并重启主程序】请输入0）:" up_vv
+	read -p "输入数字继续（【新安装或重新生成配置】请输入1，【更新并重启主程序】请输入0，【删除V2Ray】请输入3）:" up_vv
 	if [[ ! $up_vv =~ ^[0-1]$ ]]; then
+		if [[ $up_vv == 3 ]]; then
+			remove_v2ray
+			exit
+		fi
 		echo "${CWARNING}输入错误! 请输入正确的数字!${CEND}"
 	else
 		break
