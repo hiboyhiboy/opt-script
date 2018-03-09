@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.12
+version=v3.13
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -118,7 +118,7 @@ echo "V2Ray 安装 $version"
 /root/go.sh --version $version
 check_daemon
 echo "安装完成"
-ntpdate us.pool.ntp.org
+ntpdate us.pool.ntp.org &
 if [ -f "/etc/v2ray/config.back0" ]; then
   if [ -n "${SYSTEMCTL_CMD}" ]; then
     if [ -f "/lib/systemd/system/v2ray.service" ]; then
@@ -187,7 +187,7 @@ do_start(){
         exit 0
     else
         cd /usr/bin/v2ray/
-        ntpdate us.pool.ntp.org
+        ntpdate us.pool.ntp.org &
         $DAEMON $DAEMON_OPTS &
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
@@ -686,7 +686,7 @@ cat << EOF > /root/config.json
 EOF
 
 
-ntpdate us.pool.ntp.org
+ntpdate us.pool.ntp.org &
   if [ -n "${SYSTEMCTL_CMD}" ]; then
     if [ -f "/lib/systemd/system/v2ray.service" ]; then
       echo "Restarting V2Ray service."
