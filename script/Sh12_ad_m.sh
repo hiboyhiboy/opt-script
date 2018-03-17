@@ -79,6 +79,7 @@ if [ ! -z "$upanPath" ] ; then
 	logger -t "【ADM】" "已挂载储存设备, 主程序放外置设备存储"
 	initopt
 	mkdir -p $upanPath/ad/7620adm
+	rm -f /tmp/7620adm
 	ln -sf "$upanPath/ad/7620adm" /tmp/7620adm
 	if [ ! -s "$upanPath/ad/7620adm/adm" ] ; then
 		logger -t "【ADM】" "开始下载 7620adm.tgz"

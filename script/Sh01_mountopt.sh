@@ -139,6 +139,7 @@ fi
 if [ ! -z "$upanPath" ] ; then
 	mkdir -p "$upanPath/opt"
 	mount -o bind "$upanPath/opt" /opt
+	rm -f /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
 	# prepare ssh authorized_keys
 	prepare_authorized_keys
@@ -172,6 +173,7 @@ if [ "$ss_opt_x" = "5" ] ; then
 fi
 if [ ! -z "$upanPath" ] ; then
 	mkdir -p "$upanPath/opt"
+	rm -f /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
 else
 	mkdir -p /tmp/AiDisk_00/opt

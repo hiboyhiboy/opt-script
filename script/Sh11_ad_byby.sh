@@ -80,6 +80,7 @@ if [ ! -z "$upanPath" ] ; then
 	logger -t "【Adbyby】" "已挂载储存设备, 主程序放外置设备存储"
 	initopt
 	mkdir -p $upanPath/ad/bin
+	rm -f /tmp/bin
 	ln -sf "$upanPath/ad/bin" /tmp/bin
 	if [ -s /etc_ro/7620i.tar.gz ] && [ ! -s "$$upanPath/ad/bin/adbyby" ] ; then
 		logger -t "【Adbyby】" "使用内置主程序"

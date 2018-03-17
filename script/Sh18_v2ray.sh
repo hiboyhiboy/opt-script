@@ -192,6 +192,16 @@ if [ ! -s "$geosite_path" ] ; then
 	wgetcurl.sh $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
 	chmod 755 "$geosite_path"
 fi
+if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
+	logger -t "【v2ray】" "找不到ca-certificates证书,安装ca-certificates"
+	mkdir -p /opt/app/ipk/
+	mkdir -p /opt/etc/ssl/certs
+	[ ! -s "/opt/app/ipk/certs.tgz" ] && wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
+	tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
+	rm -f /etc/ssl/certs
+	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
+	chmod 644 /opt/etc/ssl/certs -R
+fi
 }
 
 v2ray_start () {

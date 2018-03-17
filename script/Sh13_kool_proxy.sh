@@ -102,6 +102,7 @@ if [ ! -z "$upanPath" ] ; then
 	logger -t "【koolproxy】" "已挂载储存设备, 主程序放外置设备存储"
 	initopt
 	mkdir -p $upanPath/ad/7620koolproxy
+	rm -f /tmp/7620koolproxy
 	ln -sf "$upanPath/ad/7620koolproxy" /tmp/7620koolproxy
 	if [ -s /etc_ro/7620koolproxy_*.tgz ] && [ ! -s "$upanPath/ad/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "使用内置主程序"
