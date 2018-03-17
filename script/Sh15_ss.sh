@@ -2224,14 +2224,13 @@ if [ -f /tmp/cron_ss.lock ] || [ "$ss_enable" != "1" ] ; then
 	continue
 fi
 if [ "$rebss" -gt 6 ] && [ $(cat /tmp/reb.lock) == "1" ] ; then
-	LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
-	logger -t "【SS】" "['$LOGTIME'] 网络连接 shadowsocks 中断['$rebss'], 重启路由."
+	logger -t "【SS】" " 网络连接 shadowsocks 中断['$rebss'], 重启路由."
 	sleep 5
 	reboot
 fi
 if [ "$rebss" -gt 6 ] ; then
 	if [ "$kcptun2_enable" = "1" ] || [ -z $ss_rdd_server ] ; then
-		logger -t "【SS】" "[$LOGTIME] 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
+		logger -t "【SS】" " 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
 		nvram set ss_status=0
 		eval "$scriptfilepath &"
 		sleep 10
@@ -2378,7 +2377,7 @@ fi
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] Internet have no problem."
 else
-	logger -t "【SS】" "[$LOGTIME] Internet 问题, 请检查您的服务供应商."
+	logger -t "【SS】" " Internet 问题, 请检查您的服务供应商."
 	rebss=`expr $rebss + 1`
 	restart_dhcpd
 fi
@@ -2436,12 +2435,12 @@ fi
 if [ "$kcptun2_enable" = "1" ] ; then
 	nvram set ss_internet="2"
 	rebss=`expr $rebss + 2`
-	logger -t "【SS】" "[$LOGTIME] SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
+	logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
 	#跳出当前循环
 	continue
 fi
 if [ ! -z $ss_rdd_server ] ; then
-	logger -t "【SS】" "[$LOGTIME] SS 服务器 $CURRENT_ip 【$CURRENT】检测到问题, 尝试切换到 $Server_ip 【$Server】"
+	logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】检测到问题, 尝试切换到 $Server_ip 【$Server】"
 	nvram set ss_internet="2"
 	#端口切换
 	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $CURRENT
@@ -2468,46 +2467,48 @@ if [ ! -z $ss_rdd_server ] ; then
 	FWI="/tmp/firewall.shadowsocks.pdcn" # firewall include file
 	[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
 	gen_include
-fi
-restart_dhcpd
-sleep 5
-check=0
-hash check_network 2>/dev/null && check=1
-if [ "$check" == "1" ] ; then
-check_network
-[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-	if [ "$check" == "404" ] ; then
-		check_network
-		[ "$?" == "0" ] && check=200 || check=404
-	fi
-fi
-hash check_network 2>/dev/null || check=404
-if [ "$check" == "404" ] ; then
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
-		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
+	restart_dhcpd
+	sleep 5
+	check=0
+	hash check_network 2>/dev/null && check=1
+	if [ "$check" == "1" ] ; then
+	check_network
+	[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 		if [ "$check" == "404" ] ; then
-			wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
+			check_network
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
-	else
-		check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 	fi
-fi
-if [ "$check" == "200" ] ; then
-	logger -t "【SS】" "[$LOGTIME] SS 服务器 $Server_ip 【$Server】 连接√"
-	rebss="1"
-	#跳出当前循环
-	continue
+	hash check_network 2>/dev/null || check=404
+	if [ "$check" == "404" ] ; then
+		curltest=`which curl`
+		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+			wget --no-check-certificate -q -T 10 $ss_link_2 -O /dev/null
+			[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
+			if [ "$check" == "404" ] ; then
+				wget --no-check-certificate -q -T 10 "$ss_link_2" -O /dev/null
+				[ "$?" == "0" ] && check=200 || check=404
+			fi
+		else
+			check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+			[ "$check" != "200" ] && sleep 1
+			[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		fi
+	fi
+	if [ "$check" == "200" ] ; then
+		logger -t "【SS】" " SS 服务器 $Server_ip 【$Server】 连接√"
+		rebss="1"
+		#跳出当前循环
+		continue
+	else
+		logger -t "【SS】" " SS 服务器 $Server_ip 【$Server】检测到问题"
+	fi
 fi
 
 #404
 nvram set ss_internet="0"
-[ ! -z $ss_rdd_server ] && logger -t "【SS】" "[$LOGTIME] 两个 SS 服务器检测到问题, $rebss"
-[ -z $ss_rdd_server ] && logger -t "【SS】" "[$LOGTIME] SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
+[ ! -z $ss_rdd_server ] && logger -t "【SS】" " 两个 SS 服务器检测到问题, $rebss"
+[ -z $ss_rdd_server ] && logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
 rebss=`expr $rebss + 1`
 restart_dhcpd
 #/etc/storage/crontabs_script.sh &
