@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.13
+version=v3.14
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -73,6 +73,8 @@ chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
 /root/go.sh --version $version
 check_daemon
+rm -f /root/v2ray_server_json
+ln -sf /etc/v2ray /root/v2ray_server_json
 echo "安装完成"
 
 }
@@ -598,17 +600,12 @@ cat << EOF > /root/config.json
     {
       "port": "$ip_door",
       "listen": "0.0.0.0",
-      "allocate": {
-      "strategy": "always",
-      "refresh": 5,
-      "concurrency": 3
-    },
-    "protocol": "dokodemo-door",
-    "settings": {
-      "network": "tcp,udp",
-      "timeout": 30,
-      "followRedirect": true
-    }
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "tcp,udp",
+        "timeout": 30,
+        "followRedirect": true
+      }
     }
   ],
   "outbound": {
