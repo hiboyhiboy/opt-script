@@ -145,6 +145,20 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【SS_server】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 fi
+if [ ! -z "echo $ssserver_usage | grep plugin" ] ; then
+	if [ ! -s "/opt/bin/obfs-server" ] ; then
+		logger -t "【SS_server】" "找不到 /opt/bin/obfs-server，安装 opt 程序"
+		/tmp/script/_mountopt start
+		initopt
+	fi
+	if [ ! -s "/opt/bin/obfs-server" ] ; then
+		logger -t "【SS_server】" "找不到 /opt/bin/obfs-server 下载程序"
+		wgetcurl.sh /opt/bin/obfs-server "$hiboyfile/obfs-server" "$hiboyfile2/obfs-server"
+		chmod 755 "/opt/bin/obfs-server"
+	else
+		logger -t "【SS_server】" "找到 /opt/bin/obfs-server"
+	fi
+fi
 logger -t "【SS_server】" "启动 ss-server 服务"
 if [ "$ssserver_udp" == "1" ] ; then
 	ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage  -f /tmp/ssserver.pid
