@@ -174,8 +174,13 @@ fi
 fi
 
 #SS插件参数
-ss_plugin_config="`nvram get ss_plugin_config`"
-ss2_plugin_config="`nvram get ss2_plugin_config`"
+if [ "$ss_type" != "1" ] ; then 
+	ss_plugin_config="`nvram get ss_plugin_config`"
+	ss2_plugin_config="`nvram get ss2_plugin_config`"
+else
+	ss_plugin_config=""
+	ss2_plugin_config=""
+fi
 
 #检查 dnsmasq 目录参数
 #confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
