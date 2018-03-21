@@ -1,0 +1,59 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app07.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_23=0 #goflyway_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set goflyway_L2="$(($3 + 10))"
+nvram set goflyway_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "goflyway_L2"); %>,<% nvram_get_x("", "goflyway_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/goflyway
+if [ ! -f "/opt/app/goflyway/Advanced_Extensions_goflyway.asp" ] || [ ! -s "/opt/app/goflyway/Advanced_Extensions_goflyway.asp" ] ; then
+	wgetcurl.sh /opt/app/goflyway/Advanced_Extensions_goflyway.asp "$hiboyfile/Advanced_Extensions_goflywayasp" "$hiboyfile2/Advanced_Extensions_goflywayasp"
+fi
+umount /www/Advanced_Extensions_app07.asp
+if [ -f "/opt/app/goflyway/Advanced_Extensions_goflyway.asp" ] ; then
+	mount --bind /opt/app/goflyway/Advanced_Extensions_goflyway.asp /www/Advanced_Extensions_app07.asp
+	app7_ver=$(grep 'app7_ver=' /opt/app/goflyway/Advanced_Extensions_goflyway.asp | awk -F '=' '{print $2;}')
+	nvram set app7_ver=${app7_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh56_gofly_way.sh /etc/storage/app_7.sh
+if [ ! -f "/etc/storage/script/Sh56_gofly_way.sh" ] || [ ! -s "/etc/storage/script/Sh56_gofly_way.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh56_gofly_way.sh "$hiboyscript/script/Sh56_gofly_way.sh" "$hiboyscript/script/Sh56_gofly_way.sh"
+fi
+chmod 777 /etc/storage/script -R
+if [ ! -f "/etc/storage/app_7.sh" ] || [ ! -s "/etc/storage/app_7.sh" ] ; then
+/etc/storage/script/Sh56_gofly_way.sh update_app
+fi
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+

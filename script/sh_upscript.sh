@@ -1,8 +1,10 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-#nvramshow=`nvram showall | grep upscript_enable | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-nvramshow=`nvram showall | grep script | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep script | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+upscript_enable=`nvram get upscript_enable`
+scriptt=`nvram get scriptt`
+scripto=`nvram get scripto`
 [ "$ACTION" = "upscript" ] && upscript_enable=1
 
 file_o_check () {
@@ -17,7 +19,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2017-05-07"
+	nvram set scripto="2018-3-19"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -55,7 +57,7 @@ start_upscript_daydayup () {
 logger -t "【script】" "脚本检查更新"
 file_t_check
 if [ -s /tmp/scriptsh.txt ] ; then
-	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "脚本需要更新, 未启用自动更新, 请手动更新" && return
+	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "当前【$scripto】脚本需要更新, 未启用自动更新, 请手动更新到【$scriptt】" && return
 	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then
 		logger -t "【script】" "脚本需要更新, 自动下载更新"
 		nvram set scripto="$scriptt"
@@ -85,12 +87,13 @@ logger -t "【script】" "脚本检查更新"
 file_t_check
 if [ -s /tmp/scriptsh.txt ] ; then
 	[ "$scriptt"x = "$scripto"x ] && logger -t "【script】" "脚本已经最新"
-	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "脚本需要更新, 未启用自动更新, 请手动更新" && return
+	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "当前【$scripto】脚本需要更新, 未启用自动更新, 请手动更新到【$scriptt】" && return
 	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then
 		logger -t "【script】" "脚本需要更新, 自动下载更新"
 		nvram set scripto="$scriptt"
 		file_o_check
 		file_check
+		logger -t "【script】" "脚本更新完成"
 	fi
 else
 	[ "$upscript_enable" != "1" ] && return
@@ -98,16 +101,34 @@ else
 fi
 }
 
+check_opt () {
+[ ! -d /opt/etc/init.d ] && return
+[ ! -f /tmp/scriptsh.txt ] && file_t_check
+for initopt in `ls -p /opt/etc/init.d`
+do
+if [ ! -z `grep "$(echo $initopt | sed 's/\.sh//g')" /tmp/scriptsh.txt)` ] ; then
+	cp -f /etc/storage/script/$initopt /opt/etc/init.d/$initopt 
+fi
+
+done
+
+}
+
 case $ACTION in
+check_opt)
+	check_opt
+	;;
 start)
 	#hash daydayup 2>/dev/null && start_upscript_daydayup
 	#hash daydayup 2>/dev/null || start_upscript
 	start_upscript
+	check_opt
 	;;
 *)
 	#hash daydayup 2>/dev/null && start_upscript_daydayup
 	#hash daydayup 2>/dev/null || start_upscript
 	start_upscript
+	check_opt
 	;;
 esac
 

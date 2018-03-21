@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 lnmp_enable=`nvram get lnmp_enable`
 [ -z $lnmp_enable ] && lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
 if [ "$lnmp_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep lnmp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep lnmp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 
 default_enable=`nvram get default_enable`
@@ -41,11 +41,47 @@ lnmpfile66="$hiboyfile2/wifidog_server.tgz"
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ]  && [ ! -s /tmp/script/_lnmp ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_lnmp
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_lnmp
 	chmod 777 /tmp/script/_lnmp
 fi
 
-lnmp_check () {
+lnmp_restart () {
+
+relock="/var/lock/lnmp_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set lnmp_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【lnmp】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	lnmp_renum=${lnmp_renum:-"0"}
+	lnmp_renum=`expr $lnmp_renum + 1`
+	nvram set lnmp_renum="$lnmp_renum"
+	if [ "$lnmp_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【lnmp】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get lnmp_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set lnmp_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set lnmp_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+lnmp_get_status () {
 
 A_restart=`nvram get lnmp_status`
 B_restart="$http_username$lnmp_enable$mysql_enable$default_enable$kodexplorer_enable$owncloud_enable$phpmyadmin_enable$wifidog_server_enable$default_port$kodexplorer_port$owncloud_port$phpmyadmin_port$wifidog_server_port"
@@ -56,12 +92,17 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+lnmp_check () {
+
+lnmp_get_status
 if [ "$lnmp_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "停止 nginx+php 环境" && lnmp_close
 	if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
 		[ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "停止 mysql 环境" && lnmp_close
 	fi
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$lnmp_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
@@ -69,9 +110,12 @@ if [ "$lnmp_enable" = "1" ] ; then
 		lnmp_start
 	else
 		if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-			[ -z "`pidof mysqld`" ] || [ ! -s "`which mysqld`" ] && logger -t "【LNMP】" "mysqld 重新启动" &&{ nvram set lnmp_status=00 && eval "$scriptfilepath &" ; exit 0; }
+			[ -z "`pidof mysqld`" ] || [ ! -s "`which mysqld`" ] && logger -t "【LNMP】" "mysqld 重新启动" && lnmp_restart
 		fi
-		[ -z "`pidof nginx`" ] || [ ! -s "`which nginx`" ] && logger -t "【LNMP】" "nginx 重新启动" &&  { nvram set lnmp_status=00 && eval "$scriptfilepath &" ; exit 0; }
+		[ -z "`pidof nginx`" ] || [ ! -s "`which nginx`" ] && logger -t "【LNMP】" "nginx 重新启动" && lnmp_restart
+		
+		lnmp_port_dpt
+		
 	fi
 fi
 }
@@ -94,9 +138,9 @@ fi
 
 while true; do
 if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-	[ -z "`pidof mysqld`" ] || [ ! -s "`which mysqld`" ] && logger -t "【LNMP】" "mysqld 重新启动" &&{ nvram set lnmp_status=00 && eval "$scriptfilepath &" ; exit 0; }
+	[ -z "`pidof mysqld`" ] || [ ! -s "`which mysqld`" ] && logger -t "【LNMP】" "mysqld 重新启动" && lnmp_restart
 fi
-	[ -z "`pidof nginx`" ] || [ ! -s "`which nginx`" ] && logger -t "【LNMP】" "nginx 重新启动" &&  { nvram set lnmp_status=00 && eval "$scriptfilepath &" ; exit 0; }
+	[ -z "`pidof nginx`" ] || [ ! -s "`which nginx`" ] && logger -t "【LNMP】" "nginx 重新启动" && lnmp_restart
 sleep 261
 done
 }
@@ -109,9 +153,15 @@ sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
 /opt/etc/init.d/S80nginx stop
 killall spawn-fcgi nginx php-cgi mysqld
 killall -9 spawn-fcgi nginx php-cgi mysqld
-eval $(ps -w | grep "_lnmp keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_lnmp.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+iptables -t filter -I INPUT -p tcp --dport $default_port -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport 3306 -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport $kodexplorer_port -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport $owncloud_port -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport $phpmyadmin_port -j ACCEPT
+iptables -t filter -I INPUT -p tcp --dport $wifidog_server_port -j ACCEPT
+kill_ps "/tmp/script/_lnmp"
+kill_ps "_lnmp.sh"
+kill_ps "$scriptname"
 }
 
 lnmp_start () {
@@ -168,21 +218,32 @@ if [ "$wifidog_server_enable" = "4" ] ; then
 	wifidog_server_enable=0 && nvram set wifidog_server_enable=$wifidog_server_enable
 	nvram commit
 fi
-logger -t "【LNMP】" "/opt 已用数据空间`df -m|grep "% /opt" | awk ' {print $5F}'`/100%"
-logger -t "【LNMP】" "/opt 已用节点空间`df -i|grep "% /opt" | awk ' {print $5F}'`/100%"
-logger -t "【LNMP】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 LNMP 运行，请重新正确格式化 U盘。"
+
+lnmp_Available
 
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "5" ] ; then
+	# 指定目录
+	opt_cifs_dir=`nvram get opt_cifs_dir`
+	if [ -d $opt_cifs_dir ] ; then
+		upanPath="$opt_cifs_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
+		upanPath=""
+		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	fi
+fi
 echo "$upanPath"
 if [ -z "$upanPath" ] ; then 
 	logger -t "【LNMP】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 	sleep 10
-	nvram set lnmp_status=00 && eval "$scriptfilepath &"
+	lnmp_restart x
 	exit 0
 fi
 
@@ -190,16 +251,22 @@ SVC_PATH="/opt/lnmp.txt"
 if [ ! -f "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt optwget
 fi
+chmod 777 "`which nginx`"
+[[ "$(nginx -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/lnmp.txt
 if [ ! -s "`which nginx`" ] ; then
 	logger -t "【LNMP】" "找不到 nginx ，需要手动安装 opt-lnmp"
-	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set lnmp_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
 fi
+chmod 777 "`which mysqld`"
+[[ "$(mysqld -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/lnmp.txt
 if [ ! -s "`which mysqld`" ] ; then
 	logger -t "【LNMP】" "找不到 mysqld ，需要手动安装 opt-lnmp"
-	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set lnmp_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【LNMP】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
 fi
 
-optava=`df -m|grep "% /opt" | awk ' {print $4F}'`
+Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+[ ! -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $3}')
+optava="$Available_M"
 if [ $optava -le 300 ] || [ -z "$optava" ] ; then
 	logger -t "【LNMP】" "/opt剩余空间: $optava M，不足300M, 停止启用 LNMP, 请尝试重启"
 	lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
@@ -209,13 +276,15 @@ if [ $optava -le 300 ] || [ -z "$optava" ] ; then
 fi
 touch /opt/testchmod
 chmod 644 /opt/testchmod
-optava=`ls /opt -al | grep testchmod| grep 'rw-r--r--'`
-if [ -z "$optava" ] ; then
-	logger -t "【LNMP】" "/opt 修改文件权限失败, 停止启用 LNMP"
+opt_testchmod=`ls /opt -al | grep testchmod| grep 'rw-r--r--'`
+if [ -z "$opt_testchmod" ] ; then
+	logger -t "【LNMP】" "错误！/opt 修改文件权限失败, LNMP 一些功能会启动失败"
+	logger -t "【LNMP】" "错误！/opt 修改文件权限失败, LNMP 一些功能会启动失败"
+	logger -t "【LNMP】" "错误！/opt 修改文件权限失败, LNMP 一些功能会启动失败"
 	logger -t "【LNMP】" "注意: U 盘 或 储存设备 格式不支持 FAT32, 请格式化 U 盘, 要用 EXT4 或 NTFS 格式。"
-	lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
-	nvram commit
-	exit 1
+	#lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
+	#nvram commit
+	#exit 1
 fi
 
 logger -t "【LNMP】" "运行 nginx+php+mysql 环境"
@@ -310,21 +379,34 @@ fi
 /opt/etc/init.d/S70mysqld restart
 /opt/etc/init.d/S79php-fpm restart
 /opt/etc/init.d/S80nginx restart
-logger -t "【LNMP】" "/opt 已用数据空间`df -m|grep "% /opt" | awk ' {print $5F}'`/100%"
-logger -t "【LNMP】" "/opt 已用节点空间`df -i|grep "% /opt" | awk ' {print $5F}'`/100%"
-logger -t "【LNMP】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 LNMP 运行，请重新正确格式化 U盘。"
+
+lnmp_Available
 
 [ -f /opt/lnmpi.txt ] && nvram set lnmpt=`cat /tmp/lnmpi.txt`
 [ -f /opt/lnmp.txt ] && nvram set lnmpo=`cat /opt/lnmp.txt`
 sleep 5
 if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-	[ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "启动成功"
-	[ -z "`pidof mysqld`" ] && logger -t "【LNMP】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set lnmp_status=00; eval "$scriptfilepath &"; exit 0; }
+	[ -z "`pidof mysqld`" ] && logger -t "【LNMP】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
 fi
-[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "启动成功"
-[ -z "`pidof nginx`" ] && logger -t "【LNMP】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set lnmp_status=00; eval "$scriptfilepath &"; exit 0; }
+[ -z "`pidof nginx`" ] && logger -t "【LNMP】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
+[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "启动成功" && lnmp_restart o
+[ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] && [ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "启动成功" && lnmp_restart o
+lnmp_port_dpt
 initopt
+lnmp_get_status
 eval "$scriptfilepath keep &"
+}
+
+
+lnmp_Available () {
+
+Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
+[ -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【LNMP】" "/opt 已用数据空间$Available_M/100%"
+Available_I=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
+[ -z "$(echo $Available_I | grep '%')" ] && Available_I=$(df -i | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【LNMP】" "/opt 已用节点空间$Available_I/100%"
+logger -t "【LNMP】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 LNMP 运行，请重新正确格式化 U盘。"
 }
 
 initopt () {
@@ -334,8 +416,72 @@ optw_enable=`nvram get optw_enable`
 if [ "$optw_enable" != "2" ] ; then
 	nvram set optw_enable=2
 fi
-if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+fi
+
+}
+
+lnmp_port_dpt () {
+
+lnmp_enable=`nvram get lnmp_enable`
+default_enable=`nvram get default_enable`
+if [ "$default_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	default_port=`nvram get default_port`
+		echo "default_port:$default_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$default_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【默认主页】" "默认服务网站允许远程访问, 允许 $default_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $default_port -j ACCEPT
+	fi
+fi
+mysql_enable=`nvram get mysql_enable`
+if [ "$mysql_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:3306 | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【MySQL】" "允许远程访问, 允许 3306 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport 3306 -j ACCEPT
+	fi
+fi
+kodexplorer_enable=`nvram get kodexplorer_enable`
+if [ "$kodexplorer_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	kodexplorer_port=`nvram get kodexplorer_port`
+		echo "kodexplorer_port:$kodexplorer_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$kodexplorer_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【芒果云】" "允许远程访问, 允许 $kodexplorer_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $kodexplorer_port -j ACCEPT
+	fi
+fi
+owncloud_enable=`nvram get owncloud_enable`
+if [ "$owncloud_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	owncloud_port=`nvram get owncloud_port`
+		echo "owncloud_port:$owncloud_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$owncloud_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【OwnCloud私有云】" "允许远程访问, 允许 $owncloud_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $owncloud_port -j ACCEPT
+	fi
+fi
+phpmyadmin_enable=`nvram get phpmyadmin_enable`
+if [ "$phpmyadmin_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	phpmyadmin_port=`nvram get phpmyadmin_port`
+		echo "phpmyadmin_port:$phpmyadmin_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$phpmyadmin_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【phpMyAdmin】" "允许远程访问, 允许 $phpmyadmin_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $phpmyadmin_port -j ACCEPT
+	fi
+fi
+wifidog_server_enable=`nvram get wifidog_server_enable`
+if [ "$wifidog_server_enable" = "1" ] && [ "$lnmp_enable" = "1" ] ; then
+	wifidog_server_port=`nvram get wifidog_server_port`
+		echo "wifidog_server_port:$wifidog_server_port"
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$wifidog_server_port | cut -d " " -f 1 | sort -nr | wc -l)
+	if [ "$port" = 0 ] ; then
+		logger -t "【wifidog_server】" "允许远程访问, 允许 $wifidog_server_port 端口通过防火墙"
+		iptables -t filter -I INPUT -p tcp --dport $wifidog_server_port -j ACCEPT
+	fi
 fi
 
 }
@@ -352,7 +498,7 @@ stop)
 	lnmp_close
 	;;
 keep)
-	lnmp_check
+	#lnmp_check
 	lnmp_keep
 	;;
 *)

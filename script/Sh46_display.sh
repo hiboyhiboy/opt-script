@@ -4,7 +4,10 @@ source /etc/storage/script/init.sh
 display_enable=`nvram get display_enable`
 [ -z $display_enable ] && display_enable=0 && nvram set display_enable=0
 if [ "$display_enable" != "0" ] ; then
-nvramshow=`nvram showall | grep display | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+#nvramshow=`nvram showall | grep '=' | grep display | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+display_weather=`nvram get display_weather`
+display_aqidata=`nvram get display_aqidata`
 
 if [ -z "$display_weather" ] ; then 
 display_weather="2151330"
@@ -20,11 +23,48 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ]  && [ ! -s /tmp/script/_display ]; then
 	mkdir -p /tmp/script
-	ln -sf $scriptfilepath /tmp/script/_display
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_display
 	chmod 777 /tmp/script/_display
 fi
 
-display_check () {
+display_restart () {
+
+relock="/var/lock/display_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set display_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【display】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	display_renum=${display_renum:-"0"}
+	display_renum=`expr $display_renum + 1`
+	nvram set display_renum="$display_renum"
+	if [ "$display_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【display】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get display_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set display_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set display_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+display_get_status () {
+
 A_restart=`nvram get display_status`
 B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -34,16 +74,21 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
+}
+
+display_check () {
+
+display_get_status
 if [ "$display_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof lcd4linux`" ] && logger -t "【相框显示】" "停止 lcd4linux" && display_close
-	{ eval $(ps -w | grep "$scriptname" | grep -v grep | awk '{print "kill "$1";";}'); exit 0; }
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$display_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		display_close
 		display_start
 	else
-		[ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && nvram set display_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+		[ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && display_restart
 	fi
 fi
 }
@@ -64,9 +109,11 @@ fi
 
 runx="1"
 while true; do
+display_enable=`nvram get display_enable`
+[ "$display_enable" != "1" ] && exit
 	if [ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && [ ! -s /tmp/script/_opt_script_check ]; then
 		logger -t "【相框显示】" "重新启动"
-		{ nvram set display_status=00 && eval "$scriptfilepath &" ; exit 0; }
+		display_restart
 	fi
 sleep 180
 runx=`expr $runx + 1`
@@ -89,36 +136,49 @@ display_close () {
 sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
 killall lcd4linux getaqidata getweather displaykeep.sh
 killall -9 lcd4linux getaqidata getweather displaykeep.sh
-eval $(ps -w | grep "_display keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "_display.sh keep" | grep -v grep | awk '{print "kill "$1";";}')
-eval $(ps -w | grep "$scriptname keep" | grep -v grep | awk '{print "kill "$1";";}')
+kill_ps "/tmp/script/_display"
+kill_ps "_display.sh"
+kill_ps "$scriptname"
 }
 
 display_start () {
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "5" ] ; then
+	# 指定目录
+	opt_cifs_dir=`nvram get opt_cifs_dir`
+	if [ -d $opt_cifs_dir ] ; then
+		upanPath="$opt_cifs_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
+		upanPath=""
+		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	fi
+fi
 echo "$upanPath"
 if [ -z "$upanPath" ] ; then 
 	logger -t "【相框显示】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
 	sleep 10
-	nvram set display_status=00 && eval "$scriptfilepath &"
+	display_restart x
 	exit 0
 fi
 
 cp -f /etc/storage/display_lcd4linux_script.sh /tmp/lcd4linux.conf
 SVC_PATH=/opt/bin/lcd4linux
-hash lcd4linux 2>/dev/null || rm -rf /opt/bin/lcd4linux /opt/opti.txt
+chmod 777 "$SVC_PATH"
+[[ "$(lcd4linux -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/lcd4linux /opt/opti.txt
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【相框显示】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set display_status_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【相框显示】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
 if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	lcd1="$hiboyfile/lcd.tgz"
@@ -129,15 +189,28 @@ if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 fi
 if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	logger -t "【相框显示】" "缺少 /etc/storage/display_lcd4linux_script.sh 文件, 启动失败"
-	logger -t "【相框显示】" "停止程序, 10 秒后自动尝试重新启动" && sleep 10 && { nvram set display_status_status=00; eval "$scriptfilepath &"; exit 0; }
+	logger -t "【相框显示】" "停止程序, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
+[ ! -f /tmp/AiDisk_00/opt/bin/lcd4linux ] && /etc/storage/script/Sh01_mountopt.sh
 # 修改显示空间
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "5" ] ; then
+	# 指定目录
+	opt_cifs_dir=`nvram get opt_cifs_dir`
+	if [ -d $opt_cifs_dir ] ; then
+		upanPath="$opt_cifs_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
+		upanPath=""
+		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	fi
+fi
 if [ ! -z "$upanPath" ] ; then
 	upanPath2="SpaceDir  \'\/media\/$upanPath\' #显示空间"
 else
@@ -148,21 +221,19 @@ sed -e "s/SpaceDir\ \ .*/$upanPath2/" -i /etc/storage/display_lcd4linux_script.s
 cp -f /etc/storage/display_lcd4linux_script.sh /tmp/lcd4linux.conf
 chmod 600 /tmp/lcd4linux.conf
 chmod 777 /opt/bin/lcd4linux
+sleep 5
 logger -t "【相框显示】" "运行 lcd4linux"
 cd /opt/bin/
 export LD_LIBRARY_PATH=/opt/lib
-lcd4linux -f /tmp/lcd4linux.conf
-sleep 2
+ lcd4linux -f /tmp/lcd4linux.conf
 export LD_LIBRARY_PATH=/lib:/opt/lib
-logger -t "【相框显示】" "开始显示数据"
-A_restart=`nvram get display_status`
-B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v "^$")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-[ "$A_restart" != "$B_restart" ] && nvram set display_status=$B_restart
 sleep 2
-[ ! -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功"
-[ -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { nvram set display_status=00; eval "$scriptfilepath &"; exit 0; }
+logger -t "【相框显示】" "开始显示数据"
+sleep 2
+[ ! -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功" && display_restart o
+[ -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 initopt
+display_get_status
 eval "$scriptfilepath keep &"
 }
 
@@ -185,7 +256,7 @@ yahooweb='https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20weathe
 echo $yahooweb
 rm -f /tmp/weatherweb
 #wget -O /tmp/weatherweb $yahooweb
-wgetcurl.sh /tmp/weatherweb $yahooweb
+wgetcurl.sh /tmp/weatherweb "$yahooweb" "$yahooweb" N
 if [ -s /tmp/weatherweb ]; then
 	cat /tmp/weatherweb | grep '<yweather' | awk -F'<yweather' '{ \
 		{L1="<yweather"$3; L2="<yweather"$2; L3="<yweather"$4; L4="<yweather"$5; L5="<yweather"$6; L6="<yweather"$7; L7="<yweather"$8; L8="<yweather"$9}} \
@@ -194,6 +265,8 @@ if [ -s /tmp/weatherweb ]; then
 		L1,L2,L3,L4,L5,L6,L7,L8}' \
 		> /tmp/weather
 	if [ ! -s /tmp/weather ]; then
+		logger -t "【相框显示】" "获取天气信息错误！请检查链接："
+		logger -t "【相框显示】" "$yahooweb"
 		return 1
 	fi
 	logger -t "【相框显示】" "获取天气信息"
@@ -228,9 +301,12 @@ getaqidata () {
 
 #获取AQI数据和数据绘图。http://www.aqicn.org
 rm -f /tmp/aqicn
-#wget -c -O /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --continue --no-check-certificate
-wgetcurl.sh /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
+aqicnorg="http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
+#wget -c -O /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --no-check-certificate
+wgetcurl.sh /tmp/aqicn "$aqicnorg" "$aqicnorg" N
 if [ ! -s /tmp/aqicn ]; then
+	logger -t "【相框显示】" "获取AQI数据错误！请检查链接："
+	logger -t "【相框显示】" "$aqicnorg"
 	return 1
 fi
 logger -t "【相框显示】" "获取AQI数据和数据绘图"
@@ -430,8 +506,8 @@ optw_enable=`nvram get optw_enable`
 if [ "$optw_enable" != "2" ] ; then
 	nvram set optw_enable=2
 fi
-if [ -s "/opt/etc/init.d/rc.func" ] ; then
-	cp -Hf "$scriptfilepath" "/opt/etc/init.d/$scriptname"
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -448,7 +524,7 @@ stop)
 	display_close
 	;;
 keep)
-	display_check
+	#display_check
 	display_keep
 	;;
 getweather)
@@ -458,7 +534,8 @@ getaqidata)
 	getaqidata
 	;;
 redisplay)
-	nvram set display_status=00 && { eval "$scriptfilepath start &"; exit 0; }
+	display_restart o
+	display_restart
 	;;
 *)
 	display_check

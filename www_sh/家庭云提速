@@ -1,0 +1,57 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app04.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_10=0 #speedup_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set speedup_L2="$(($3 + 10))"
+nvram set speedup_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "speedup_L2"); %>,<% nvram_get_x("", "speedup_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/speedup
+if [ ! -f "/opt/app/speedup/Advanced_Extensions_speedup.asp" ] || [ ! -s "/opt/app/speedup/Advanced_Extensions_speedup.asp" ] ; then
+	wgetcurl.sh /opt/app/speedup/Advanced_Extensions_speedup.asp "$hiboyfile/Advanced_Extensions_speedupasp" "$hiboyfile2/Advanced_Extensions_speedupasp"
+fi
+umount /www/Advanced_Extensions_app04.asp
+if [ -f "/opt/app/speedup/Advanced_Extensions_speedup.asp" ] ; then
+	mount --bind /opt/app/speedup/Advanced_Extensions_speedup.asp /www/Advanced_Extensions_app04.asp
+	app4_ver=$(grep 'app4_ver=' /opt/app/speedup/Advanced_Extensions_speedup.asp | awk -F '=' '{print $2;}')
+	nvram set app4_ver=${app4_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh27_speedup.sh
+if [ ! -f "/etc/storage/script/Sh27_speedup.sh" ] || [ ! -s "/etc/storage/script/Sh27_speedup.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh27_speedup.sh "$hiboyscript/script/Sh27_speedup.sh" "$hiboyscript/script/Sh27_speedup.sh"
+fi
+chmod 777 /etc/storage/script -R
+# 初始配置脚本
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+

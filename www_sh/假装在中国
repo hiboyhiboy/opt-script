@@ -1,0 +1,59 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app02.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_7=0 #fakeincn_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set fakeincn_L2="$(($3 + 10))"
+nvram set fakeincn_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "fakeincn_L2"); %>,<% nvram_get_x("", "fakeincn_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/fakeincn
+if [ ! -f "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] || [ ! -s "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] ; then
+	wgetcurl.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp "$hiboyfile/Advanced_Extensions_fakeincnasp" "$hiboyfile2/Advanced_Extensions_fakeincnasp"
+fi
+umount /www/Advanced_Extensions_app02.asp
+if [ -f "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] ; then
+	mount --bind /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp /www/Advanced_Extensions_app02.asp
+	app2_ver=$(grep 'app2_ver=' /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp | awk -F '=' '{print $2;}')
+	nvram set app2_ver=${app2_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh20_fakeincn.sh /etc/storage/app_2.sh
+if [ ! -f "/etc/storage/script/Sh20_fakeincn.sh" ] || [ ! -s "/etc/storage/script/Sh20_fakeincn.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh20_fakeincn.sh "$hiboyscript/script/Sh20_fakeincn.sh" "$hiboyscript/script/Sh20_fakeincn.sh"
+fi
+chmod 777 /etc/storage/script -R
+# 初始配置脚本
+if [ ! -f "/etc/storage/app_1.sh" ] || [ ! -s "/etc/storage/app_1.sh" ] || [ ! -f "/etc/storage/app_2.sh" ] || [ ! -s "/etc/storage/app_2.sh" ] ; then
+	/etc/storage/script/Sh20_fakeincn.sh update_app
+fi
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+
