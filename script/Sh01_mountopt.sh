@@ -7,6 +7,9 @@ ss_opt_x=`nvram get ss_opt_x`
 upopt_enable=`nvram get upopt_enable`
 opt_cifs_dir=`nvram get opt_cifs_dir`
 [ -z $opt_cifs_dir ] && opt_cifs_dir="/media/cifs" && nvram set opt_cifs_dir="$opt_cifs_dir"
+opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+[ -z $opt_cifs_2_dir ] && opt_cifs_2_dir="/media/cifs" && nvram set opt_cifs_2_dir="$opt_cifs_2_dir"
+[ -z $opt_cifs_block ] && opt_cifs_block="1000" && nvram set opt_cifs_block="$opt_cifs_block"
 
 [ -z $ss_opt_x ] && ss_opt_x=1 && nvram set ss_opt_x="$ss_opt_x"
 
@@ -124,26 +127,55 @@ upanPath=""
 [ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 [ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 [ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "6" ] ; then
+	# 指定目录
+	if ! mountpoint -q "$opt_cifs_2_dir" || [ ! -d $opt_cifs_2_dir ] ; then
+		[ ! -d $opt_cifs_2_dir ] && source /etc/storage/cifs_script.sh
+	fi
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+		if [ "$(losetup -h 2>&1 | wc -l)" -gt 2 ] ; then
+			logger -t "【opt】" "$upanPath/o_p_t.img镜像(ext4)模式挂载/media/o_p_t_img"
+			if [ ! -s "$upanPath/o_p_t.img" ] ; then
+				[ -d "$upanPath/opt" ] && mv -f "$upanPath/opt" "$upanPath/opt_old_"$(date "+%Y-%m-%d_%H-%M-%S")
+				block="$(check_network 5 $upanPath)"
+				logger -t "【opt】" "路径$upanPath剩余空间：$block M"
+				[ ! -z $block ] && [ "$block" -lt "$opt_cifs_block" ] && opt_cifs_block=$block
+				logger -t "【opt】" "创建$upanPath/o_p_t.img镜像(ext4)文件，$opt_cifs_block M"
+				dd if=/dev/zero of=$upanPath/o_p_t.img bs=1M seek=$opt_cifs_block count=0
+				losetup `losetup -f` $upanPath/o_p_t.img
+				mkfs.ext4 -i 16384 `losetup -a | grep o_p_t.img | awk -F ':' '{print $1}'`
+			fi
+			[ -z "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" ] && losetup `losetup -f` $upanPath/o_p_t.img
+			[ -z "$(df -m | grep "/dev/loop" | grep "/media/o_p_t_img")" ] && { modprobe -q ext4 ; mkdir -p /media/o_p_t_img ; mount -t ext4 -o noatime "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" "/media/o_p_t_img" ; }
+		fi
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
+	fi
+fi
 if [ "$ss_opt_x" = "5" ] ; then
 	# 指定目录
-	opt_cifs_dir=`nvram get opt_cifs_dir`
 	if [ -d $opt_cifs_dir ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	fi
 fi
 if [ ! -z "$upanPath" ] ; then
-	mkdir -p "$upanPath/opt"
-	mount -o bind "$upanPath/opt" /opt
+	if [ "$ss_opt_x" = "6" ] ; then
+		logger -t "【opt】" "/media/o_p_t_img文件夹模式挂载/opt"
+		mount -o bind "/media/o_p_t_img" /opt
+	else
+		[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
+		logger -t "【opt】" "$upanPath/opt文件夹模式挂载/opt"
+		mount -o bind "$upanPath/opt" /opt
+	fi
 	rm -f /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
 	# prepare ssh authorized_keys
 	prepare_authorized_keys
 else
+	logger -t "【opt】" "/tmp/AiDisk_00/opt文件夹模式挂载/opt"
 	mkdir -p /tmp/AiDisk_00/opt
 	mount -o bind /tmp/AiDisk_00/opt /opt
 fi
@@ -159,20 +191,23 @@ upanPath=""
 [ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 [ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 [ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "6" ] ; then
+	# 指定目录
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
+	fi
+fi
 if [ "$ss_opt_x" = "5" ] ; then
 	# 指定目录
-	opt_cifs_dir=`nvram get opt_cifs_dir`
 	if [ -d $opt_cifs_dir ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	fi
 fi
 if [ ! -z "$upanPath" ] ; then
-	mkdir -p "$upanPath/opt"
 	rm -f /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
 else
@@ -190,7 +225,7 @@ sync
 
 opt_file () {
 if [ ! -f /opt/opt.tgz ]  ; then
-	if [ "$ss_opt_x" = "5" ] ; then
+	if [ "$ss_opt_x" = "5" ] || [ "$ss_opt_x" = "6" ] ; then
 		Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 		[ ! -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $3}')
 		logger -t "【opt】" "/opt 可用空间：$Available_M M"
@@ -347,6 +382,27 @@ logger -t "【libmd5_备份】" "md5对比，完成！"
 sync
 
 }
+initconfig () {
+cifs_script="/etc/storage/cifs_script.sh"
+if [ ! -f "$cifs_script" ] || [ ! -s "$cifs_script" ] ; then
+	cat > "$cifs_script" <<-\EEE
+#!/bin/sh
+# SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
+# 说明：【192.168.123.66】为共享服务器的IP，【nas】为共享文件夹名称
+# 说明：username=、password=填账号密码
+modprobe des_generic
+modprobe cifs CIFSMaxBufSize=64512
+mkdir -p /media/cifs
+umount /media/cifs
+mount -t cifs //192.168.123.66/nas /media/cifs -o username=user,password=pass,dynperm,nounix,noserverino,file_mode=0777,dir_mode=0777
+
+EEE
+	chmod 755 "$cifs_script"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

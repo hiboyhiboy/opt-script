@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-3-18"
+Builds="/etc/storage/Builds-2018-4-1"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -143,6 +143,7 @@ func_save()
 		result=1
 		echo "Error! Invalid storage final data size: $fsz"
 		logger -t "Storage save" "Invalid storage final data size: $fsz"
+		[ $fsz -gt $mtd_part_size ] && logger -t "Storage save" "Storage using data size: $fsz > flash partition size: $mtd_part_size"
 	fi
 	rm -f $tmp
 	rm -f $tbz
@@ -334,8 +335,9 @@ modprobe xt_set
     confdir="/tmp/ss/dnsmasq.d"
 #fi
 [ ! -d "$confdir" ] && mkdir -p $confdir
-### SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
-### 说明：username=、password=填账号密码，删除代码前面的#启用功能。
+# SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
+# 说明：【192.168.123.66】为共享服务器的IP，【nas】为共享文件夹名称
+# 说明：username=、password=填账号密码，删除代码前面的#启用功能。
 #sleep 10
 #modprobe des_generic
 #modprobe cifs CIFSMaxBufSize=64512
@@ -1921,7 +1923,6 @@ func_fill2
 if [ ! -f "$Builds" ] ; then
 #	强制更新脚本reset
 	/sbin/mtd_storage.sh resetsh
-	nvram set ss_multiport="22,80,443"
 fi
 
 }
@@ -1965,6 +1966,8 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 #copyright by hiboy
 if [ $1 == "up" ] ; then
     nvram set dnspod_status=0
+    nvram set dns_com_pod_status=0
+    nvram set cloudflare_status=0
     nvram set cloudxns_status=0
     nvram set aliddns_status=0
     nvram set ngrok_status=0
@@ -2052,6 +2055,9 @@ cat > "/tmp/crontabs_DOMAIN.txt" <<-\EOF
 
 # 每1小时重启CloudXNS 域名解析
 #16 */1 * * * nvram set cloudxns_status=123 && /tmp/script/_cloudxns & #删除开头的#启动命令
+
+# 每1小时重启Cloudflare 域名解析
+#16 */1 * * * nvram set cloudflare_status=123 && /tmp/script/_cloudflare & #删除开头的#启动命令
 
 # 每1小时重启aliddns 域名解析
 #16 */1 * * * nvram set aliddns_status=123 && /tmp/script/_aliddns & #删除开头的#启动命令
@@ -2375,11 +2381,68 @@ fi
 
 }
 
+func_flock()
+{
+
+st=$1
+st2=$(expr "$st" + 5)
+date "+%s" > $sfl
+(
+	sleep 1
+	flock 333
+	expr_time
+	[ $ctime -lt 0 ] && return 1
+	expr_time
+	[ $ctime -gt 0 ] && sleep $st
+	while [ $ctime -lt $st2 ]; do 
+		sleep 1
+		expr_time
+		if [ $ctime -ge $st ] ; then
+			date "+%s0" > $sfl
+			[ -f "$slk" ] && return 1
+			touch "$slk"
+			logger -t "【mtd_storage.sh】" "保存 /etc/storage/ 内容到闪存！请勿关机"
+			/sbin/mtd_storage.sh save_2
+			rm -f $slk
+			logger -t "【mtd_storage.sh】" "保存 /etc/storage/ 内容到闪存！执行完成"
+			return 0
+		fi
+	done
+
+) 333>/var/lock/storage_flock.lock
+
+}
+
+atime=0
+btime=0
+ctime=0
+sfl="/tmp/.storage_flock_locked"
+expr_time()
+{
+atime=$(cat $sfl)
+atime=`echo ${atime:5}`
+btime=$(date "+%s")
+btime=`echo ${btime:5}`
+ctime=$(expr "$btime" - "$atime")
+}
+
+
 case "$1" in
 load)
     func_get_mtd
     func_mdir
     func_load
+    ;;
+save_flock)
+    func_mdir
+    func_fill
+    func_flock 3 &
+    ;;
+save_2)
+    func_get_mtd
+    func_mdir
+    func_tarb
+    func_save
     ;;
 save)
     [ -f "$slk" ] && exit 1

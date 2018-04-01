@@ -175,9 +175,21 @@ fi
 
 #SS插件参数
 if [ "$ss_type" != "1" ] ; then 
+	ss_plugin_name="`nvram get ss_plugin_name`"
+	ss2_plugin_name="`nvram get ss2_plugin_name`"
 	ss_plugin_config="`nvram get ss_plugin_config`"
 	ss2_plugin_config="`nvram get ss2_plugin_config`"
+	[ ! -z "$(echo "$ss_plugin_config" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
+	[ ! -z "$(echo "$ss2_plugin_config" | grep obfs-host)" ] && ss2_plugin_name="obfs-local" && nvram set ss2_plugin_name="obfs-local"
+	[ ! -z "$(echo "$ss_usage" | grep gq-client)" ] && ss_plugin_name="gq-client" && nvram set ss_plugin_name="gq-client"
+	[ ! -z "$(echo "$ss_s2_usage" | grep gq-client)" ] && ss2_plugin_name="gq-client" && nvram set ss2_plugin_name="gq-client"
+	[ ! -z "$(echo "$ss_usage" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
+	[ ! -z "$(echo "$ss_s2_usage" | grep obfs-host)" ] && ss2_plugin_name="obfs-local" && nvram set ss2_plugin_name="obfs-local"
+	[ -z "$ss_plugin_config" ] && ss_plugin_name="" && nvram set ss_plugin_name=""
+	[ -z "$ss2_plugin_config" ] && ss2_plugin_name="" && nvram set ss2_plugin_name=""
 else
+	ss_plugin_name=""
+	ss2_plugin_name=""
 	ss_plugin_config=""
 	ss2_plugin_config=""
 fi
@@ -198,7 +210,7 @@ fi
 
 # 创建JSON
 cat > "/tmp/SSJSON.sh" <<-\SSJSONSH
-while getopts "a:o:O:g:G:s:p:b:l:k:m:f:h:" arg; do
+while getopts "a:o:O:g:G:s:p:b:l:k:m:f:h:v:" arg; do
 	case "$arg" in
 		a)
 			a="$OPTARG"
@@ -242,10 +254,11 @@ while getopts "a:o:O:g:G:s:p:b:l:k:m:f:h:" arg; do
 		h)
 			obfs_plugin="`nvram get $OPTARG`"
 			;;
+		h)
+			plugin_c="`nvram get $OPTARG`"
+			;;
 	esac
 done
-plugin_c=""
-[ ! -z "$obfs_plugin" ] && plugin_c="obfs-local"
 cat > "$config_file" <<-SSJSON
 {
 "server": "$server",
@@ -376,43 +389,34 @@ ssr_type_protocol_custom=""
 ssr2_type_protocol_custom=""
 fi
 
-# 插件参数
-if [ "$ss_type" != "1" ] ; then 
-	ss_plugin_config="`nvram get ss_plugin_config`"
-	ss2_plugin_config="`nvram get ss2_plugin_config`"
-else
-	ss_plugin_config=""
-	ss2_plugin_config=""
-fi
-
 options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
 options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
 
-ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
-ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+//g'`"
+ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g'`"
+ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g'`"
 
 # 启动程序
-/tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config
+/tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
 killall_ss_redir
 ss-redir -c /tmp/ss-redir_1.json $options1 &
 if [ ! -z $ss_server2 ] ; then
 	#启动第二个SS 连线
 	[  -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 无法获得 SS 服务器2的IP, 请核查设置"; stop_SS; clean_SS; }
 	logger -t "【SS】" "SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
-	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config
+	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
 	ss-redir -c /tmp/ss-redir_2.json $options2 &
 fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	logger -t "【ss-local】" "启动所有的 ss-local 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
 	logger -t "【ss-local】" "本地监听地址：$ss_s1_local_address 本地代理端口：$ss_s1_local_port SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
-	/tmp/SSJSON.sh -f /tmp/ss-local_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b $ss_s1_local_address -l $ss_s1_local_port -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config
+	/tmp/SSJSON.sh -f /tmp/ss-local_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b $ss_s1_local_address -l $ss_s1_local_port -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
 	killall_ss_local
 	ss-local -c /tmp/ss-local_1.json $options1 &
 	if [ ! -z $ss_server2 ] ; then
 		#启动第二个SS 连线
 		[  -z "$ss_s2_ip" ] && { logger -t "【ss-local】" "[错误!!] 无法获得 SS 服务器2的IP,请核查设置"; stop_SS; clean_SS; }
 		logger -t "【ss-local】" "本地监听地址：$ss_s2_local_address 本地代理端口：$ss_s2_local_port SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
-		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config
+		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
 		ss-local -c /tmp/ss-local_2.json $options2 &
 	fi
 fi
@@ -1739,11 +1743,8 @@ fi
 if [ "$ss_run_ss_local" = "1" ] ; then
 	hash ss-local 2>/dev/null || optssredir="3"
 fi
-check_ss_plugin="`echo $ss_plugin_config`"
-check_ss_plugin2="`echo $ss2_plugin_config`"
-if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
-	hash obfs-local 2>/dev/null || optssredir="4"
-fi
+[ ! -z "$ss_plugin_name" ] && hash $ss_plugin_name 2>/dev/null || optssredir="4"
+[ ! -z "$ss2_plugin_name" ] && hash $ss2_plugin_name 2>/dev/null || optssredir="4"
 # SS
 fi
 
@@ -1814,14 +1815,23 @@ if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
 	chmod 777 "/opt/bin/ss-local"
 	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; ss_restart x ; }
 fi
-if [ ! -z "$check_ss_plugin" ] || [ ! -z "$check_ss_plugin2" ]; then
-	hash obfs-local 2>/dev/null || optssredir="4"
+if [ ! -z "$ss_plugin_name" ] ; then
+	hash $ss_plugin_name 2>/dev/null || optssredir="4"
+	if [ "$optssredir" = "4" ] ; then
+		hash $ss_plugin_name 2>/dev/null || optssredir="4"
+		logger -t "【SS】" "找不到 $ss_plugin_name 、 $ss_plugin_name , opt 下载程序"
+		[ ! -s /opt/bin/$ss_plugin_name ] && wgetcurl.sh "/opt/bin/$ss_plugin_name" "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
+		chmod 777 "/opt/bin/$ss_plugin_name"
+	fi
 fi
-if [ "$optssredir" = "4" ] ; then
-	logger -t "【SS】" "找不到 obfs-local. opt 下载程序"
-	wgetcurl.sh "/opt/bin/obfs-local" "$hiboyfile/obfs-local" "$hiboyfile2/obfs-local"
-	chmod 777 "/opt/bin/obfs-local"
-	hash obfs-local 2>/dev/null || { logger -t "【SS】" "找不到 obfs-local, 请检查系统"; ss_restart x ; }
+if [ ! -z "$ss2_plugin_name" ] ; then
+	hash $ss2_plugin_name 2>/dev/null || optssredir="44"
+	if [ "$optssredir" = "44" ] ; then
+		hash $ss2_plugin_name 2>/dev/null || { logger -t "【SS】" "找不到 $ss2_plugin_name, 请检查系统"; ss_restart x ; }
+		[ ! -s /opt/bin/$ss2_plugin_name ] && wgetcurl.sh "/opt/bin/$ss2_plugin_name" "$hiboyfile/$ss2_plugin_name" "$hiboyfile2/$ss2_plugin_name"
+		chmod 777 "/opt/bin/$ss2_plugin_name"
+		hash $ss2_plugin_name 2>/dev/null || { logger -t "【SS】" "找不到 $ss2_plugin_name, 请检查系统"; ss_restart x ; }
+	fi
 fi
 # SS
 fi
@@ -2037,8 +2047,8 @@ restart_dhcpd
 clean_ss_rules
 killall_ss_redir
 killall_ss_local
-killall pdnsd dnsproxy sh_sskeey_k.sh obfs-local
-killall -9 pdnsd dnsproxy sh_sskeey_k.sh obfs-local
+killall pdnsd dnsproxy sh_sskeey_k.sh obfs-local gq-client
+killall -9 pdnsd dnsproxy sh_sskeey_k.sh obfs-local gq-client
 rm -f /tmp/sh_sskeey_k.sh
 rm -f $confdir/r.gfwlist.conf
 rm -f $confdir/r.sub.conf
@@ -2096,7 +2106,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
@@ -2757,7 +2767,7 @@ help)
 	echo "Usage: $0 {start|rules|flush|update|stop}"
 	;;
 update_optss)
-	rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
+	rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local /opt/bin/gq-client
 	rm -f /opt/bin/ss0-redir /opt/bin/ssr0-redir /opt/bin/ss0-local /opt/bin/ssr0-local
 	ss_restart o
 	clean_SS

@@ -92,9 +92,15 @@ if [ "$ss_opt_x" = "5" ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	fi
+fi
+if [ "$ss_opt_x" = "6" ] ; then
+	opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+	# 指定目录
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
 	fi
 fi
 echo "$upanPath"

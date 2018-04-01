@@ -114,8 +114,8 @@ ssserver_close () {
 sed -Ei '/【SS_server】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
-killall ss-server obfs-server
-killall -9 ss-server obfs-server
+killall ss-server obfs-server gq-server
+killall -9 ss-server obfs-server gq-server
 kill_ps "/tmp/script/_ssserver"
 kill_ps "_ssserver.sh"
 kill_ps "$scriptname"
@@ -145,7 +145,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【SS_server】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 fi
-if [ ! -z "echo $ssserver_usage | grep plugin" ] ; then
+if [ ! -z "echo $ssserver_usage | grep obfs-server" ] ; then
 	if [ ! -s "/opt/bin/obfs-server" ] ; then
 		logger -t "【SS_server】" "找不到 /opt/bin/obfs-server，安装 opt 程序"
 		/tmp/script/_mountopt start
@@ -157,6 +157,20 @@ if [ ! -z "echo $ssserver_usage | grep plugin" ] ; then
 		chmod 755 "/opt/bin/obfs-server"
 	else
 		logger -t "【SS_server】" "找到 /opt/bin/obfs-server"
+	fi
+fi
+if [ ! -z "echo $ssserver_usage | grep gq-server" ] ; then
+	if [ ! -s "/opt/bin/gq-server" ] ; then
+		logger -t "【SS_server】" "找不到 /opt/bin/gq-server，安装 opt 程序"
+		/tmp/script/_mountopt start
+		initopt
+	fi
+	if [ ! -s "/opt/bin/gq-server" ] ; then
+		logger -t "【SS_server】" "找不到 /opt/bin/gq-server 下载程序"
+		wgetcurl.sh /opt/bin/gq-server "$hiboyfile/gq-server" "$hiboyfile2/gq-server"
+		chmod 755 "/opt/bin/gq-server"
+	else
+		logger -t "【SS_server】" "找到 /opt/bin/gq-server"
 	fi
 fi
 logger -t "【SS_server】" "启动 ss-server 服务"

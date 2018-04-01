@@ -155,9 +155,15 @@ if [ "$ss_opt_x" = "5" ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	fi
+fi
+if [ "$ss_opt_x" = "6" ] ; then
+	opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+	# 指定目录
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
 	fi
 fi
 echo "$upanPath"
@@ -191,7 +197,6 @@ if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	logger -t "【相框显示】" "缺少 /etc/storage/display_lcd4linux_script.sh 文件, 启动失败"
 	logger -t "【相框显示】" "停止程序, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
-[ ! -f /tmp/AiDisk_00/opt/bin/lcd4linux ] && /etc/storage/script/Sh01_mountopt.sh
 # 修改显示空间
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
@@ -206,11 +211,18 @@ if [ "$ss_opt_x" = "5" ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	fi
 fi
+if [ "$ss_opt_x" = "6" ] ; then
+	opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+	# 指定目录
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
+	fi
+fi
+echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then
 	upanPath2="SpaceDir  \'\/media\/$upanPath\' #显示空间"
 else
