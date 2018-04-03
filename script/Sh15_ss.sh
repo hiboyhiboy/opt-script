@@ -254,7 +254,7 @@ while getopts "a:o:O:g:G:s:p:b:l:k:m:f:h:v:" arg; do
 		h)
 			obfs_plugin="`nvram get $OPTARG`"
 			;;
-		h)
+		v)
 			plugin_c="`nvram get $OPTARG`"
 			;;
 	esac
