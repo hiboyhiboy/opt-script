@@ -334,7 +334,7 @@ while read line
 do
 if [ -f "$line" ] ; then
 	MD5_backup="$(md5sum $line | awk '{print $1;}')"
-	b_line="$(echo $line | sed  "s/$\/opt\/opt_backup\//$\/opt\//g")"
+	b_line="$(echo $line | sed  "s@^/opt/opt_backup/@/opt/@g")"
 	MD5_OPT="$(md5sum $b_line | awk '{print $1;}')"
 	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
 	logger -t "【libmd5_恢复】" "【 $b_line 】，md5不匹配！"
@@ -366,7 +366,7 @@ while read line
 do
 if [ -f "$line" ] ; then
 	MD5_backup="$(md5sum $line | awk '{print $1;}')"
-	b_line="$(echo $line | sed  "s/$\/opt\//$\/opt\/opt_backup\//g")"
+	b_line="$(echo $line | sed  "s@^/opt/@/opt/opt_backup/@g")"
 	MD5_OPT="$(md5sum $b_line | awk '{print $1;}')"
 	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
 	logger -t "【libmd5_备份】" "【 $b_line 】，md5不匹配！"
