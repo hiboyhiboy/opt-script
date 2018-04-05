@@ -702,7 +702,7 @@ ntpdate us.pool.ntp.org &
 echo 'Telegram Group: https://t.me/functionclub'
 echo 'Github: https://github.com/FunctionClub'
 echo '教程地址：https://github.com/FunctionClub/V2ray-Bash/blob/master/README.md'
-echo ''
+echo '##########################################################################'
 echo '配置完成，客户端配置文件在 /root/config.json'
 echo '配置完成，客户端配置文件在 /root/config.json'
 echo '配置完成，客户端配置文件在 /root/config.json'
@@ -711,4 +711,10 @@ echo "程序主端口：$mainport"
 echo "UUID: $uuid"
 echo 'cat /root/config.json'
 echo "打开 /root/config.json 复制里面的内容到路由的 v2ray 配置文件"
+echo '##########################################################################'
+rm -f /root/v2ray_config.pb
+/usr/bin/v2ray/v2ctl config < /root/config.json > /root/v2ray_config.pb
+[ -f /root/v2ray_config.pb ] && echo "已经生成 pb 配置文件 /root/v2ray_config.pb"
+echo '##########################################################################'
+
 
