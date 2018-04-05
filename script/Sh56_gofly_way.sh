@@ -141,7 +141,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【goflyway】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && goflyway_restart x
 fi
 chmod 777 "$SVC_PATH"
-goflyway_v=$(goflyway -v | grep goflyway | sed -n '1p')
+goflyway_v=$(goflyway -version | grep goflyway | sed -n '1p')
 nvram set goflyway_v="$goflyway_v"
 logger -t "【goflyway】" "运行 goflyway"
 
