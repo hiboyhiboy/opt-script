@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.15
+version=v3.16
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -134,6 +134,11 @@ if [ -f "/etc/v2ray/config.back0" ]; then
     fi
   fi
 cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
+echo '##########################################################################'
+rm -f /root/v2ray_config.pb
+/usr/bin/v2ray/v2ctl config < /root/config.json > /root/v2ray_config.pb
+[ -f /root/v2ray_config.pb ] && echo "已经生成 pb 配置文件 /root/v2ray_config.pb"
+echo '##########################################################################'
 exit
 else
   echo "未完成配置生成，请继续配置"
