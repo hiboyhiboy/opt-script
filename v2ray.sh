@@ -98,16 +98,14 @@ echo '删除 V2ray 完成！'
 
 function up_v2ray(){
 
-  if [ -n "${SYSTEMCTL_CMD}" ]; then
-    if [ -f "/lib/systemd/system/v2ray.service" ]; then
+  if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
       killall keey.sh
       ${SYSTEMCTL_CMD} stop v2ray
-    fi
-  elif [ -n "${SERVICE_CMD}" ]; then
-    if [ -f "/etc/init.d/v2ray" ]; then
+      systemctl disable v2ray.service
+  fi
+  if [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
       killall keey.sh
       ${SERVICE_CMD} v2ray stop
-    fi
   fi
 
 curl -L -s -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
@@ -122,16 +120,13 @@ check_daemon
 echo "安装完成"
 ntpdate us.pool.ntp.org &
 if [ -f "/etc/v2ray/config.back0" ]; then
-  if [ -n "${SYSTEMCTL_CMD}" ]; then
-    if [ -f "/lib/systemd/system/v2ray.service" ]; then
+  if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
       echo "Restarting V2Ray service."
+      systemctl enable v2ray.service
       ${SYSTEMCTL_CMD} start v2ray
-    fi
-  elif [ -n "${SERVICE_CMD}" ]; then
-    if [ -f "/etc/init.d/v2ray" ]; then
+  elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
       echo "Restarting V2Ray service."
       ${SERVICE_CMD} v2ray start
-    fi
   fi
 cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
 echo '##########################################################################'
@@ -492,17 +487,14 @@ else
 	fi
 fi
 
-  if [ -n "${SYSTEMCTL_CMD}" ]; then
-    if [ -f "/lib/systemd/system/v2ray.service" ]; then
-
+  if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
       killall keey.sh
       ${SYSTEMCTL_CMD} stop v2ray
-    fi
-  elif [ -n "${SERVICE_CMD}" ]; then
-    if [ -f "/etc/init.d/v2ray" ]; then
+      systemctl disable v2ray.service
+  fi
+  if [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
       killall keey.sh
       ${SERVICE_CMD} v2ray stop
-    fi
   fi
 #Configure Server
 #service v2ray stop
@@ -689,16 +681,13 @@ EOF
 
 
 ntpdate us.pool.ntp.org &
-  if [ -n "${SYSTEMCTL_CMD}" ]; then
-    if [ -f "/lib/systemd/system/v2ray.service" ]; then
+  if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
       echo "Restarting V2Ray service."
+      systemctl enable v2ray.service
       ${SYSTEMCTL_CMD} start v2ray
-    fi
-  elif [ -n "${SERVICE_CMD}" ]; then
-    if [ -f "/etc/init.d/v2ray" ]; then
+  elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
       echo "Restarting V2Ray service."
       ${SERVICE_CMD} v2ray start
-    fi
   fi
 
 #service v2ray start
