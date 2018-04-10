@@ -165,8 +165,8 @@ if [ "$ss_enable" = "1" ] ; then
 fi
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$v2ray_path" ] && kill_ps "$v2ray_path"
-killall v2ray v2ray_script.sh
-killall -9 v2ray v2ray_script.sh
+killall v2ray v2ctl v2ray_script.sh
+killall -9 v2ray v2ctl v2ray_script.sh
 kill_ps "/tmp/script/_v2ray"
 kill_ps "_v2ray.sh"
 kill_ps "$scriptname"
@@ -217,6 +217,8 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【v2ray】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
+killall v2ray v2ctl v2ray_script.sh
+killall -9 v2ray v2ctl v2ray_script.sh
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 if [ ! -z "$optPath" ] ; then
 	logger -t "【v2ray】" " /opt/ 在内存储存"

@@ -198,7 +198,7 @@ update_app () {
 mkdir -p /opt/app/goflyway
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/goflyway/Advanced_Extensions_goflyway.asp
-	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /etc/storage/app_7.sh
+	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /opt/bin/chinalist.txt /opt/bin/ca.pem /etc/storage/app_7.sh
 fi
 
 initconfig
