@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.16
+version=v3.18
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -72,7 +72,6 @@ fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
 /root/go.sh --version $version
-check_daemon
 rm -f /root/v2ray_server_json
 ln -sf /etc/v2ray /root/v2ray_server_json
 echo "安装完成"
@@ -116,10 +115,10 @@ fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
 /root/go.sh --version $version
-check_daemon
 echo "安装完成"
 ntpdate us.pool.ntp.org &
 if [ -f "/etc/v2ray/config.back0" ]; then
+cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
   if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
       echo "Restarting V2Ray service."
       systemctl enable v2ray.service
@@ -128,7 +127,6 @@ if [ -f "/etc/v2ray/config.back0" ]; then
       echo "Restarting V2Ray service."
       ${SERVICE_CMD} v2ray start
   fi
-cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
 echo '##########################################################################'
 rm -f /root/v2ray_config.pb
 /usr/bin/v2ray/v2ctl config < /root/config.json > /root/v2ray_config.pb
@@ -139,138 +137,6 @@ else
   echo "未完成配置生成，请继续配置"
 fi
 }
-
-function check_daemon(){
-hash start-stop-daemon 2>/dev/null || daemon_x=1
-echo $daemon_x
-if [ ! -f "/etc/init.d/v2ray" ] || [ "$daemon_x" = "1" ] ; then
-rm -f /root/keey.sh /etc/init.d/v2ray
-cat > "/etc/init.d/v2ray" <<-\VVRinit
-#!/bin/sh
-### BEGIN INIT INFO
-# Provides:          v2ray
-# Required-Start:    $network $local_fs $remote_fs
-# Required-Stop:     $remote_fs
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: V2Ray proxy services
-# Description:       V2Ray proxy services
-### END INIT INFO
-
-# Acknowledgements: Isulew Li <netcookies@gmail.com>
-
-DESC=v2ray
-NAME=v2ray
-DAEMON=/usr/bin/v2ray/v2ray
-PIDFILE=/var/run/$NAME.pid
-SCRIPTNAME=/etc/init.d/$NAME
-
-DAEMON_OPTS="-config /etc/v2ray/config.json"
-
-# Exit if the package is not installed
-[ -x $DAEMON ] || exit 0
-
-RETVAL=0
-
-check_running(){
-    PID=`ps -ef | grep -v grep | grep -i "${DAEMON}" | awk '{print $2}'`
-    if [ ! -z $PID ]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-do_start(){
-    check_running
-    if [ $? -eq 0 ]; then
-        echo "$NAME (pid $PID) is already running..."
-        keep
-        exit 0
-    else
-        cd /usr/bin/v2ray/
-        ntpdate us.pool.ntp.org &
-        $DAEMON $DAEMON_OPTS &
-        RETVAL=$?
-        if [ $RETVAL -eq 0 ]; then
-            echo "Starting $NAME success"
-            keep
-        else
-            echo "Starting $NAME failed"
-        fi
-    fi
-}
-
-do_stop(){
-    check_running
-    if [ $? -eq 0 ]; then
-        killall keey.sh
-        killall v2ray
-        RETVAL=$?
-        if [ $RETVAL -eq 0 ]; then
-            echo "Stopping $NAME success"
-        else
-            echo "Stopping $NAME failed"
-        fi
-    else
-        echo "$NAME is stopped"
-        RETVAL=1
-    fi
-}
-
-do_status(){
-    check_running
-    if [ $? -eq 0 ]; then
-        echo "$NAME (pid $PID) is running..."
-    else
-        echo "$NAME is stopped"
-        RETVAL=1
-    fi
-}
-
-do_restart(){
-    do_stop
-    do_start
-}
-
-keep () {
-if [ ! -f "/root/keey.sh" ]; then
-cat > "/root/keey.sh" <<-\SSMK
-#!/bin/sh
-#/usr/bin/v2ray/v2ray
-sleep 60
-service v2ray start
-SSMK
-chmod +x "/root/keey.sh"
-fi
-killall keey.sh
-/root/keey.sh &
-
-}
-
-
-case "$1" in
-    start|stop|restart|status)
-    do_$1
-    ;;
-    *)
-    echo "Usage: $0 { start | stop | restart | status }"
-    RETVAL=1
-    ;;
-esac
-
-exit $RETVAL
-
-
-VVRinit
-
-chmod 755 /etc/init.d/v2ray
-
-fi
-
-
-}
-
 
 echo 'V2Ray 输入数字继续一键安装'
 while :; do echo
