@@ -220,21 +220,22 @@ fi
 killall v2ray v2ctl v2ray_script.sh
 killall -9 v2ray v2ctl v2ray_script.sh
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
-if [ ! -z "$optPath" ] ; then
-	logger -t "【v2ray】" " /opt/ 在内存储存"
+Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
+Mem_lt=100000
+if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
+	[ ! -z "$optPath" ] && logger -t "【v2ray】" " /opt/ 在内存储存"
+	[ "$Mem_total" -lt "$Mem_lt" ] && logger -t "【v2ray】" "内存不足100M"
 	A_restart=`nvram get app_19`
 	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
-		rm -f /opt/bin/v2ray
+		[ ! -z "$optPath" ] && rm -f /opt/bin/v2ray
 		rm -f /opt/bin/v2ray_config.pb
 		v2ray_wget_v2ctl
 		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置"
 		cd "$(dirname "$SVC_PATH")"
 		v2ctl config < /etc/storage/v2ray_config_script.sh > /opt/bin/v2ray_config.pb
 		[ -f /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
-		rm -f /opt/bin/v2ctl
-		rm -f /opt/bin/geoip.dat
-		rm -f /opt/bin/geosite.dat
+		[ ! -z "$optPath" ] && rm -f /opt/bin/v2ctl /opt/bin/geoip.dat /opt/bin/geosite.dat
 	fi
 else
 	v2ray_wget_v2ctl

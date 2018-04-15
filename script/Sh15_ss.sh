@@ -1744,8 +1744,8 @@ fi
 if [ "$ss_run_ss_local" = "1" ] ; then
 	hash ss-local 2>/dev/null || optssredir="3"
 fi
-[ ! -z "$ss_plugin_name" ] && hash $ss_plugin_name 2>/dev/null || optssredir="4"
-[ ! -z "$ss2_plugin_name" ] && hash $ss2_plugin_name 2>/dev/null || optssredir="4"
+[ ! -z "$ss_plugin_name" ] && { hash $ss_plugin_name 2>/dev/null || optssredir="4" ; }
+[ ! -z "$ss2_plugin_name" ] && { hash $ss2_plugin_name 2>/dev/null || optssredir="4" ; }
 # SS
 fi
 
@@ -2198,6 +2198,8 @@ fi
 }
 
 SS_keep () {
+ss_keep_check=`nvram get ss_keep_check`
+[ -z $ss_keep_check ] && ss_keep_check=1 && nvram set ss_keep_check=$ss_keep_check
 cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
 #!/bin/sh
 source /etc/storage/script/init.sh
@@ -2311,6 +2313,12 @@ EOF
 		[ -s /tmp/ss/accelerated-domains.china.conf ] && echo "conf-file=/tmp/ss/accelerated-domains.china.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 	fi
 fi
+
+if [ "$ss_keep_check" != "1" ] ; then
+	#不需要 持续检查 SS 服务器状态
+	#跳出当前循环
+	continue
+fi
 #SS进程监控和双线切换
 #思路：
 #先将所有ss通道全部拉起来，默认服务器为1090端口，新服务器为1091端口，默认走通道0，DNS的ss-tunnel 走8053 和 8054
@@ -2412,8 +2420,8 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 	port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 	if [ "$port" = 0 ] ; then
 		logger -t "【SS】" "检测3:找不到 SS_SPEC 转发规则, 重新添加"
-		eval "$scriptfilepath rules &"
 		restart_dhcpd
+		eval "$scriptfilepath rules &"
 		sleep 5
 	fi
 fi
