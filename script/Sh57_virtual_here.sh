@@ -149,6 +149,7 @@ initopt
 virtualhere_port_dpt
 #virtualhere_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

@@ -164,6 +164,7 @@ softether_port_dpt
 initopt
 softether_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

@@ -125,7 +125,9 @@ while true; do
 	NUM=`ps -w | grep "oraynewph -s 0.0.0.0" | grep -v grep |wc -l`
 	NUM2=`ps -w | grep "oraysl -a 127.0.0.1" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ "$NUM2" -lt "1" ] || [ $online -le 0 ] || [ ! -s "/usr/bin/oraysl" ] ; then
-		logger -t "【花生壳内网版】" "网络状态:【$orayslstatus 】，重新启动($NUM , $NUM)"
+		logger -t "【花生壳内网版】" "网络状态:【$orayslstatus 】，重新启动($NUM , $NUM2 , $online)"
+		killall oraynewph oraysl
+		killall -9 oraynewph oraysl
 		phddns_restart
 	fi
 	
@@ -181,6 +183,7 @@ sleep 2
 [ -z "`pidof oraysl`" ] && logger -t "【花生壳内网版】" "启动失败, 注意检查oraysl、oraynewph是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { rm -rf /opt/bin/oraysl /opt/bin/oraynewph ; phddns_restart x ; }
 
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

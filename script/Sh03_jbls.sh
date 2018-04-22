@@ -59,6 +59,7 @@ sleep 2
 [ ! -z "$(ps -w | grep "jblicsvr" | grep -v grep )" ] && logger -t "【jbls】" "启动成功"
 [ -z "$(ps -w | grep "jblicsvr" | grep -v grep )" ] && logger -t "【jbls】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initconfig () {

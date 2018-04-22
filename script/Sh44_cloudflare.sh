@@ -86,6 +86,7 @@ if [ "$cloudflare_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		cloudflare_close
 		eval "$scriptfilepath keep &"
+		exit 0
 	else
 		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] || [ ! -s "`which curl`" ] && cloudflare_restart
 	fi

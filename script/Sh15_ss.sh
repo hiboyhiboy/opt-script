@@ -17,6 +17,8 @@ ss_update=`nvram get ss_update`
 ss_update_hour=`nvram get ss_update_hour`
 ss_update_min=`nvram get ss_update_min`
 
+ss_keep_check=`nvram get ss_keep_check`
+[ -z $ss_keep_check ] && ss_keep_check=1 && nvram set ss_keep_check=$ss_keep_check
 #================华丽的分割线====================================
 #set -x
 #初始化开始
@@ -962,8 +964,8 @@ nvram set button_script_2_s="$ss_info"
 	echo "WAN!www.ipip.net" >> /tmp/ss_spec_wan.txt
 	sed -e '/.*alidns.aliyuncs.com/d' -i /tmp/ss_spec_wan.txt
 	echo "WAN!alidns.aliyuncs.com" >> /tmp/ss_spec_wan.txt
-	sed -e '/.*googleapis.cn/d' -i /tmp/ss_spec_wan.txt
-	echo "WAN!googleapis.cn" >> /tmp/ss_spec_wan.txt
+	sed -e '/.*services.googleapis.cn/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!services.googleapis.cn" >> /tmp/ss_spec_wan.txt
 	rm -f /tmp/ss/wantoss.list
 	rm -f /tmp/ss/wannoss.list
 	while read line
@@ -2007,6 +2009,7 @@ ss_working_port=`nvram get ss_working_port`
 [ $ss_working_port == 1091 ] && ss_info="SS_[2]"
 nvram set button_script_2_s="$ss_info"
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 
@@ -2198,8 +2201,6 @@ fi
 }
 
 SS_keep () {
-ss_keep_check=`nvram get ss_keep_check`
-[ -z $ss_keep_check ] && ss_keep_check=1 && nvram set ss_keep_check=$ss_keep_check
 cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
 #!/bin/sh
 source /etc/storage/script/init.sh
@@ -2314,6 +2315,8 @@ EOF
 	fi
 fi
 
+ss_keep_check=`nvram get ss_keep_check`
+[ -z "$ss_keep_check" ] && ss_keep_check=1 && nvram set ss_keep_check=$ss_keep_check
 if [ "$ss_keep_check" != "1" ] ; then
 	#不需要 持续检查 SS 服务器状态
 	#跳出当前循环

@@ -443,6 +443,7 @@ logger -t "【ADM】" "守护进程启动"
 adm_cron_job
 #adm_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 flush_r () {

@@ -150,6 +150,7 @@ sleep 2
 mproxy_port_dpt
 #mproxy_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

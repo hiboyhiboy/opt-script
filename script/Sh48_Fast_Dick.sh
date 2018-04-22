@@ -206,6 +206,7 @@ else
 fi
 FastDick_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initconfig () {

@@ -178,6 +178,7 @@ sleep 2
 [ -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ngrok_restart x
 ngrok_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

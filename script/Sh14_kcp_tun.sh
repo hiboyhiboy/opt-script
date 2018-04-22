@@ -214,6 +214,7 @@ sleep 2
 initopt
 kcptun_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 arNslookup() {

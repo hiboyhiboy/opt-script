@@ -187,6 +187,7 @@ verysync_port_dpt
 
 #verysync_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

@@ -11,7 +11,9 @@ if [ "$v2ray_enable" != "0" ] ; then
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
 
 v2ray_follow=`nvram get v2ray_follow`
+[ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
 v2ray_optput=`nvram get v2ray_optput`
+[ -z $v2ray_optput ] && v2ray_optput=0 && nvram set v2ray_optput=0
 
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
@@ -28,6 +30,12 @@ v2ray_path=`nvram get v2ray_path`
 [ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
 v2ray_door=`nvram get v2ray_door`
 [ -z $v2ray_door ] && v2ray_door=1099 && nvram set v2ray_door=1099
+
+v2ray_http_enable=`nvram get v2ray_http_enable`
+[ -z $v2ray_http_enable ] && v2ray_http_enable=0 && nvram set v2ray_http_enable=0
+v2ray_http_format=`nvram get v2ray_http_format`
+[ -z $v2ray_http_format ] && v2ray_http_format=1 && nvram set v2ray_http_format=1
+v2ray_http_config=`nvram get v2ray_http_config`
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep v2ray)" ]  && [ ! -s /tmp/script/_v2ray ]; then
 	mkdir -p /tmp/script
@@ -75,7 +83,7 @@ v2ray_get_status () {
 
 lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set v2ray_status=$B_restart
@@ -206,6 +214,22 @@ fi
 
 v2ray_start () {
 
+if [ "$v2ray_http_enable" = "1" ] && [ -z "$v2ray_http_config" ] ; then
+logger -t "【v2ray】" "错误！配置远程地址 内容为空"
+logger -t "【v2ray】" "请填写配置远程地址！"
+logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
+sleep 30 && v2ray_restart x
+fi
+if [ "$v2ray_http_enable" != "1" ] && [ ! -f /opt/bin/v2ray_config.pb ] ; then
+if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
+logger -t "【v2ray】" "错误！ v2ray 配置文件 内容为空"
+logger -t "【v2ray】" "请在服务端运行一键安装脚本："
+logger -t "【v2ray】" "bash <(curl -L -s http://opt.cn2qq.com/opt-script/v2ray.sh)"
+logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
+sleep 30 && v2ray_restart x
+fi
+fi
+
 SVC_PATH="$v2ray_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/v2ray"
@@ -225,6 +249,11 @@ Mem_lt=100000
 if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 	[ ! -z "$optPath" ] && logger -t "【v2ray】" " /opt/ 在内存储存"
 	[ "$Mem_total" -lt "$Mem_lt" ] && logger -t "【v2ray】" "内存不足100M"
+	if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
+		[ "$v2ray_http_format" = "1" ] && wgetcurl.sh /etc/storage/v2ray_config_script.sh "$v2ray_http_config" "$v2ray_http_config"
+		[ "$v2ray_http_format" = "2" ] &&  wgetcurl.sh /opt/bin/v2ray_config.pb "$v2ray_http_config" "$v2ray_http_config"
+		v2ray_http_enable=0
+	fi
 	A_restart=`nvram get app_19`
 	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
@@ -259,20 +288,37 @@ v2ray_path="$SVC_PATH"
 logger -t "【v2ray】" "运行 v2ray_script"
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
-[ ! -f /opt/bin/v2ray_config.pb ] && $v2ray_path -config /etc/storage/v2ray_config_script.sh -format json &
-[ -f /opt/bin/v2ray_config.pb ] && $v2ray_path -config /opt/bin/v2ray_config.pb -format pb &
-restart_dhcpd
+su_cmd="eval"
+if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
+	NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
+	hash su 2>/dev/null && su_x="1"
+	hash su 2>/dev/null || su_x="0"
+	[ "$su_x" != "1" ] && logger -t "【v2ray】" "缺少 su 命令"
+	[ "$NUM" -ge "3" ] || logger -t "【v2ray】" "缺少 iptables -m owner 模块"
+	if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
+		adduser -u 777 v2 -D -S -H -s /bin/sh
+		killall v2ray
+		su_cmd="su v2 -c "
+	else
+		logger -t "【v2ray】" "停止路由自身流量走透明代理"
+		v2ray_optput=0
+		nvram set v2ray_optput=0
+	fi
+fi
 v2ray_v=`v2ray -version | grep V2Ray`
 nvram set v2ray_v="$v2ray_v"
-sleep 2
-if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
-logger -t "【v2ray】" "启动失败, v2ray 配置文件 内容为空"
-logger -t "【v2ray】" "请在服务端运行一键安装脚本："
-logger -t "【v2ray】" "bash <(curl -L -s http://opt.cn2qq.com/opt-script/v2ray.sh)"
-sleep 10 && v2ray_restart x
+if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
+	[ "$v2ray_http_format" = "1" ] && su_cmd2="$v2ray_path -format json -config $v2ray_http_config"
+	[ "$v2ray_http_format" = "2" ] && su_cmd2="$v2ray_path -format pb  -config $v2ray_http_config"
+else
+	[ ! -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /etc/storage/v2ray_config_script.sh -format json"
+	[ -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /opt/bin/v2ray_config.pb -format pb"
 fi
+eval "$su_cmd" '"'"$su_cmd2"'" &' &
+sleep 2
+restart_dhcpd
 [ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动成功 $v2ray_v " && v2ray_restart o
-[ -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
+[ -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 
 initopt
 
@@ -334,7 +380,6 @@ iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j
 NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
 hash su 2>/dev/null && su_x="1"
 hash su 2>/dev/null || su_x="0"
-[ "$su_x" != "1" ] && logger -t "【v2ray】" "缺少 su 命令, 停止路由自身流量走透明代理"
 if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
 
 logger -t "【v2ray】" "支持游戏模式（UDP转发）"
@@ -347,11 +392,7 @@ get_wifidognx_mangle
 gen_prerouting_rules mangle udp $wifidognx
 
 logger -t "【v2ray】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
-	#useradd -u 777 v2
-	adduser -u 777 v2 -D -S -H -s /bin/sh
-	killall v2ray
 	iptables -t nat -D OUTPUT -m owner ! --uid-owner 777 -p tcp -j SS_SPEC_V2RAY_LAN_DG
-	su v2 -c "$v2ray_path -config /etc/storage/v2ray_config_script.sh &" &
 	iptables -t nat -A OUTPUT -m owner ! --uid-owner 777 -p tcp -j SS_SPEC_V2RAY_LAN_DG
 fi
 	logger -t "【v2ray】" "完成 透明代理 转发规则设置"
@@ -362,6 +403,7 @@ fi
 
 v2ray_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 gen_include() {
@@ -516,10 +558,7 @@ lan_ipaddr=`nvram get lan_ipaddr`
 
 VVR
 fi
-	if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
-cat > "/etc/storage/v2ray_config_script.sh" <<-\VVRCON
-VVRCON
-fi
+[ ! -f "/etc/storage/v2ray_config_script.sh" ] && touch /etc/storage/v2ray_config_script.sh
 
 }
 

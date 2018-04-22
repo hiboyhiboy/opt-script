@@ -252,6 +252,7 @@ sleep 2
 initopt
 ssrserver_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

@@ -257,7 +257,7 @@ sleep 2
 fi
 upd2pro_get_status
 eval "$scriptfilepath keep &"
-
+exit 0
 }
 
 initopt () {

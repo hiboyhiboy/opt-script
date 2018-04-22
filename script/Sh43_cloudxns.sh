@@ -89,6 +89,7 @@ if [ "$cloudxns_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		cloudxns_close
 		eval "$scriptfilepath keep &"
+		exit 0
 	else
 		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] || [ ! -s "`which curl`" ] && cloudxns_restart
 	fi

@@ -206,6 +206,7 @@ sleep 5
 initopt
 xunlei_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

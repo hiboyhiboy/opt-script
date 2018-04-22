@@ -174,6 +174,7 @@ fi
 [ "$frps_enable" = "1" ] && [ -z "`pidof frps`" ] && logger -t "【frp】" "frps启动成功" && frp_restart o
 #frp_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

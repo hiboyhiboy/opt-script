@@ -76,6 +76,7 @@ if [ "$dns_com_pod_enable" = "1" ] ; then
 		dns_com_pod_get_status
 		dns_com_pod_close
 		eval "$scriptfilepath keep &"
+		exit 0
 	else
 		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && nvram set dns_com_pod_status=00 && { eval "$scriptfilepath start &"; exit 0; }
 	fi

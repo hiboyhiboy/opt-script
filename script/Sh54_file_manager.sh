@@ -184,6 +184,7 @@ initopt
 filemanager_port_dpt
 #filemanager_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

@@ -183,6 +183,7 @@ syncthing_port_dpt
 initopt
 #syncthing_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

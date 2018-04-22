@@ -401,6 +401,7 @@ lnmp_port_dpt
 initopt
 lnmp_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 

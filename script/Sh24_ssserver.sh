@@ -187,7 +187,7 @@ logger -t "【SS_server】" "`ps -w | grep ss-server | grep -v grep`"
 ssserver_port_dpt
 #ssserver_get_status
 eval "$scriptfilepath keep &"
-
+exit 0
 }
 
 initopt () {

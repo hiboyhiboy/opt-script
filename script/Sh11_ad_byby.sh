@@ -553,6 +553,7 @@ logger -t "【Adbyby】" "守护进程启动"
 adbyby_cron_job
 #adbyby_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 flush_r () {

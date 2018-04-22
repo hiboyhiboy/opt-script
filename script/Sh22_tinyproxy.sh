@@ -161,6 +161,7 @@ sleep 2
 tinyproxy_port_dpt
 tinyproxy_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

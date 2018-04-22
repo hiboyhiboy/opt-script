@@ -538,6 +538,7 @@ logger -t "【koolproxy】" "守护进程启动"
 koolproxy_cron_job
 #koolproxy_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 koolproxy_rules_list () {

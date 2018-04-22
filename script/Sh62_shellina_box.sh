@@ -174,6 +174,7 @@ fi
 shellinabox_port_dpt
 #shellinabox_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

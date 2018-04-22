@@ -143,6 +143,7 @@ vpnproxy_port_dpt
 initopt
 #vpnproxy_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {
