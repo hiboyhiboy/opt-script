@@ -7,8 +7,9 @@ if [ "$mentohust_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep mentohust | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 mentohust_path=`nvram get mentohust_path`
 [ -z $mentohust_path ] && mentohust_path="/usr/bin/mentohust" && nvram set mentohust_path=$mentohust_path
-mentohust_n=`nvram get mentohust_n`
-[ -z $mentohust_n ] && mentohust_n=$(nvram get wan0_ifname_t) && nvram set mentohust_n=$mentohust_n
+mentohust_n="$(nvram get mentohust_n)"
+[ "$mentohust_n" = "0" ] && mentohust_n="$(nvram get wan0_ifname_t)" && nvram set mentohust_n=$mentohust_n
+[ -z $mentohust_n ] && mentohust_n="$(nvram get wan0_ifname_t)" && nvram set mentohust_n=$mentohust_n
 mentohust_i=`nvram get mentohust_i`
 [ -z $mentohust_i ] && mentohust_i="0.0.0.0" && nvram set mentohust_i=$mentohust_i
 mentohust_m=`nvram get mentohust_m`
