@@ -387,7 +387,7 @@ logger -t "【v2ray】" "支持游戏模式（UDP转发）"
 ip rule add fwmark 1 lookup 100
 ip route add local default dev lo table 100
 include_ac_rules mangle
-iptables -t mangle -A SS_SPEC_WAN_FW -m owner ! --uid-owner 777 -p udp -j TPROXY --on-port $v2ray_door --tproxy-mark 0x01/0x01
+iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $v2ray_door --tproxy-mark 0x01/0x01
 get_wifidognx_mangle
 gen_prerouting_rules mangle udp $wifidognx
 
