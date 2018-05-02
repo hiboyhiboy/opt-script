@@ -85,7 +85,6 @@ dnspod_start () {
 arDdnsCheck $dnspod_domian $dnspod_host
 if [ "$dnspod_domian2"x != "x" ] && [ "$dnspod_domian2" != "baidu.com" ] ; then
 	sleep 1
-	logger -t "【DNSPod动态域名】" "test 2"
 	arDdnsCheck6 $dnspod_domian2 $dnspod_host2
 fi
 }
@@ -323,7 +322,6 @@ arDdnsCheck6() {
 	local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIPv6=$arIpAddress6
-	logger -t "【DNSPod动态域名】" "$hostIPv6"
 	echo "Updating Domain: ${2}.${1}"
 	echo "hostIPv6: ${hostIPv6}"
 	#lastIP=$(arNslookup "${2}.${1}")
