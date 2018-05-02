@@ -80,6 +80,12 @@ online=$(echo $orayslstatus | grep "ONLINE" | wc -l);
 phddns_keep () {
 logger -t "【花生壳内网版】" "守护进程启动"
 sleep 25
+SVC_PATH="/usr/bin/oraysl"
+SVC_PATH2="/usr/bin/oraynewph"
+if [ ! -s "$SVC_PATH" ] ; then
+SVC_PATH="/opt/bin/oraysl"
+fi
+
 USER_DATA="/tmp/oraysl.status"
 
 SN=`head -n 2 $USER_DATA  | tail -n 1 | cut -d= -f2-`;
@@ -124,7 +130,7 @@ while true; do
 	onlinetest
 	NUM=`ps -w | grep "oraynewph -s 0.0.0.0" | grep -v grep |wc -l`
 	NUM2=`ps -w | grep "oraysl -a 127.0.0.1" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ "$NUM2" -lt "1" ] || [ $online -le 0 ] || [ ! -s "/usr/bin/oraysl" ] ; then
+	if [ "$NUM" -lt "1" ] || [ "$NUM2" -lt "1" ] || [ $online -le 0 ] || [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【花生壳内网版】" "网络状态:【$orayslstatus 】，重新启动($NUM , $NUM2 , $online)"
 		killall oraynewph oraysl
 		killall -9 oraynewph oraysl
