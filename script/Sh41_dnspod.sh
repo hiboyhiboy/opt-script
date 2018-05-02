@@ -16,7 +16,9 @@ dnspod_host2=`nvram get dnspod_host2`
 dnspod_interval=`nvram get dnspod_interval`
 
 hostIP=""
+hostIPv6=""
 myIP=""
+myIPv6=""
 [ -z $dnspod_interval ] && dnspod_interval=600 && nvram set dnspod_interval=$dnspod_interval
 fi
 
@@ -83,7 +85,8 @@ dnspod_start () {
 arDdnsCheck $dnspod_domian $dnspod_host
 if [ "$dnspod_domian2"x != "x" ] && [ "$dnspod_domian2" != "baidu.com" ] ; then
 	sleep 1
-	arDdnsCheck $dnspod_domian2 $dnspod_host2
+	logger -t "【DNSPod动态域名】" "test 2"
+	arDdnsCheck6 $dnspod_domian2 $dnspod_host2
 fi
 }
 
@@ -114,7 +117,25 @@ arDdnsInfo() {
 		;;
 	esac
 }
-
+arDdnsInfo6() {
+	local domainID recordID recordIP
+	# 获得域名ID
+	domainID=$(arApiPost "Domain.Info" "domain=${1}")
+	domainID=$(echo $domainID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+	
+	# 获得记录ID
+	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
+	recordID=$(echo $recordID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+	
+	# 获得最后更新IP
+	recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
+	logger -t "【DNSPod动态域名】" "$recordIP"
+	recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | cut -d':' -f 2- | tr -d '"')
+    logger -t "【DNSPod动态域名】" "$recordIP"
+	# Output IP
+		echo $recordIP
+		return 0
+}
 # 查询域名地址
 # 参数: 待查询域名
 arNslookup() {
@@ -202,7 +223,54 @@ arDdnsUpdate() {
 	logger -t "【DNSPod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
 	return 1
 }
-
+arDdnsUpdate6() {
+	local domainID recordID recordRS recordCD recordIP
+	# 获得域名ID
+	domainID=$(arApiPost "Domain.Info" "domain=${1}")
+	domainID=$(echo $domainID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+	# 获得记录ID
+	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
+	recordID=$(echo $recordID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+	#echo "更新记录信息 recordID: " $recordID
+	if [ "$recordID" = "" ] ; then
+		# 添加子域名记录IP
+		myipv6=$hostIPv6
+		logger -t "【DNSPod动态域名】" "添加子域名 ${2} 记录IPv6: $myipv6"
+		recordRS=$(arApiPost "Record.Create" "domain_id=${domainID}&sub_domain=${2}&record_type=AAAA&value=${myipv6}&record_line=默认")
+	else
+		# 更新记录IP
+		myipv6=$hostIPv6
+		recordRS=$(arApiPost "Record.Modify" "domain_id=${domainID}&record_id=${recordID}&sub_domain=${2}&record_type=AAAA&value=${myipv6}&record_line=默认")
+	fi
+	recordCD=$(echo $recordRS | grep -Eo '"code":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+	recordIP=$(echo $recordRS | grep -Eo '"value":"[^"]*"' | cut -d':' -f 2- | tr -d '"')
+	# 输出记录IP
+	if [ "$recordIP" = "" ] ; then
+		sleep 10
+		# 获得记录ID
+		recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
+		recordID=$(echo $recordID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+		
+		# 获得最后更新IP
+		recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
+		recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | cut -d':' -f 2- | tr -d '"')
+	fi
+	if [ "$recordIP" = "$myipv6" ]; then
+		if [ "$recordCD" = "1" ] ; then
+			echo $recordIP
+			logger -t "【DNSPod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
+			return 0
+		fi
+		# 输出错误信息
+		echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'
+		logger -t "【DNSPod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
+		return 1
+	fi
+	# 输出错误信息
+	echo "Update Failed! Please check your network."
+	logger -t "【DNSPod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
+	return 1
+}
 # 动态检查更新
 # 参数: 主域名 子域名
 arDdnsCheck() {
@@ -250,7 +318,40 @@ arDdnsCheck() {
 	return 1
 
 }
+arDdnsCheck6() {
+	local postRS
+	local lastIP
+	source /etc/storage/ddns_script.sh
+	hostIPv6=$arIpAddress6
+	logger -t "【DNSPod动态域名】" "$hostIPv6"
+	echo "Updating Domain: ${2}.${1}"
+	echo "hostIPv6: ${hostIPv6}"
+	#lastIP=$(arNslookup "${2}.${1}")
+	lastIP=$(arDdnsInfo6 "$1" "$2")
+	if [ $? -eq 1 ]; then
+		lastIP=$(arNslookup "${2}.${1}")
+	fi
+	echo "lastIP: ${lastIP}"
+	if [ "$lastIP" != "$hostIPv6" ] ; then
+		logger -t "【DNSPod动态域名】" "开始更新 ${2}.${1} 域名 IPv6 指向"
+		logger -t "【DNSPod动态域名】" "目前 IP: ${hostIPv6}"
+		logger -t "【DNSPod动态域名】" "上次 IP: ${lastIP}"
+		sleep 1
+		postRS=$(arDdnsUpdate6 $1 $2)
+		if [ $? -eq 0 ]; then
+			echo "postRS: ${postRS}"
+			logger -t "【DNSPod动态域名】" "更新动态DNS记录成功！提交的IP: ${postRS}"
+			return 0
+		else
+			echo ${postRS}
+			logger -t "【DNSPod动态域名】" "更新动态DNS记录失败！请检查您的网络。提交的IP: ${postRS}"
+			return 1
+		fi
+	fi
+	echo "Last IP is the same as current IP!"
+	return 1
 
+}
 initconfig () {
 
 if [ ! -s "/etc/storage/ddns_script.sh" ] ; then
