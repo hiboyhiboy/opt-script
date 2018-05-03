@@ -134,10 +134,12 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	fi
 fi
 
-DOMAIN="$cloudxns_domian"
-HOST="$cloudxns_host"
-arDdnsCheck $cloudxns_domian $cloudxns_host
-if [ "$cloudxns_domian2"x != "x" ] && [ "$cloudxns_domian2" != "baidu.com" ] ; then
+if [ "$cloudxns_domian"x != "x" ] ; then
+	DOMAIN="$cloudxns_domian"
+	HOST="$cloudxns_host"
+	arDdnsCheck $cloudxns_domian $cloudxns_host
+fi
+if [ "$cloudxns_domian2"x != "x" ] ; then
 	sleep 1
 	DOMAIN="$cloudxns_domian2"
 	HOST="$cloudxns_host2"
@@ -262,9 +264,9 @@ arDdnsCheck() {
 	if [ "$hostIP"x = "x"  ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			hostIP=`wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+			hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		else
-			hostIP=`curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+			hostIP=`curl -L -k -s "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		fi
 		if [ "$hostIP"x = "x"  ] ; then
 			logger -t "【CloudXNS动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
@@ -317,12 +319,12 @@ cat > "/etc/storage/ddns_script.sh" <<-\EEE
 arIpAddress () {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-    wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
 else
-    curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    curl -L -k -s "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'

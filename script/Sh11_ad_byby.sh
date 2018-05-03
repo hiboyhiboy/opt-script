@@ -724,9 +724,14 @@ kcptun_enable=`nvram get kcptun_enable`
 [ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=$kcptun_enable
 kcptun_server=`nvram get kcptun_server`
 if [ "$kcptun_enable" != "0" ] ; then
+if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 kcptun_server=$resolveip
+else
+# IPv6
+kcptun_server=$kcptun_server
+fi
 fi
 
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
