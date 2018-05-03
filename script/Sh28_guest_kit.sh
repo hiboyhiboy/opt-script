@@ -138,7 +138,7 @@ logger -t "【guestkit】" "运行 guestkit"
 cd $(dirname `which guestkit`)
 killall -9 guestkit
 ./guestkit &
-sleep 2
+sleep 5
 [ ! -z "$(ps -w | grep "guestkit" | grep -v grep )" ] && logger -t "【guestkit】" "启动成功" && guestkit_restart o
 [ -z "$(ps -w | grep "guestkit" | grep -v grep )" ] && logger -t "【guestkit】" "启动失败, 注意检查32121端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && guestkit_restart x
 initopt

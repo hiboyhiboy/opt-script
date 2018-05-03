@@ -180,9 +180,15 @@ nvram set kcptun_v=$kcptun_v
 logger -t "【kcptun】" "kcptun-version: $kcptun_v"
 logger -t "【kcptun】" "运行 kcptun_script"
 
+if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 kcptun_s_server=$resolveip
+else
+# IPv6
+kcptun_s_server=$kcptun_server
+fi
+
 [ -z "$kcptun_s_server" ] && logger -t "【kcptun】" "[错误!!] 实在找不到你的 kcptun 服务器IP，麻烦看看哪里错了？10 秒后自动尝试重新启动" && sleep 10 && kcptun_restart x
 
 sed -Ei '/UI设置自动生成/d' /etc/storage/kcptun_script.sh

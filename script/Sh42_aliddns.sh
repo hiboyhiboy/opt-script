@@ -135,13 +135,15 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		aliddns_restart o
 	fi
 fi
-sleep 1
-timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
-aliddns_record_id=""
-domain="$aliddns_domain"
-name="$aliddns_name"
-arDdnsCheck $aliddns_domain $aliddns_name
-if [ "$aliddns_domain2"x != "x" ] && [ "$aliddns_name2" != "baidu.com" ] ; then
+if [ "$aliddns_domain"x != "x" ] ; then
+	sleep 1
+	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
+	aliddns_record_id=""
+	domain="$aliddns_domain"
+	name="$aliddns_name"
+	arDdnsCheck $aliddns_domain $aliddns_name
+fi
+if [ "$aliddns_domain2"x != "x" ] ; then
 	sleep 1
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 	aliddns_record_id=""
@@ -307,9 +309,9 @@ arDdnsCheck() {
 	if [ "$hostIP"x = "x"  ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			hostIP=`wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+			hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		else
-			hostIP=`curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+			hostIP=`curl -L -k -s "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		fi
 		if [ "$hostIP"x = "x"  ] ; then
 			logger -t "【AliDDNS动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
@@ -362,12 +364,12 @@ cat > "/etc/storage/ddns_script.sh" <<-\EEE
 arIpAddress () {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-    wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
 else
-    curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    curl -L -k -s "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'

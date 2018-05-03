@@ -13,8 +13,11 @@ dnspod_domian=`nvram get dnspod_domian`
 dnspod_host=`nvram get dnspod_host`
 dnspod_domian2=`nvram get dnspod_domian2`
 dnspod_host2=`nvram get dnspod_host2`
+dnspod_domian6=`nvram get dnspod_domian6`
+dnspod_host6=`nvram get dnspod_host6`
 dnspod_interval=`nvram get dnspod_interval`
 
+IPv6=0
 hostIP=""
 myIP=""
 [ -z $dnspod_interval ] && dnspod_interval=600 && nvram set dnspod_interval=$dnspod_interval
@@ -29,7 +32,7 @@ fi
 dnspod_get_status () {
 
 A_restart=`nvram get dnspod_status`
-B_restart="$dnspod_enable$dnspod_username$dnspod_password$dnspod_Token$dnspod_domian$dnspod_host$dnspod_domian2$dnspod_host2$dnspod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$dnspod_enable$dnspod_username$dnspod_password$dnspod_Token$dnspod_domian$dnspod_host$dnspod_domian2$dnspod_host2$dnspod_domian6$dnspod_host6$dnspod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set dnspod_status=$B_restart
@@ -80,10 +83,17 @@ kill_ps "$scriptname"
 }
 
 dnspod_start () {
-arDdnsCheck $dnspod_domian $dnspod_host
-if [ "$dnspod_domian2"x != "x" ] && [ "$dnspod_domian2" != "baidu.com" ] ; then
+IPv6=0
+if [ "$dnspod_domian"x != "x" ] ; then
+	arDdnsCheck $dnspod_domian $dnspod_host
+fi
+if [ "$dnspod_domian2"x != "x" ] ; then
 	sleep 1
 	arDdnsCheck $dnspod_domian2 $dnspod_host2
+fi
+if [ "$dnspod_domian2"x != "x" ] ; then
+	IPv6=1
+	arDdnsCheck $dnspod_domian6 $dnspod_host6
 fi
 }
 
@@ -99,9 +109,13 @@ arDdnsInfo() {
 	
 	# 获得最后更新IP
 	recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
-	recordIP=$(echo $recordIP | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
+	recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"')
 
 	# Output IP
+	if [ "$IPv6" = "1" ]; then
+	echo $recordIP
+	return 0
+	else
 	case "$recordIP" in 
 	[1-9][0-9]*)
 		echo $recordIP
@@ -113,6 +127,7 @@ arDdnsInfo() {
 		return 1
 		;;
 	esac
+	fi
 }
 
 # 查询域名地址
@@ -163,18 +178,25 @@ arDdnsUpdate() {
 	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
 	recordID=$(echo $recordID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
 	#echo "更新记录信息 recordID: " $recordID
+	if [ "$IPv6" = "1" ]; then
+		domain_type="AAAA"
+		post_type="Record.Modify"
+	else
+		domain_type="A"
+		post_type="Record.Ddns"
+	fi
 	if [ "$recordID" = "" ] ; then
 		# 添加子域名记录IP
 		myIP=$hostIP
 		logger -t "【DNSPod动态域名】" "添加子域名 ${2} 记录IP: $myIP"
-		recordRS=$(arApiPost "Record.Create" "domain_id=${domainID}&sub_domain=${2}&record_type=A&value=${myIP}&record_line=默认")
+		recordRS=$(arApiPost "Record.Create" "domain_id=${domainID}&sub_domain=${2}&record_type=${domain_type}&value=${myIP}&record_line=默认")
 	else
 		# 更新记录IP
 		myIP=$hostIP
-		recordRS=$(arApiPost "Record.Ddns" "domain_id=${domainID}&record_id=${recordID}&sub_domain=${2}&record_type=A&value=${myIP}&record_line=默认")
+		recordRS=$(arApiPost "${post_type}" "domain_id=${domainID}&record_id=${recordID}&sub_domain=${2}&record_type=${domain_type}&value=${myIP}&record_line=默认")
 	fi
 	recordCD=$(echo $recordRS | grep -Eo '"code":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
-	recordIP=$(echo $recordRS | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
+	recordIP=$(echo $recordRS | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"')
 	# 输出记录IP
 	if [ "$recordIP" = "" ] ; then
 		sleep 10
@@ -184,7 +206,7 @@ arDdnsUpdate() {
 		
 		# 获得最后更新IP
 		recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
-		recordIP=$(echo $recordIP | grep -Eo '"value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
+		recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"')
 	fi
 	if [ "$recordIP" = "$myIP" ]; then
 		if [ "$recordCD" = "1" ] ; then
@@ -210,12 +232,17 @@ arDdnsCheck() {
 	local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
+	if [ -z $(echo $hostIP | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
+		IPv6=0
+		logger -t "【DNSPod动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+		return 1
+	fi
 	if [ "$hostIP"x = "x"  ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			hostIP=`wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+			hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net/" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		else
-			hostIP=`curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+			hostIP=`curl -L -k -s "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
 		fi
 		if [ "$hostIP"x = "x"  ] ; then
 			logger -t "【DNSPod动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
@@ -243,6 +270,11 @@ arDdnsCheck() {
 		else
 			echo ${postRS}
 			logger -t "【DNSPod动态域名】" "更新动态DNS记录失败！请检查您的网络。提交的IP: ${postRS}"
+			if [ "$IPv6" = "1" ] ; then 
+				IPv6=0
+				logger -t "【cloudflare动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+				return 1
+			fi
 			return 1
 		fi
 	fi
@@ -260,12 +292,12 @@ cat > "/etc/storage/ddns_script.sh" <<-\EEE
 arIpAddress () {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-    wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
 else
-    curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    curl -L -k -s "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
