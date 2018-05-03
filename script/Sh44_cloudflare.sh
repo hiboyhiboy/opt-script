@@ -17,6 +17,7 @@ cloudflare_host6=`nvram get cloudflare_host6`
 cloudflare_interval=`nvram get cloudflare_interval`
 
 IPv6=0
+domain_type=""
 hostIP=""
 Zone_ID=""
 [ -z $cloudflare_interval ] && cloudflare_interval=120 && nvram set cloudflare_interval=$cloudflare_interval
@@ -169,7 +170,7 @@ recordIP=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_I
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
-recordIP=$(echo $recordIP|grep -o "name\":\"$domian_tmp.$host_tmp\",\"content\":\"[^\"]*"| awk -F 'content":"' '{print $2}')
+recordIP=$(echo $recordIP|grep -o "name\":\"$domian_tmp.$host_tmp\",\"content\":\"[^\"]*\""| awk -F 'content":"' '{print $2}' | tr -d '"')
 	if [ "$IPv6" = "1" ]; then
 	echo $recordIP
 	return 0
@@ -261,7 +262,7 @@ arDdnsCheck() {
 	local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
-	if [ -z $(echo $hostIP | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
+	if [ -z $(echo "$hostIP" | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
 		IPv6=0
 		logger -t "【cloudflare动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
 		return 1
@@ -324,23 +325,33 @@ initconfig () {
 
 if [ ! -s "/etc/storage/ddns_script.sh" ] ; then
 cat > "/etc/storage/ddns_script.sh" <<-\EEE
-# 获得外网地址
 # 自行测试哪个代码能获取正确的IP，删除前面的#可生效
 arIpAddress () {
+# IPv4地址获取
+# 获得外网地址
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-    wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
 else
-    curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    curl -L -k -s "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
     #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
 fi
 }
+arIpAddress6 () {
+# IPv6地址获取
+# 因为一般ipv6没有nat ipv6的获得可以本机获得
+ifconfig $(nvram get wan0_ifname_t) | awk '/Global/{print $3}' | awk -F/ '{print $1}'
+}
+if [ "$IPv6" = "1" ] ; then
+arIpAddress=$(arIpAddress6)
+else
 arIpAddress=$(arIpAddress)
+fi
 EEE
 	chmod 755 "$ddns_script"
 fi

@@ -18,6 +18,8 @@ dnspod_host6=`nvram get dnspod_host6`
 dnspod_interval=`nvram get dnspod_interval`
 
 IPv6=0
+domain_type=""
+post_type=""
 hostIP=""
 myIP=""
 [ -z $dnspod_interval ] && dnspod_interval=600 && nvram set dnspod_interval=$dnspod_interval
@@ -232,7 +234,7 @@ arDdnsCheck() {
 	local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
-	if [ -z $(echo $hostIP | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
+	if [ -z $(echo "$hostIP" | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
 		IPv6=0
 		logger -t "【DNSPod动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
 		return 1
@@ -272,7 +274,7 @@ arDdnsCheck() {
 			logger -t "【DNSPod动态域名】" "更新动态DNS记录失败！请检查您的网络。提交的IP: ${postRS}"
 			if [ "$IPv6" = "1" ] ; then 
 				IPv6=0
-				logger -t "【cloudflare动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+				logger -t "【DNSPod动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
 				return 1
 			fi
 			return 1
@@ -287,9 +289,10 @@ initconfig () {
 
 if [ ! -s "/etc/storage/ddns_script.sh" ] ; then
 cat > "/etc/storage/ddns_script.sh" <<-\EEE
-# 获得外网地址
 # 自行测试哪个代码能获取正确的IP，删除前面的#可生效
 arIpAddress () {
+# IPv4地址获取
+# 获得外网地址
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
     wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
@@ -303,7 +306,16 @@ else
     #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
 fi
 }
+arIpAddress6 () {
+# IPv6地址获取
+# 因为一般ipv6没有nat ipv6的获得可以本机获得
+ifconfig $(nvram get wan0_ifname_t) | awk '/Global/{print $3}' | awk -F/ '{print $1}'
+}
+if [ "$IPv6" = "1" ] ; then
+arIpAddress=$(arIpAddress6)
+else
 arIpAddress=$(arIpAddress)
+fi
 EEE
 	chmod 755 "$ddns_script"
 fi

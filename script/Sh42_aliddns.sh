@@ -13,8 +13,12 @@ aliddns_domain=`nvram get aliddns_domain`
 aliddns_name=`nvram get aliddns_name`
 aliddns_domain2=`nvram get aliddns_domain2`
 aliddns_name2=`nvram get aliddns_name2`
+aliddns_domain6=`nvram get aliddns_domain6`
+aliddns_name6=`nvram get aliddns_name6`
 aliddns_ttl=`nvram get aliddns_ttl`
 
+IPv6=0
+domain_type=""
 hostIP=""
 domain=""
 name=""
@@ -70,7 +74,7 @@ exit 0
 aliddns_get_status () {
 
 A_restart=`nvram get aliddns_status`
-B_restart="$aliddns_enable$aliddns_interval$aliddns_ak$aliddns_sk$aliddns_domain$aliddns_name$aliddns_domain2$aliddns_name2$aliddns_ttl$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$aliddns_enable$aliddns_interval$aliddns_ak$aliddns_sk$aliddns_domain$aliddns_name$aliddns_domain2$aliddns_name2$aliddns_domain6$aliddns_name6$aliddns_ttl$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set aliddns_status=$B_restart
@@ -135,6 +139,7 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		aliddns_restart o
 	fi
 fi
+IPv6=0
 if [ "$aliddns_domain"x != "x" ] ; then
 	sleep 1
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
@@ -150,6 +155,15 @@ if [ "$aliddns_domain2"x != "x" ] ; then
 	domain="$aliddns_domain2"
 	name="$aliddns_name2"
 	arDdnsCheck $aliddns_domain2 $aliddns_name2
+fi
+if [ "$aliddns_domain6"x != "x" ] ; then
+	IPv6=1
+	sleep 1
+	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
+	aliddns_record_id=""
+	domain="$aliddns_domain6"
+	name="$aliddns_name6"
+	arDdnsCheck $aliddns_domain6 $aliddns_name6
 fi
 
 }
@@ -182,7 +196,7 @@ get_recordid() {
 }
 
 get_recordIP() {
-	grep -Eo '"Value":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"'
+	grep -Eo '"Value":"[^"]*"' | awk -F 'Value":"' '{print $2}' | tr -d '"'
 }
 
 query_recordInfo() {
@@ -194,11 +208,11 @@ query_recordid() {
 }
 
 update_record() {
-	send_request "UpdateDomainRecord" "RR=$name1&RecordId=$1&SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&TTL=$aliddns_ttl&Timestamp=$timestamp&Type=A&Value=$hostIP"
+	send_request "UpdateDomainRecord" "RR=$name1&RecordId=$1&SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&TTL=$aliddns_ttl&Timestamp=$timestamp&Type=$domain_type&Value=$hostIP"
 }
 
 add_record() {
-	send_request "AddDomainRecord&DomainName=$domain" "RR=$name1&SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&TTL=$aliddns_ttl&Timestamp=$timestamp&Type=A&Value=$hostIP"
+	send_request "AddDomainRecord&DomainName=$domain" "RR=$name1&SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&TTL=$aliddns_ttl&Timestamp=$timestamp&Type=$domain_type&Value=$hostIP"
 }
 
 arDdnsInfo() {
@@ -223,6 +237,10 @@ esac
 	# 获得最后更新IP
 	recordIP=`query_recordInfo $aliddns_record_id | get_recordIP`
 	
+	if [ "$IPv6" = "1" ]; then
+	echo $recordIP
+	return 0
+	else
 	# Output IP
 	case "$recordIP" in 
 	[1-9][0-9]*)
@@ -235,6 +253,7 @@ esac
 		return 1
 		;;
 	esac
+	fi
 }
 
 # 查询域名地址
@@ -268,6 +287,11 @@ case  $name  in
 		name1=$name
 		;;
 esac
+	if [ "$IPv6" = "1" ]; then
+		domain_type="AAAA"
+	else
+		domain_type="A"
+	fi
 	# 获得记录ID
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 	aliddns_record_id=""
@@ -306,6 +330,11 @@ arDdnsCheck() {
 	local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
+	if [ -z $(echo "$hostIP" | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
+		IPv6=0
+		logger -t "【AliDDNS动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+		return 1
+	fi
 	if [ "$hostIP"x = "x"  ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
@@ -338,6 +367,11 @@ arDdnsCheck() {
 		else
 			echo ${postRS}
 			logger -t "【AliDDNS动态域名】" "更新动态DNS记录失败！请检查您的网络。"
+			if [ "$IPv6" = "1" ] ; then 
+				IPv6=0
+				logger -t "【AliDDNS动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+				return 1
+			fi
 			return 1
 		fi
 	fi
@@ -359,9 +393,10 @@ initconfig () {
 
 if [ ! -s "/etc/storage/ddns_script.sh" ] ; then
 cat > "/etc/storage/ddns_script.sh" <<-\EEE
-# 获得外网地址
 # 自行测试哪个代码能获取正确的IP，删除前面的#可生效
 arIpAddress () {
+# IPv4地址获取
+# 获得外网地址
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
     wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
@@ -375,7 +410,16 @@ else
     #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
 fi
 }
+arIpAddress6 () {
+# IPv6地址获取
+# 因为一般ipv6没有nat ipv6的获得可以本机获得
+ifconfig $(nvram get wan0_ifname_t) | awk '/Global/{print $3}' | awk -F/ '{print $1}'
+}
+if [ "$IPv6" = "1" ] ; then
+arIpAddress=$(arIpAddress6)
+else
 arIpAddress=$(arIpAddress)
+fi
 EEE
 	chmod 755 "$ddns_script"
 fi

@@ -7,6 +7,8 @@ if [ "$frp_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep frp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 frpc_enable=`nvram get frpc_enable`
 frps_enable=`nvram get frps_enable`
+frp_version=`nvram get frp_version`
+[ -z $frp_version ] && frp_version=0 && nvram set frp_version=0
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep frp)" ]  && [ ! -s /tmp/script/_frp ]; then
@@ -54,7 +56,7 @@ exit 0
 frp_get_status () {
 
 A_restart=`nvram get frp_status`
-B_restart="$frp_enable$frpc_enable$frps_enable$(cat /etc/storage/frp_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$frp_enable$frpc_enable$frps_enable$frp_version$(cat /etc/storage/frp_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 nvram set frp_status=$B_restart
@@ -129,8 +131,22 @@ kill_ps "$scriptname"
 
 frp_start () {
 action_for=""
+frp_ver_wget=""
+[ "$frp_version" = "1" ] && frp_ver_wget="0.16.1"
 [ "$frpc_enable" = "1" ] && action_for="frpc"
 [ "$frps_enable" = "1" ] && action_for=$action_for" frps"
+if [ "$frp_version" != "0" ] ; then
+for action_frp in $action_for
+do
+if [ "$frp_version" = "1" ] && [ -s "/opt/bin/$action_frp" ] ; then
+	frp_ver="`/opt/bin/$action_frp --version`"
+	if [ "$frp_ver" != "$frp_ver_wget" ] ; then
+		logger -t "【frp】" "$action_frp 当前版本 $frp_ver ,需要安装 $frp_ver_wget ,自动重新下载"
+		[ -s "/opt/bin/$action_frp" ] && rm -f /opt/bin/$action_frp
+	fi
+fi
+done
+fi
 for action_frp in $action_for
 do
 	SVC_PATH="/opt/bin/$action_frp"
@@ -143,7 +159,7 @@ do
 	fi
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【frp】" "找不到 $SVC_PATH 下载程序"
-		wgetcurl.sh /opt/bin/$action_frp "$hiboyfile/$action_frp" "$hiboyfile2/$action_frp"
+		wgetcurl.sh /opt/bin/$action_frp "$hiboyfile/$action_frp$frp_ver_wget" "$hiboyfile2/$action_frp$frp_ver_wget"
 		chmod 755 "/opt/bin/$action_frp"
 	else
 		logger -t "【frp】" "找到 $SVC_PATH"
@@ -155,7 +171,7 @@ do
 done
 
 logger -t "【frp】" "运行 frp_script"
-rm_privilege
+
 /etc/storage/frp_script.sh
 restart_dhcpd
 sleep 2
@@ -187,13 +203,6 @@ fi
 
 }
 
-rm_privilege () {
-if [ ! -z "$(grep privilege_token /etc/storage/frp_script.sh)" ] ; then
-logger -t "【frp】" "从v0.10.0开始删除特权模式，因此在此发行版本中更改了一些配置。"
-sed -e  "s/privilege_token/token/" -i  /etc/storage/frp_script.sh
-sed -e  "s/privilege_allow_ports/allow_ports/" -i  /etc/storage/frp_script.sh
-fi
-}
 initconfig () {
 
 frp_script="/etc/storage/frp_script.sh"
