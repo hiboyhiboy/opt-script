@@ -232,7 +232,7 @@ arDdnsCheck() {
 	local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
-	if [ -z $(echo "$hostIP" | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
+	if [ -z $(echo $hostIP | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
 		IPv6=0
 		logger -t "【DNSPod动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
 		return 1
