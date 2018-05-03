@@ -91,7 +91,7 @@ if [ "$dnspod_domian2"x != "x" ] ; then
 	sleep 1
 	arDdnsCheck $dnspod_domian2 $dnspod_host2
 fi
-if [ "$dnspod_domian2"x != "x" ] ; then
+if [ "$dnspod_domian6"x != "x" ] ; then
 	IPv6=1
 	arDdnsCheck $dnspod_domian6 $dnspod_host6
 fi
