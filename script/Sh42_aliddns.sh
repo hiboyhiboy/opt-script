@@ -192,11 +192,11 @@ send_request() {
 }
 
 get_recordid() {
-	grep -Eo '"RecordId":"[0-9]+"' | cut -d':' -f2 | tr -d '"'
+	grep -Eo '"RecordId":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1
 }
 
 get_recordIP() {
-	grep -Eo '"Value":"[^"]*"' | awk -F 'Value":"' '{print $2}' | tr -d '"'
+	grep -Eo '"Value":"[^"]*"' | awk -F 'Value":"' '{print $2}' | tr -d '"' |head -n1
 }
 
 query_recordInfo() {

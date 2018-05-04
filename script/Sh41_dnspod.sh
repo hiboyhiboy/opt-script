@@ -107,7 +107,7 @@ arDdnsInfo() {
 	
 	# 获得记录ID
 	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-	recordID=$(echo $recordID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+	recordID=$(echo $recordID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 	
 	# 获得最后更新IP
 	recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
@@ -178,7 +178,7 @@ arDdnsUpdate() {
 	domainID=$(echo $domainID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
 	# 获得记录ID
 	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-	recordID=$(echo $recordID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+	recordID=$(echo $recordID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 	#echo "更新记录信息 recordID: " $recordID
 	if [ "$IPv6" = "1" ]; then
 		domain_type="AAAA"
