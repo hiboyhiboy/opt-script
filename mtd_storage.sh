@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-5-4"
+Builds="/etc/storage/Builds-2018-5-5"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"

@@ -123,6 +123,11 @@ fi
 chmod 777 "$SVC_PATH"
 
 capem_path="/opt/bin/ca.pem"
+if [ -s "$SVC_PATH" ] && [ ! -s "$capem_path" ] && [[ "$(goflyway -h 2>&1 | grep gen-ca | wc -l)" -gt 0 ]] ; then
+	logger -t "【goflyway】" "找不到 $capem_path 正在生成 ca.pem、key.pem 稍等几分钟"
+	cd /opt/bin/
+	./goflyway -gen-ca
+fi
 if [ ! -s "$capem_path" ] ; then
 	logger -t "【goflyway】" "找不到 $capem_path 下载文件"
 	wgetcurl.sh $capem_path "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem"
@@ -199,7 +204,7 @@ update_app () {
 mkdir -p /opt/app/goflyway
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/goflyway/Advanced_Extensions_goflyway.asp
-	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /opt/bin/chinalist.txt /opt/bin/ca.pem /etc/storage/app_7.sh
+	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /opt/bin/chinalist.txt /opt/bin/ca.pem /opt/bin/key.pem /etc/storage/app_7.sh
 fi
 
 initconfig
