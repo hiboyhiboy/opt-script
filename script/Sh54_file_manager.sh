@@ -177,7 +177,7 @@ nvram set filemanager_upanPath="$upanPath"
 ln -sf /etc/storage/app_5.sh /tmp/filemanager.json
 "$upanPath/filemanager/filemanager" -c "/tmp/filemanager.json" &
 
-sleep 2
+sleep 7
 [ ! -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动成功" && filemanager_restart o
 [ -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
 initopt
