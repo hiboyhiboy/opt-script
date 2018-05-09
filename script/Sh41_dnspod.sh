@@ -111,7 +111,7 @@ arDdnsInfo() {
 	
 	# 获得最后更新IP
 	recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
-	recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"')
+	recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"' |head -n1)
 
 	# Output IP
 	if [ "$IPv6" = "1" ]; then
@@ -204,11 +204,11 @@ arDdnsUpdate() {
 		sleep 10
 		# 获得记录ID
 		recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-		recordID=$(echo $recordID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+		recordID=$(echo $recordID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 		
 		# 获得最后更新IP
 		recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
-		recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"')
+		recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"' |head -n1)
 	fi
 	if [ "$recordIP" = "$myIP" ]; then
 		if [ "$recordCD" = "1" ] ; then

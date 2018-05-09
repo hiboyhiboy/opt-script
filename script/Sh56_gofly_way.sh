@@ -6,6 +6,11 @@ goflyway_enable=`nvram get app_23`
 #if [ "$goflyway_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep goflyway | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
+mkdir -p /etc/storage/goflyway
+keypem_s_path="/etc/storage/goflyway/key.pem"
+capem_s_path="/etc/storage/goflyway/ca.pem"
+keypem_path="/opt/bin/key.pem"
+capem_path="/opt/bin/ca.pem"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep gofly_way)" ]  && [ ! -s /tmp/script/_app7 ]; then
 	mkdir -p /tmp/script
@@ -121,25 +126,33 @@ if [ ! -s "$SVC_PATH" ] ; then
 	wgetcurl.sh "/opt/bin/goflyway" "$hiboyfile/goflyway" "$hiboyfile2/goflyway"
 fi
 chmod 777 "$SVC_PATH"
-
-capem_path="/opt/bin/ca.pem"
-if [ -s "$SVC_PATH" ] && [ ! -s "$capem_path" ] && [[ "$(goflyway -h 2>&1 | grep gen-ca | wc -l)" -gt 0 ]] ; then
+if [ -s "$SVC_PATH" ] ; then
+if [ ! -s "$capem_s_path" ] && [ -s "$capem_path" ] ; then
+cp -f "$keypem_path" "$keypem_s_path"
+cp -f "$capem_path" "$capem_s_path"
+fi
+rm -f  "$keypem_path" "$capem_path"
+ln -sf "$keypem_s_path" "$keypem_path"
+ln -sf "$capem_s_path" "$capem_path"
+if [ ! -s "$capem_path" ] && [[ "$(goflyway -h 2>&1 | grep gen-ca | wc -l)" -gt 0 ]] ; then
 	logger -t "【goflyway】" "找不到 $capem_path 正在生成 ca.pem、key.pem 稍等几分钟"
 	cd /opt/bin/
 	./goflyway -gen-ca
 fi
 if [ ! -s "$capem_path" ] ; then
 	logger -t "【goflyway】" "找不到 $capem_path 下载文件"
-	wgetcurl.sh $capem_path "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem"
-	chmod 755 "$capem_path"
+	wgetcurl.sh "$capem_path" "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem"
+fi
+if [ -s "$capem_path" ] ; then
+	chmod 755 "$capem_path" "$keypem_path"
 fi
 chinalist_path="/opt/bin/chinalist.txt"
 if [ ! -s "$chinalist_path" ] ; then
 	logger -t "【goflyway】" "找不到 $chinalist_path 下载文件"
-	wgetcurl.sh $chinalist_path "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
+	wgetcurl.sh "$chinalist_path" "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
 	chmod 755 "$chinalist_path"
 fi
-
+fi
 [[ "$(goflyway -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/goflyway
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【goflyway】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
@@ -204,7 +217,9 @@ update_app () {
 mkdir -p /opt/app/goflyway
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/goflyway/Advanced_Extensions_goflyway.asp
-	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /opt/bin/chinalist.txt /opt/bin/ca.pem /opt/bin/key.pem /etc/storage/app_7.sh
+	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /opt/bin/chinalist.txt /etc/storage/app_7.sh
+	[ -f "$capem_s_path" ] && rm -f  "$keypem_s_path" "$capem_s_path" "$keypem_path" "$capem_path"
+
 fi
 
 initconfig

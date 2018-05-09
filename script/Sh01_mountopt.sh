@@ -172,6 +172,7 @@ if [ ! -z "$upanPath" ] ; then
 	fi
 	rm -f /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
+	sync
 	# prepare ssh authorized_keys
 	prepare_authorized_keys
 else
@@ -210,6 +211,7 @@ fi
 if [ ! -z "$upanPath" ] ; then
 	rm -f /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
+	sync
 else
 	mkdir -p /tmp/AiDisk_00/opt
 fi
