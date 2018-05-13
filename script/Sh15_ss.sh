@@ -146,6 +146,14 @@ if [ "$chinadns_enable" != "0" ] ; then
 	[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0
 	fi
 fi
+ss_renum=`nvram get ss_renum`
+ss_renum=${ss_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="SS"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$ss_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 ##  bigandy modify 
 ##  1. 增加xbox的支持 （未实现，下一版本）
@@ -400,26 +408,26 @@ ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -
 # 启动程序
 /tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
 killall_ss_redir
-ss-redir -c /tmp/ss-redir_1.json $options1 &
+eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
 if [ ! -z $ss_server2 ] ; then
 	#启动第二个SS 连线
 	[  -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 无法获得 SS 服务器2的IP, 请核查设置"; stop_SS; clean_SS; }
 	logger -t "【SS】" "SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
 	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
-	ss-redir -c /tmp/ss-redir_2.json $options2 &
+	eval "ss-redir -c /tmp/ss-redir_2.json $options2 $cmd_log" &
 fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	logger -t "【ss-local】" "启动所有的 ss-local 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
 	logger -t "【ss-local】" "本地监听地址：$ss_s1_local_address 本地代理端口：$ss_s1_local_port SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
 	/tmp/SSJSON.sh -f /tmp/ss-local_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b $ss_s1_local_address -l $ss_s1_local_port -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
 	killall_ss_local
-	ss-local -c /tmp/ss-local_1.json $options1 &
+	eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
 	if [ ! -z $ss_server2 ] ; then
 		#启动第二个SS 连线
 		[  -z "$ss_s2_ip" ] && { logger -t "【ss-local】" "[错误!!] 无法获得 SS 服务器2的IP,请核查设置"; stop_SS; clean_SS; }
 		logger -t "【ss-local】" "本地监听地址：$ss_s2_local_address 本地代理端口：$ss_s2_local_port SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
 		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
-		ss-local -c /tmp/ss-local_2.json $options2 &
+		eval "ss-local -c /tmp/ss-local_2.json $options2 $cmd_log" &
 	fi
 fi
 
@@ -1658,13 +1666,15 @@ fi
 		DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="114.114.114.114"
 		if [ ! -s /tmp/ss/accelerated-domains.china.conf ] ; then
-			wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/accelerated-domains.china.conf" "$hiboyfile2/accelerated-domains.china.conf"
+			wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
 		else
 			[ -s /tmp/ss/accelerated-domains.china.conf ] && mv -f /tmp/ss/accelerated-domains.china.conf /tmp/ss/tmp_accelerated-domains.china.conf
+			sed -e "s@server=/@@g" -i  /tmp/ss/tmp_accelerated-domains.china.conf
+			sed -e 's@/.*@@g' -i  /tmp/ss/tmp_accelerated-domains.china.conf
 		fi
 		cat /tmp/ss/tmp_accelerated-domains.china.conf |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
-			sed -e "s|^\(server.*\)/[^/]*$|\1/$DNS_china|" > /tmp/ss/accelerated-domains.china.conf
+			awk '{printf("server=/%s/%s\n", $1, "'"$DNS_china"'" )}' > /tmp/ss/accelerated-domains.china.conf
 		rm -rf /tmp/ss/tmp_accelerated-domains.china.conf
 		sed -Ei '/accelerated-domains/d' /etc/storage/dnsmasq/dnsmasq.conf
 		echo "conf-file=/tmp/ss/accelerated-domains.china.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"

@@ -11,6 +11,7 @@ serverchan_notify_1=`nvram get serverchan_notify_1`
 serverchan_notify_2=`nvram get serverchan_notify_2`
 serverchan_notify_3=`nvram get serverchan_notify_3`
 serverchan_notify_4=`nvram get serverchan_notify_4`
+serverchan_renum=`nvram get serverchan_renum`
 
 fi
 

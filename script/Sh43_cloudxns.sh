@@ -25,6 +25,8 @@ SECRET_KEY="$cloudxns_password"
 DOMAIN="$cloudxns_domian"
 HOST="$cloudxns_host"
 [ -z $cloudxns_interval ] && cloudxns_interval=600 && nvram set cloudxns_interval=$cloudxns_interval
+cloudxns_renum=`nvram get cloudxns_renum`
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cloudxns)" ]  && [ ! -s /tmp/script/_cloudxns ]; then

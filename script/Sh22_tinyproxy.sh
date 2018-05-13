@@ -8,6 +8,14 @@ tinyproxy_path=`nvram get tinyproxy_path`
 if [ "$tinyproxy_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep tinyproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 tinyproxy_port=`nvram get tinyproxy_port`
+tinyproxy_renum=`nvram get tinyproxy_renum`
+tinyproxy_renum=${tinyproxy_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="tinyproxy"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$tinyproxy_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tinyproxy)" ]  && [ ! -s /tmp/script/_tinyproxy ]; then
@@ -153,9 +161,9 @@ if [ -s "$SVC_PATH" ] ; then
 fi
 tinyproxy_path="$SVC_PATH"
 logger -t "【tinyproxy】" "运行 $tinyproxy_path"
-$tinyproxy_path -c /etc/storage/tinyproxy_script.sh &
+eval "$tinyproxy_path -c /etc/storage/tinyproxy_script.sh $cmd_log" &
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动成功" && tinyproxy_restart o
 [ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tinyproxy_restart x
 tinyproxy_port_dpt

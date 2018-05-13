@@ -38,6 +38,14 @@ lan_ipaddr=`nvram get lan_ipaddr`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr && nvram set ss_DNS_Redirect_IP=$ss_DNS_Redirect_IP
 [ -z $adbyby_adblocks ] && adbyby_adblocks=0 && nvram set adbyby_adblocks=$adbyby_adblocks
 
+adbyby_renum=`nvram get adbyby_renum`
+adbyby_renum=${adbyby_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="Adbyby"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$adbyby_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 #检查 dnsmasq 目录参数
 #confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
@@ -508,7 +516,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		[ -s /tmp/bin/data/video_B.txt ] && mv -f /tmp/bin/data/video_B.txt /tmp/bin/data/video.txt
 	fi
 	logger -t "【Adbyby】" "启动 adbyby 程序"
-	/tmp/bin/adbyby &
+	eval "/tmp/bin/adbyby $cmd_log" &
 	if [ "$adbyby_adblocks" = "1" ] ; then
 		logger -t "【Adbyby】" "加载 第三方自定义 规则, 等候10秒"
 		sleep 10
@@ -522,7 +530,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		update_ad_rules
 		killall adbyby
 		killall -9 adbyby
-		/tmp/bin/adbyby &
+		eval "/tmp/bin/adbyby $cmd_log" &
 		sleep 10
 	fi
 fi

@@ -27,6 +27,8 @@ timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 aliddns_record_id=""
 [ -z $aliddns_interval ] && aliddns_interval=600 && nvram set aliddns_interval=$aliddns_interval
 [ -z $aliddns_ttl ] && aliddns_ttl=600 && nvram set aliddns_ttl=$aliddns_ttl
+aliddns_renum=`nvram get aliddns_renum`
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep aliddns)" ]  && [ ! -s /tmp/script/_aliddns ]; then

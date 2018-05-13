@@ -8,6 +8,14 @@ if [ "$xunleis" != "0" ] ; then
 
 xunleis_dir=`nvram get xunleis_dir`
 
+xunleis_renum=`nvram get xunleis_renum`
+xunleis_renum=${xunleis_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="迅雷下载"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$xunleis_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep xun_lei)" ]  && [ ! -s /tmp/script/_xun_lei ]; then
@@ -26,7 +34,7 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
-		logger -t "【xunleis】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【迅雷下载】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
 	xunleis_renum=${xunleis_renum:-"0"}
@@ -35,7 +43,7 @@ if [ "$1" = "x" ] ; then
 	if [ "$xunleis_renum" -gt "2" ] ; then
 		I=19
 		echo $I > $relock
-		logger -t "【xunleis】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【迅雷下载】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do
 			I=$(($I - 1))
 			echo $I > $relock
@@ -197,7 +205,7 @@ chmod 777 "$xunleis_dir/xunlei" -R
 logger -t "【迅雷下载】" "启动程序"
 cd "$xunleis_dir/xunlei"
 export LD_LIBRARY_PATH="$xunleis_dir/xunlei/lib:/lib:/opt/lib"
-"$xunleis_dir/xunlei/portal" &
+eval "$xunleis_dir/xunlei/portal $cmd_log" &
 sleep 2
 export LD_LIBRARY_PATH="/lib:/opt/lib"
 sleep 5

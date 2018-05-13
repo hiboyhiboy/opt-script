@@ -7,6 +7,14 @@ mproxy_enable=`nvram get mproxy_enable`
 if [ "$mproxy_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep mproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 mproxy_port=`nvram get mproxy_port`
+mproxy_renum=`nvram get mproxy_renum`
+mproxy_renum=${mproxy_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="mproxy"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$mproxy_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mproxy)" ]  && [ ! -s /tmp/script/_mproxy ]; then
@@ -142,9 +150,9 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【mproxy】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && mproxy_restart x
 fi
 logger -t "【mproxy】" "运行 mproxy_script"
-/etc/storage/mproxy_script.sh &
+eval "/etc/storage/mproxy_script.sh $cmd_log" &
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "`pidof mproxy`" ] && logger -t "【mproxy】" "启动成功" && mproxy_restart o
 [ -z "`pidof mproxy`" ] && logger -t "【mproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && mproxy_restart x
 mproxy_port_dpt
@@ -176,18 +184,18 @@ mproxy_port=8000
 
 # 删除（#）启用指定选项
 # 默认作为普通的代理服务器。
-mproxy -l $mproxy_port -d &
+mproxy -l $mproxy_port -d 2>&1 &
 
 
 
 # 在远程服务器启动mproxy作为远程代理
 # 在远程作为加密代传输方式理服务器
-# mproxy  -l 8081 -D -d &
+# mproxy  -l 8081 -D -d 2>&1 &
 
 
 # 本地启动 mproxy 作为本地代理，并指定传输方式加密。
 # 在本地启动一个mporxy 并指定目上一步在远程部署的服务器地址和端口号。
-# mproxy  -l 8080 -h xxx.xxx.xxx.xxx:8081 -E &
+# mproxy  -l 8080 -h xxx.xxx.xxx.xxx:8081 -E 2>&1 &
 
 
 END

@@ -12,6 +12,14 @@ szUID=""
 
 [ -z $phddns ] && phddns=0 && nvram set phddns=0
 
+phddns_renum=`nvram get phddns_renum`
+phddns_renum=${phddns_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="花生壳内网版"
+cmd_log=" >/dev/null 2>/dev/null "
+if [ "$cmd_log_enable" = "1" ] || [ "$phddns_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep orayd)" ]  && [ ! -s /tmp/script/_orayd ]; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_orayd
@@ -28,7 +36,7 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
-		logger -t "【phddns】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【花生壳内网版】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
 	phddns_renum=${phddns_renum:-"0"}
@@ -37,7 +45,7 @@ if [ "$1" = "x" ] ; then
 	if [ "$phddns_renum" -gt "2" ] ; then
 		I=19
 		echo $I > $relock
-		logger -t "【phddns】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【花生壳内网版】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do
 			I=$(($I - 1))
 			echo $I > $relock
@@ -182,9 +190,11 @@ fi
 logger -t "【花生壳内网版】" "运行 oraysl"
 ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
 ln -sf "/etc/storage/init.status" "/etc/init.status"
-oraynewph -s 0.0.0.0 >/dev/null 2>/dev/null &
-oraysl -a 127.0.0.1 -p 16062 -s phsle01.oray.net:80 -d >/dev/null 2>/dev/null &
-sleep 2
+cmd_name="花生壳内网版oraynewph"
+eval "oraynewph -s 0.0.0.0 $cmd_log" &
+cmd_name="花生壳内网版oraysl"
+eval "oraysl -a 127.0.0.1 -p 16062 -s phsle01.oray.net:80 -d $cmd_log" &
+sleep 4
 [ ! -z "`pidof oraysl`" ] && logger -t "【花生壳内网版】" "启动成功" && phddns_restart o
 [ -z "`pidof oraysl`" ] && logger -t "【花生壳内网版】" "启动失败, 注意检查oraysl、oraynewph是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { rm -rf /opt/bin/oraysl /opt/bin/oraynewph ; phddns_restart x ; }
 

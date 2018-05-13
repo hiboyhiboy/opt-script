@@ -12,6 +12,14 @@ verysync_upanPath=`nvram get verysync_upanPath`
 #nvramshow=`nvram showall | grep '=' | grep verysync | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
 
+verysync_renum=`nvram get verysync_renum`
+verysync_renum=${verysync_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="verysync"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$verysync_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep very_sync)" ]  && [ ! -s /tmp/script/_app6 ]; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app6
@@ -177,9 +185,9 @@ nvram set verysync_wan_port_tmp="$verysync_wan_port"
 verysync_upanPath="$upanPath"
 nvram set verysync_upanPath="$upanPath"
 
-"$upanPath/verysync/verysync" -home "$upanPath/verysync/.config" -gui-address "0.0.0.0:$verysync_wan_port" &
+eval "$upanPath/verysync/verysync -home $upanPath/verysync/.config -gui-address 0.0.0.0:$verysync_wan_port $cmd_log" &
 
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动成功" && verysync_restart o
 [ -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && verysync_restart x
 initopt

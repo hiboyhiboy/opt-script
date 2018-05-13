@@ -38,6 +38,14 @@ lnmpfile5="$hiboyfile/owncloud-8.0.14.tar.bz2"
 lnmpfile55="$hiboyfile2/owncloud-8.0.14.tar.bz2"
 lnmpfile6="$hiboyfile/wifidog_server.tgz"
 lnmpfile66="$hiboyfile2/wifidog_server.tgz"
+lnmp_renum=`nvram get lnmp_renum`
+lnmp_renum=${lnmp_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="lnmp"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$lnmp_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ]  && [ ! -s /tmp/script/_lnmp ]; then
 	mkdir -p /tmp/script
@@ -381,10 +389,10 @@ if [ "$owncloud_enable" = "1" ] || [ "$owncloud_enable" = "2" ] ; then
 		chmod 770 /opt/www/owncloud/data
 	fi
 fi
-/opt/etc/init.d/S69pdcnlnmpinit start
-/opt/etc/init.d/S70mysqld restart
-/opt/etc/init.d/S79php-fpm restart
-/opt/etc/init.d/S80nginx restart
+eval "/opt/etc/init.d/S69pdcnlnmpinit start $cmd_log" &
+eval "/opt/etc/init.d/S70mysqld restart $cmd_log" &
+eval "/opt/etc/init.d/S79php-fpm restart $cmd_log" &
+eval "/opt/etc/init.d/S80nginx restart $cmd_log" &
 
 lnmp_Available
 

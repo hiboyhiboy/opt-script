@@ -37,6 +37,14 @@ kcptun_s_server=""
 [ -z $kcptun_datashard ] && kcptun_datashard=10 && nvram set kcptun_datashard=$kcptun_datashard
 [ -z $kcptun_parityshard ] && kcptun_parityshard=3 && nvram set kcptun_parityshard=$kcptun_parityshard
 [ -z $kcptun_autoexpire ] && kcptun_autoexpire=0 && nvram set kcptun_autoexpire=$kcptun_autoexpire
+kcptun_renum=`nvram get kcptun_renum`
+kcptun_renum=${kcptun_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="kcptun"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$kcptun_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kcp_tun)" ]  && [ ! -s /tmp/script/_kcp_tun ]; then
 	mkdir -p /tmp/script
@@ -199,7 +207,7 @@ sed -Ei '/^$/d' /etc/storage/kcptun_script.sh
 
 cat >> "/etc/storage/kcptun_script.sh" <<-EUI
 # UI设置自动生成  客户端启动参数
-$SVC_PATH $kcptun_user -r "$kcptun_s_server:$kcptun_sport" -l ":$kcptun_lport" -key $kcptun_key -mtu $kcptun_mtu -sndwnd $kcptun_sndwnd -rcvwnd $kcptun_rcvwnd -crypt $kcptun_crypt -mode $kcptun_mode -dscp $kcptun_dscp -datashard $kcptun_datashard -parityshard $kcptun_parityshard -autoexpire $kcptun_autoexpire -nocomp & #UI设置自动生成
+$SVC_PATH $kcptun_user -r "$kcptun_s_server:$kcptun_sport" -l ":$kcptun_lport" -key $kcptun_key -mtu $kcptun_mtu -sndwnd $kcptun_sndwnd -rcvwnd $kcptun_rcvwnd -crypt $kcptun_crypt -mode $kcptun_mode -dscp $kcptun_dscp -datashard $kcptun_datashard -parityshard $kcptun_parityshard -autoexpire $kcptun_autoexpire -nocomp $cmd_log & #UI设置自动生成
 # UI设置自动生成  默认启用 -nocomp 参数,需在服务端使用此参数来禁止压缩传输
 EUI
 
@@ -214,7 +222,7 @@ EUI
 
 /etc/storage/kcptun_script.sh &
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "启动成功" && kcptun_restart o
 [ -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && kcptun_restart x
 initopt

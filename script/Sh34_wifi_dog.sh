@@ -19,6 +19,14 @@ wifidog_Timeout=`nvram get wifidog_Timeout`
 wifidog_MaxConn=`nvram get wifidog_MaxConn`
 wifidog_MACList=`nvram get wifidog_MACList`
 
+wifidog_renum=`nvram get wifidog_renum`
+wifidog_renum=${wifidog_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="wifidog"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$wifidog_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wifi_dog)" ]  && [ ! -s /tmp/script/_wifi_dog ]; then
@@ -263,9 +271,9 @@ FirewallRuleSet locked-users {
 FWD
 
 chmod 777 "$SVC_PATH"
-$SVC_PATH -c /etc/storage/wifidog.conf &
+eval "$SVC_PATH -c /etc/storage/wifidog.conf $cmd_log" &
 
-sleep 2
+sleep 4
 [ ! -z "`pidof wifidog`" ] && logger -t "【wifidog】" "启动成功" && wifidog_restart o
 [ -z "`pidof wifidog`" ] && logger -t "【wifidog】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && wifidog_restart x
 #wifidog_get_status

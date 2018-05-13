@@ -9,6 +9,14 @@ virtualhere_wan=`nvram get app_25`
 #nvramshow=`nvram showall | grep '=' | grep virtualhere | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
 
+virtualhere_renum=`nvram get virtualhere_renum`
+virtualhere_renum=${virtualhere_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="virtualhere"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$virtualhere_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep virtual_here)" ]  && [ ! -s /tmp/script/_app8 ]; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app8
@@ -140,9 +148,9 @@ logger -t "【virtualhere】" "运行 virtualhere"
 cd $(dirname `which virtualhere`)
 killall -9 virtualhere
 ln -sf /etc/storage/app_8.sh ~/config.ini
-./virtualhere -b
+eval "virtualhere -b $cmd_log" &
 
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "virtualhere" | grep -v grep )" ] && logger -t "【virtualhere】" "启动成功" && virtualhere_restart o
 [ -z "$(ps -w | grep "virtualhere" | grep -v grep )" ] && logger -t "【virtualhere】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && virtualhere_restart x
 initopt

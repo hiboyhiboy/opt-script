@@ -9,6 +9,14 @@ frpc_enable=`nvram get frpc_enable`
 frps_enable=`nvram get frps_enable`
 frp_version=`nvram get frp_version`
 [ -z $frp_version ] && frp_version=0 && nvram set frp_version=0
+frp_renum=`nvram get frp_renum`
+frp_renum=${frp_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="frp"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$frp_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep frp)" ]  && [ ! -s /tmp/script/_frp ]; then
@@ -172,9 +180,9 @@ done
 
 logger -t "【frp】" "运行 frp_script"
 
-/etc/storage/frp_script.sh
+eval "/etc/storage/frp_script.sh $cmd_log" &
 restart_dhcpd
-sleep 2
+sleep 4
 if [ "$frpc_enable" = "1" ] ; then
 	frpc_v="`/opt/bin/frpc --version`"
 	nvram set frpc_v=$frpc_v
@@ -264,10 +272,10 @@ frpc_enable=${frpc_enable:-"0"}
 frps_enable=`nvram get frps_enable`
 frps_enable=${frps_enable:-"0"}
 if [ "$frpc_enable" = "1" ] ; then
-    frpc -c /tmp/frp/myfrpc.ini &
+    frpc -c /tmp/frp/myfrpc.ini 2>&1 &
 fi
 if [ "$frps_enable" = "1" ] ; then
-    frps -c /tmp/frp/myfrps.ini &
+    frps -c /tmp/frp/myfrps.ini 2>&1 &
 fi
 
 EEE

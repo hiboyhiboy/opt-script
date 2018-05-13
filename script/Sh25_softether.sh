@@ -5,6 +5,14 @@ softether_enable=`nvram get softether_enable`
 [ -z $softether_enable ] && softether_enable=0 && nvram set softether_enable=0
 softether_path=`nvram get softether_path`
 [ -z $softether_path ] && softether_path="/opt/softether/vpnserver" && nvram set softether_path=$softether_path
+softether_renum=`nvram get softether_renum`
+softether_renum=${softether_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="softether"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$softether_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 #if [ "$softether_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep softether | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
@@ -155,8 +163,8 @@ fi
 softether_path="$SVC_PATH"
 logger -t "【softether】" "运行 softether_script"
 $softether_path stop
-/etc/storage/softether_script.sh &
-sleep 3
+eval "/etc/storage/softether_script.sh $cmd_log" &
+sleep 4
 [ ! -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动成功" && softether_restart o
 [ -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动失败, 注意检查hamcore.se2、vpncmd、vpnserver是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { rm -f $softether_path ; softether_restart x ; }
 
@@ -189,7 +197,7 @@ SVC_PATH=$softether_path
 [ -f /opt/softether/vpn_server.config ] && [ ! -f /etc/storage/vpn_server.config ] && cp -f /opt/softether/vpn_server.config /etc/storage/vpn_server.config
 [ ! -f /etc/storage/vpn_server.config ] && touch /etc/storage/vpn_server.config
 ln -sf /etc/storage/vpn_server.config /opt/softether/vpn_server.config
-$SVC_PATH start
+$SVC_PATH start 2>&1 &
 i=120
 until [ ! -z "$tap" ]
 do

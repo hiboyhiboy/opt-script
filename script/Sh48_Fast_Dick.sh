@@ -10,6 +10,14 @@ FastDick_uid=`nvram get FastDick_uid`
 FastDick_pwd=`nvram get FastDick_pwd`
 FastDicks=`nvram get FastDicks`
 
+FastDicks_renum=`nvram get FastDicks_renum`
+FastDicks_renum=${FastDicks_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="FastDicks"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$FastDicks_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ]  && [ ! -s /tmp/script/_Fast_Dick ]; then
@@ -115,7 +123,7 @@ if [ "$FastDicks" = "2" ] ; then
 	logger -t "【迅雷快鸟】" "稍等几分钟，ssh 到路由，控制台输入【ps】命令查看[/etc/storage/FastDick_script.sh]进程是否存在，是否正常启动，提速是否成功。"
 	logger -t "【迅雷快鸟】" "免 U盘 启动"
 	chmod 777 "/etc/storage/FastDick_script.sh"
-	/etc/storage/FastDick_script.sh &
+	eval "/etc/storage/FastDick_script.sh $cmd_log" &
 else
 	ss_opt_x=`nvram get ss_opt_x`
 	upanPath=""
@@ -173,7 +181,7 @@ else
 	chmod 777 /opt/FastDick -R
 	cd /opt/FastDick
 	export LD_LIBRARY_PATH=/lib:/opt/lib
-	python /opt/FastDick/swjsq.py 2>&1 > /opt/FastDick/swjsq.log &
+	eval "python /opt/FastDick/swjsq.py $cmd_log" &
 	chmod 777 "/opt/FastDick" -R
 	sleep 30
 	chmod 777 "/opt/FastDick" -R
@@ -191,7 +199,6 @@ EEF
 		chmod 777 "/etc/storage/FastDick_script.sh"
 	fi
 	logger -t "【迅雷快鸟】" "启动 python 完成"
-	logger -t "【迅雷快鸟】" "`cat /opt/FastDick/swjsq.log`"
 	optw_enable=`nvram get optw_enable`
 	if [ "$optw_enable" != "2" ] ; then
 		nvram set optw_enable=2

@@ -16,6 +16,7 @@ scriptpath=$(cd "$(dirname "$0")"; pwd)
 #echo $scriptpath
 scriptname=$(basename $0)
 #echo $scriptname
+cmd_log2=' 2>&1 | awk '"'"'{cmd="logger -t '"'"'"'"'"'"'"'"'【'"'"'$cmd_name'"'"'】'"'"'"'"'"' '"'"' "'"'"'"$0"'"'"'"'"'"' "'"'"';";system(cmd)}'"'" 
 
 kill_ps () {
 

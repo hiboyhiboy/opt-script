@@ -25,6 +25,14 @@ chinadns_port=`nvram get app_6`
 # [ -z $v2ray_port ] && v2ray_port=1088 && nvram set v2ray_port=1088
 nvram set v2ray_port=`cat /etc/storage/v2ray_config_script.sh | grep -Eo '"port": [0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
 
+v2ray_renum=`nvram get v2ray_renum`
+v2ray_renum=${v2ray_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="v2ray"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$v2ray_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 v2ray_path=`nvram get v2ray_path`
 [ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
@@ -262,7 +270,7 @@ if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 		v2ray_wget_v2ctl
 		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置"
 		cd "$(dirname "$SVC_PATH")"
-		v2ctl config < /etc/storage/v2ray_config_script.sh > /opt/bin/v2ray_config.pb
+		eval "v2ctl config < /etc/storage/v2ray_config_script.sh > /opt/bin/v2ray_config.pb $cmd_log" 
 		[ -f /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
 		[ ! -z "$optPath" ] && rm -f /opt/bin/v2ctl /opt/bin/geoip.dat /opt/bin/geosite.dat
 	fi
@@ -314,8 +322,8 @@ else
 	[ ! -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /etc/storage/v2ray_config_script.sh -format json"
 	[ -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /opt/bin/v2ray_config.pb -format pb"
 fi
-eval "$su_cmd" '"'"$su_cmd2"'" &' &
-sleep 2
+eval "$su_cmd" '"'"$su_cmd2"' $cmd_log"' &
+sleep 4
 restart_dhcpd
 [ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动成功 $v2ray_v " && v2ray_restart o
 [ -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x

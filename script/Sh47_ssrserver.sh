@@ -8,6 +8,14 @@ if [ "$ssrserver_enable" != "0" ] ; then
 
 ssrserver_update=`nvram get ssrserver_update`
 
+ssrserver_renum=`nvram get ssrserver_renum`
+ssrserver_renum=${ssrserver_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="SSR_server"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$ssrserver_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ssrserver)" ]  && [ ! -s /tmp/script/_ssrserver ]; then
@@ -26,7 +34,7 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
-		logger -t "【ssrserver】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【SSR_server】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
 	ssrserver_renum=${ssrserver_renum:-"0"}
@@ -35,7 +43,7 @@ if [ "$1" = "x" ] ; then
 	if [ "$ssrserver_renum" -gt "2" ] ; then
 		I=19
 		echo $I > $relock
-		logger -t "【ssrserver】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【SSR_server】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do
 			I=$(($I - 1))
 			echo $I > $relock
@@ -240,13 +248,13 @@ cp -af /etc/storage/SSRconfig_script.sh /opt/shadowsocksr-manyuser/user-config.j
 if [ -s "/opt/shadowsocksr-manyuser/user-config.json" ] ; then
 	chmod 777 -R /opt/shadowsocksr-manyuser
 	cd /opt/shadowsocksr-manyuser/shadowsocks/
-	python /opt/shadowsocksr-manyuser/shadowsocks/server.py a >> /tmp/syslog.log 2>&1 &
+	eval "python /opt/shadowsocksr-manyuser/shadowsocks/server.py a $cmd_log" &
 	logger -t "【SSR_server】" "请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问."
 else
 	logger -t "【SSR_server】" "/etc/storage/SSRconfig_script.sh 配置写入/opt/shadowsocksr-manyuser/user-config.json 失败，10 秒后自动尝试重新启动" && sleep 10 && ssrserver_restart x
 	
 fi
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动成功" && ssrserver_restart o
 [ -z "$(ps -w | grep manyuser/shadowsocks/server | grep -v grep )" ] && logger -t "【SSR_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ssrserver_restart x
 initopt

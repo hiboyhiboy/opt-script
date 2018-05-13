@@ -7,6 +7,14 @@ guestkit_enable=`nvram get app_26`
 #nvramshow=`nvram showall | grep '=' | grep guestkit | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
 
+guestkit_renum=`nvram get guestkit_renum`
+guestkit_renum=${guestkit_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="guestkit"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$guestkit_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep guest_kit)" ]  && [ ! -s /tmp/script/_app9 ]; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app9
@@ -137,8 +145,8 @@ logger -t "【guestkit】" "运行 guestkit"
 #运行/opt/bin/guestkit
 cd $(dirname `which guestkit`)
 killall -9 guestkit
-./guestkit &
-sleep 5
+eval "guestkit $cmd_log" &
+sleep 7
 [ ! -z "$(ps -w | grep "guestkit" | grep -v grep )" ] && logger -t "【guestkit】" "启动成功" && guestkit_restart o
 [ -z "$(ps -w | grep "guestkit" | grep -v grep )" ] && logger -t "【guestkit】" "启动失败, 注意检查32121端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && guestkit_restart x
 initopt

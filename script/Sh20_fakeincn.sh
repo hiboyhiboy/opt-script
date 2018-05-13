@@ -8,6 +8,14 @@ if [ "$fakeincn_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep fakeincn | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fakeincn_enable=`nvram get app_7`
 [ -z $fakeincn_enable ] && fakeincn_enable=0 && nvram set app_7=0
+fakeincn_renum=`nvram get fakeincn_renum`
+fakeincn_renum=${fakeincn_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="fakeincn"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$fakeincn_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 fakeincn_path="/etc/storage/app_1.sh"
 
@@ -20,7 +28,6 @@ fi
 
 fakeincn_restart () {
 
-fakeincn_renum=`nvram get fakeincn_renum`
 relock="/var/lock/fakeincn_restart.lock"
 if [ "$1" = "o" ] ; then
 	nvram set fakeincn_renum="0"
@@ -166,8 +173,8 @@ update_app
 fakeincn_v=$(grep 'fakeincn_v=' /etc/storage/app_1.sh | awk -F '=' '{print $2;}')
 nvram set fakeincn_v="$fakeincn_v"
 logger -t "【fakeincn】" "运行 $fakeincn_path"
-eval $fakeincn_path &
-sleep 2
+eval "$fakeincn_path $cmd_log" &
+sleep 4
 [ ! -z "$(ps -w | grep "/opt/app/fakeincn/fakeincn" | grep -v grep )" ] && logger -t "【fakeincn】" "启动成功 $fakeincn_v " && fakeincn_restart o
 [ -z "$(ps -w | grep "/opt/app/fakeincn/fakeincn" | grep -v grep )" ] && logger -t "【fakeincn】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && fakeincn_restart x
 
@@ -350,7 +357,7 @@ ln -sf `which ss-redir` /opt/app/fakeincn/fakeincn
 eval server="\$"server${index}
 logger -t "【fakeincn】" "ChinaServer：$server。"
 eval $(ps -w | grep '/opt/app/fakeincn/fakeincn' | grep -v grep | awk '{print "kill "$1";";}')
-/opt/app/fakeincn/fakeincn -s $server -p $ss_router_port -l 1008 -b 0.0.0.0 -k $ss_passwd -m $method -u -f /tmp/tocn_ss.pid
+/opt/app/fakeincn/fakeincn -s $server -p $ss_router_port -l 1008 -b 0.0.0.0 -k $ss_passwd -m $method -u 2>&1 &
 let index+=1
 sleep 15
 fakeincn_enable=`nvram get app_7` #fakeincn_enable
@@ -371,7 +378,7 @@ while [ "$fakeincn_enable" = "1" ]; do
 			sleep 60
 		else
 			eval $(ps -w | grep '/opt/app/fakeincn/fakeincn' | grep -v grep | awk '{print "kill "$1";";}')
-			/opt/app/fakeincn/fakeincn -s $server -p $ss_router_port -l 1008 -b 0.0.0.0 -k $ss_passwd -m $method -u -f /tmp/tocn_ss.pid
+			/opt/app/fakeincn/fakeincn -s $server -p $ss_router_port -l 1008 -b 0.0.0.0 -k $ss_passwd -m $method -u  2>&1 &
 			sleep 5
 			NUM=`ps -w | grep "/opt/app/fakeincn/fakeincn" | grep -v grep |wc -l`
 			if [ "$NUM" -lt "1" ] ; then

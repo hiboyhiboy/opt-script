@@ -22,6 +22,14 @@ ss_rdd_server=`nvram get ss_server2`
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 [ -z $ss_s1_local_port ] && ss_s1_local_port=1081 && nvram set ss_s1_local_port=$ss_s1_local_port
 [ -z $ss_s2_local_port ] && ss_s2_local_port=1082 && nvram set ss_s2_local_port=$ss_s2_local_port
+meow_renum=`nvram get meow_renum`
+meow_renum=${meow_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="meow"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$meow_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep meow)" ]  && [ ! -s /tmp/script/_meow ]; then
@@ -160,9 +168,9 @@ meow_path="$SVC_PATH"
 
 logger -t "【meow】" "运行 meow_script"
 /etc/storage/meow_script.sh
-$meow_path -rc /etc/storage/meow_config_script.sh &
+eval "$meow_path -rc /etc/storage/meow_config_script.sh $cmd_log" &
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "$meow_path" | grep -v grep )" ] && logger -t "【meow】" "启动成功" && meow_restart o
 [ -z "$(ps -w | grep "$meow_path" | grep -v grep )" ] && logger -t "【meow】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && meow_restart x
 initopt

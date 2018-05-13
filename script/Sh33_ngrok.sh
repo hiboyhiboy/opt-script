@@ -25,6 +25,14 @@ ngrok_custom_lhost=`nvram get ngrok_custom_lhost`
 ngrok_custom_lport=`nvram get ngrok_custom_lport`
 ngrok_custom_hostname=`nvram get ngrok_custom_hostname`
 
+ngrok_renum=`nvram get ngrok_renum`
+ngrok_renum=${ngrok_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="ngrok"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$ngrok_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ngrok)" ]  && [ ! -s /tmp/script/_ngrok ]; then
@@ -156,24 +164,24 @@ sed -Ei '/^$/d' /etc/storage/ngrok_script.sh
 # 系统分配域名
 if [ "$ngrok_domain" = "1" ] ; then
 cat >> "/etc/storage/ngrok_script.sh" <<-EUI
-ngrokc -SER[Shost:$ngrok_server,Sport:$ngrok_port,Atoken:$ngrok_token] -AddTun[Type:$ngrok_domain_type,Lhost:$ngrok_domain_lhost,Lport:$ngrok_domain_lport,Sdname:$ngrok_domain_sdname] & #UI设置自动生成
+ngrokc -SER[Shost:$ngrok_server,Sport:$ngrok_port,Atoken:$ngrok_token] -AddTun[Type:$ngrok_domain_type,Lhost:$ngrok_domain_lhost,Lport:$ngrok_domain_lport,Sdname:$ngrok_domain_sdname] 2>&1 & #UI设置自动生成
 EUI
 fi
 # TCP端口转发
 if [ "$ngrok_tcp" = "1" ] ; then
 cat >> "/etc/storage/ngrok_script.sh" <<-EUI
-ngrokc -SER[Shost:$ngrok_server,Sport:$ngrok_port,Atoken:$ngrok_token] -AddTun[Type:$ngrok_tcp_type,Lhost:$ngrok_tcp_lhost,Lport:$ngrok_tcp_lport,Rport:$ngrok_tcp_rport] & #UI设置自动生成
+ngrokc -SER[Shost:$ngrok_server,Sport:$ngrok_port,Atoken:$ngrok_token] -AddTun[Type:$ngrok_tcp_type,Lhost:$ngrok_tcp_lhost,Lport:$ngrok_tcp_lport,Rport:$ngrok_tcp_rport] 2>&1 & #UI设置自动生成
 EUI
 fi
 # 自定义域名
 if [ "$ngrok_custom" = "1" ] ; then
 cat >> "/etc/storage/ngrok_script.sh" <<-EUI
-ngrokc -SER[Shost:$ngrok_server,Sport:$ngrok_port,Atoken:$ngrok_token] -AddTun[Type:$ngrok_custom_type,Lhost:$ngrok_custom_lhost,Lport:$ngrok_custom_lport,Hostname:$ngrok_custom_hostname] & #UI设置自动生成
+ngrokc -SER[Shost:$ngrok_server,Sport:$ngrok_port,Atoken:$ngrok_token] -AddTun[Type:$ngrok_custom_type,Lhost:$ngrok_custom_lhost,Lport:$ngrok_custom_lport,Hostname:$ngrok_custom_hostname] 2>&1 & #UI设置自动生成
 EUI
 fi
-/etc/storage/ngrok_script.sh
+eval "/etc/storage/ngrok_script.sh $cmd_log" &
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "启动成功" && ngrok_restart o
 [ -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ngrok_restart x
 ngrok_get_status

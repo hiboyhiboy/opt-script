@@ -12,6 +12,14 @@ capem_s_path="/etc/storage/goflyway/ca.pem"
 keypem_path="/opt/bin/key.pem"
 capem_path="/opt/bin/ca.pem"
 
+goflyway_renum=`nvram get goflyway_renum`
+goflyway_renum=${goflyway_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="goflyway"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$goflyway_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep gofly_way)" ]  && [ ! -s /tmp/script/_app7 ]; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app7
@@ -165,9 +173,9 @@ logger -t "【goflyway】" "运行 goflyway"
 
 #运行脚本启动/opt/bin/goflyway
 cd $(dirname `which goflyway`)
-/etc/storage/app_7.sh
+eval "/etc/storage/app_7.sh $cmd_log" &
 
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "goflyway" | grep -v grep )" ] && logger -t "【goflyway】" "启动成功" && goflyway_restart o
 [ -z "$(ps -w | grep "goflyway" | grep -v grep )" ] && logger -t "【goflyway】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && goflyway_restart x
 initopt
@@ -197,10 +205,10 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 # https://github.com/coyove/goflyway/wiki/使用教程
 cd $(dirname ` which goflyway`)
 #在服务器执行下面命令即可启动服务端，KEY123为自定义密码，默认监听8100。本地执行
-#./goflyway -k=KEY123 -l="0.0.0.0:8100" &
+#./goflyway -k=KEY123 -l="0.0.0.0:8100" 2>&1 &
 
 #客户端命令（1.2.3.4要修改为服务器IP，默认监听8100）
-goflyway -k=KEY123 -up="1.2.3.4:8100" -l="0.0.0.0:8100" &
+goflyway -k=KEY123 -up="1.2.3.4:8100" -l="0.0.0.0:8100" 2>&1 &
 
 #可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用
 #请设置以上软件的本地代理为 192.168.123.1:8100（协议为HTTP或SOCKS5代理，192.168.123.1为路由器IP）

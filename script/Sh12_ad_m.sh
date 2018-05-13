@@ -37,6 +37,14 @@ lan_ipaddr=`nvram get lan_ipaddr`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr && nvram set ss_DNS_Redirect_IP=$ss_DNS_Redirect_IP
 [ -z $adbyby_adblocks ] && adbyby_adblocks=0 && nvram set adbyby_adblocks=$adbyby_adblocks
 
+adm_renum=`nvram get adm_renum`
+adm_renum=${adm_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="ADM"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$adm_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 #检查 dnsmasq 目录参数
 #confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
@@ -421,7 +429,7 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 	cd /tmp/7620adm
 	export PATH='/tmp/7620adm:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 	export LD_LIBRARY_PATH=/tmp/7620adm/lib:/lib:/opt/lib
-	/tmp/7620adm/adm &
+	eval "/tmp/7620adm/adm $cmd_log" &
 	if [ "$adbyby_adblocks" = "1" ] ; then
 		logger -t "【ADM】" "加载 第三方自定义 规则, 等候15秒"
 		sleep 15

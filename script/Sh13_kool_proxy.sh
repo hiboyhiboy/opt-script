@@ -60,6 +60,14 @@ fi
 # mode_video="$mode_video -d "
 # fi
 # echo "$mode_video"
+koolproxy_renum=`nvram get koolproxy_renum`
+koolproxy_renum=${koolproxy_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="koolproxy"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$koolproxy_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 #检查 dnsmasq 目录参数
 #confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
@@ -518,7 +526,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 		fi
 		killall koolproxy
 		cd /tmp/7620koolproxy/
-		/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
+		eval "/tmp/7620koolproxy/koolproxy $mode_video -d $cmd_log" & # >/dev/null 2>&1 &
 		koolproxy_cron_job
 	fi
 	hash krdl 2>/dev/null && krdl_ipset
@@ -528,7 +536,7 @@ nvram set koolproxy_rules_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/ru
 nvram set koolproxy_rules_nu_local="`cat /tmp/7620koolproxy/data/rules/koolproxy.txt | grep -v ! | wc -l`"
 nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/rules/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/rules/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+|201?.{1}' | sed -n '2p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g' | sed -n '1p'`"
 fi
-
+sleep 4
 [ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动成功" && koolproxy_restart o
 [ -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && koolproxy_restart x
 #koolproxy_add_rules

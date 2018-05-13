@@ -12,6 +12,14 @@ filemanager_upanPath=`nvram get filemanager_upanPath`
 #nvramshow=`nvram showall | grep '=' | grep filemanager | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
 
+filemanager_renum=`nvram get filemanager_renum`
+filemanager_renum=${filemanager_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="filemanager"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$filemanager_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep file_manager)" ]  && [ ! -s /tmp/script/_app5 ]; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app5
@@ -175,7 +183,7 @@ iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 filemanager_upanPath="$upanPath"
 nvram set filemanager_upanPath="$upanPath"
 ln -sf /etc/storage/app_5.sh /tmp/filemanager.json
-"$upanPath/filemanager/filemanager" -c "/tmp/filemanager.json" &
+eval "$upanPath/filemanager/filemanager -c /tmp/filemanager.json $cmd_log" &
 
 sleep 7
 [ ! -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动成功" && filemanager_restart o

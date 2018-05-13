@@ -10,6 +10,14 @@ if [ "$syncthing_enable" != "0" ] ; then
 syncthing_wan=`nvram get syncthing_wan`
 syncthing_upanPath=`nvram get syncthing_upanPath`
 
+syncthing_renum=`nvram get syncthing_renum`
+syncthing_renum=${syncthing_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="syncthing"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$syncthing_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep sync_thing)" ]  && [ ! -s /tmp/script/_sync_thing ]; then
@@ -174,9 +182,9 @@ logger -t "【syncthing】" "运行 syncthing"
 
 syncthing_upanPath="$upanPath"
 nvram set syncthing_upanPath="$upanPath"
-"$upanPath/syncthing/syncthing-linux-mipsle/syncthing" -home "$upanPath/syncthing" -gui-address 0.0.0.0:$syncthing_wan_port &
+eval "$upanPath/syncthing/syncthing-linux-mipsle/syncthing -home $upanPath/syncthing -gui-address 0.0.0.0:$syncthing_wan_port $cmd_log" &
 
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动成功" && syncthing_restart o
 [ -z "$(ps -w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && syncthing_restart x
 syncthing_port_dpt

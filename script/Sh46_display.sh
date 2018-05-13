@@ -19,6 +19,15 @@ display_aqidata="beijing"
 nvram set display_aqidata="beijing"
 fi
 
+display_renum=`nvram get display_renum`
+display_renum=${display_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="相框显示"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$display_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ]  && [ ! -s /tmp/script/_display ]; then
@@ -237,11 +246,10 @@ sleep 5
 logger -t "【相框显示】" "运行 lcd4linux"
 cd /opt/bin/
 export LD_LIBRARY_PATH=/opt/lib
- lcd4linux -f /tmp/lcd4linux.conf
+eval "lcd4linux -f /tmp/lcd4linux.conf $cmd_log" &
 export LD_LIBRARY_PATH=/lib:/opt/lib
-sleep 2
 logger -t "【相框显示】" "开始显示数据"
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功" && display_restart o
 [ -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 initopt

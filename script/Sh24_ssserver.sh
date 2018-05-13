@@ -17,6 +17,14 @@ ssserver_usage=" `nvram get ssserver_usage` "
 [ -z $ssserver_time ] && ssserver_time=120 && nvram set ssserver_time=$ssserver_time
 [ -z $ssserver_port ] && ssserver_port=8388 && nvram set ssserver_port=$ssserver_port
 [ -z $ssserver_method ] && ssserver_method="aes-256-cfb" && nvram set ssserver_method="aes-256-cfb"
+ssserver_renum=`nvram get ssserver_renum`
+ssserver_renum=${ssserver_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="SS_server"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$ssserver_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ssserver)" ]  && [ ! -s /tmp/script/_ssserver ]; then
 	mkdir -p /tmp/script
@@ -34,7 +42,7 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
-		logger -t "【ssserver】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【SS_server】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
 	ssserver_renum=${ssserver_renum:-"0"}
@@ -43,7 +51,7 @@ if [ "$1" = "x" ] ; then
 	if [ "$ssserver_renum" -gt "2" ] ; then
 		I=19
 		echo $I > $relock
-		logger -t "【ssserver】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【SS_server】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do
 			I=$(($I - 1))
 			echo $I > $relock
@@ -175,12 +183,12 @@ if [ ! -z "echo $ssserver_usage | grep gq-server" ] ; then
 fi
 logger -t "【SS_server】" "启动 ss-server 服务"
 if [ "$ssserver_udp" == "1" ] ; then
-	ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage  -f /tmp/ssserver.pid
+	eval "ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage $cmd_log" &
 else
-	ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_usage -f /tmp/ssserver.pid
+	eval "ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_usage $cmd_log" &
 fi
 
-sleep 2
+sleep 4
 [ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动成功" && ssserver_restart o
 [ -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 logger -t "【SS_server】" "`ps -w | grep ss-server | grep -v grep`"

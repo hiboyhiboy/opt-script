@@ -16,6 +16,14 @@ upd2pro2_enable=`nvram get app_9`
 [ -z $upd2pro2_enable ] && upd2pro2_enable=0 && nvram set app_9=0
 upd2pro3_enable=`nvram get app_18`
 [ -z $upd2pro3_enable ] && upd2pro3_enable=0 && nvram set app_18=0
+upd2pro_renum=`nvram get upd2pro_renum`
+upd2pro_renum=${upd2pro_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="upd2pro"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$upd2pro_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 upd2pro_path="/etc/storage/app_3.sh"
 upd2pro2_path="/etc/storage/app_4.sh"
@@ -29,7 +37,6 @@ fi
 
 upd2pro_restart () {
 
-upd2pro_renum=`nvram get upd2pro_renum`
 relock="/var/lock/upd2pro_restart.lock"
 if [ "$1" = "o" ] ; then
 	nvram set upd2pro_renum="0"
@@ -230,8 +237,9 @@ if [ "$upd2pro_enable" = "1" ] ; then
 upd2pro_v=$(/opt/bin/udp2raw -h | grep version: | awk -F 'version:' '{print $2;}')
 nvram set upd2pro_v="$upd2pro_v"
 logger -t "【upd2pro】" "运行 $upd2pro_path"
-eval $upd2pro_path &
-sleep 2
+cmd_name="udp2raw"
+eval "$upd2pro_path $cmd_log" &
+sleep 4
 [ ! -z "$(ps -w | grep "/opt/bin/udp2raw" | grep -v grep )" ] && logger -t "【upd2pro】" "启动成功 udp2raw $upd2pro_v " && upd2pro_restart o
 [ -z "$(ps -w | grep "/opt/bin/udp2raw" | grep -v grep )" ] && logger -t "【upd2pro】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && upd2pro_restart x
 fi
@@ -240,8 +248,9 @@ if [ "$upd2pro2_enable" = "1" ] ; then
 upd2pro2_v=$(/opt/bin/speeder -h | grep version: | awk -F 'version:' '{print $2;}')
 nvram set upd2pro2_v="$upd2pro2_v"
 logger -t "【upd2pro】" "运行 $upd2pro2_path"
-eval $upd2pro2_path &
-sleep 2
+cmd_name="speeder"
+eval "$upd2pro2_path $cmd_log" &
+sleep 4
 [ ! -z "$(ps -w | grep "/opt/bin/speeder" | grep -v grep )" ] && logger -t "【upd2pro】" "启动成功 speeder $upd2pro2_v " && upd2pro_restart o
 [ -z "$(ps -w | grep "/opt/bin/speeder" | grep -v grep )" ] && logger -t "【upd2pro】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && upd2pro_restart x
 fi
@@ -250,8 +259,9 @@ if [ "$upd2pro3_enable" = "1" ] ; then
 upd2pro3_v=$(/opt/bin/speederv2 -h | grep version: | awk -F 'version:' '{print $2;}')
 nvram set upd2pro3_v="$upd2pro3_v"
 logger -t "【upd2pro】" "运行 $upd2pro3_path"
-eval $upd2pro3_path &
-sleep 2
+cmd_name="speederv2"
+eval "$upd2pro3_path $cmd_log" &
+sleep 4
 [ ! -z "$(ps -w | grep "/opt/bin/speederv2" | grep -v grep )" ] && logger -t "【upd2pro】" "启动成功 speederv2 $upd2pro3_v " && upd2pro_restart o
 [ -z "$(ps -w | grep "/opt/bin/speederv2" | grep -v grep )" ] && logger -t "【upd2pro】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && upd2pro_restart x
 fi
@@ -282,7 +292,7 @@ if [ ! -f "/etc/storage/app_3.sh" ] || [ ! -s "/etc/storage/app_3.sh" ] ; then
 # 如果你需要加速跨国网游、网页浏览，解决方案在另一个程序：UDPspeeder
 # 请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问
 logger -t "【upd2pro】" "运行 udp2raw" ; killall udp2raw ;
-/opt/bin/udp2raw -c -l0.0.0.0:3333  -r44.55.66.77:4096 -a -k "passwd" --raw-mode faketcp &
+/opt/bin/udp2raw -c -l0.0.0.0:3333  -r44.55.66.77:4096 -a -k "passwd" --raw-mode faketcp 2>&1 &
 
 
 EOF
@@ -294,7 +304,7 @@ if [ ! -f "/etc/storage/app_4.sh" ] || [ ! -s "/etc/storage/app_4.sh" ] ; then
 # 中文教程：https://github.com/wangyu-/UDPspeeder/blob/master/doc/README.zh-cn.v1.md
 # 请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问
 logger -t "【upd2pro】" "运行 speeder" ; killall speeder ;
-/opt/bin/speeder -l0.0.0.0:3333 -r 44.55.66.77:8855 -c  -d2 -k "passwd" &
+/opt/bin/speeder -l0.0.0.0:3333 -r 44.55.66.77:8855 -c  -d2 -k "passwd" 2>&1 &
 
 EOF
 fi
@@ -305,7 +315,7 @@ if [ ! -f "/etc/storage/app_6.sh" ] || [ ! -s "/etc/storage/app_6.sh" ] ; then
 # 中文教程：https://github.com/wangyu-/UDPspeeder
 # 请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问
 logger -t "【upd2pro】" "运行 speederv2" ; killall speederv2 ;
-/opt/bin/speederv2 -c -l0.0.0.0:3333 -r44.55.66.77:4096 -f20:10 -k "passwd" --mode 0 &
+/opt/bin/speederv2 -c -l0.0.0.0:3333 -r44.55.66.77:4096 -f20:10 -k "passwd" --mode 0 2>&1 &
 
 EOF
 fi

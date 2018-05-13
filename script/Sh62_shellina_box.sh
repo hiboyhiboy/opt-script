@@ -15,6 +15,15 @@ shellinabox_options_ttyd=`nvram get shellinabox_options_ttyd`
 [ -z $shellinabox_css ] && shellinabox_css="white-on-black" && nvram set shellinabox_css=$shellinabox_css
 
 [ -z $shellinabox_options_ttyd ] && shellinabox_options_ttyd="login" && nvram set shellinabox_options_ttyd=$shellinabox_options_ttyd
+
+shellinabox_renum=`nvram get shellinabox_renum`
+shellinabox_renum=${shellinabox_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="shellinabox"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$shellinabox_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 shell_log="【shellinabox】"
 [ "$shellinabox_enable" = "2" ] && shell_log="【ttyd】"
@@ -146,7 +155,7 @@ kill_ps "$scriptname"
 shellinabox_start () {
 if [ "$shellinabox_enable" = "2" ] ; then
 hash ttyd 2>/dev/null || { logger -t "$shell_log" "找不到 ttyd，尝试启动shellinaboxd"; nvram set shellinabox_enable=1; shellinabox_restart ; }
-ttyd --port $shellinabox_port $shellinabox_options_ttyd &
+eval "ttyd --port $shellinabox_port $shellinabox_options_ttyd $cmd_log" &
 sleep 5
 [ ! -z "`pidof ttyd`" ] && logger -t "$shell_log" "启动成功" && shellinabox_restart o
 [ -z "`pidof ttyd`" ] && logger -t "$shell_log" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && shellinabox_restart x
@@ -165,7 +174,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "$shell_log" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && shellinabox_restart x
 fi
 logger -t "【shellinaboxd】" "运行 shellinaboxd"
-/opt/etc/init.d/S88shellinaboxd restart
+eval "/opt/etc/init.d/S88shellinaboxd restart $cmd_log" &
 sleep 5
 [ ! -z "`pidof shellinaboxd`" ] && logger -t "$shell_log" "启动成功" && shellinabox_restart o
 [ -z "`pidof shellinaboxd`" ] && logger -t "$shell_log" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && shellinabox_restart x

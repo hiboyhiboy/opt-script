@@ -21,6 +21,8 @@ domain_type=""
 hostIP=""
 Zone_ID=""
 [ -z $cloudflare_interval ] && cloudflare_interval=120 && nvram set cloudflare_interval=$cloudflare_interval
+cloudflare_renum=`nvram get cloudflare_renum`
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cloudflare)" ]  && [ ! -s /tmp/script/_cloudflare ]; then
