@@ -174,7 +174,9 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "$shell_log" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && shellinabox_restart x
 fi
 logger -t "【shellinaboxd】" "运行 shellinaboxd"
-eval "/opt/etc/init.d/S88shellinaboxd restart $cmd_log" &
+/opt/etc/init.d/S88shellinaboxd stop
+sleep 5
+eval "/opt/etc/init.d/S88shellinaboxd start  $cmd_log" &
 sleep 5
 [ ! -z "`pidof shellinaboxd`" ] && logger -t "$shell_log" "启动成功" && shellinabox_restart o
 [ -z "`pidof shellinaboxd`" ] && logger -t "$shell_log" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && shellinabox_restart x

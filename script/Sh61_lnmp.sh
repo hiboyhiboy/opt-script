@@ -173,23 +173,31 @@ kill_ps "$scriptname"
 }
 
 lnmp_start () {
+	ln -sf /etc/TZ /opt/etc/TZ
+	ln -sf /etc/group /opt/etc/group
+	ln -sf /etc/passwd /opt/etc/passwd
+	#mkdir -p /opt/etc/mysql
+	#cp -f /opt/etc/my.cnf /opt/etc/mysql/my.cnf
+	#chmod 644 /opt/etc/mysql/my.cnf /opt/etc/my.cnf
+	ldconfig > /dev/null 2>&1
 if [ "$mysql_enable" = "4" ] || [ ! -d "/opt/mysql/test" ] ; then
 	logger -t "【LNMP】" "重置 /opt/mysql 数据"
 	killall mysqld
-	killall -9 mysqld
 	rm -rf /opt/mysql/*
 	sed -e "s/.*user.*/user = "$http_username"/g" -i /opt/etc/my.cnf
 	chmod 644 /opt/etc/my.cnf
 	mkdir -p /opt/mysql/
 	/opt/bin/mysql_install_db
+	#/opt/bin/mysql_install_db  --user=$http_username --basedir=/opt/ --datadir=/opt/mysql --defaults-file=/opt/etc/my.cnf
+	killall -9 mysqld
 	/opt/bin/mysqld &
-	sleep 2
+	sleep 5
 	logger -t "【LNMP】" "重置 mysql 默认账号:root, 默认密码:admin, 请手动修改密码"
 	/opt/bin/mysqladmin -u root password admin
 	killall mysqld
+	[ "$mysql_enable" = "4" ] && { mysql_enable=0 ; nvram set mysql_enable=$mysql_enable ; nvram commit ; }
+	sleep 5
 	killall -9 mysqld
-	mysql_enable=0 && nvram set mysql_enable=$mysql_enable
-	nvram commit
 fi
 if [ "$default_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 默认主页 数据."
@@ -325,12 +333,13 @@ if [ "$kodexplorer_enable" = "1" ] || [ "$kodexplorer_enable" = "2" ] ; then
 		fi
 		logger -t "【LNMP】" "解压 kodexplorer 文档, 需时1分钟"
 		tar -xzvf /opt/www/kodexplorer.tgz -C /opt/www
+		chmod -R 777 /opt/www/kodexplorer/
 	fi
 	if [ ! -d "/opt/www/kodexplorer/data" ] ; then
 		logger -t "【LNMP】" "芒果云 停用, 因未找到 /opt/www/kodexplorer/data"
 	else
 		sed -e "s/.*upload_chunk_size.*/		\'upload_chunk_size\'	 => 1024*1024*1,		\/\/上传分片大小；默认1M/g" -i /opt/www/kodexplorer/config/setting.php
-		chmod -R 777 /opt/www/kodexplorer/
+		chmod -R 777 /opt/www/kodexplorer/data
 	fi
 fi
 if [ "$phpmyadmin_enable" = "1" ] || [ "$phpmyadmin_enable" = "2" ] ; then
@@ -342,6 +351,10 @@ if [ "$phpmyadmin_enable" = "1" ] || [ "$phpmyadmin_enable" = "2" ] ; then
 		fi
 		logger -t "【LNMP】" "解压 phpmyadmin 文档, 需时1分钟"
 		tar -xzvf /opt/www/phpmyadmin.tgz -C /opt/www
+		#cp -f /opt/www/phpmyadmin/config.sample.inc.php /opt/www/phpmyadmin/config.inc.php
+		#sed -e "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '$(cat /proc/sys/kernel/random/uuid)';/g" -i /opt/www/phpmyadmin/config.inc.php
+		#chmod 644 /opt/www/phpmyadmin/config.inc.php
+		#chmod -R 777 /opt/www/phpmyadmin/
 	fi
 	if [ ! -d "/opt/www/phpmyadmin/libraries" ] ; then
 		logger -t "【LNMP】" "phpmyadmin 停用, 因未找到 /opt/www/phpmyadmin/libraries"
@@ -382,6 +395,7 @@ if [ "$owncloud_enable" = "1" ] || [ "$owncloud_enable" = "2" ] ; then
 		fi
 		logger -t "【LNMP】" "解压 owncloud 文档, 需时5分钟"
 		tar -jxvf /opt/www/owncloud-8.0.14.tar.bz2 -C /opt/www
+		#chmod -R 777  /opt/www/owncloud
 	fi
 	if [ ! -d "/opt/www/owncloud/config" ] ; then
 		logger -t "【LNMP】" "owncloud 停用, 因未找到 /opt/www/owncloud/config"
@@ -389,10 +403,16 @@ if [ "$owncloud_enable" = "1" ] || [ "$owncloud_enable" = "2" ] ; then
 		chmod 770 /opt/www/owncloud/data
 	fi
 fi
-eval "/opt/etc/init.d/S69pdcnlnmpinit start $cmd_log" &
-eval "/opt/etc/init.d/S70mysqld restart $cmd_log" &
-eval "/opt/etc/init.d/S79php-fpm restart $cmd_log" &
-eval "/opt/etc/init.d/S80nginx restart $cmd_log" &
+/opt/etc/init.d/S70mysqld stop
+/opt/etc/init.d/S79php-fpm stop
+/opt/etc/init.d/S80nginx stop
+sleep 3
+/opt/etc/init.d/S69pdcnlnmpinit stop
+sleep 3
+/opt/etc/init.d/S69pdcnlnmpinit start
+eval "/opt/etc/init.d/S70mysqld start $cmd_log" &
+eval "/opt/etc/init.d/S79php-fpm start $cmd_log" &
+eval "/opt/etc/init.d/S80nginx start $cmd_log" &
 
 lnmp_Available
 
@@ -400,11 +420,11 @@ lnmp_Available
 [ -f /opt/lnmp.txt ] && nvram set lnmpo=`cat /opt/lnmp.txt`
 sleep 5
 if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-	[ -z "`pidof mysqld`" ] && logger -t "【LNMP】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
+	[ -z "`pidof mysqld`" ] && logger -t "【LNMP】" "mysqld启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
 fi
-[ -z "`pidof nginx`" ] && logger -t "【LNMP】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
-[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "启动成功" && lnmp_restart o
-[ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] && [ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "启动成功" && lnmp_restart o
+[ -z "`pidof nginx`" ] && logger -t "【LNMP】" "nginx启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
+[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "nginx启动成功" && lnmp_restart o
+[ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] && [ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "mysqld启动成功" && lnmp_restart o
 lnmp_port_dpt
 initopt
 lnmp_get_status
