@@ -294,6 +294,7 @@ if [ -s "$SVC_PATH" ] ; then
 fi
 v2ray_path="$SVC_PATH"
 logger -t "【v2ray】" "运行 v2ray_script"
+chmod 755 /etc/storage/v2ray_script.sh
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
 su_cmd="eval"

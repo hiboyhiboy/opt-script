@@ -248,6 +248,7 @@ cp -af /etc/storage/SSRconfig_script.sh /opt/shadowsocksr-manyuser/user-config.j
 if [ -s "/opt/shadowsocksr-manyuser/user-config.json" ] ; then
 	chmod 777 -R /opt/shadowsocksr-manyuser
 	cd /opt/shadowsocksr-manyuser/shadowsocks/
+	ulimit -HSn 65536
 	eval "python /opt/shadowsocksr-manyuser/shadowsocks/server.py a $cmd_log" &
 	logger -t "【SSR_server】" "请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问."
 else

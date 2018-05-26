@@ -172,6 +172,7 @@ nvram set goflyway_v="$goflyway_v"
 logger -t "【goflyway】" "运行 goflyway"
 
 #运行脚本启动/opt/bin/goflyway
+chmod 777 /etc/storage/app_7.sh
 cd $(dirname `which goflyway`)
 eval "/etc/storage/app_7.sh $cmd_log" &
 
