@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 kcptun_enable=`nvram get kcptun_enable`
 [ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
 kcptun_path=`nvram get kcptun_path`
-[ -z $kcptun_path ] && kcptun_path="/opt/bin/client_linux_mips" && nvram set kcptun_path=$kcptun_path
+[ -z $kcptun_path ] && kcptun_path="/opt/bin/client_linux_mipsle" && nvram set kcptun_path=$kcptun_path
 if [ "$kcptun_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -148,8 +148,8 @@ kcptun_close () {
 
 sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$kcptun_path" ] && kill_ps "$kcptun_path"
-killall client_linux_mips kcptun_script.sh sh_kcpkeep.sh
-killall -9 client_linux_mips kcptun_script.sh sh_kcpkeep.sh
+killall client_linux_mipsle kcptun_script.sh sh_kcpkeep.sh
+killall -9 client_linux_mipsle kcptun_script.sh sh_kcpkeep.sh
 kill_ps "/tmp/script/_kcp_tun"
 kill_ps "_kcp_tun.sh"
 kill_ps "$scriptname"
@@ -159,18 +159,18 @@ kcptun_start () {
 
 SVC_PATH="$kcptun_path"
 if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/bin/client_linux_mips"
+	SVC_PATH="/opt/bin/client_linux_mipsle"
 fi
 chmod 777 "$SVC_PATH"
-[[ "$(client_linux_mips -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/client_linux_mips
+[[ "$(client_linux_mipsle -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/client_linux_mipsle
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $kcptun_path，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/client_linux_mips "$hiboyfile/client_linux_mips" "$hiboyfile2/client_linux_mips"
-	chmod 755 "/opt/bin/client_linux_mips"
+	wgetcurl.sh /opt/bin/client_linux_mipsle "$hiboyfile/client_linux_mipsle" "$hiboyfile2/client_linux_mipsle"
+	chmod 755 "/opt/bin/client_linux_mipsle"
 else
 	logger -t "【kcptun】" "找到 $SVC_PATH"
 fi
@@ -283,8 +283,8 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 # https://blog.kuoruan.com/102.html
 # http://www.cmsky.com/kcptun/
 # kcptun服务端主程序下载：
-# 32位系统：wget --no-check-certificate http://opt.cn2qq.com/opt-file/server_linux_386 && chmod 755 server_linux_*
-# 64位系统：wget --no-check-certificate http://opt.cn2qq.com/opt-file/server_linux_amd64 && chmod 755 server_linux_*
+# 32位系统：wget https://opt.cn2qq.com/opt-file/server_linux_386 && chmod 755 server_linux_*
+# 64位系统：wget https://opt.cn2qq.com/opt-file/server_linux_amd64 && chmod 755 server_linux_*
 # 注意！！由于路由参数默认加上--nocomp，服务端也要加上--nocomp，在两端同时设定以关闭压缩。
 # 两端参数必须一致的有:
 # datashard
@@ -315,7 +315,7 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 ################################################################
 # 客户端进程数量（守护脚本判断数据，请正确填写）
 KCPNUM=1
-killall client_linux_mips
+killall client_linux_mipsle
 #
 ################################################################
 EEE

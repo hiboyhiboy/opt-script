@@ -232,7 +232,7 @@ if [ "$v2ray_http_enable" != "1" ] && [ ! -f /opt/bin/v2ray_config.pb ] ; then
 if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
 logger -t "【v2ray】" "错误！ v2ray 配置文件 内容为空"
 logger -t "【v2ray】" "请在服务端运行一键安装脚本："
-logger -t "【v2ray】" "bash <(curl -L -s http://opt.cn2qq.com/opt-script/v2ray.sh)"
+logger -t "【v2ray】" "bash <(curl -L -s https://opt.cn2qq.com/opt-script/v2ray.sh)"
 logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
 sleep 30 && v2ray_restart x
 fi

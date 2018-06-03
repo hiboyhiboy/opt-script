@@ -393,14 +393,14 @@ kill_ps "$scriptname"
 update_ad_rules () {
 
 xwhyc_rules="$hiboyfile/video.txt"
-xwhyc_rules2="http://opt.cn2qq.com/opt-file/video.txt"
+xwhyc_rules2="https://opt.cn2qq.com/opt-file/video.txt"
 xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
 xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules1 N 5
 [ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules0 N 5
 xwhyc_rules="$hiboyfile/lazy.txt"
-xwhyc_rules2="http://opt.cn2qq.com/opt-file/lazy.txt"
+xwhyc_rules2="https://opt.cn2qq.com/opt-file/lazy.txt"
 xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
 xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
@@ -1102,7 +1102,7 @@ update)
 	killall -9 sh_ad_byby_keey_k.sh
 	checka="/tmp/var/lazy.txt"
 	rm -f /tmp/var/lazy.txt
-	urla="http://opt.cn2qq.com/opt-file/lazy.txt"
+	urla="https://opt.cn2qq.com/opt-file/lazy.txt"
 	urla1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
 	urla2="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 	checkb="/tmp/bin/data/lazy.txt"
@@ -1115,7 +1115,7 @@ update)
 		logger -t "【Adbyby】" "更新检查:lazy 不需更新 $urla "
 		checka="/tmp/var/video.txt"
 		rm -f /tmp/var/video.txt
-		urla="http://opt.cn2qq.com/opt-file/video.txt"
+		urla="https://opt.cn2qq.com/opt-file/video.txt"
 		urla1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
 		urla2="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 		checkb="/tmp/bin/data/video.txt"
