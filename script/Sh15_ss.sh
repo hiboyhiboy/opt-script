@@ -4,7 +4,27 @@ source /etc/storage/script/init.sh
 TAG="SS_SPEC"		  # iptables tag
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
-if [ "$ss_enable" != "0" ] ; then
+v2ray_enable=`nvram get v2ray_enable`
+[ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
+transocks_enable=`nvram get app_27`
+[ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
+v2ray_follow=`nvram get v2ray_follow`
+[ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
+if [ "$transocks_enable" != "0" ]  ; then
+	if [ "$ss_enable" != "0" ]  ; then
+		ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
+		[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
+		if [ "$ss_mode_x" != 3 ]  ; then
+			logger -t "【SS】" "错误！！！由于已启用 transocks ，停止启用 SS 透明代理！"
+			ss_enable=0 && nvram set ss_enable=0
+		fi
+	fi
+	if [ "$v2ray_enable" != 0 ] && [ "$v2ray_follow" != 0 ]  ; then
+		logger -t "【SS】" "错误！！！由于已启用 transocks ，停止启用 v2ray 透明代理！"
+		v2ray_follow=0 && nvram set v2ray_follow=0
+	fi
+fi
+if [ "$ss_enable" != "0" ] || [ "$transocks_enable" != "0" ]  ; then
 #nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
@@ -71,6 +91,7 @@ ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为�
 [ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
 ss_working_port=`nvram get ss_working_port` #working port 不需要在界面设置，在watchdog里面设置。
 [ -z $ss_working_port ] && ss_working_port=1090 && nvram set ss_working_port=$ss_working_port
+[ "$ss_enable" != "0" ] && [ $ss_working_port != 1090 ] && [ $ss_working_port != 1091 ] && ss_working_port=1090 && nvram set ss_working_port=$ss_working_port
 ss_multiport=`nvram get ss_multiport`
 [ -z "$ss_multiport" ] && ss_multiport="22,80,443" && nvram set ss_multiport=$ss_multiport
 [ -n "$ss_multiport" ] && ss_multiport="-m multiport --dports $ss_multiport" || ss_multiport="-m multiport --dports 22,80,443" # 处理多端口设定
@@ -128,6 +149,7 @@ ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
 ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
 
+ss_check=`nvram get ss_check`
 ss_updatess=`nvram get ss_updatess`
 [ -z $ss_updatess ] && ss_updatess=0 && nvram set ss_updatess=$ss_updatess
 [ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
@@ -202,6 +224,20 @@ else
 	ss2_plugin_name=""
 	ss_plugin_config=""
 	ss2_plugin_config=""
+fi
+
+if [ "$ss_enable" != "0" ] ; then
+	kcptun_server=`nvram get kcptun_server`
+	if [ "$kcptun_enable" != "0" ] ; then
+		if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
+		resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
+		[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
+		kcptun_server=$resolveip
+		else
+		# IPv6
+		kcptun_server=$kcptun_server
+		fi
+	fi
 fi
 
 #检查 dnsmasq 目录参数
@@ -545,7 +581,6 @@ fi
 
 check_ip()
 {
-ss_check=`nvram get ss_check`
 if [ "$ss_check" = "1" ] ; then
 	# 检查主服务器是否能用
 	checkip=0
@@ -719,6 +754,8 @@ clean_ss_rules()
 echo "clean_ss_rules"
 flush_r
 	ipset destroy gfwlist
+	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port 1098
+	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port 1098
 	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port 1090
 	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port 1090
 	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port 1091
@@ -862,7 +899,7 @@ done < /tmp/ss_spec_lan.txt
 
 # 加载 nat 规则
 nvram set ss_internet="2"
-ss_working_port=`nvram get ss_working_port`
+
 echo "ss_multiport:$ss_multiport"
 EXT_ARGS_TCP="$ss_multiport"
 include_ac_rules nat
@@ -887,8 +924,9 @@ fi
 iptables -t nat -N SS_SPEC_WAN_DG
 iptables -t nat -A SS_SPEC_WAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
 iptables -t nat -A SS_SPEC_WAN_DG -p tcp $EXT_ARGS_TCP -j SS_SPEC_WAN_AC
+#if [ "$transocks_enable" = "0" ]  ; then
 iptables -t nat -I OUTPUT $wifidognx -p tcp -j SS_SPEC_WAN_DG
-
+#fi
 if [ "$koolproxy_enable" != "0" ] ; then
 # 加载 kp过滤方案 规则
 logger -t "【SS】" "设置内网(LAN)访问控制【kp过滤方案】"
@@ -948,7 +986,7 @@ else
 fi
 
 nvram set ss_internet="1"
-ss_working_port=`nvram get ss_working_port`
+
 [ $ss_working_port == 1090 ] && ss_info="SS_[1]"
 [ $ss_working_port == 1091 ] && ss_info="SS_[2]"
 nvram set button_script_2_s="$ss_info"
@@ -982,6 +1020,12 @@ nvram set button_script_2_s="$ss_info"
 	echo "WAN!alidns.aliyuncs.com" >> /tmp/ss_spec_wan.txt
 	sed -e '/.*services.googleapis.cn/d' -i /tmp/ss_spec_wan.txt
 	echo "WAN!services.googleapis.cn" >> /tmp/ss_spec_wan.txt
+	if [ "$transocks_enable" != "0" ]  ; then
+		sed -e '/.*'$transocks_listen_address'/d' -i /tmp/ss_spec_wan.txt
+		echo "WAN!$transocks_listen_address" >> /tmp/ss_spec_wan.txt
+		sed -e '/.*'$transocks_server'/d' -i /tmp/ss_spec_wan.txt
+		echo "WAN!$transocks_server" >> /tmp/ss_spec_wan.txt
+	fi
 	rm -f /tmp/ss/wantoss.list
 	rm -f /tmp/ss/wannoss.list
 	while read line
@@ -1242,20 +1286,6 @@ else
 fi
 }
 
-if [ "$ss_enable" != "0" ] ; then
-	kcptun_server=`nvram get kcptun_server`
-	if [ "$kcptun_enable" != "0" ] ; then
-		if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
-		resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-		[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
-		kcptun_server=$resolveip
-		else
-		# IPv6
-		kcptun_server=$kcptun_server
-		fi
-	fi
-fi
-
 gen_special_purpose_ip() {
 #处理肯定不走通道的目标网段
 lan_ipaddr=`nvram get lan_ipaddr`
@@ -1293,8 +1323,6 @@ else
 ss_s2_ip=$ss_server2
 fi
 fi
-v2ray_enable=`nvram get v2ray_enable`
-[ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
 if [ "$v2ray_enable" != "0" ] && [ ! -z "$server_addresses" ] ; then
 	resolveip=`/usr/bin/resolveip -4 -t 4 $server_addresses | grep -v : | sed -n '1p'`
 	[ -z "$resolveip" ] && resolveip=`arNslookup $server_addresses | sed -n '1p'` 
@@ -2032,7 +2060,7 @@ if [ "$ss_dnsproxy_x" = "2" ] ; then
 		/etc/storage/script/Sh19_chinadns.sh &
 	fi
 fi
-ss_working_port=`nvram get ss_working_port`
+
 [ $ss_working_port == 1090 ] && ss_info="SS_[1]"
 [ $ss_working_port == 1091 ] && ss_info="SS_[2]"
 nvram set button_script_2_s="$ss_info"
@@ -2743,6 +2771,45 @@ fi
 
 initconfig
 
+transock () {
+
+if [ "$transocks_enable" != "0" ]  ; then
+	transocks_mode_x=`nvram get app_28`
+	[ -z $transocks_mode_x ] && transocks_mode_x=0 && nvram set app_28=0
+	transocks_proxy_mode=`nvram get app_29`
+	[ -z $transocks_proxy_mode ] && transocks_proxy_mode="0" && nvram set app_29="0"
+	[ "$transocks_proxy_mode" == 0 ] && transocks_proxy_mode_x="socks5"
+	[ "$transocks_proxy_mode" == 1 ] && transocks_proxy_mode_x="http"
+	nvram set transocks_proxy_mode_x="$transocks_proxy_mode_x"
+	transocks_listen_address=`nvram get app_30`
+	transocks_listen_port=`nvram get app_31`
+	transocks_server=`nvram get app_32`
+	ss_mode_x="$transocks_mode_x"
+	kcptun2_enable=2
+	ss_udp_enable=0
+	ss_check=0
+	ss_updatess=1
+	ss_dnsproxy_x=2
+	ss_pdnsd_wo_redir=0
+	ss_working_port=1098
+	sed -Ei '/github|ipip.net|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+	sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
+	killall pdnsd dnsproxy 
+	dnsmasq_reconf
+	start_ss_rules
+	rm -f /tmp/cron_ss.lock
+	nvram set ss_updatess2=0
+	update_gfwlist
+	update_chnroutes
+	nvram set ss_updatess2=1
+else
+	transocks_listen_address=""
+	transocks_server=""
+fi
+
+}
+
+
 ##############################
 ### ready go
 ##############################
@@ -2816,6 +2883,16 @@ update_optss)
 	;;
 swapss)
 	SS_swap
+	;;
+transock_start)
+	transock
+	;;
+transock_stop)
+	clean_ss_rules
+	sed -Ei '/github|ipip.net|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+	sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
+	restart_dhcpd
+	killall pdnsd dnsproxy 
 	;;
 *)
 	check_setting

@@ -185,6 +185,21 @@ mkdir -p /opt/bin
 }
 
 AiDisk00 () {
+# 安装ca-certificates
+mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载
+if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
+	logger -t "【opt】" "找不到ca-certificates证书,安装ca-certificates"
+	mkdir -p /opt/app/ipk/
+	mkdir -p /opt/etc/ssl/certs
+	[ ! -s "/opt/app/ipk/certs.tgz" ] && wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
+	tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
+	rm -f /etc/ssl/certs
+	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
+	chmod 644 /opt/etc/ssl/certs -R
+fi
+# flush buffers
+sync
+# 目录检测
 [ -d /tmp/AiDisk_00/opt ] && return
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""

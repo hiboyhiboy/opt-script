@@ -6,17 +6,33 @@ TAG="SS_SPEC"		  # iptables tag
 FWI="/tmp/firewall.v2ray.pdcn"
 v2ray_enable=`nvram get v2ray_enable`
 [ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
+ss_enable=`nvram get ss_enable`
+[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
+transocks_enable=`nvram get app_27`
+[ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
+v2ray_follow=`nvram get v2ray_follow`
+[ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
+if [ "$transocks_enable" != "0" ]  ; then
+	if [ "$ss_enable" != "0" ]  ; then
+		ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
+		[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
+		if [ "$ss_mode_x" != 3 ]  ; then
+			logger -t "【v2ray】" "错误！！！由于已启用 transocks ，停止启用 SS 透明代理！"
+			ss_enable=0 && nvram set ss_enable=0
+		fi
+	fi
+	if [ "$v2ray_enable" != 0 ] && [ "$v2ray_follow" != 0 ]  ; then
+		logger -t "【v2ray】" "错误！！！由于已启用 transocks ，停止启用 v2ray 透明代理！"
+		v2ray_follow=0 && nvram set v2ray_follow=0
+	fi
+fi
 if [ "$v2ray_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
 
-v2ray_follow=`nvram get v2ray_follow`
-[ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
 v2ray_optput=`nvram get v2ray_optput`
 [ -z $v2ray_optput ] && v2ray_optput=0 && nvram set v2ray_optput=0
 
-ss_enable=`nvram get ss_enable`
-[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_port=`nvram get app_6`
