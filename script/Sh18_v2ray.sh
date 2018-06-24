@@ -273,6 +273,7 @@ Mem_lt=100000
 if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 	[ ! -z "$optPath" ] && logger -t "【v2ray】" " /opt/ 在内存储存"
 	[ "$Mem_total" -lt "$Mem_lt" ] && logger -t "【v2ray】" "内存不足100M"
+	[ "$Mem_total" -lt "70000" ] && export  V2RAY_RAY_BUFFER_SIZE=1
 	if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
 		[ "$v2ray_http_format" = "1" ] && wgetcurl.sh /etc/storage/v2ray_config_script.sh "$v2ray_http_config" "$v2ray_http_config"
 		[ "$v2ray_http_format" = "2" ] &&  wgetcurl.sh /opt/bin/v2ray_config.pb "$v2ray_http_config" "$v2ray_http_config"
@@ -499,8 +500,6 @@ cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 100.100.100.100
 188.188.188.188
 110.110.110.110
-104.160.185.171
-88.99.106.142
 $lan_ipaddr
 $server_addresses
 EOF

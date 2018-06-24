@@ -80,6 +80,8 @@ fi
 if [ -z "$ssr_link" ] ; then
 	return
 fi
+shlinksh=$$
+eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
 mkdir -p /tmp/ss/link
 wgetcurl.sh /tmp/ss/link/0_link.txt "$ssr_link" "$ssr_link" N
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then

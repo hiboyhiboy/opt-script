@@ -168,6 +168,12 @@ if [ "$chinadns_enable" != "0" ] ; then
 	[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0
 	fi
 fi
+
+ss_rebss_n=`nvram get ss_rebss_n`
+[ -z $ss_rebss_n ] && ss_rebss_n=0 && nvram set ss_rebss_n=$ss_rebss_n
+ss_rebss_a=`nvram get ss_rebss_a`
+[ -z $ss_rebss_a ] && ss_rebss_a=0 && nvram set ss_rebss_a=$ss_rebss_a
+
 ss_renum=`nvram get ss_renum`
 ss_renum=${ss_renum:-"0"}
 cmd_log_enable=`nvram get cmd_log_enable`
@@ -353,6 +359,8 @@ ss_usage="$ss_usage -u "
 ss_s2_usage="$ss_s2_usage -u "
 fi
 
+ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
+ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
 
 if [ "$ss_type" = "1" ] ; then 
 # 混淆参数
@@ -364,6 +372,7 @@ ss_usage_obfs_custom="$(echo $ss_usage | grep -Eo '\-g[ ]+[^-]+')"
 if [ ! -z "$ss_usage_obfs_custom" ] ; then 
 	ss_usage_obfs_custom_tmp="${ss_usage##* -g }"
 	ss_usage_obfs_custom_tmp="${ss_usage_obfs_custom_tmp%% -*}"
+	ss_usage_obfs_custom_tmp="`echo -n "$ss_usage_obfs_custom_tmp" | sed -e "s@ @@g" `"
 	nvram set ss_usage_obfs_custom_tmp="$ss_usage_obfs_custom_tmp"
 	ss_usage_json=" -a 1 -g ss_usage_obfs_custom_tmp"
 	[ ! -z "$ss_usage_obfs_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_obfs_custom_tmp@@g" `"
@@ -377,6 +386,7 @@ ss_s2_usage_obfs_custom="$(echo $ss_s2_usage | grep -Eo '\-g[ ]+[^-]+')"
 if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then 
 	ss_s2_usage_obfs_custom_tmp="${ss_s2_usage##* -g }"
 	ss_s2_usage_obfs_custom_tmp="${ss_s2_usage_obfs_custom_tmp%% -*}"
+	ss_s2_usage_obfs_custom_tmp="`echo -n "$ss_s2_usage_obfs_custom_tmp" | sed -e "s@ @@g" `"
 	nvram set ss_s2_usage_obfs_custom_tmp="$ss_s2_usage_obfs_custom_tmp"
 	ss_s2_usage_json=" -a 1 -g ss_s2_usage_obfs_custom_tmp"
 	[ ! -z "$ss_s2_usage_obfs_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_obfs_custom_tmp@@g" `"
@@ -394,6 +404,7 @@ ss_usage_protocol_custom="$(echo $ss_usage | grep -Eo '\-G[ ]+[^-]+')"
 if [ ! -z "$ss_usage_protocol_custom" ] ; then 
 	ss_usage_protocol_custom_tmp="${ss_usage##* -G }"
 	ss_usage_protocol_custom_tmp="${ss_usage_protocol_custom_tmp%% -*}"
+	ss_usage_protocol_custom_tmp="`echo -n "$ss_usage_protocol_custom_tmp" | sed -e "s@ @@g" `"
 	nvram set ss_usage_protocol_custom_tmp="$ss_usage_protocol_custom_tmp"
 	ss_usage_json="$ss_usage_json -a 2 -G ss_usage_protocol_custom_tmp"
 	[ ! -z "$ss_usage_protocol_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_protocol_custom_tmp@@g" `"
@@ -407,6 +418,7 @@ ss_s2_usage_protocol_custom="$(echo $ss_s2_usage | grep -Eo '\-G[ ]+[^-]+')"
 if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then 
 	ss_s2_usage_protocol_custom_tmp="${ss_s2_usage##* -G }"
 	ss_s2_usage_protocol_custom_tmp="${ss_s2_usage_protocol_custom_tmp%% -*}"
+	ss_s2_usage_protocol_custom_tmp="`echo -n "$ss_s2_usage_protocol_custom_tmp" | sed -e "s@ @@g" `"
 	nvram set ss_s2_usage_protocol_custom_tmp="$ss_s2_usage_protocol_custom_tmp"
 	ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ss_s2_usage_protocol_custom_tmp"
 	[ ! -z "$ss_s2_usage_protocol_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_protocol_custom_tmp@@g" `"
@@ -435,11 +447,17 @@ ssr_type_protocol_custom=""
 ssr2_type_protocol_custom=""
 fi
 
+ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
+ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
+
 options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
 options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
 
 ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g'`"
 ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g'`"
+
+ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
+ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
 
 # 启动程序
 /tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
@@ -994,7 +1012,7 @@ nvram set button_script_2_s="$ss_info"
 # 外网(WAN)访问控制
 	logger -t "【SS】" "外网(WAN)访问控制，设置 WAN IP 转发或忽略代理中转"
 	sed -e '/.*opt.cn2qq.com/d' -i /etc/storage/shadowsocks_ss_spec_wan.sh
-	echo "WAN!opt.cn2qq.com" >> /etc/storage/shadowsocks_ss_spec_wan.sh
+	echo "WAN@opt.cn2qq.com" >> /etc/storage/shadowsocks_ss_spec_wan.sh
 	speedup_enable=`nvram get app_10`
 	[ -z $speedup_enable ] && speedup_enable=0 && nvram set app_10=0
 	if [ "$speedup_enable" != "0" ] ; then
@@ -1355,8 +1373,6 @@ fi
 100.100.100.100
 188.188.188.188
 110.110.110.110
-104.160.185.171
-88.99.106.142
 $lan_ipaddr
 $ss_s1_ip
 $ss_s2_ip
@@ -2276,12 +2292,9 @@ killall -9 sh_sskeey_k.sh
 rebss=1
 ss_rdd_server=`nvram get ss_server2`
 kcptun2_enable=`nvram get kcptun2_enable`
-[ -z $kcptun2_enable ] && kcptun2_enable=0 && nvram set kcptun2_enable=$kcptun2_enable
 kcptun2_enable2=`nvram get kcptun2_enable2`
-[ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
 ss_run_ss_local=`nvram get ss_run_ss_local`
 ss_mode_x=`nvram get ss_mode_x`
-[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
 [ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 rm -f /tmp/cron_ss.lock
@@ -2289,6 +2302,38 @@ ss_enable=`nvram get ss_enable`
 sleep 15
 while [ "$ss_enable" = "1" ];
 do
+ss_rebss_n=`nvram get ss_rebss_n`
+ss_rebss_a=`nvram get ss_rebss_a`
+if [ "$ss_rebss_n" != 0 ] ; then
+	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "0" ] ; then
+		logger -t "【SS】" " 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
+		nvram set ss_status=0
+		eval "$scriptfilepath &"
+		sleep 10
+		exit 0
+	fi
+	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "1" ] ; then
+		logger -t "【SS】" " 网络连接 shadowsocks 中断 ['$rebss'], 停止SS."
+		nvram set ss_enable=0
+		eval "$scriptfilepath &"
+		sleep 10
+		exit 0
+	fi
+	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "2" ] ; then
+		logger -t "【SS】" " 网络连接 shadowsocks 中断['$rebss'], 重启路由."
+		sleep 5
+		reboot
+	fi
+fi
+if [ "$rebss" -gt 6 ] ; then
+	if [ "$kcptun2_enable" = "1" ] || [ -z "$ss_rdd_server" ] ; then
+		logger -t "【SS】" " 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
+		nvram set ss_status=0
+		eval "$scriptfilepath &"
+		sleep 10
+		exit 0
+	fi
+fi
 ss_internet=`nvram get ss_internet`
 sleep 9
 #随机延时
@@ -2303,24 +2348,10 @@ if [ -f /tmp/cron_ss.lock ] || [ "$ss_enable" != "1" ] ; then
 	#跳出当前循环
 	continue
 fi
-if [ "$rebss" -gt 6 ] && [ $(cat /tmp/reb.lock) == "1" ] ; then
-	logger -t "【SS】" " 网络连接 shadowsocks 中断['$rebss'], 重启路由."
-	sleep 5
-	reboot
-fi
-if [ "$rebss" -gt 6 ] ; then
-	if [ "$kcptun2_enable" = "1" ] || [ -z $ss_rdd_server ] ; then
-		logger -t "【SS】" " 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
-		nvram set ss_status=0
-		eval "$scriptfilepath &"
-		sleep 10
-		exit 0
-	fi
-fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	NUM=`ps -w | grep ss-local_ | grep -v grep |wc -l`
 	SSRNUM=1
-	[ ! -z $ss_rdd_server ] && SSRNUM=2
+	[ ! -z "$ss_rdd_server" ] && SSRNUM=2
 	if [ "$NUM" -lt "$SSRNUM" ] || [ ! -s "`which ss-local`" ] ; then
 		logger -t "【SS】" "找不到 $SSRNUM ss-local 进程 $rebss, 重启SS."
 		nvram set ss_status=0
@@ -2334,7 +2365,7 @@ fi
 
 NUM=`ps -w | grep ss-redir_ | grep -v grep |wc -l`
 SSRNUM=1
-[ ! -z $ss_rdd_server ] && SSRNUM=2
+[ ! -z "$ss_rdd_server" ] && SSRNUM=2
 if [ "$NUM" -lt "$SSRNUM" ] ; then
 	logger -t "【SS】" "找不到 $SSRNUM shadowsocks 进程 $rebss, 重启SS."
 	nvram set ss_status=0
@@ -2522,12 +2553,12 @@ fi
 #404
 if [ "$kcptun2_enable" = "1" ] ; then
 	nvram set ss_internet="2"
-	rebss=`expr $rebss + 2`
+	rebss=`expr $rebss + 1`
 	logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
 	#跳出当前循环
 	continue
 fi
-if [ ! -z $ss_rdd_server ] ; then
+if [ ! -z "$ss_rdd_server" ] ; then
 	logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】检测到问题, 尝试切换到 $Server_ip 【$Server】"
 	nvram set ss_internet="2"
 	#端口切换
@@ -2595,8 +2626,8 @@ fi
 
 #404
 nvram set ss_internet="0"
-[ ! -z $ss_rdd_server ] && logger -t "【SS】" " 两个 SS 服务器检测到问题, $rebss"
-[ -z $ss_rdd_server ] && logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
+[ ! -z "$ss_rdd_server" ] && logger -t "【SS】" " 两个 SS 服务器检测到问题, $rebss"
+[ -z "$ss_rdd_server" ] && logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
 rebss=`expr $rebss + 1`
 restart_dhcpd
 #/etc/storage/crontabs_script.sh &
@@ -2633,10 +2664,10 @@ ss_mode_x=`nvram get ss_mode_x`
 if [ "$ss_internet" != "1" ] ; then
 	logger -t "【ss】" "注意！各线路正在启动，请等待启动后再尝试切换"
 fi
-if [ -z $ss_rdd_server ] ; then
+if [ -z "$ss_rdd_server" ] ; then
 	logger -t "【ss】" "错误！备用线路未启用，请配置启用后再尝试切换"
 fi
-if [ ! -z $ss_rdd_server ] && [ "$ss_internet" = "1" ] ; then
+if [ ! -z "$ss_rdd_server" ] && [ "$ss_internet" = "1" ] ; then
 	logger -t "【SS】" "手动切换 $ss_info 服务器 $CURRENT_ip 【$CURRENT】"
 	nvram set ss_internet="2"
 	#端口切换

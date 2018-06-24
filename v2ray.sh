@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.25.1
+version=v3.26
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -64,10 +64,10 @@ fi
 #Run Install
 cd /root
 
-curl -L  -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+curl -L  -k https://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
 if [ ! -s /root/go.sh ]; then
   rm -f /root/go.sh
-  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+  wget --no-check-certificate https://opt.cn2qq.com/opt-script/go.sh
 fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
@@ -83,10 +83,10 @@ echo '删除 V2ray 请稍候！'
 
 cd /root
 
-curl -L  -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+curl -L  -k https://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
 if [ ! -s /root/go.sh ]; then
   rm -f /root/go.sh
-  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+  wget --no-check-certificate https://opt.cn2qq.com/opt-script/go.sh
 fi
 chmod +x "/root/go.sh"
 /root/go.sh --remove
@@ -107,10 +107,10 @@ function up_v2ray(){
       ${SERVICE_CMD} v2ray stop
   fi
 
-curl -L -s -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+curl -L -s -k https://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
 if [ ! -s /root/go.sh ]; then
   rm -f /root/go.sh
-  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+  wget --no-check-certificate https://opt.cn2qq.com/opt-script/go.sh
 fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
@@ -378,7 +378,7 @@ cat << EOF > config
             {
                 "id": "$uuid",
                 "level": $level,
-                "alterId": 100
+                "alterId": 32
             }
         ]
     }${mkcp}${httpheader}
@@ -481,7 +481,7 @@ cat << EOF > /root/config.json
                 "users": [
                     {
                         "id": "$uuid",
-                        "alterId": 100
+                        "alterId": 32
                     }
                 ]
             }
@@ -528,7 +528,6 @@ cat << EOF > /root/config.json
             "100.100.100.100/32",
             "188.188.188.188/32",
             "110.110.110.110/32",
-            "104.160.185.171/32",
             "::1/128",
             "fc00::/7",
             "fe80::/10"

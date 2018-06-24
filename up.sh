@@ -1,11 +1,11 @@
 #!/bin/sh
 #copyright by hiboy
 #一键自动更新固件脚本
-#wget --no-check-certificate -O- http://opt.cn2qq.com/opt-script/up.sh | sed -e "s|^\(Firmware.*\)=[^=]*$|\1=|" > /tmp/up.sh && bash < /tmp/up.sh
+#wget --no-check-certificate -O- https://opt.cn2qq.com/opt-script/up.sh | sed -e "s|^\(Firmware.*\)=[^=]*$|\1=|" > /tmp/up.sh && bash < /tmp/up.sh
 Firmware=""
 mkdir -p /tmp/padavan
 rm -f /tmp/padavan/*
-wget --no-check-certificate  -O /tmp/padavan/MD5.txt http://opt.cn2qq.com/padavan/MD5.txt
+wget --no-check-certificate  -O /tmp/padavan/MD5.txt https://opt.cn2qq.com/padavan/MD5.txt
 dos2unix /tmp/padavan/MD5.txt
 if [ "$Firmware"x = "x" ] ; then
 PN=`grep Web_Title= /www/EN.dict | sed 's/Web_Title=//g'| sed 's/ 无线路由器//g'`
@@ -16,8 +16,8 @@ logger -t "【Firmware】" "$1"
 echo "$1"
 }
 MD5_txt=`cat /tmp/padavan/MD5.txt | sed 's@\r@@g' |sed -n '/'$Firmware'/,/CRC32/{/'$Firmware'/n;/CRC32/b;p}' | grep "MD5：" | tr 'A-Z' 'a-z' |awk '{print $2}'`
-logger_echo " 下载【$Firmware】，http://opt.cn2qq.com/padavan/$Firmware"
-wget --no-check-certificate  -O /tmp/padavan/$Firmware http://opt.cn2qq.com/padavan/$Firmware
+logger_echo " 下载【$Firmware】，https://opt.cn2qq.com/padavan/$Firmware"
+wget --no-check-certificate  -O /tmp/padavan/$Firmware https://opt.cn2qq.com/padavan/$Firmware
 eval $(md5sum /tmp/padavan/$Firmware | awk '{print "MD5_down="$1;}')
 echo $MD5_down
 echo $MD5_txt

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-6-18"
+Builds="/etc/storage/Builds-2018-6-24"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -1884,8 +1884,6 @@ if [ ! -f "$script0_script" ] ; then
 touch /tmp/script0.lock
 #脚本修改日期：2017-11-29
 #↓↓↓功能详细设置(应用设置重启后生效，不能断电重启，要点击右上角重启按钮)↓↓↓
-#多次检测断线后自动重启功能 0关闭；1启动
-echo "0" > /tmp/reb.lock
 source /etc/storage/script/init.sh
 
 # 迅雷快鸟 功能
@@ -1970,6 +1968,7 @@ if [ $1 == "up" ] ; then
     nvram set cloudflare_status=0
     nvram set cloudxns_status=0
     nvram set aliddns_status=0
+    nvram set qcloud_status=0
     nvram set ngrok_status=0
     nvram set kcptun_status=0
     nvram set tinyproxy_status=0
@@ -2061,6 +2060,9 @@ cat > "/tmp/crontabs_DOMAIN.txt" <<-\EOF
 
 # 每1小时重启aliddns 域名解析
 #16 */1 * * * nvram set aliddns_status=123 && /tmp/script/_aliddns & #删除开头的#启动命令
+
+# 每1小时重启aliddns 域名解析
+#16 */1 * * * nvram set qcloud_status=123 && /tmp/script/_qcloud & #删除开头的#启动命令
 
 # 早上8点开启微信推送：
 #0 8 * * * nvram set serverchan_enable=1 && nvram set serverchan_status=0 && /tmp/script/_server_chan & #删除开头的#启动命令
