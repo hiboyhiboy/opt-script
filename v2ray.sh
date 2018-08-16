@@ -159,7 +159,7 @@ fi
 echo 'V2Ray 一键安装|配置脚本 Author：Kirito && 雨落无声'
 
 echo ''
-echo '此脚本会关闭iptables防火墙，切勿用于生产环境！'
+echo '此脚本会关闭iptables防火墙（可选项），切勿用于生产环境！'
 
 while :; do echo
 	read -p "输入用户等级（自用请输入1，共享请输入0）:" level
