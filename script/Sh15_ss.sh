@@ -119,6 +119,8 @@ ss_sub1=`nvram get ss_sub1`
 ss_sub2=`nvram get ss_sub2`
 ss_sub3=`nvram get ss_sub3`
 ss_sub4=`nvram get ss_sub4`
+ss_sub5=`nvram get ss_sub5`
+ss_sub6=`nvram get ss_sub6`
 
 ss_tochina_enable=`nvram get ss_tochina_enable`
 [ -z $ss_tochina_enable ] && ss_tochina_enable=0 && nvram set ss_tochina_enable=$ss_tochina_enable
@@ -1602,7 +1604,7 @@ fi
 	#处理订阅了加速列表的域名
 if [ "$ss_3p_enable" = "1" ] ; then
 	if [ "$ss_sub1" = "1" ] ; then
-		logger -t "【SS】" "处理订阅列表1...."
+		logger -t "【SS】" "处理订阅列表1....海外加速"
 		wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt N
 		cat /tmp/ss/tmp_sub.txt |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
@@ -1610,7 +1612,7 @@ if [ "$ss_3p_enable" = "1" ] ; then
 	fi
 	#处理只做dns解释的域名
 	if [ "$ss_sub2" = "1" ] ; then
-		logger -t "【SS】" "处理订阅列表2...."
+		logger -t "【SS】" "处理订阅列表2....处理只做dns解释的域名"
 		wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt N
 		cat /tmp/ss/tmp_sub.txt |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
@@ -1618,7 +1620,7 @@ if [ "$ss_3p_enable" = "1" ] ; then
 	fi
 	#处理需要排除的域名解释
 	if [ "$ss_sub3" = "1" ] ; then
-		logger -t "【SS】" "处理订阅列表3...."
+		logger -t "【SS】" "处理订阅列表3....处理需要排除的域名解释"
 		DNS=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ -z "$DNS" ] && DNS="114.114.114.114"
 	awk_cmd="awk '{printf(\"server=/%s/$DNS\\n\", \$1 )}'  >> $confdir/r.sub.conf"
@@ -2183,7 +2185,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart

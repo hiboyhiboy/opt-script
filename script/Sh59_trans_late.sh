@@ -370,7 +370,7 @@ chmod 777 -R "/opt/app/translate/"
 /etc/storage/www_sh/menu_title.sh
 killall httpd 
 killall -9 httpd 
-/usr/sbin/httpd -p $http_lanport
+#/usr/sbin/httpd -p $http_lanport
 
 }
 
