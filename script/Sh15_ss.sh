@@ -121,6 +121,8 @@ ss_sub3=`nvram get ss_sub3`
 ss_sub4=`nvram get ss_sub4`
 ss_sub5=`nvram get ss_sub5`
 ss_sub6=`nvram get ss_sub6`
+ss_sub7=`nvram get ss_sub7`
+ss_sub8=`nvram get ss_sub8`
 
 ss_tochina_enable=`nvram get ss_tochina_enable`
 [ -z $ss_tochina_enable ] && ss_tochina_enable=0 && nvram set ss_tochina_enable=$ss_tochina_enable
@@ -1529,6 +1531,18 @@ _CONF
 	restart_dhcpd
 	ss_updatess2=`nvram get ss_updatess2`
 if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
+	if [ ! -z "$ss_sub5" ] ; then
+		logger -t "【SS】" "正在获取 GFW 自定义域名 列表...."
+		wgetcurl.sh /tmp/ss/gfwdomain_5.txt $ss_sub5 $ss_sub5 Y
+		cat /tmp/ss/gfwdomain_5.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_5_1.txt
+		grep -v '^#' /tmp/ss/gfwdomain_5_1.txt | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss/gfwdomain_5.txt
+		rm -f /tmp/ss/gfwdomain_5_1.txt
+	fi
+	if [ ! -z "$ss_sub6" ] ; then
+		logger -t "【SS】" "正在获取 GFW IP 列表...."
+		wgetcurl.sh /tmp/ss/gfwdomain_6.txt $ss_sub6 $ss_sub6 Y
+		grep -v '^#' /tmp/ss/gfwdomain_6.txt | sort -u | grep -v "^$" | sed -e "s/^/-A ss_spec_dst_fw &/g" | ipset -R -!
+	fi
 	if [ "$ss_3p_enable" = "1" ] ; then
 		if [ "$ss_3p_gfwlist" = "1" ] ; then
 			logger -t "【SS】" "正在获取官方 gfwlist...."
@@ -1544,19 +1558,17 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 		if [ "$ss_3p_kool" = "1" ] ; then
 			# 2 获取koolshare.github.io/maintain_files/gfwlist.conf
 			logger -t "【SS】" "正在获取 koolshare 列表...."
-			wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/koolshare/koolshare.github.io/acelan_softcenter_ui/maintain_files/gfwlist.conf https://raw.githubusercontent.com/koolshare/koolshare.github.io/acelan_softcenter_ui/maintain_files/gfwlist.conf N
+			wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf N 5
 			cat /tmp/ss/gfwdomain_tmp.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_1.txt
-			# wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/koolshare/koolshare.github.io/master/maintain_files/gfwlist.conf https://raw.githubusercontent.com/koolshare/koolshare.github.io/master/maintain_files/gfwlist.conf N
-			# cat /tmp/ss/gfwdomain_tmp.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_2.txt
 		fi
-		rm -rf /tmp/ss/gfwdomain_tmp.txt
 		# /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwdomain_2.txt 、koolshare以及自定义列表
 	fi
+	rm -rf /tmp/ss/gfwdomain_tmp.txt
 	#合并多个域名列表（自定义域名，GFWLIST，自带的三个列表）
-	logger -t "【SS】" "根据选项不同，分别会合并固件自带、gfwlist官方...."
+	logger -t "【SS】" "根据选项不同，分别会合并固件自带、gfwlist官方、订阅下载地址自定义域名 ...."
 	touch /etc/storage/shadowsocks_mydomain_script.sh
 	cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u > /tmp/ss/gfwdomain_0.txt
-	cat /etc/storage/basedomain.txt /tmp/ss/gfwdomain_0.txt /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwlist_domain.txt | 
+	cat /etc/storage/basedomain.txt /tmp/ss/gfwdomain_0.txt /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwlist_domain.txt /tmp/ss/gfwdomain_5.txt | 
 		sort -u > /tmp/ss/gfwall_domain.txt
 else
 	logger -t "【SS】" "启动时使用 固件内置list规则 列表...."
@@ -1695,11 +1707,23 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 		echo ss_spec_dst_sh
 		# wget --no-check-certificate -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > /tmp/ss/chnroute.txt
 		# echo ""  >> /tmp/ss/chnroute.txt
-		wgetcurl.sh /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt N
+		wgetcurl.sh /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt N 5
 		cat /tmp/ss/tmp_chnroute.txt > /tmp/ss/chnroute.txt
 		echo ""  >> /tmp/ss/chnroute.txt
-		wgetcurl.sh /tmp/ss/tmp_chnroute.txt "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt"
+		wgetcurl.sh /tmp/ss/tmp_chnroute.txt "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt" N 5
 		cat /tmp/ss/tmp_chnroute.txt >> /tmp/ss/chnroute.txt
+		if [ ! -z "$ss_sub7" ] ; then
+			logger -t "【SS】" "正在获取 ① 大陆白名单 IP 下载地址...."
+			wgetcurl.sh /tmp/ss/tmp_chnroute.txt $ss_sub7 $ss_sub7 Y
+			cat /tmp/ss/tmp_chnroute.txt >> /tmp/ss/chnroute.txt
+			echo ""  >> /tmp/ss/chnroute.txt
+		fi
+		if [ ! -z "$ss_sub8" ] ; then
+			logger -t "【SS】" "正在获取 ② 大陆白名单 IP 下载地址...."
+			wgetcurl.sh /tmp/ss/tmp_chnroute.txt $ss_sub8 $ss_sub8 Y
+			cat /tmp/ss/tmp_chnroute.txt >> /tmp/ss/chnroute.txt
+			echo ""  >> /tmp/ss/chnroute.txt
+		fi
 		[ ! -s /tmp/ss/chnroute.txt ] && logger -t "【SS】" "使用 固件内置chnroutes规则 列表...." && cat /etc/storage/china_ip_list.txt > /tmp/ss/chnroute.txt
 else
 		logger -t "【SS】" "启动时使用 固件内置chnroutes规则 列表...."
@@ -1720,7 +1744,7 @@ fi
 		DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="114.114.114.114"
 		if [ ! -s /tmp/ss/accelerated-domains.china.conf ] ; then
-			wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
+			wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt" Y 5
 		else
 			[ -s /tmp/ss/accelerated-domains.china.conf ] && mv -f /tmp/ss/accelerated-domains.china.conf /tmp/ss/tmp_accelerated-domains.china.conf
 			sed -e "s@server=/@@g" -i  /tmp/ss/tmp_accelerated-domains.china.conf
@@ -2185,7 +2209,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart

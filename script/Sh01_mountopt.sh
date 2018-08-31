@@ -188,7 +188,7 @@ AiDisk00 () {
 # 安装ca-certificates
 mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载
 if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
-	logger -t "【opt】" "找不到ca-certificates证书,安装ca-certificates"
+	logger -t "【opt】" "已挂载,找不到ca-certificates证书,安装ca-certificates"
 	mkdir -p /opt/app/ipk/
 	mkdir -p /opt/etc/ssl/certs
 	[ ! -s "/opt/app/ipk/certs.tgz" ] && wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
