@@ -1579,6 +1579,8 @@ else
 fi
 	# 临时添加的域名
 	echo "whatsapp.net" >> /tmp/ss/gfwall_domain.txt
+	echo "nflxvideo.net" >> /tmp/ss/gfwall_domain.txt
+	echo "nflxso.net" >> /tmp/ss/gfwall_domain.txt
 	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
 	#删除忽略的域名
 	while read line
