@@ -185,7 +185,7 @@ nvram set verysync_wan_port_tmp="$verysync_wan_port"
 verysync_upanPath="$upanPath"
 nvram set verysync_upanPath="$upanPath"
 
-eval "$upanPath/verysync/verysync -home $upanPath/verysync/.config -gui-address 0.0.0.0:$verysync_wan_port $cmd_log" &
+eval "$upanPath/verysync/verysync -no-restart -home $upanPath/verysync/.config -gui-address 0.0.0.0:$verysync_wan_port $cmd_log" &
 
 sleep 4
 [ ! -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动成功" && verysync_restart o
