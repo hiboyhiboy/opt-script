@@ -241,7 +241,9 @@ if [ "$ss_enable" != "0" ] ; then
 	if [ "$kcptun_enable" != "0" ] ; then
 		if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
 		resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
+		[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $kcptun_server | grep : | sed -n '1p'`
 		[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
+		[ -z "$resolveip" ] && resolveip=`arNslookup6 $kcptun_server | sed -n '1p'` 
 		kcptun_server=$resolveip
 		else
 		# IPv6
@@ -342,22 +344,27 @@ logger -t "【ss-redir】" "启动所有的 SS 连线, 出现的 SS 日志并不
 logger -t "【SS】" "SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
 [ -z "$ss_server1" ] && { logger -t "【SS】" "[错误!!] SS服务器没有设置"; stop_SS; clean_SS; } 
 if [ -z $(echo $ss_server1 | grep : | grep -v "\.") ] ; then 
-[ ! -z "$ss_server1" ] && ss_s1_ip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
+ss_s1_ip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
+[ -z "$ss_s1_ip" ] && ss_s1_ip=`/usr/bin/resolveip -6 -t 4 $ss_server1 | grep : | sed -n '1p'`
 [ -z "$ss_s1_ip" ] && ss_s1_ip=`arNslookup $ss_server1 | sed -n '1p'` 
+[ -z "$ss_s1_ip" ] && ss_s1_ip=`arNslookup6 $ss_server1 | sed -n '1p'` 
+[ -z "$ss_s1_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS1: $ss_server1 服务器IP，麻烦看看哪里错了？"; clean_SS; } 
 else
 # IPv6
 ss_s1_ip=$ss_server1
 fi
-[ -z "$ss_s1_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS1服务器IP，麻烦看看哪里错了？"; clean_SS; } 
+if [ ! -z "$ss_server2" ] ; then 
 if [ -z $(echo $ss_server2 | grep : | grep -v "\.") ] ; then 
-[ ! -z "$ss_server2" ] && ss_s2_ip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
-[ ! -z "$ss_server2" ] && [ -z "$ss_s2_ip" ] && ss_s2_ip=`arNslookup $ss_server2 | sed -n '1p'`
-[ ! -z "$ss_server2" ] && [ -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS2服务器IP，麻烦看看哪里错了？"; } 
+ss_s2_ip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
+[ -z "$ss_s2_ip" ] && ss_s2_ip=`/usr/bin/resolveip -6 -t 4 $ss_server2 | grep : | sed -n '1p'`
+[ -z "$ss_s2_ip" ] && ss_s2_ip=`arNslookup $ss_server2 | sed -n '1p'`
+[ -z "$ss_s2_ip" ] && ss_s2_ip=`arNslookup6 $ss_server2 | sed -n '1p'`
 else
 # IPv6
 ss_s2_ip=$ss_server2
 fi
-[ ! -z "$ss_s2_ip" ] && ss_ip="$ss_s1_ip,$ss_s2_ip" || ss_ip=$ss_s1_ip
+fi
+[ ! -z "$ss_s2_ip" ] && ss_ip="`echo "$ss_s1_ip" | grep -v ":" `,`echo "$ss_s2_ip" | grep -v ":" `" || ss_ip="`echo "$ss_s1_ip" | grep -v ":" `"
 if [ "$ss_udp_enable" == 1 ] ; then
 ss_usage="$ss_usage -u "
 ss_s2_usage="$ss_s2_usage -u "
@@ -470,7 +477,7 @@ cmd_name="SS_1_redir"
 eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
 if [ ! -z $ss_server2 ] ; then
 	#启动第二个SS 连线
-	[  -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 无法获得 SS 服务器2的IP, 请核查设置"; stop_SS; clean_SS; }
+	[ -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS2: $ss_server2 服务器IP，麻烦看看哪里错了？"; clean_SS; } 
 	logger -t "【SS】" "SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
 	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
 	cmd_name="SS_2_redir"
@@ -618,8 +625,8 @@ if [ "$ss_check" = "1" ] ; then
 		if [ ! -z "$action_ssip" ] ; then
 			logger -t "【ss-redir】" "check_ip 检查 SS 服务器$action_port是否能用"
 			lan_ipaddr=`nvram get lan_ipaddr`
-			[ -z "$kcptun_server" ] && BP_IP="$ss_s1_ip,$ss_s2_ip"
-			[ ! -z "$kcptun_server" ] && BP_IP="$ss_s1_ip,$ss_s2_ip,$kcptun_server"
+			[ -z "$kcptun_server" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":" `,`echo "$ss_s2_ip" | grep -v ":" `"
+			[ ! -z "$kcptun_server" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":" `,`echo "$ss_s2_ip" | grep -v ":" `,`echo "$kcptun_server" | grep -v ":" `"
 			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,5353' -o -O
 			sleep 1
 			check=0
@@ -1289,6 +1296,7 @@ while [ ! -s /tmp/arNslookup/$$ ] ; do
 		[ $I -lt 0 ] && break
 		sleep 1
 done
+killall nslookup
 if [ -s /tmp/arNslookup/$$ ] ; then
 cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
 rm -f /tmp/arNslookup/$$
@@ -1308,6 +1316,22 @@ else
 fi
 }
 
+arNslookup6() {
+mkdir -p /tmp/arNslookup
+nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep ":" > /tmp/arNslookup/$$ &
+I=5
+while [ ! -s /tmp/arNslookup/$$ ] ; do
+		I=$(($I - 1))
+		[ $I -lt 0 ] && break
+		sleep 1
+done
+killall nslookup
+if [ -s /tmp/arNslookup/$$ ] ; then
+	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
+	rm -f /tmp/arNslookup/$$
+fi
+}
+
 gen_special_purpose_ip() {
 #处理肯定不走通道的目标网段
 lan_ipaddr=`nvram get lan_ipaddr`
@@ -1317,7 +1341,9 @@ kcptun_server=`nvram get kcptun_server`
 if [ "$kcptun_enable" != "0" ] && [ -z "$kcptun_server" ] ; then
 if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
+[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $kcptun_server | grep : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup6 $kcptun_server | sed -n '1p'` 
 kcptun_server=$resolveip
 else
 # IPv6
@@ -1328,17 +1354,21 @@ fi
 if [ "$ss_enable" != "0" ] && [ -z "$ss_s1_ip" ] ; then
 if [ -z $(echo $ss_server1 | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
+[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $ss_server1 | grep : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $ss_server1 | sed -n '1p'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup6 $ss_server1 | sed -n '1p'` 
 ss_s1_ip=$resolveip
 else
 # IPv6
 ss_s1_ip=$ss_server1
 fi
 fi
-if [ ! -z "$ss_server2" ] ; then
+if [ ! -z "$ss_server2" ] && [ -z "$ss_s2_ip" ]  ; then
 if [ -z $(echo $ss_server2 | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
+[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $ss_server2 | grep : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $ss_server2 | sed -n '1p'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup6 $ss_server2 | sed -n '1p'` 
 ss_s2_ip=$resolveip
 else
 # IPv6
@@ -1353,6 +1383,10 @@ if [ "$v2ray_enable" != "0" ] && [ ! -z "$server_addresses" ] ; then
 else
 	v2ray_server_addresses=""
 fi
+ss_s1_ip_echo="`echo "$ss_s1_ip" | grep -v ":" `"
+ss_s2_ip_echo="`echo "$ss_s2_ip" | grep -v ":" `"
+kcptun_server_echo="`echo "$kcptun_server" | grep -v ":" `"
+v2ray_server_addresses_echo="`echo "$v2ray_server_addresses" | grep -v ":" `"
 	cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 0.0.0.0/8
 10.0.0.0/8
@@ -1378,10 +1412,10 @@ fi
 188.188.188.188
 110.110.110.110
 $lan_ipaddr
-$ss_s1_ip
-$ss_s2_ip
-$kcptun_server
-$v2ray_server_addresses
+$ss_s1_ip_echo
+$ss_s2_ip_echo
+$kcptun_server_echo
+$v2ray_server_addresses_echo
 EOF
 }
 

@@ -193,7 +193,9 @@ logger -t "【kcptun】" "运行 kcptun_script"
 
 if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
+[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $kcptun_server | grep : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup6 $kcptun_server | sed -n '1p'` 
 kcptun_s_server=$resolveip
 else
 # IPv6
@@ -243,6 +245,7 @@ while [ ! -s /tmp/arNslookup/$$ ] ; do
 		[ $I -lt 0 ] && break
 		sleep 1
 done
+killall nslookup 
 if [ -s /tmp/arNslookup/$$ ] ; then
 cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
 rm -f /tmp/arNslookup/$$
@@ -262,6 +265,21 @@ else
 fi
 }
 
+arNslookup6() {
+mkdir -p /tmp/arNslookup
+nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep ":" > /tmp/arNslookup/$$ &
+I=5
+while [ ! -s /tmp/arNslookup/$$ ] ; do
+		I=$(($I - 1))
+		[ $I -lt 0 ] && break
+		sleep 1
+done
+killall nslookup 
+if [ -s /tmp/arNslookup/$$ ] ; then
+	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
+	rm -f /tmp/arNslookup/$$
+fi
+}
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return

@@ -767,6 +767,9 @@ else
 ss_s2_ip=$ss_server2
 fi
 fi
+ss_s1_ip_echo="`echo "$ss_s1_ip" | grep -v ":" `"
+ss_s2_ip_echo="`echo "$ss_s2_ip" | grep -v ":" `"
+kcptun_server_echo="`echo "$kcptun_server" | grep -v ":" `"
 cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 0.0.0.0/8
 10.0.0.0/8
@@ -790,9 +793,9 @@ cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 255.255.255.255
 213.183.51.102
 $lan_ipaddr
-$ss_s1_ip
-$ss_s2_ip
-$kcptun_server
+$ss_s1_ip_echo
+$ss_s2_ip_echo
+$kcptun_server_echo
 EOF
 
 }
