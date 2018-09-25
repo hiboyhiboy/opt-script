@@ -211,12 +211,14 @@ query_recordid() {
 }
 
 update_record() {
-	hostIP_tmp=$(enc "$hostIP")
+	#hostIP_tmp=$(enc "$hostIP")
+	hostIP_tmp="$hostIP"
 	send_request "RecordModify" "domain=$domain&recordId=$1&recordLine=默认&recordType=$domain_type&subDomain=$name1&ttl=$qcloud_ttl&value=$hostIP_tmp"
 }
 
 add_record() {
-	hostIP_tmp=$(enc "$hostIP")
+	#hostIP_tmp=$(enc "$hostIP")
+	hostIP_tmp="$hostIP"
 	send_request "RecordCreate" "domain=$domain&recordLine=默认&recordType=$domain_type&subDomain=$name1&ttl=$qcloud_ttl&value=$hostIP_tmp"
 }
 
