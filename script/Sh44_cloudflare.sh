@@ -214,6 +214,11 @@ arNslookup() {
 arDdnsUpdate() {
 host_tmp=$1
 domian_tmp=$2
+I=3
+RECORD_ID=""
+while [ "$RECORD_ID" = "" ] ; do
+	I=$(($I - 1))
+	[ $I -lt 0 ] && break
 # 获得Zone_ID
 get_Zone_ID $host_tmp
 # 获得记录ID
@@ -235,6 +240,8 @@ if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 	RECORD_ID=""
 fi
 #echo "RECORD ID: $RECORD_ID"
+sleep 1
+done
 if [ "$IPv6" = "1" ]; then
 	domain_type="AAAA"
 else

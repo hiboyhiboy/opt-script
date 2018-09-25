@@ -193,12 +193,19 @@ arApiPost() {
 # 参数: 主域名 子域名
 arDdnsUpdate() {
 	local domainID recordID recordRS recordCD recordIP
+I=3
+recordID=""
+while [ "$recordID" = "" ] ; do
+	I=$(($I - 1))
+	[ $I -lt 0 ] && break
 	# 获得域名ID
 	domainID=$(arApiPost "Domain.Info" "domain=${1}")
 	domainID=$(echo $domainID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
+	sleep 1
 	# 获得记录ID
 	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
 	recordID=$(echo $recordID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+done
 	#echo "更新记录信息 recordID: " $recordID
 	if [ "$IPv6" = "1" ]; then
 		domain_type="AAAA"

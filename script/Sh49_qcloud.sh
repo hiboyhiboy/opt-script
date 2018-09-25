@@ -41,32 +41,32 @@ qcloud_restart () {
 
 relock="/var/lock/qcloud_restart.lock"
 if [ "$1" = "o" ] ; then
-    nvram set qcloud_renum="0"
-    [ -f $relock ] && rm -f $relock
-    return 0
+	nvram set qcloud_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
 fi
 if [ "$1" = "x" ] ; then
-    if [ -f $relock ] ; then
-        logger -t "【qcloud】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-        exit 0
-    fi
-    qcloud_renum=${qcloud_renum:-"0"}
-    qcloud_renum=`expr $qcloud_renum + 1`
-    nvram set qcloud_renum="$qcloud_renum"
-    if [ "$qcloud_renum" -gt "2" ] ; then
-        I=19
-        echo $I > $relock
-        logger -t "【qcloud】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-        while [ $I -gt 0 ]; do
-            I=$(($I - 1))
-            echo $I > $relock
-            sleep 60
-            [ "$(nvram get qcloud_renum)" = "0" ] && exit 0
-            [ $I -lt 0 ] && break
-        done
-        nvram set qcloud_renum="0"
-    fi
-    [ -f $relock ] && rm -f $relock
+	if [ -f $relock ] ; then
+		logger -t "【qcloud】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	qcloud_renum=${qcloud_renum:-"0"}
+	qcloud_renum=`expr $qcloud_renum + 1`
+	nvram set qcloud_renum="$qcloud_renum"
+	if [ "$qcloud_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【qcloud】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get qcloud_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set qcloud_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
 fi
 nvram set qcloud_status=0
 eval "$scriptfilepath &"
@@ -79,10 +79,10 @@ A_restart=`nvram get qcloud_status`
 B_restart="$qcloud_enable$qcloud_interval$qcloud_ak$qcloud_sk$qcloud_domain$qcloud_name$qcloud_domain2$qcloud_name2$qcloud_domain6$qcloud_name6$qcloud_ttl$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
-    nvram set qcloud_status=$B_restart
-    needed_restart=1
+	nvram set qcloud_status=$B_restart
+	needed_restart=1
 else
-    needed_restart=0
+	needed_restart=0
 fi
 }
 
@@ -90,17 +90,17 @@ qcloud_check () {
 
 qcloud_get_status
 if [ "$qcloud_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-    [ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【qcloud动态域名】" "停止 qcloud" && qcloud_close
-    { kill_ps "$scriptname" exit0; exit 0; }
+	[ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【qcloud动态域名】" "停止 qcloud" && qcloud_close
+	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$qcloud_enable" = "1" ] ; then
-    if [ "$needed_restart" = "1" ] ; then
-        qcloud_close
-        eval "$scriptfilepath keep &"
-        exit 0
-    else
-        [ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] || [ ! -s "`which curl`" ] && qcloud_restart
-    fi
+	if [ "$needed_restart" = "1" ] ; then
+		qcloud_close
+		eval "$scriptfilepath keep &"
+		exit 0
+	else
+		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] || [ ! -s "`which curl`" ] && qcloud_restart
+	fi
 fi
 }
 
@@ -115,7 +115,7 @@ sleep $qcloud_interval
 qcloud_enable=`nvram get qcloud_enable`
 [ "$qcloud_enable" = "0" ] && qcloud_close && exit 0;
 if [ "$qcloud_enable" = "1" ] ; then
-    qcloud_start
+	qcloud_start
 fi
 done
 }
@@ -130,193 +130,200 @@ kill_ps "$scriptname"
 qcloud_start () {
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-    logger -t "【qcloud动态域名】" "找不到 curl ，安装 opt 程序"
-    /tmp/script/_mountopt optwget
-    #initopt
-    curltest=`which curl`
-    if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-        logger -t "【qcloud动态域名】" "找不到 curl ，需要手动安装 opt 后输入[opkg install curl]安装"
-        logger -t "【qcloud动态域名】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && qcloud_restart x
-    else
-        qcloud_restart o
-    fi
+	logger -t "【qcloud动态域名】" "找不到 curl ，安装 opt 程序"
+	/tmp/script/_mountopt optwget
+	#initopt
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		logger -t "【qcloud动态域名】" "找不到 curl ，需要手动安装 opt 后输入[opkg install curl]安装"
+		logger -t "【qcloud动态域名】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && qcloud_restart x
+	else
+		qcloud_restart o
+	fi
 fi
 IPv6=0
 if [ "$qcloud_domain"x != "x" ] ; then
-    sleep 1
-    timestamp=`date +%s`
-    qcloud_record_id=""
-    domain="$qcloud_domain"
-    name="$qcloud_name"
-    arDdnsCheck $qcloud_domain $qcloud_name
+	sleep 1
+	timestamp=`date +%s`
+	qcloud_record_id=""
+	domain="$qcloud_domain"
+	name="$qcloud_name"
+	arDdnsCheck $qcloud_domain $qcloud_name
 fi
 if [ "$qcloud_domain2"x != "x" ] ; then
-    sleep 1
-    timestamp=`date +%s`
-    qcloud_record_id=""
-    domain="$qcloud_domain2"
-    name="$qcloud_name2"
-    arDdnsCheck $qcloud_domain2 $qcloud_name2
+	sleep 1
+	timestamp=`date +%s`
+	qcloud_record_id=""
+	domain="$qcloud_domain2"
+	name="$qcloud_name2"
+	arDdnsCheck $qcloud_domain2 $qcloud_name2
 fi
 if [ "$qcloud_domain6"x != "x" ] ; then
-    IPv6=1
-    sleep 1
-    timestamp=`date +%s`
-    qcloud_record_id=""
-    domain="$qcloud_domain6"
-    name="$qcloud_name6"
-    arDdnsCheck $qcloud_domain6 $qcloud_name6
+	IPv6=1
+	sleep 1
+	timestamp=`date +%s`
+	qcloud_record_id=""
+	domain="$qcloud_domain6"
+	name="$qcloud_name6"
+	arDdnsCheck $qcloud_domain6 $qcloud_name6
 fi
 
 }
 
 urlencode() {
-    # urlencode <string>
-    out=""
-    while read -n1 c
-    do
-        case $c in
-            [a-zA-Z0-9._-]) out="$out$c" ;;
-            *) out="$out`printf '%%%02X' "'$c"`" ;;
-        esac
-    done
-    echo -n $out
+	# urlencode <string>
+	out=""
+	while read -n1 c
+	do
+		case $c in
+			[a-zA-Z0-9._-]) out="$out$c" ;;
+			*) out="$out`printf '%%%02X' "'$c"`" ;;
+		esac
+	done
+	echo -n $out
 }
 
 enc() {
-    echo -n "$1" | urlencode
+	echo -n "$1" | urlencode
 }
 
 send_request() {
-    local random=`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`
-    local args="Action=$1&Nonce=""`echo ${random:0:5}`""&SecretId=$qcloud_ak&SignatureMethod=HmacSHA1&Timestamp=$timestamp&$2"
-    local hash=$(echo -n "GETcns.api.qcloud.com/v2/index.php?$args" | openssl dgst -sha1 -hmac "$qcloud_sk" -binary | openssl base64)
-    curl -s "https://cns.api.qcloud.com/v2/index.php?$args&Signature=$(enc "$hash")"
+	local random=`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`
+	local args="Action=$1&Nonce=""`echo ${random:0:5}`""&SecretId=$qcloud_ak&SignatureMethod=HmacSHA1&Timestamp=$timestamp&$2"
+	local hash=$(echo -n "GETcns.api.qcloud.com/v2/index.php?$args" | openssl dgst -sha1 -hmac "$qcloud_sk" -binary | openssl base64)
+	curl -s "https://cns.api.qcloud.com/v2/index.php?$args&Signature=$(enc "$hash")"
 }
 
 get_recordid() {
-    grep -Eo '"id":[0-9]+' | cut -d':' -f2 | tr -d '"' |head -n1
+	grep -Eo '"id":[0-9]+' | cut -d':' -f2 | tr -d '"' |head -n1
 }
 
 get_recordIP() {
-    grep -Eo '"value":"[^"]*"' | awk -F 'value":"' '{print $2}' | tr -d '"' |head -n1
+	grep -Eo '"value":"[^"]*"' | awk -F 'value":"' '{print $2}' | tr -d '"' |head -n1
 }
 
 get_codeDesc() {
-    grep -Eo '"codeDesc":"[^"]*"' | awk -F 'codeDesc":"' '{print $2}' | tr -d '"' |head -n1
+	grep -Eo '"codeDesc":"[^"]*"' | awk -F 'codeDesc":"' '{print $2}' | tr -d '"' |head -n1
 }
 
 query_recordid() {
-    send_request "RecordList" "domain=$domain&subDomain=$name1"
+	send_request "RecordList" "domain=$domain&subDomain=$name1"
 }
 
 update_record() {
-    send_request "RecordModify" "domain=$domain&recordId=$1&recordLine=默认&recordType=$domain_type&subDomain=$name1&ttl=$qcloud_ttl&value=$hostIP"
+	hostIP_tmp=$(enc "$hostIP")
+	send_request "RecordModify" "domain=$domain&recordId=$1&recordLine=默认&recordType=$domain_type&subDomain=$name1&ttl=$qcloud_ttl&value=$hostIP_tmp"
 }
 
 add_record() {
-    send_request "RecordCreate" "domain=$domain&recordLine=默认&recordType=$domain_type&subDomain=$name1&ttl=$qcloud_ttl&value=$hostIP"
+	hostIP_tmp=$(enc "$hostIP")
+	send_request "RecordCreate" "domain=$domain&recordLine=默认&recordType=$domain_type&subDomain=$name1&ttl=$qcloud_ttl&value=$hostIP_tmp"
 }
 
 arDdnsInfo() {
 case  $name  in
-      \*)
-        name1=%2A
-        ;;
-      \@)
-        name1=%40
-        ;;
-      *)
-        name1=$name
-        ;;
+	  \*)
+		name1=%2A
+		;;
+	  \@)
+		name1=%40
+		;;
+	  *)
+		name1=$name
+		;;
 esac
 
-    sleep 1
-    timestamp=`date +%s`
-    # 获得最后更新IP
-    recordIP=`query_recordid | get_recordIP`
-    
-    if [ "$IPv6" = "1" ]; then
-    echo $recordIP
-    return 0
-    else
-    # Output IP
-    case "$recordIP" in 
-    [1-9][0-9]*)
-        echo $recordIP
-        return 0
-        ;;
-    *)
-        echo "Get Record Info Failed!"
-        #logger -t "【qcloud动态域名】" "获取记录信息失败！"
-        return 1
-        ;;
-    esac
-    fi
+	sleep 1
+	timestamp=`date +%s`
+	# 获得最后更新IP
+	recordIP=`query_recordid | get_recordIP`
+	
+	if [ "$IPv6" = "1" ]; then
+	echo $recordIP
+	return 0
+	else
+	# Output IP
+	case "$recordIP" in 
+	[1-9][0-9]*)
+		echo $recordIP
+		return 0
+		;;
+	*)
+		echo "Get Record Info Failed!"
+		#logger -t "【qcloud动态域名】" "获取记录信息失败！"
+		return 1
+		;;
+	esac
+	fi
 }
 
 # 查询域名地址
 # 参数: 待查询域名
 arNslookup() {
-    curltest=`which curl`
-    if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-        Address="`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
-        if [ $? -eq 0 ]; then
-        echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+'
-        fi
-    else
-        Address="`curl -k http://119.29.29.29/d?dn=$1`"
-        if [ $? -eq 0 ]; then
-        echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+'
-        fi
-    fi
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		Address="`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
+		if [ $? -eq 0 ]; then
+		echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+'
+		fi
+	else
+		Address="`curl -k http://119.29.29.29/d?dn=$1`"
+		if [ $? -eq 0 ]; then
+		echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+'
+		fi
+	fi
 }
 
 # 更新记录信息
 # 参数: 主域名 子域名
 arDdnsUpdate() {
 case  $name  in
-      \*)
-        name1=%2A
-        ;;
-      \@)
-        name1=%40
-        ;;
-      *)
-        name1=$name
-        ;;
+	  \*)
+		name1=%2A
+		;;
+	  \@)
+		name1=%40
+		;;
+	  *)
+		name1=$name
+		;;
 esac
-    if [ "$IPv6" = "1" ]; then
-        domain_type="AAAA"
-    else
-        domain_type="A"
-    fi
-    # 获得记录ID
-    timestamp=`date +%s`
-    qcloud_record_id=""
-    qcloud_record_id=`query_recordid | get_recordid`
-    echo "recordID $qcloud_record_id"
-    sleep 1
-    timestamp=`date +%s`
+	if [ "$IPv6" = "1" ]; then
+		domain_type="AAAA"
+	else
+		domain_type="A"
+	fi
+I=3
+qcloud_record_id=""
+while [ "$qcloud_record_id" = "" ] ; do
+	I=$(($I - 1))
+	[ $I -lt 0 ] && break
+	# 获得记录ID
+	timestamp=`date +%s`
+	qcloud_record_id=`query_recordid | get_recordid`
+	echo "recordID $qcloud_record_id"
+	sleep 1
+done
+	timestamp=`date +%s`
 if [ "$qcloud_record_id" = "" ] ; then
-    qcloud_record_id=`add_record | get_codeDesc`
-    echo "added record $qcloud_record_id"
-    logger -t "【qcloud动态域名】" "添加的记录  $qcloud_record_id"
+	qcloud_record_id=`add_record | get_codeDesc`
+	echo "added record $qcloud_record_id"
+	logger -t "【qcloud动态域名】" "添加的记录  $qcloud_record_id"
 else
-    qcloud_record_id=`update_record $qcloud_record_id | get_codeDesc`
-    echo "updated record $qcloud_record_id"
-    logger -t "【qcloud动态域名】" "更新的记录  $qcloud_record_id"
+	qcloud_record_id=`update_record $qcloud_record_id | get_codeDesc`
+	echo "updated record $qcloud_record_id"
+	logger -t "【qcloud动态域名】" "更新的记录  $qcloud_record_id"
 fi
 # save to file
 if [ "$qcloud_record_id" != "Success" ] ; then
-    # failed
-    nvram set qcloud_last_act="`date "+%Y-%m-%d %H:%M:%S"`   更新失败"
-    logger -t "【qcloud动态域名】" "更新失败"
-    return 1
+	# failed
+	nvram set qcloud_last_act="`date "+%Y-%m-%d %H:%M:%S"`   更新失败"
+	logger -t "【qcloud动态域名】" "更新失败"
+	return 1
 else
-    nvram set qcloud_last_act="`date "+%Y-%m-%d %H:%M:%S"`   成功更新：$hostIP"
-    logger -t "【qcloud动态域名】" "成功更新： $hostIP"
-    return 0
+	nvram set qcloud_last_act="`date "+%Y-%m-%d %H:%M:%S"`   成功更新：$hostIP"
+	logger -t "【qcloud动态域名】" "成功更新： $hostIP"
+	return 0
 fi
 
 }
@@ -324,68 +331,68 @@ fi
 # 动态检查更新
 # 参数: 主域名 子域名
 arDdnsCheck() {
-    local postRS
-    local lastIP
-    source /etc/storage/ddns_script.sh
-    hostIP=$arIpAddress
+	local postRS
+	local lastIP
+	source /etc/storage/ddns_script.sh
+	hostIP=$arIpAddress
 	hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`
-    if [ -z $(echo "$hostIP" | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
-        IPv6=0
-        logger -t "【qcloud动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
-        return 1
-    fi
-    if [ "$hostIP"x = "x"  ] ; then
-        curltest=`which curl`
-        if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-            hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net/" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-            [ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-        else
-            hostIP=`curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-            [ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-        fi
-        if [ "$hostIP"x = "x"  ] ; then
-            logger -t "【qcloud动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
-            return 1
-        fi
-    fi
-    echo "Updating Domain: ${2}.${1}"
-    echo "hostIP: ${hostIP}"
-    lastIP=$(arDdnsInfo "$1 $2")
-    if [ $? -eq 1 ]; then
-        lastIP=$(arNslookup "${2}.${1}")
-    fi
-    echo "lastIP: ${lastIP}"
-    if [ "$lastIP" != "$hostIP" ] ; then
-        logger -t "【qcloud动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
-        logger -t "【qcloud动态域名】" "目前 IP: ${hostIP}"
-        logger -t "【qcloud动态域名】" "上次 IP: ${lastIP}"
-        sleep 1
-        postRS=$(arDdnsUpdate $1 $2)
-        if [ $? -eq 0 ]; then
-            echo "postRS: ${postRS}"
-            logger -t "【qcloud动态域名】" "更新动态DNS记录成功！"
-            return 0
-        else
-            echo ${postRS}
-            logger -t "【qcloud动态域名】" "更新动态DNS记录失败！请检查您的网络。"
-            if [ "$IPv6" = "1" ] ; then 
-                IPv6=0
-                logger -t "【qcloud动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
-                return 1
-            fi
-            return 1
-        fi
-    fi
-    echo ${lastIP}
-    echo "Last IP is the same as current IP!"
-    return 1
+	if [ -z $(echo "$hostIP" | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
+		IPv6=0
+		logger -t "【qcloud动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+		return 1
+	fi
+	if [ "$hostIP"x = "x"  ] ; then
+		curltest=`which curl`
+		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+			hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net/" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+		else
+			hostIP=`curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+		fi
+		if [ "$hostIP"x = "x"  ] ; then
+			logger -t "【qcloud动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
+			return 1
+		fi
+	fi
+	echo "Updating Domain: ${2}.${1}"
+	echo "hostIP: ${hostIP}"
+	lastIP=$(arDdnsInfo "$1 $2")
+	if [ $? -eq 1 ]; then
+		lastIP=$(arNslookup "${2}.${1}")
+	fi
+	echo "lastIP: ${lastIP}"
+	if [ "$lastIP" != "$hostIP" ] ; then
+		logger -t "【qcloud动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
+		logger -t "【qcloud动态域名】" "目前 IP: ${hostIP}"
+		logger -t "【qcloud动态域名】" "上次 IP: ${lastIP}"
+		sleep 1
+		postRS=$(arDdnsUpdate $1 $2)
+		if [ $? -eq 0 ]; then
+			echo "postRS: ${postRS}"
+			logger -t "【qcloud动态域名】" "更新动态DNS记录成功！"
+			return 0
+		else
+			echo ${postRS}
+			logger -t "【qcloud动态域名】" "更新动态DNS记录失败！请检查您的网络。"
+			if [ "$IPv6" = "1" ] ; then 
+				IPv6=0
+				logger -t "【qcloud动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+				return 1
+			fi
+			return 1
+		fi
+	fi
+	echo ${lastIP}
+	echo "Last IP is the same as current IP!"
+	return 1
 }
 
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-    { echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -431,20 +438,20 @@ initconfig
 
 case $ACTION in
 start)
-    qcloud_close
-    qcloud_check
-    ;;
+	qcloud_close
+	qcloud_check
+	;;
 check)
-    qcloud_check
-    ;;
+	qcloud_check
+	;;
 stop)
-    qcloud_close
-    ;;
+	qcloud_close
+	;;
 keep)
-    qcloud_keep
-    ;;
+	qcloud_keep
+	;;
 *)
-    qcloud_check
-    ;;
+	qcloud_check
+	;;
 esac
 

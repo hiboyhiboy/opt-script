@@ -210,11 +210,13 @@ query_recordid() {
 }
 
 update_record() {
-	send_request "UpdateDomainRecord" "RR=$name1&RecordId=$1&SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&TTL=$aliddns_ttl&Timestamp=$timestamp&Type=$domain_type&Value=$hostIP"
+	hostIP_tmp=$(enc "$hostIP")
+	send_request "UpdateDomainRecord" "RR=$name1&RecordId=$1&SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&TTL=$aliddns_ttl&Timestamp=$timestamp&Type=$domain_type&Value=$hostIP_tmp"
 }
 
 add_record() {
-	send_request "AddDomainRecord&DomainName=$domain" "RR=$name1&SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&TTL=$aliddns_ttl&Timestamp=$timestamp&Type=$domain_type&Value=$hostIP"
+	hostIP_tmp=$(enc "$hostIP")
+	send_request "AddDomainRecord&DomainName=$domain" "RR=$name1&SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&TTL=$aliddns_ttl&Timestamp=$timestamp&Type=$domain_type&Value=$hostIP_tmp"
 }
 
 arDdnsInfo() {
@@ -294,12 +296,17 @@ esac
 	else
 		domain_type="A"
 	fi
+I=3
+aliddns_record_id=""
+while [ "$aliddns_record_id" = "" ] ; do
+	I=$(($I - 1))
+	[ $I -lt 0 ] && break
 	# 获得记录ID
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
-	aliddns_record_id=""
 	aliddns_record_id=`query_recordid | get_recordid`
 	echo "recordID $aliddns_record_id"
 	sleep 1
+done
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 if [ "$aliddns_record_id" = "" ] ; then
 	aliddns_record_id=`add_record | get_recordid`
