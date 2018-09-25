@@ -223,17 +223,7 @@ add_record() {
 }
 
 arDdnsInfo() {
-case  $name  in
-	  \*)
-		name1=%2A
-		;;
-	  \@)
-		name1=%40
-		;;
-	  *)
-		name1=$name
-		;;
-esac
+name1=$name
 
 	sleep 1
 	timestamp=`date +%s`
@@ -279,17 +269,7 @@ arNslookup() {
 # 更新记录信息
 # 参数: 主域名 子域名
 arDdnsUpdate() {
-case  $name  in
-	  \*)
-		name1=%2A
-		;;
-	  \@)
-		name1=%40
-		;;
-	  *)
-		name1=$name
-		;;
-esac
+name1=$name
 	if [ "$IPv6" = "1" ]; then
 		domain_type="AAAA"
 	else
