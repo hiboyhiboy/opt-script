@@ -16,6 +16,8 @@ ARCH=""
 VDIS="64"
 ZIPFILE="/tmp/v2ray/v2ray.zip"
 V2RAY_RUNNING=0
+VSRC_ROOT="/tmp/v2ray"
+EXTRACT_ONLY=0
 
 CMD_INSTALL=""
 CMD_UPDATE=""
@@ -58,6 +60,13 @@ while [[ $# > 0 ]];do
         --version)
         VERSION="$2"
         shift
+        ;;
+        --extract)
+        VSRC_ROOT="$2"
+        shift
+        ;;
+        --extractonly)
+        EXTRACT_ONLY="1"
         ;;
         -l|--local)
         LOCAL="$2"
@@ -175,10 +184,13 @@ getPMT(){
 extract(){
     colorEcho ${BLUE}"Extracting V2Ray package to /tmp/v2ray."
     mkdir -p /tmp/v2ray
-    unzip $1 -d "/tmp/v2ray/"
+    unzip $1 -d ${VSRC_ROOT}
     if [[ $? -ne 0 ]]; then
         colorEcho ${RED} "Failed to extract V2Ray."
         return 2
+    fi
+    if [[ -d "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}" ]]; then
+      VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
     fi
     return 0
 }
@@ -188,6 +200,9 @@ extract(){
 getVersion(){
     if [[ -n "$VERSION" ]]; then
         NEW_VER="$VERSION"
+        if [[ ${NEW_VER} != v* ]]; then
+          NEW_VER=v${NEW_VER}
+        fi
         return 4
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
@@ -241,7 +256,7 @@ startV2ray(){
 
 copyFile() {
     NAME=$1
-    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
+    ERROR=`cp "${VSRC_ROOT}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
     if [[ $? -ne 0 ]]; then
         colorEcho ${YELLOW} "${ERROR}"
         return 1
@@ -270,7 +285,7 @@ installV2Ray(){
     if [[ ! -f "/etc/v2ray/config.json" ]]; then
         mkdir -p /etc/v2ray
         mkdir -p /var/log/v2ray
-        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
+        cp "${VSRC_ROOT}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
         if [[ $? -ne 0 ]]; then
             colorEcho ${YELLOW} "Failed to create V2Ray configuration file. Please create it manually."
             return 1
@@ -292,7 +307,7 @@ installInitScript(){
     if [[ -n "${SYSTEMCTL_CMD}" ]];then
         if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
             if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
-                cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd/v2ray.service" "/etc/systemd/system/"
+                cp "${VSRC_ROOT}/systemd/v2ray.service" "/etc/systemd/system/"
                 systemctl enable v2ray.service
             fi
         fi
@@ -305,7 +320,7 @@ installInitScript(){
 		rm -f /etc/init.d/v2ray
 		check_daemon
 	else
-	        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemv/v2ray" "/etc/init.d/v2ray"
+	        cp "${VSRC_ROOT}/systemv/v2ray" "/etc/init.d/v2ray"
 	        chmod +x "/etc/init.d/v2ray"
 	        update-rc.d v2ray defaults
 	fi
@@ -529,21 +544,22 @@ main(){
     sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
-        echo "Installing V2Ray via local file"
+        colorEcho ${YELLOW} "Installing V2Ray via local file. Please make sure the file is a valid V2Ray package, as we are not able to determine that."
+        NEW_VER=local
         installSoftware unzip || return $?
         rm -rf /tmp/v2ray
         extract $LOCAL || return $?
-        FILEVDIS=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f4`
-        SYSTEM=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f3`
-        if [[ ${SYSTEM} != "linux" ]]; then
-            colorEcho ${RED} "The local V2Ray can not be installed in linux."
-            return 1
-        elif [[ ${FILEVDIS} != ${VDIS} ]]; then
-            colorEcho ${RED} "The local V2Ray can not be installed in ${ARCH} system."
-            return 1
-        else
-            NEW_VER=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f2`
-        fi
+        #FILEVDIS=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f4`
+        #SYSTEM=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f3`
+        #if [[ ${SYSTEM} != "linux" ]]; then
+        #    colorEcho ${RED} "The local V2Ray can not be installed in linux."
+        #    return 1
+        #elif [[ ${FILEVDIS} != ${VDIS} ]]; then
+        #    colorEcho ${RED} "The local V2Ray can not be installed in ${ARCH} system."
+        #    return 1
+        #else
+        #    NEW_VER=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f2`
+        #fi
     else
         # download via network and extract
         installSoftware "curl" || return $?
@@ -561,6 +577,12 @@ main(){
             extract ${ZIPFILE} || return $?
         fi
     fi 
+    
+    if [[ "${EXTRACT_ONLY}" == "1" ]]; then
+        colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
+        return 0
+    fi
+
     if pgrep "v2ray" > /dev/null ; then
         V2RAY_RUNNING=1
         stopV2ray
