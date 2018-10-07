@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-10-1"
+Builds="/etc/storage/Builds-2018-10-7"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -289,7 +289,7 @@ ln -sf /etc/storage/init.status /etc/init.status &
 [ -s /etc/storage/script/init.sh ] && chmod 777 /etc/storage/script -R
 [ ! -s /etc/storage/www_sh/menu_title.sh ] && [ -s /etc_ro/www_sh.tgz ] && tar -xzvf /etc_ro/www_sh.tgz -C /etc/storage/
 [ -s /etc/storage/www_sh/menu_title.sh ] && chmod 777 /etc/storage/www_sh -R
-[ ! -s /etc/storage/bin/daydayup ] && [ -s /etc_ro/daydayup ] && ln -sf /etc_ro/daydayup /etc/storage/bin/daydayup
+#[ ! -s /etc/storage/bin/daydayup ] && [ -s /etc_ro/daydayup ] && ln -sf /etc_ro/daydayup /etc/storage/bin/daydayup
 } &
 	user_hosts="$dir_dnsmasq/hosts"
 	user_dnsmasq_conf="$dir_dnsmasq/dnsmasq.conf"

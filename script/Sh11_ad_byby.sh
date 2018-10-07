@@ -1135,7 +1135,6 @@ update)
 	;;
 update_ad)
 	adbyby_mount
-	adbyby_close
 	rm -rf /tmp/bin/*
 	adbyby_restart o
 	adbyby_restart

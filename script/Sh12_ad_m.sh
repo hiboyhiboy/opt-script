@@ -986,7 +986,6 @@ update)
 	;;
 update_ad)
 	adm_mount
-	adm_close
 	rm -rf /tmp/7620adm/*
 	adm_restart o
 	adm_restart
