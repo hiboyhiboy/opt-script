@@ -180,7 +180,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/chinadns "$hiboyfile/chinadns" "$hiboyfile2/chinadns"
+	wgetcurl.sh /opt/bin/chinadns "$hiboyfile/chinadns2" "$hiboyfile2/chinadns2"
 	chmod 755 "/opt/bin/chinadns"
 else
 	logger -t "【chinadns】" "找到 $SVC_PATH"
