@@ -309,8 +309,8 @@ fi
 # 动态检查更新
 # 参数: 主域名 子域名
 arDdnsCheck() {
-	local postRS
-	local lastIP
+	#local postRS
+	#local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
 	hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`

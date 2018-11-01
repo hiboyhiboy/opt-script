@@ -182,12 +182,12 @@ fi
 # 读取接口数据
 # 参数: 接口类型 待提交数据
 arApiPost() {
-	local agent="AnripDdns/5.07(mail@anrip.com)"
-	local inter="https://dnsapi.cn/${1:?'Info.Version'}"
+	agent="AnripDdns/5.07(mail@anrip.com)"
+	inter="https://dnsapi.cn/${1:?'Info.Version'}"
 	if [ "x${dnspod_Token}" = "x" ] ; then # undefine token
-		local param="login_email=${dnspod_username}&login_password=${dnspod_password}&format=json&${2}"
+		param="login_email=${dnspod_username}&login_password=${dnspod_password}&format=json&${2}"
 	else
-		local param="login_token=${dnspod_Token}&format=json&${2}"
+		param="login_token=${dnspod_Token}&format=json&${2}"
 	fi
 	
 	
@@ -202,7 +202,7 @@ arApiPost() {
 # 更新记录信息
 # 参数: 主域名 子域名
 arDdnsUpdate() {
-	local domainID recordID recordRS recordCD recordIP
+	#local domainID recordID recordRS recordCD recordIP
 I=3
 recordID=""
 while [ "$recordID" = "" ] ; do
@@ -267,8 +267,8 @@ done
 # 动态检查更新
 # 参数: 主域名 子域名
 arDdnsCheck() {
-	local postRS
-	local lastIP
+	#local postRS
+	#local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
 	hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`

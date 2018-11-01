@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-10-7"
+Builds="/etc/storage/Builds-2018-10-28"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -28,7 +28,6 @@ shadowsocks_ss_spec_wan="/etc/storage/shadowsocks_ss_spec_wan.sh"
 ad_config_script="/etc/storage/ad_config_script.sh"
 FastDick_script="/etc/storage/FastDick_script.sh"
 crontabs_script="/etc/storage/crontabs_script.sh"
-kmskey="/etc/storage/key"
 jbls_script="/etc/storage/jbls_script.sh"
 vlmcsdini_script="/etc/storage/vlmcsdini_script.sh"
 DNSPOD_script="/etc/storage/DNSPOD_script.sh"
@@ -242,7 +241,7 @@ func_resetsh()
 		rm -f /etc/storage/v2ray_script.sh /etc/storage/cow_script.sh /etc/storage/meow_script.sh /etc/storage/softether_script.sh
 		
 		#删除内部脚本文件
-		rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $kmskey $DNSPOD_script $cloudxns_script $aliddns_script
+		rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $DNSPOD_script $cloudxns_script $aliddns_script
 		rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
 	fi
 
@@ -445,10 +444,10 @@ mkdir -p /tmp/bwmon
 
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then 
     #已挂载储存设备
@@ -1811,6 +1810,10 @@ client-to-client
 ### Allow clients with duplicate "Common Name"
 ;duplicate-cn
 
+### Legacy LZO adaptive compression
+;comp-lzo adaptive
+;push "comp-lzo adaptive"
+
 ### Keepalive and timeout
 keepalive 10 60
 
@@ -2347,9 +2350,9 @@ if [[ $(cat /tmp/apauto.lock) == 1 ]] ; then
 	/tmp/sh_apauto.sh &
 fi
 [ -d /etc/storage/script ] && chmod 777 /etc/storage/script -R
+/etc/storage/script/Sh01_mountopt.sh upopt
 /etc/storage/script/sh_upscript.sh
 /etc/storage/www_sh/menu_title.sh upver &
-/etc/storage/script/Sh01_mountopt.sh upopt
 /etc/storage/script/Sh01_mountopt.sh libmd5_check
 /tmp/sh_theme.sh &
 run_aria

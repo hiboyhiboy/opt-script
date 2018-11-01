@@ -125,7 +125,7 @@ fi
 }
 
 arDdnsInfo() {
-	local domainID recordID recordIP
+	#local domainID recordID recordIP
 	# 获得域名ID
 	domainID=$(arApiPost "Domain.Info" "domain=${1}")
 	domainID=$(echo $domainID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
@@ -207,9 +207,9 @@ fi
 # 读取接口数据
 # 参数: 接口类型 待提交数据
 arApiPost() {
-	local inter="https://api.dnspod.com/${1:?'Info.Version'}"
+	inter="https://api.dnspod.com/${1:?'Info.Version'}"
 	
-	local param="user_token=${dns_com_pod_user_token}&format=json&${2}"
+	param="user_token=${dns_com_pod_user_token}&format=json&${2}"
 	
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
@@ -222,7 +222,7 @@ arApiPost() {
 # 更新记录信息
 # 参数: 主域名 子域名
 arDdnsUpdate() {
-	local domainID recordID recordRS recordCD recordIP
+	#local domainID recordID recordRS recordCD recordIP
 I=3
 recordID=""
 while [ "$recordID" = "" ] ; do
@@ -287,8 +287,8 @@ done
 # 动态检查更新
 # 参数: 主域名 子域名
 arDdnsCheck() {
-	local postRS
-	local lastIP
+	#local postRS
+	#local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
 	hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`

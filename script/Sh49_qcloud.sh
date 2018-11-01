@@ -188,9 +188,9 @@ enc() {
 }
 
 send_request() {
-	local random=`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`
-	local args="Action=$1&Nonce=""`echo ${random:0:5}`""&SecretId=$qcloud_ak&SignatureMethod=HmacSHA1&Timestamp=$timestamp&$2"
-	local hash=$(echo -n "GETcns.api.qcloud.com/v2/index.php?$args" | openssl dgst -sha1 -hmac "$qcloud_sk" -binary | openssl base64)
+	random=`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`
+	args="Action=$1&Nonce=""`echo ${random:0:5}`""&SecretId=$qcloud_ak&SignatureMethod=HmacSHA1&Timestamp=$timestamp&$2"
+	hash=$(echo -n "GETcns.api.qcloud.com/v2/index.php?$args" | openssl dgst -sha1 -hmac "$qcloud_sk" -binary | openssl base64)
 	curl -s "https://cns.api.qcloud.com/v2/index.php?$args&Signature=$(enc "$hash")"
 }
 
@@ -343,8 +343,8 @@ fi
 # 动态检查更新
 # 参数: 主域名 子域名
 arDdnsCheck() {
-	local postRS
-	local lastIP
+	#local postRS
+	#local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
 	hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`

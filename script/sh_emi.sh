@@ -20,3 +20,5 @@ for i in `ls /etc/storage/script/Sh??_* 2>/dev/null` ; do
 	[ ! -x "${i}" ] && continue
 	eval ${i}
 done
+killall menu_title.sh 
+[ -f /etc/storage/www_sh/menu_title.sh ] && /etc/storage/www_sh/menu_title.sh

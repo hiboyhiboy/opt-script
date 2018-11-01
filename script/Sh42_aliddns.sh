@@ -188,8 +188,8 @@ enc() {
 }
 
 send_request() {
-	local args="AccessKeyId=$aliddns_ak&Action=$1&Format=json&$2&Version=2015-01-09"
-	local hash=$(echo -n "GET&%2F&$(enc "$args")" | openssl dgst -sha1 -hmac "$aliddns_sk&" -binary | openssl base64)
+	args="AccessKeyId=$aliddns_ak&Action=$1&Format=json&$2&Version=2015-01-09"
+	hash=$(echo -n "GET&%2F&$(enc "$args")" | openssl dgst -sha1 -hmac "$aliddns_sk&" -binary | openssl base64)
 	curl -s "http://alidns.aliyuncs.com/?$args&Signature=$(enc "$hash")"
 }
 
@@ -365,8 +365,8 @@ fi
 # 动态检查更新
 # 参数: 主域名 子域名
 arDdnsCheck() {
-	local postRS
-	local lastIP
+	#local postRS
+	#local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
 	hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`

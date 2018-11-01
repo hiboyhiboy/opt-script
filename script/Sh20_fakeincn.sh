@@ -149,7 +149,7 @@ fakeincn_start () {
 
 optssredir="0"
 # SS
-chmod 777 "`which ss-redir`"
+chmod 777 "/usr/sbin/ss-redir"
 	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
 hash ss-redir 2>/dev/null || optssredir="1"
 if [ "$optssredir" != "0" ] ; then

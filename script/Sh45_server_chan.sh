@@ -192,7 +192,7 @@ resub=1
     }
 # 读取最近外网地址
     lastIPAddress() {
-        local inter="/etc/storage/lastIPAddress"
+        inter="/etc/storage/lastIPAddress"
         cat $inter
     }
 
@@ -233,12 +233,12 @@ if [ "$serverchan_notify_1" = "1" ] ; then
             [ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
         fi
     fi
-    local lastIP=$(lastIPAddress)
+    lastIP=$(lastIPAddress)
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
     sleep 60
         hostIP=$(arIpAddress)
         hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`
-        local lastIP=$(lastIPAddress)
+        lastIP=$(lastIPAddress)
     fi
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
         logger -t "【互联网 IP 变动】" "目前 IP: ${hostIP}"
@@ -321,6 +321,7 @@ done
 EEE
 	chmod 755 "$serverchan_script"
 fi
+sed -Ei 's@local @@g' $serverchan_script
 
 }
 

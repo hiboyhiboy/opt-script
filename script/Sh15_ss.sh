@@ -1927,11 +1927,11 @@ optssredir="0"
 if [ "$ss_type" != "1" ] ; then
 # SS
 if [ "$ss_mode_x" != "3" ] ; then
-chmod 777 "`which ss-redir`"
+chmod 777 "/usr/sbin/ss-redir"
 	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
 	hash ss-redir 2>/dev/null || optssredir="1"
 else
-chmod 777 "`which ss-local`"
+chmod 777 "/usr/sbin/ss-local"
 	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="2"
 fi
@@ -1942,7 +1942,7 @@ if [ "$optssredir" = "1" ] ; then
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
-chmod 777 "`which ss-local`"
+chmod 777 "/usr/sbin/ss-local"
 	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="3"
 fi
@@ -1977,11 +1977,11 @@ if [ "$ss_type" = "1" ] ; then
 if [ "$ssrr_type" = "1" ] ; then
 # SSRR
 if [ "$ss_mode_x" != "3" ] ; then
-chmod 777 "`which ssrr-redir`"
+chmod 777 "/opt/bin/ssrr-redir"
 	[[ "$(ssrr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-redir
 	hash ssrr-redir 2>/dev/null || optssredir="1"
 else
-chmod 777 "`which ssrr-local`"
+chmod 777 "/opt/bin/ssrr-local"
 	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
 	hash ssrr-local 2>/dev/null || optssredir="2"
 fi
@@ -1991,7 +1991,7 @@ if [ "$optssredir" = "1" ] ; then
 hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
-chmod 777 "`which ssrr-local`"
+chmod 777 "/opt/bin/ssrr-local"
 	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
 	hash ssrr-local 2>/dev/null || optssredir="3"
 fi
@@ -2004,11 +2004,11 @@ fi
 else
 # SSR
 if [ "$ss_mode_x" != "3" ] ; then
-chmod 777 "`which ssr-redir`"
+chmod 777 "/usr/sbin/ssr-redir"
 	[[ "$(ssr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-redir
 	hash ssr-redir 2>/dev/null || optssredir="1"
 else
-chmod 777 "`which ssr-local`"
+chmod 777 "/usr/sbin/ssr-local"
 	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
@@ -2018,7 +2018,7 @@ if [ "$optssredir" = "1" ] ; then
 hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] ; then
-chmod 777 "`which ssr-local`"
+chmod 777 "/usr/sbin/ssr-local"
 	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
 	hash ssr-local 2>/dev/null || optssredir="3"
 fi
