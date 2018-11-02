@@ -195,11 +195,14 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【相框显示】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
-if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
-	lcd1="$hiboyfile/lcd.tgz"
+if [ ! -s "/opt/lcd4linux/lcd4linux.conf" ] || [ ! -s "/opt/lcd4linux/scripts/drawchart2.py" ] ; then
+	lcd1="$hiboyfile/lcd2.tgz"
 	logger -t "【相框显示】" "下载LCD文件 $lcd1"
-	wgetcurl.sh "/opt/lcd.tgz" "$hiboyfile/lcd.tgz" "$hiboyfile2/lcd.tgz"
+	wgetcurl.sh "/opt/lcd.tgz" "$hiboyfile/lcd2.tgz" "$hiboyfile2/lcd2.tgz"
 	untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
+	cp -f /opt/lcd4linux/lcd4linux.conf /etc/storage/display_lcd4linux_script.sh
+fi
+if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	cp -f /opt/lcd4linux/lcd4linux.conf /etc/storage/display_lcd4linux_script.sh
 fi
 if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
