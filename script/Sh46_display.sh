@@ -519,7 +519,7 @@ cat /tmp/aqi| awk -F";" '{for (i=2;i<=NF;i++) \
 
 
 #python绘图
-python /opt/lcd4linux/scripts/drawchart.py &
+python /opt/lcd4linux/scripts/drawchart2.py &
 
 }
 
