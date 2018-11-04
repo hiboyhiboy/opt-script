@@ -9,7 +9,8 @@ opt_cifs_dir=`nvram get opt_cifs_dir`
 [ -z $opt_cifs_dir ] && opt_cifs_dir="/media/cifs" && nvram set opt_cifs_dir="$opt_cifs_dir"
 opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
 [ -z $opt_cifs_2_dir ] && opt_cifs_2_dir="/media/cifs" && nvram set opt_cifs_2_dir="$opt_cifs_2_dir"
-[ -z $opt_cifs_block ] && opt_cifs_block="1000" && nvram set opt_cifs_block="$opt_cifs_block"
+opt_cifs_block=`nvram get opt_cifs_block`
+[ -z $opt_cifs_block ] && opt_cifs_block="1999" && nvram set opt_cifs_block="$opt_cifs_block"
 
 [ -z $ss_opt_x ] && ss_opt_x=1 && nvram set ss_opt_x="$ss_opt_x"
 
@@ -311,8 +312,28 @@ sync
 
 }
 
+opt_Available () {
+
+Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $2}')
+logger -t "【opt】" "/opt 剩余可用数据空间[M] $Available_A/$Available_B"
+Available_A=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+Available_B=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $2}')
+logger -t "【opt】" "/opt 剩余可用节点空间[Inodes] $Available_A/$Available_B"
+Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
+[ -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【opt】" "/opt 已用数据空间[M] $Available_M/100%"
+Available_I=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
+[ -z "$(echo $Available_I | grep '%')" ] && Available_I=$(df -i | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【opt】" "/opt 已用节点空间[Inodes] $Available_I/100%"
+logger -t "【opt】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 opt.tgz 解压运行，请重新正确格式化 U盘。"
+
+}
+
 opt_file () {
+
 if [ ! -f /opt/opt.tgz ]  ; then
+	rm -f /opt/opt.tgz
 	logger -t "【opt】" "/opt 可用空间：$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')M"
 	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $opttmpfile" ; wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
@@ -323,7 +344,6 @@ else
 	logger -t "【opt】" "/opt/opt.tgz 已经存在，开始解压"
 fi
 tar -xzvf /opt/opt.tgz -C /opt
-
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 [ ! -z "$optPath" ] && rm -f /opt/opt.tgz
 # flush buffers
@@ -354,6 +374,7 @@ if [ ! -f "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "opt 第二次下载/opt/opt.tgz"
 		opt_file
 	fi
+	opt_Available
 	if [ -s "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "/opt 解压完成"
 		#chmod 777 /opt -R
@@ -366,6 +387,7 @@ if [ ! -f "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "备份文件到 /opt/opt_backup"
 		mkdir -p /opt/opt_backup
 		tar -xzvf /opt/opt.tgz -C /opt/opt_backup
+		opt_Available
 		if [ -s "/opt/opt_backup/opti.txt" ] ; then
 			logger -t "【opt】" "/opt/opt_backup 解压完成"
 			# flush buffers
