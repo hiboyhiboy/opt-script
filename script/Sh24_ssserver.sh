@@ -183,9 +183,9 @@ if [ ! -z "echo $ssserver_usage | grep gq-server" ] ; then
 fi
 logger -t "【SS_server】" "启动 ss-server 服务"
 if [ "$ssserver_udp" == "1" ] ; then
-	eval "ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage $cmd_log" &
+	eval "ss-server -s 0.0.0.0 -s ::0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage $cmd_log" &
 else
-	eval "ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_usage $cmd_log" &
+	eval "ss-server -s 0.0.0.0 -s ::0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_usage $cmd_log" &
 fi
 
 sleep 4
