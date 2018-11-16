@@ -103,8 +103,8 @@ DNS_Server=127.0.0.1#8053
 ss_pdnsd_all=`nvram get ss_pdnsd_all`
 [ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_server2=""
-[ -z "$ss_server2" ] && [ "$kcptun2_enable" != "2" ] && kcptun2_enable=2 && { [ "$ACTION" != "keep" ] && logger -t "【SS】" "设置内容:非 chnroute 模式, 备服务器 停用" ; }
-[ "$ss_mode_x" != "0" ] && [ ! -z "$ss_server2" ] && [ "$kcptun2_enable" != "2" ] && kcptun2_enable=0 && { [ "$ACTION" != "keep" ] && logger -t "【SS】" "设置内容:非 chnroute 模式，备服务器 故障转移 模式" ; }
+[ -z "$ss_server2" ] && [ "$kcptun2_enable" != "2" ] && kcptun2_enable=2 && { [ "$ACTION" != "keep" ] && logger -t "【SS】" "$@ 设置内容:非 chnroute 模式, 备服务器 停用" ; }
+[ "$ss_mode_x" != "0" ] && [ ! -z "$ss_server2" ] && [ "$kcptun2_enable" != "2" ] && kcptun2_enable=0 && { [ "$ACTION" != "keep" ] && logger -t "【SS】" "$@ 设置内容:非 chnroute 模式，备服务器 故障转移 模式" ; }
 [ "$ss_mode_x" != "0" ] && nvram set kcptun2_enable2=$kcptun2_enable
 [ "$ss_mode_x" = "0" ] && nvram set kcptun2_enable=$kcptun2_enable
 [ "$ss_pdnsd_all" = "1" ] && [ "$ss_mode_x" != "0" ] && ss_pdnsd_all=0 && { [ "$ACTION" != "keep" ] && logger -t "【SS】" "设置内容:非 chnroute 模式，不转全部发pdnsd" ; }
@@ -1545,6 +1545,8 @@ return $?
 #1 获取gfwlist 被墙列表
 update_gfwlist()
 {
+
+[ "$ss_mode_x" = "3" ] && return #3为ss-local 建立本地 SOCKS 代理
 echo "gfwlist updating"
 if [ -f /tmp/cron_ss.lock ] ; then
 	  logger -t "【SS】" "Other SS GFWList updating...."
@@ -1615,6 +1617,7 @@ fi
 	echo "whatsapp.net" >> /tmp/ss/gfwall_domain.txt
 	echo "nflxvideo.net" >> /tmp/ss/gfwall_domain.txt
 	echo "nflxso.net" >> /tmp/ss/gfwall_domain.txt
+	echo "telegram.org" >> /tmp/ss/gfwall_domain.txt
 	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
 	#删除忽略的域名
 	while read line
@@ -1722,6 +1725,8 @@ fi
 
 update_chnroutes()
 {
+
+[ "$ss_mode_x" = "3" ] && return #3为ss-local 建立本地 SOCKS 代理
 echo "chnroutes updating"
 if [ -f /tmp/cron_ss.lock ] ; then
 	logger -t "【SS】" "Other SS chnroutes updating...."
@@ -2766,6 +2771,7 @@ ss_cron_job(){
 	[ -z $ss_update ] && ss_update=0 && nvram set ss_update=$ss_update
 	[ -z $ss_update_hour ] && ss_update_hour=23 && nvram set ss_update_hour=$ss_update_hour
 	[ -z $ss_update_min ] && ss_update_min=59 && nvram set ss_update_min=$ss_update_min
+	[ "$ss_mode_x" = "3" ] && ss_update=2 #3为ss-local 建立本地 SOCKS 代理
 	if [ "0" == "$ss_update" ]; then
 	[ $ss_update_hour -gt 23 ] && ss_update_hour=23 && nvram set ss_update_hour=$ss_update_hour
 	[ $ss_update_hour -lt 0 ] && ss_update_hour=0 && nvram set ss_update_hour=$ss_update_hour
@@ -2925,6 +2931,7 @@ flush)
 	clean_ss_rules
 	;;
 update)
+	[ "$ss_mode_x" = "3" ] && return #3为ss-local 建立本地 SOCKS 代理
 	#check_setting
 	[ ${ss_enable:=0} ] && [ "$ss_enable" -eq "0" ] && exit 0
 	# [ "$ss_mode_x" = "3" ] && exit 0
