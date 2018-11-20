@@ -316,18 +316,23 @@ opt_Available () {
 
 Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $2}')
-logger -t "【opt】" "/opt 剩余可用数据空间[M] $Available_A/$Available_B"
-Available_A=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
-Available_B=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $2}')
-logger -t "【opt】" "/opt 剩余可用节点空间[Inodes] $Available_A/$Available_B"
+Available_C=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+Available_D=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $2}')
 Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
-[ -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
-logger -t "【opt】" "/opt 已用数据空间[M] $Available_M/100%"
 Available_I=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
-[ -z "$(echo $Available_I | grep '%')" ] && Available_I=$(df -i | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+if [ -z "$(echo $Available_M | grep '%')" ] ; then
+Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $3}')
+Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $1}')
+Available_C=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $3}')
+Available_D=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $1}')
+Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+Available_I=$(df -i | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+fi
+logger -t "【opt】" "/opt 剩余可用数据空间[M] $Available_A/$Available_B"
+logger -t "【opt】" "/opt 剩余可用节点空间[Inodes] $Available_C/$Available_D"
+logger -t "【opt】" "/opt 已用数据空间[M] $Available_M/100%"
 logger -t "【opt】" "/opt 已用节点空间[Inodes] $Available_I/100%"
 logger -t "【opt】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 opt.tgz 解压运行，请重新正确格式化 U盘。"
-
 }
 
 opt_file () {

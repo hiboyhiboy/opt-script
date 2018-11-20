@@ -46,21 +46,12 @@ url_DzzOffice="https://codeload.github.com/zyx0814/dzzoffice/zip/master"
 # 通用环境变量获取
 get_env()
 {
-    # 获取用户名
-    if [[ $USER ]]; then
-        username=$USER
-    elif [[ -n $(whoami 2>/dev/null) ]]; then
-        username=$(whoami 2>/dev/null)
-    else
-        username=$(cat /etc/passwd | sed "s/:/ /g" | awk 'NR==1'  | awk '{printf $1}')
-    fi
 
-    # 获取路由器IP
-    localhost=$(ifconfig  | grep "inet addr" | awk '{ print $2}' | awk -F: '{print $2}' | awk 'NR==1')
-    if [[ ! -n "$localhost" ]]; then
-        localhost="你的路由器IP"
-    fi
+username=`nvram get http_username`
+localhost=`nvram get lan_ipaddr`
+
 }
+
 
 ##### 软件包状态检测 #####
 install_check()
@@ -1146,9 +1137,9 @@ cat > "/opt/bin/onmp" <<-\EOF
 #!/bin/sh
 exit #exit_tmp
 # 获取路由器IP
-localhost=$(ifconfig | grep "inet addr" | awk '{ print $2}' | awk -F: '{print $2}' | awk 'NR==1')
+localhost=`nvram get lan_ipaddr`
 if [[ ! -n "$localhost" ]]; then
-    localhost="你的路由器IP"
+    localhost=`nvram get lan_ipaddr`
 fi
 
 vhost_list()
@@ -2002,7 +1993,7 @@ sql_backup_on()
     read -p "输入你的数据库用户密码: " sqlpasswd
 
 # 删除
-mkdir -p /opt/bin/sqlbackup_old && cp -af /opt/bin/sqlbackup/* "$_"
+mkdir -p /opt/bin/sqlbackup_old && cp -af /opt/bin/sqlbackup "$_"
 rm -rf /opt/bin/sqlbackup
 
 # 写入文件
@@ -2024,7 +2015,7 @@ echo "命令创建成功，你可以直接使用sqlbackup命令直接备份，�
 sql_backup_off()
 {
 
-    mkdir -p /opt/bin/sqlbackup_old && cp -af /opt/bin/sqlbackup/* "$_"
+    mkdir -p /opt/bin/sqlbackup_old && cp -af /opt/bin/sqlbackup "$_"
     rm -rf /opt/bin/sqlbackup
     echo "如果你使用了自动定时备份，请删除配置"
 }
@@ -2085,7 +2076,7 @@ esac
 
 check()
 {
-echo -n "2018-10-28" > /opt/lnmp.txt
+echo -n "2018-11-19" > /opt/lnmp.txt
 [ -f /opt/lnmp.txt ] && nvram set lnmpo=`cat /opt/lnmp.txt`
 nvram set onmp_1="更新 ONMP 脚本"
 nvram set onmp_2="设置数据库密码123456"
@@ -2095,8 +2086,8 @@ nvram set onmp_5="关闭 Redis"
 nvram set onmp_6="开启Swap"
 nvram set onmp_7="关闭Swap"
 nvram set onmp_8="删除Swap"
-nvram set onmp_9="开启数据库自动备份"
-nvram set onmp_10="关闭数据库自动备份"
+nvram set onmp_9="开启数据库备份定时任务"
+nvram set onmp_10="删除数据库备份定时任务"
 nvram set onmp_11=""
 nvram set onmp_12=""
 onmp_enable=`nvram get onmp_enable`
@@ -2140,12 +2131,14 @@ logger -t "【ONMP】" "删除Swap"
 del_swap
 fi
 if [ "$onmp_enable" = "9" ] ; then
-logger -t "【ONMP】" "开启数据库自动备份"
-sql_backup_on
+logger -t "【ONMP】" "请手动运行[sh_onmp.sh]设置【(5) 数据库自动备份】的数据库用户名和密码"
+logger -t "【ONMP】" "开启数据库备份定时任务，每3时1分自动备份一次"
+cru.sh d sql_backup
+cru.sh a sql_backup "1 */3 * * * /opt/bin/sqlbackup &" &
 fi
 if [ "$onmp_enable" = "10" ] ; then
-logger -t "【ONMP】" "关闭数据库自动备份"
-sql_backup_off
+logger -t "【ONMP】" "删除数据库备份定时任务"
+cru.sh d sql_backup
 fi
 
 }
@@ -2209,6 +2202,9 @@ web_manager)
 	;;
 redis)
 	redis
+	;;
+sql_backup)
+	sql_backup
 	;;
 check)
 	check

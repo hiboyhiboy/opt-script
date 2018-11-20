@@ -1615,9 +1615,7 @@ else
 fi
 	# 临时添加的域名
 	echo "whatsapp.net" >> /tmp/ss/gfwall_domain.txt
-	echo "nflxvideo.net" >> /tmp/ss/gfwall_domain.txt
-	echo "nflxso.net" >> /tmp/ss/gfwall_domain.txt
-	echo "telegram.org" >> /tmp/ss/gfwall_domain.txt
+	
 	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
 	#删除忽略的域名
 	while read line
@@ -2168,7 +2166,7 @@ sync
 nvram set kcptun_status="cleanss"
 nvram set ss_status="cleanss"
 /tmp/script/_kcp_tun &
-sleep 1
+sleep 5
 ss_restart $1
 exit 0
 }
