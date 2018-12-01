@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v4.4
+version=v4.7.0
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -516,7 +516,6 @@ cat << EOF > /root/config.json
             "0.0.0.0/8",
             "10.0.0.0/8",
             "100.64.0.0/10",
-            "127.0.0.0/8",
             "169.254.0.0/16",
             "172.16.0.0/12",
             "192.0.0.0/24",

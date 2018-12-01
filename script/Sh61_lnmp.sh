@@ -261,9 +261,9 @@ fi
 Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 [ ! -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $3}')
 optava="$Available_M"
-if [ $optava -le 300 ] || [ -z "$optava" ] ; then
+if [ $optava -le 200 ] || [ -z "$optava" ] ; then
 	lnmp_Available
-	logger -t "【LNMP】" "/opt剩余空间: $optava M，不足300M, 停止启用 LNMP, 请尝试重启"
+	logger -t "【LNMP】" "/opt剩余空间: $optava M，不足200M, 停止启用 LNMP, 请尝试重启"
 	lnmp_enable=0 && nvram set lnmp_enable=$lnmp_enable
 	nvram set lnmp_status=$optava
 	nvram commit
