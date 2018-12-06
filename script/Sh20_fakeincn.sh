@@ -26,6 +26,10 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep fakeincn)" ]  
 	chmod 777 /tmp/script/_app2
 fi
 
+#检查  libsodium.so.23
+[ -f /lib/libsodium.so.23 ] && libsodium_so=libsodium.so.23
+[ -f /lib/libsodium.so.18 ] && libsodium_so=libsodium.so.18
+
 fakeincn_restart () {
 
 relock="/var/lock/fakeincn_restart.lock"
@@ -162,7 +166,7 @@ optssredir="0"
 hash ss-redir 2>/dev/null || optssredir="1"
 if [ "$optssredir" = "1" ] ; then
 	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
+	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
 	chmod 777 "/opt/bin/ss-redir"
 	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
 	[ ! -s `which ss-redir` ] && { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; fakeincn_restart x ; }

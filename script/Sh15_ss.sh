@@ -337,6 +337,9 @@ SSJSON
 SSJSONSH
 chmod 755 /tmp/SSJSON.sh
 
+#检查  libsodium.so.23
+[ -f /lib/libsodium.so.23 ] && libsodium_so=libsodium.so.23
+[ -f /lib/libsodium.so.18 ] && libsodium_so=libsodium.so.18
 
 start_ss_redir()
 {
@@ -1940,7 +1943,7 @@ chmod 777 "/usr/sbin/ss-local"
 fi
 if [ "$optssredir" = "1" ] ; then
 	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/ss-redir" "$hiboyfile2/ss-redir"
+	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
 	chmod 777 "/opt/bin/ss-redir"
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
 fi
@@ -1951,7 +1954,7 @@ chmod 777 "/usr/sbin/ss-local"
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
 	logger -t "【SS】" "找不到 ss-local. opt 下载程序"
-	[ ! -s /opt/bin/ss-local ] && wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/ss-local" "$hiboyfile2/ss-local"
+	[ ! -s /opt/bin/ss-local ] && wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/$libsodium_so/ss-local" "$hiboyfile2/$libsodium_so/ss-local"
 	chmod 777 "/opt/bin/ss-local"
 	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; ss_restart x ; }
 fi
@@ -1989,7 +1992,7 @@ chmod 777 "/opt/bin/ssrr-local"
 	hash ssrr-local 2>/dev/null || optssredir="2"
 fi
 if [ "$optssredir" = "1" ] ; then
-	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl.sh "/opt/bin/ssrr-redir" "$hiboyfile/ssrr-redir" "$hiboyfile2/ssrr-redir"
+	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl.sh "/opt/bin/ssrr-redir" "$hiboyfile/$libsodium_so/ssrr-redir" "$hiboyfile2/$libsodium_so/ssrr-redir"
 	chmod 777 "/opt/bin/ssrr-redir"
 hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
 fi
@@ -1999,7 +2002,7 @@ chmod 777 "/opt/bin/ssrr-local"
 	hash ssrr-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	[ ! -s /opt/bin/ssrr-local ] && wgetcurl.sh "/opt/bin/ssrr-local" "$hiboyfile/ssrr-local" "$hiboyfile2/ssrr-local"
+	[ ! -s /opt/bin/ssrr-local ] && wgetcurl.sh "/opt/bin/ssrr-local" "$hiboyfile/$libsodium_so/ssrr-local" "$hiboyfile2/$libsodium_so/ssrr-local"
 	chmod 777 "/opt/bin/ssrr-local"
 	hash ssrr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-local, 请检查系统"; ss_restart x ; }
 fi
@@ -2016,7 +2019,7 @@ chmod 777 "/usr/sbin/ssr-local"
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
 if [ "$optssredir" = "1" ] ; then
-	[ ! -s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/ssr-redir" "$hiboyfile2/ssr-redir"
+	[ ! -s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/$libsodium_so/ssr-redir" "$hiboyfile2/$libsodium_so/ssr-redir"
 	chmod 777 "/opt/bin/ssr-redir"
 hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
 fi
@@ -2026,7 +2029,7 @@ chmod 777 "/usr/sbin/ssr-local"
 	hash ssr-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	[ ! -s /opt/bin/ssr-local ] && wgetcurl.sh "/opt/bin/ssr-local" "$hiboyfile/ssr-local" "$hiboyfile2/ssr-local"
+	[ ! -s /opt/bin/ssr-local ] && wgetcurl.sh "/opt/bin/ssr-local" "$hiboyfile/$libsodium_so/ssr-local" "$hiboyfile2/$libsodium_so/ssr-local"
 	chmod 777 "/opt/bin/ssr-local"
 	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; ss_restart x ; }
 fi

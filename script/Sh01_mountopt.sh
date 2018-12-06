@@ -11,6 +11,10 @@ opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
 [ -z $opt_cifs_2_dir ] && opt_cifs_2_dir="/media/cifs" && nvram set opt_cifs_2_dir="$opt_cifs_2_dir"
 opt_cifs_block=`nvram get opt_cifs_block`
 [ -z $opt_cifs_block ] && opt_cifs_block="1999" && nvram set opt_cifs_block="$opt_cifs_block"
+size_tmpfs=`nvram get size_tmpfs`
+[ -z $size_tmpfs ] && size_tmpfs="0" && nvram set size_tmpfs="$size_tmpfs"
+size_media_enable=`nvram get size_media_enable`
+[ -z $size_media_enable ] && size_media_enable="0" && nvram set size_media_enable="$size_media_enable"
 
 [ -z $ss_opt_x ] && ss_opt_x=1 && nvram set ss_opt_x="$ss_opt_x"
 
@@ -246,7 +250,22 @@ mountpoint -q /media/o_p_t_img && mount -o bind "/media/o_p_t_img" /opt
 
 }
 
+re_size () {
+#/tmp最大空间，调整已挂载分区的大小
+[ ! -f /tmp/size_tmp ] && echo -n $(df -m | grep "% /tmp" | awk 'NR==1' | awk -F' ' '{print $4}')"M" > /tmp/size_tmp
+[ "$size_tmpfs" = "0" ] && mount -o remount,size=$(cat /tmp/size_tmp) tmpfs /tmp
+[ "$size_tmpfs" = "1" ] && mount -o remount,size=50% tmpfs /tmp
+[ "$size_tmpfs" = "2" ] && mount -o remount,size=60% tmpfs /tmp
+[ "$size_tmpfs" = "3" ] && mount -o remount,size=70% tmpfs /tmp
+[ "$size_tmpfs" = "4" ] && mount -o remount,size=80% tmpfs /tmp
+[ "$size_tmpfs" = "5" ] && mount -o remount,size=90% tmpfs /tmp
+[ "$size_media_enable" = "0" ] && mount -o remount,size=8K tmpfs /media
+[ "$size_media_enable" = "1" ] && mount -o remount,size=10485760M tmpfs /media
+
+}
+
 AiDisk00 () {
+re_size &
 if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
 # 安装ca-certificates
 mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载

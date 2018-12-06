@@ -244,6 +244,7 @@ umount /opt/app/filemanager/Advanced_Extensions_filemanager.asp
 umount /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
 umount /opt/app/chinadns/Advanced_Extensions_chinadns.asp
 umount /opt/app/translate/Advanced_Extensions_translate.asp
+umount /opt/app/tgbot/Advanced_Extensions_tgbot.asp
 
 umount /www/EN.dict
 
@@ -304,6 +305,7 @@ cp -f /opt/app/filemanager/Advanced_Extensions_filemanager.asp /opt/app/translat
 cp -f /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp /opt/app/translate/app/Advanced_Extensions_fakeincn.asp
 cp -f /opt/app/chinadns/Advanced_Extensions_chinadns.asp /opt/app/translate/app/Advanced_Extensions_chinadns.asp
 cp -f /opt/app/translate/Advanced_Extensions_translate.asp /opt/app/translate/app/Advanced_Extensions_translate.asp
+cp -f /opt/app/tgbot/Advanced_Extensions_tgbot.asp /opt/app/translate/app/Advanced_Extensions_tgbot.asp
 
 }
 
@@ -359,6 +361,7 @@ mount --bind /opt/app/translate/app/Advanced_Extensions_filemanager.asp /opt/app
 mount --bind /opt/app/translate/app/Advanced_Extensions_fakeincn.asp /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
 mount --bind /opt/app/translate/app/Advanced_Extensions_chinadns.asp /opt/app/chinadns/Advanced_Extensions_chinadns.asp
 mount --bind /opt/app/translate/app/Advanced_Extensions_translate.asp /opt/app/translate/Advanced_Extensions_translate.asp
+mount --bind /opt/app/translate/app/Advanced_Extensions_tgbot.asp /opt/app/tgbot/Advanced_Extensions_tgbot.asp
 
 mount --bind /opt/app/translate/$1.dict /www/EN.dict
 
