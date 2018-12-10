@@ -7,6 +7,9 @@ filemanager_enable=`nvram get app_15`
 [ -z $filemanager_enable ] && filemanager_enable=0 && nvram set app_15=0
 filemanager_wan=`nvram get app_16`
 [ -z $filemanager_wan ] && filemanager_wan=0 && nvram set app_16=0
+caddy_enable=`nvram get app_54`
+[ -z $caddy_enable ] && caddy_enable=0 && nvram set app_54=0
+[ "$caddy_enable" = "1" ] && filemanager_exe="caddy" || filemanager_exe="filemanager"
 filemanager_upanPath=`nvram get filemanager_upanPath`
 #if [ "$filemanager_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep filemanager | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -15,7 +18,7 @@ filemanager_upanPath=`nvram get filemanager_upanPath`
 filemanager_renum=`nvram get filemanager_renum`
 filemanager_renum=${filemanager_renum:-"0"}
 cmd_log_enable=`nvram get cmd_log_enable`
-cmd_name="filemanager"
+cmd_name="$filemanager_exe"
 cmd_log=""
 if [ "$cmd_log_enable" = "1" ] || [ "$filemanager_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
@@ -67,7 +70,7 @@ exit 0
 filemanager_get_status () {
 
 A_restart=`nvram get filemanager_status`
-B_restart="$filemanager_enable$filemanager_wan$filemanager_wan_port$(cat /etc/storage/app_5.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$filemanager_enable$caddy_enable$filemanager_wan$filemanager_wan_port$(cat /etc/storage/app_5.sh /etc/storage/app_11.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set filemanager_status=$B_restart
@@ -81,7 +84,8 @@ filemanager_check () {
 
 filemanager_get_status
 if [ "$filemanager_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "`pidof filemanager`" ] && logger -t "【filemanager】" "停止 filemanager" && filemanager_close
+	[ ! -z "`pidof caddy`" ] && logger -t "【filemanager】" "停止 $filemanager_exe" && filemanager_close
+	[ ! -z "`pidof filemanager`" ] && logger -t "【filemanager】" "停止 $filemanager_exe" && filemanager_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$filemanager_enable" = "1" ] ; then
@@ -89,7 +93,7 @@ if [ "$filemanager_enable" = "1" ] ; then
 		filemanager_close
 		filemanager_start
 	else
-		[ -z "`pidof filemanager`" ] && filemanager_restart
+		[ -z "`pidof $filemanager_exe`" ] && filemanager_restart
 		filemanager_port_dpt
 	fi
 fi
@@ -100,13 +104,13 @@ logger -t "【filemanager】" "守护进程启动"
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof filemanager\`" ] || [ ! -s "$filemanager_upanPath/filemanager/filemanager" ] && nvram set filemanager_status=00 && logger -t "【filemanager】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check # 【filemanager】
+[ -z "\`pidof $filemanager_exe\`" ] || [ ! -s "$filemanager_upanPath/filemanager/$filemanager_exe" ] && nvram set filemanager_status=00 && logger -t "【filemanager】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check # 【filemanager】
 OSC
 return
 fi
 
 while true; do
-	if [ -z "`pidof filemanager`" ] || [ ! -s "$filemanager_upanPath/filemanager/filemanager" ] ; then
+	if [ -z "`pidof $filemanager_exe`" ] || [ ! -s "$filemanager_upanPath/filemanager/$filemanager_exe" ] ; then
 		logger -t "【filemanager】" "重新启动"
 		filemanager_restart
 	fi
@@ -118,8 +122,8 @@ filemanager_close () {
 
 sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
-killall filemanager
-killall -9 filemanager
+killall filemanager caddy
+killall -9 filemanager caddy
 kill_ps "/tmp/script/_app5"
 kill_ps "_file_manager.sh"
 kill_ps "$scriptname"
@@ -158,12 +162,12 @@ if [ -z "$upanPath" ] ; then
 	filemanager_restart x
 	exit 0
 fi
-SVC_PATH="$upanPath/filemanager/filemanager"
+SVC_PATH="$upanPath/filemanager/$filemanager_exe"
 mkdir -p "$upanPath/filemanager/"
 if [ ! -s "$SVC_PATH" ] && [ -d "$upanPath/filemanager" ] ; then
-	logger -t "【filemanager】" "找不到 $SVC_PATH ，安装 filemanager 程序"
-	logger -t "【filemanager】" "开始下载 filemanager"
-	wgetcurl.sh "$upanPath/filemanager/filemanager" "$hiboyfile/filemanager" "$hiboyfile2/filemanager"
+	logger -t "【filemanager】" "找不到 $SVC_PATH ，安装 $filemanager_exe 程序"
+	logger -t "【filemanager】" "开始下载 $filemanager_exe"
+	wgetcurl.sh "$upanPath/filemanager/$filemanager_exe" "$hiboyfile/$filemanager_exe" "$hiboyfile2/$filemanager_exe"
 fi
 chmod 777 "$SVC_PATH"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
@@ -172,6 +176,23 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【filemanager】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
 fi
 chmod 777 "$SVC_PATH"
+if [ "$filemanager_enable" = "1" ] ; then
+	caddy_start
+else
+	filebrowser_start
+fi
+sleep 7
+[ ! -z "$(ps -w | grep "$filemanager_exe" | grep -v grep )" ] && logger -t "【filemanager】" "启动成功" && filemanager_restart o
+[ -z "$(ps -w | grep "$filemanager_exe" | grep -v grep )" ] && logger -t "【filemanager】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
+initopt
+filemanager_port_dpt
+#filemanager_get_status
+eval "$scriptfilepath keep &"
+exit 0
+}
+
+filebrowser_start () {
+
 filemanager_v=$($SVC_PATH -v | grep version | awk -F 'version' '{print $2;}')
 nvram set filemanager_v="$filemanager_v"
 logger -t "【filemanager】" "运行 filemanager"
@@ -182,17 +203,29 @@ iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 
 filemanager_upanPath="$upanPath"
 nvram set filemanager_upanPath="$upanPath"
+rm -f /tmp/filemanager.json
 ln -sf /etc/storage/app_5.sh /tmp/filemanager.json
 eval "$upanPath/filemanager/filemanager -c /tmp/filemanager.json $cmd_log" &
 
-sleep 7
-[ ! -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动成功" && filemanager_restart o
-[ -z "$(ps -w | grep "filemanager" | grep -v grep )" ] && logger -t "【filemanager】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
-initopt
-filemanager_port_dpt
-#filemanager_get_status
-eval "$scriptfilepath keep &"
-exit 0
+}
+
+
+caddy_start () {
+
+filemanager_v=$($SVC_PATH -version | cut -d'(' -f1 | tr -d ' ' | sed -n '1p')
+nvram set filemanager_v="$filemanager_v"
+logger -t "【filemanager】" "运行 caddy"
+
+filemanager_wan_port=`cat /etc/storage/app_11.sh | grep -Eo ':[0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
+nvram set app_14=$filemanager_wan_port
+iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
+
+filemanager_upanPath="$upanPath"
+nvram set filemanager_upanPath="$upanPath"
+rm -f /tmp/Caddyfile
+ln -sf /etc/storage/app_11.sh /tmp/Caddyfile
+eval "$upanPath/filemanager/caddy -conf /tmp/Caddyfile $cmd_log" &
+
 }
 
 initopt () {
@@ -230,8 +263,22 @@ if [ ! -f "/etc/storage/app_5.sh" ] || [ ! -s "/etc/storage/app_5.sh" ] ; then
 }
 EOF
 fi
+if [ ! -f "/etc/storage/app_11.sh" ] || [ ! -s "/etc/storage/app_11.sh" ] ; then
+	cat >> "/etc/storage/app_11.sh" <<-\EOF
+:888 {
+ root /tmp/AiDisk_00
+ timeouts none
+ gzip
+ filemanager / /tmp/AiDisk_00 {
+  database /etc/storage/caddy_filemanager.db
+  locale zh-cn
+  alternative_recaptcha
+ }
+}
+EOF
+fi
 
-chmod 777 /etc/storage/app_5.sh
+chmod 777 /etc/storage/app_5.sh /etc/storage/app_11.sh
 
 }
 
