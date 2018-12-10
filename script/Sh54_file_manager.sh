@@ -302,6 +302,7 @@ mkdir -p /opt/app/filemanager
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/filemanager/Advanced_Extensions_filemanager.asp
 	[ -f "$filemanager_upanPath/filemanager/filemanager" ] && rm -f $filemanager_upanPath/filemanager/filemanager
+	[ -f "$filemanager_upanPath/filemanager/caddy" ] && rm -f $filemanager_upanPath/filemanager/caddy
 fi
 
 initconfig
