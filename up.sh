@@ -17,7 +17,9 @@ echo "$1"
 }
 MD5_txt=`cat /tmp/padavan/MD5.txt | sed 's@\r@@g' |sed -n '/'$Firmware'/,/CRC32/{/'$Firmware'/n;/CRC32/b;p}' | grep "MD5：" | tr 'A-Z' 'a-z' |awk '{print $2}'`
 logger_echo " 下载【$Firmware】，https://opt.cn2qq.com/padavan/$Firmware"
-mount -o remount,size=50% tmpfs /tmp
+size_tmpfs=`nvram get size_tmpfs`
+[ -z $size_tmpfs ] && size_tmpfs="0"
+[ "$size_tmpfs" = "0" ] && mount -o remount,size=50% tmpfs /tmp
 wget --no-check-certificate  -O /tmp/padavan/$Firmware https://opt.cn2qq.com/padavan/$Firmware
 eval $(md5sum /tmp/padavan/$Firmware | awk '{print "MD5_down="$1;}')
 echo $MD5_down
