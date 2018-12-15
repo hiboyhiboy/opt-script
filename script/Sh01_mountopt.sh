@@ -467,7 +467,7 @@ fi
 done < /tmp/md5/libmd5f
 logger -t "【libmd5_恢复】" "md5对比，完成！"
 # flush buffers
-sync
+sync;echo 3 > /proc/sys/vm/drop_caches
 
 }
 
@@ -499,7 +499,7 @@ fi
 done < /tmp/md5/libmd5f
 logger -t "【libmd5_备份】" "md5对比，完成！"
 # flush buffers
-sync
+sync;echo 3 > /proc/sys/vm/drop_caches
 
 }
 initconfig () {

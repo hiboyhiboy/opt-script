@@ -25,6 +25,10 @@ cmd_log=""
 if [ "$cmd_log_enable" = "1" ] || [ "$ssserver_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
+#检查  libsodium.so.23
+[ -f /lib/libsodium.so.23 ] && libsodium_so=libsodium.so.23
+[ -f /lib/libsodium.so.18 ] && libsodium_so=libsodium.so.18
+
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ssserver)" ]  && [ ! -s /tmp/script/_ssserver ]; then
 	mkdir -p /tmp/script
@@ -144,7 +148,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/ss-server "$hiboyfile/ss-server" "$hiboyfile2/ss-server"
+	wgetcurl.sh /opt/bin/ss-server "$hiboyfile/$libsodium_so/ss-server" "$hiboyfile2/$libsodium_so/ss-server"
 	chmod 755 "/opt/bin/ss-server"
 else
 	logger -t "【SS_server】" "找到 $SVC_PATH"

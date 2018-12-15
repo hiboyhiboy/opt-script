@@ -206,10 +206,10 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 # https://github.com/coyove/goflyway/wiki/使用教程
 cd $(dirname ` which goflyway`)
 #在服务器执行下面命令即可启动服务端，KEY123为自定义密码，默认监听8100。本地执行
-#./goflyway -k=KEY123 -l="0.0.0.0:8100" 2>&1 &
+#./goflyway -t 0 -k=KEY123 -l="0.0.0.0:8100" 2>&1 &
 
 #客户端命令（1.2.3.4要修改为服务器IP，默认监听8100）
-goflyway -k=KEY123 -up="1.2.3.4:8100" -l="0.0.0.0:8100" 2>&1 &
+goflyway -t 0 -k=KEY123 -up="1.2.3.4:8100" -l="0.0.0.0:8100" 2>&1 &
 
 #可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用
 #请设置以上软件的本地代理为 192.168.123.1:8100（协议为HTTP或SOCKS5代理，192.168.123.1为路由器IP）
