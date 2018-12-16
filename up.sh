@@ -16,6 +16,9 @@ logger -t "【Firmware】" "$1"
 echo "$1"
 }
 MD5_txt=`cat /tmp/padavan/MD5.txt | sed 's@\r@@g' |sed -n '/'$Firmware'/,/CRC32/{/'$Firmware'/n;/CRC32/b;p}' | grep "MD5：" | tr 'A-Z' 'a-z' |awk '{print $2}'`
+if [ "$MD5_txt"x = x ] ; then
+	logger_echo " 未能获取【https://opt.cn2qq.com/padavan/MD5.txt】记录，跳过更新！可再次尝试更新！"
+else
 logger_echo " 下载【$Firmware】，https://opt.cn2qq.com/padavan/$Firmware"
 size_tmpfs=`nvram get size_tmpfs`
 [ -z $size_tmpfs ] && size_tmpfs="0"
@@ -40,5 +43,6 @@ else
 	logger_echo " 下载【$Firmware】，md5与记录不同，下载失败，跳过更新！可再次尝试更新！"
 	logger_echo " 下载md5: $MD5_down"
 	logger_echo " 记录md5: $MD5_txt"
+fi
 fi
 
