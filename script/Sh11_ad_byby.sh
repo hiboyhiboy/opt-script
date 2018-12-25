@@ -709,7 +709,7 @@ done < /tmp/ad_spec_lan.txt
 	echo "AD_BYBY-number:$wifidogn"
 	logger -t "【iptables】" "AD_BYBY-number:$wifidogn"
 	iptables -t nat -I PREROUTING $wifidognx -p tcp -m multiport --dports 80,8080 -j AD_BYBY
-	iptables -t nat -A AD_BYBY_to -p tcp -j REDIRECT --to-port 8118
+	iptables -t nat -A AD_BYBY_to -p tcp -j REDIRECT --to-ports 8118
 	dns_redirect
 	sleep 1
 	gen_include &

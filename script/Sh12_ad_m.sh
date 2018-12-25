@@ -648,7 +648,7 @@ done < /tmp/ad_spec_lan.txt
 		[ "$adm_https" = "1" ] && iptables -t nat -I PREROUTING $wifidognx -p tcp -m multiport --dports 80,443,8080 -j AD_BYBY
 		[ "$adm_https" != "1" ] && iptables -t nat -I PREROUTING $wifidognx -p tcp -m multiport --dports 80,8080 -j AD_BYBY
 	fi
-	iptables -t nat -A AD_BYBY_to -p tcp -j REDIRECT --to-port 18309
+	iptables -t nat -A AD_BYBY_to -p tcp -j REDIRECT --to-ports 18309
 	dns_redirect
 	sleep 1
 	gen_include &

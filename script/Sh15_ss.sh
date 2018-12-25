@@ -28,6 +28,35 @@ if [ "$ss_enable" != "0" ] || [ "$transocks_enable" != "0" ]  ; then
 #nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
+# 多线程
+ss_threads=`nvram get ss_threads`
+[ -z $ss_threads ] && ss_threads=0 && nvram set ss_threads=0
+if [ "$ss_threads" != 0 ] ; then
+threads=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
+[ -z $threads ] && threads=1
+if [ "$threads" = "1" ] ;then
+	logger -t "【SS】" "检测到单核CPU，多线程启动失败"
+	nvram set ss_threads=0
+	ss_threads=0
+fi
+if [ "$ss_threads" != "1" ] ;then
+	if [ "$ss_threads" -ge "threads" ] ; then
+	nvram set ss_threads=1
+	else
+	threads="$ss_threads"
+	fi
+fi
+Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
+Mem_lt=100000
+if [ "$Mem_total" -lt "$Mem_lt" ] ; then
+	logger -t "【SS】" "检测到内存不足100M，多线程启动失败"
+	nvram set ss_threads=0
+	ss_threads=0
+fi
+fi
+v2ray_path=`nvram get v2ray_path`
+[ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
+
 kcptun_server=`nvram get kcptun_server`
 koolproxy_enable=`nvram get koolproxy_enable`
 ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
@@ -476,8 +505,10 @@ ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | s
 # 启动程序
 /tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
 killall_ss_redir
+check_ssr
 cmd_name="SS_1_redir"
 eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
+sleep 1
 if [ ! -z $ss_server2 ] ; then
 	#启动第二个SS 连线
 	[ -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS2: $ss_server2 服务器IP，麻烦看看哪里错了？"; clean_SS; } 
@@ -485,6 +516,7 @@ if [ ! -z $ss_server2 ] ; then
 	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
 	cmd_name="SS_2_redir"
 	eval "ss-redir -c /tmp/ss-redir_2.json $options2 $cmd_log" &
+	sleep 1
 fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	logger -t "【ss-local】" "启动所有的 ss-local 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
@@ -493,6 +525,7 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	killall_ss_local
 	cmd_name="SS_1_local"
 	eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
+	sleep 1
 	if [ ! -z $ss_server2 ] ; then
 		#启动第二个SS 连线
 		[  -z "$ss_s2_ip" ] && { logger -t "【ss-local】" "[错误!!] 无法获得 SS 服务器2的IP,请核查设置"; stop_SS; clean_SS; }
@@ -500,6 +533,7 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
 		cmd_name="SS_2_local"
 		eval "ss-local -c /tmp/ss-local_2.json $options2 $cmd_log" &
+	sleep 1
 	fi
 fi
 
@@ -518,6 +552,267 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	[ -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
 fi
 
+}
+
+start_ss_redir_threads()
+{
+# 多线程启动
+if [ "$ss_threads" != 0 ] ; then
+logger -t "【SS-V2ray】" "启动多线程ss-local，使用v2ray随机轮询负载，占用端口1090-1091，10901-10904，109011-10914"
+mkdir -p /tmp/cpu4
+v2ray_cpu4_pb="/tmp/cpu4/ss-redir_v2ray.pb"
+v2ray_cpu4_json="/tmp/cpu4/ss-redir_v2ray.json"
+v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
+if [ ! -s "$v2ctl_path" ] ; then
+	wgetcurl.sh $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
+	chmod 755 "$v2ctl_path"
+fi
+if [[ "$($v2ctl_path -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	[ -f "$v2ctl_path" ] && rm -f "$v2ctl_path"
+	logger -t "【SS】" "找不到 $v2ctl_path ，多线程启动失败"
+	return
+fi
+if [ ! -s "$v2ray_path" ] ; then
+	wgetcurl.sh "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+	chmod 755 "$v2ray_path"
+fi
+if [[ "$($v2ray_path -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	[ -f "$v2ray_path" ] && rm -f "$v2ray_path"
+	logger -t "【SS】" "找不到 $v2ray_path ，多线程启动失败"
+	return
+fi
+cat > $v2ray_cpu4_json <<-END
+{
+  "log": {
+    "error": "/tmp/syslog.log",
+    "loglevel": "warning"
+  },
+  "inbounds": [
+  {
+    "port": 1090,
+    "tag": "door1090",
+    "protocol": "dokodemo-door",
+    "settings": {
+      "network": "tcp,udp",
+      "timeout": 0,
+      "followRedirect": true,
+      "userLevel": 0
+    }
+  },
+  {
+    "port": 1091,
+    "tag": "door1091",
+    "protocol": "dokodemo-door",
+    "settings": {
+      "network": "tcp,udp",
+      "timeout": 0,
+      "followRedirect": true,
+      "userLevel": 0
+    }
+  }
+  ],
+  "outbounds": [
+    {
+      "protocol": "socks",
+      "tag": "10901",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 10901
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "socks",
+      "tag": "10902",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 10902
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "socks",
+      "tag": "10903",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 10903
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "socks",
+      "tag": "10904",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 10904
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "socks",
+      "tag": "10911",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 10911
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "socks",
+      "tag": "10912",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 10912
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "socks",
+      "tag": "10913",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 10913
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "socks",
+      "tag": "10914",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 10914
+          }
+        ]
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "balancers": [
+      {
+        "tag": "1090cpu4",
+        "selector": [
+          "10901",
+          "10902",
+          "10903",
+          "10904"
+        ]
+      },
+      {
+        "tag": "1090cpu3",
+        "selector": [
+          "10901",
+          "10902",
+          "10903"
+        ]
+      },
+      {
+        "tag": "1090cpu2",
+        "selector": [
+          "10901",
+          "10902"
+        ]
+      },
+      {
+        "tag": "1091cpu4",
+        "selector": [
+          "10911",
+          "10912",
+          "10913",
+          "10914"
+        ]
+      },
+      {
+        "tag": "1091cpu3",
+        "selector": [
+          "10911",
+          "10912",
+          "10913"
+        ]
+      },
+      {
+        "tag": "1091cpu2",
+        "selector": [
+          "10911",
+          "10912"
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "balancerTag": "1090cpu$threads",
+        "inboundTag": ["door1090"]
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "balancerTag": "1091cpu$threads",
+        "inboundTag": ["door1091"]
+      }
+    ]
+  }
+}
+
+END
+chmod 666 $v2ray_cpu4_json
+logger -t "【SS】" "检测到【$(cat /proc/cpuinfo | grep 'processor' | wc -l)】核CPU：使用 $threads 线程启动"
+killall_ss_redir
+cd /tmp/cpu4
+rm -f /tmp/cpu4/ss-redir /tmp/cpu4/v2ctl
+ln -sf "$v2ray_path" /tmp/cpu4/ss-redir
+ln -sf "$v2ctl_path" /tmp/cpu4/v2ctl
+killall ss-redir
+cmd_name="ss-v2ray"
+eval "/tmp/cpu4/ss-redir -format json -config $v2ray_cpu4_json $cmd_log" &
+rm -f /tmp/cpu4/ss-local_
+ln -sf /usr/sbin/ss-local /tmp/cpu4/ss-local_
+killall ss-local_
+for cpu_i in $(seq 1 $threads)  
+do
+	logger -t "【ss-local_1_$cpu_i】" "启动ss-local 1_$cpu_i 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
+	/tmp/SSJSON.sh -f "/tmp/ss-redir_1_$cpu_i.json" $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b 127.0.0.1 -l "1090$cpu_i" -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
+	cmd_name="ss-local_1_$cpu_i"
+	eval "/tmp/cpu4/ss-local_ -c /tmp/ss-redir_1_$cpu_i.json $options1 $cmd_log" &
+	sleep 1
+done
+if [ ! -z $ss_server2 ] ; then
+for cpu_i in $(seq 1 $threads)  
+do
+	logger -t "【ss-local_2_$cpu_i】" "启动ss-local 2_$cpu_i 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
+	/tmp/SSJSON.sh -f "/tmp/ss-redir_2_$cpu_i.json" $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b 127.0.0.1 -l "1091$cpu_i" -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
+	cmd_name="ss-local_2_$cpu_i"
+	eval "/tmp/cpu4/ss-local_ -c /tmp/ss-redir_2_$cpu_i.json $options2 $cmd_log" &
+	sleep 1
+done
+fi
+logger -t "【SS】" "多线程启动完成！"
+
+fi
 }
 
 killall_ss_redir()
@@ -545,6 +840,7 @@ EOF
 
 # 启动新进程
 start_ss_redir
+start_ss_redir_threads
 start_ss_redir_check
 
 port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
@@ -786,12 +1082,12 @@ clean_ss_rules()
 echo "clean_ss_rules"
 flush_r
 	ipset destroy gfwlist
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port 1098
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port 1098
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port 1090
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port 1090
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port 1091
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port 1091
+	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 1098
+	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 1098
+	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 1090
+	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 1090
+	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 1091
+	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 1091
 	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j RETURN
 	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j RETURN
 }
@@ -939,8 +1235,8 @@ include_ac_rules2 nat
 get_wifidognx
 gen_prerouting_rules nat $wifidognx
 dns_redirect
-iptables -t nat -A SS_SPEC_WAN_KCPTUN -p tcp -j REDIRECT --to-port 1091
-iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $ss_working_port
+iptables -t nat -A SS_SPEC_WAN_KCPTUN -p tcp -j REDIRECT --to-ports 1091
+iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $ss_working_port
 wifidognx=""
 wifidogn=`iptables -t nat -L OUTPUT --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## Outgoing
 if [ -z "$wifidogn" ] ; then
@@ -1009,8 +1305,8 @@ logger -t "【SS】" "DNS程序 $ss_dnsproxy_x 模式: $ss_pdnsd_wo_redir 【0�
 echo "ss_pdnsd_wo_redir:$ss_pdnsd_wo_redir"
 if [ "$ss_pdnsd_wo_redir" == 0 ] ; then
 	# pdnsd 0走代理
-	iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $ss_working_port
-	iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $ss_working_port
+	iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $ss_working_port
+	iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $ss_working_port
 else
 	# pdnsd 1直连
 	iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j RETURN
@@ -1883,7 +2179,7 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ss-local 2>/dev/null || optssredir="2"
 fi
-if [ "$ss_run_ss_local" = "1" ] ; then
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 	hash ss-local 2>/dev/null || optssredir="3"
 fi
 [ ! -z "$ss_plugin_name" ] && { hash $ss_plugin_name 2>/dev/null || optssredir="4" ; }
@@ -1899,7 +2195,7 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ssrr-local 2>/dev/null || optssredir="2"
 fi
-if [ "$ss_run_ss_local" = "1" ] ; then
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 	hash ssrr-local 2>/dev/null || optssredir="3"
 fi
 # SSRR
@@ -1910,7 +2206,7 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
-if [ "$ss_run_ss_local" = "1" ] ; then
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 	hash ssr-local 2>/dev/null || optssredir="3"
 fi
 fi
@@ -1921,7 +2217,7 @@ hash dnsproxy 2>/dev/null || optssredir="5"
 elif [ "$ss_dnsproxy_x" = "1" ] ; then
 hash pdnsd 2>/dev/null || optssredir="5"
 fi
-[ "$ss_run_ss_local" = "1" ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
+[ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
 if [ "$optssredir" != "0" ] ; then
 	# 找不到ss-redir，安装opt
 	logger -t "【SS】" "找不到 ss-redir 、 ss-local 或 obfs-local ，挂载opt"
@@ -1947,7 +2243,7 @@ if [ "$optssredir" = "1" ] ; then
 	chmod 777 "/opt/bin/ss-redir"
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
 fi
-if [ "$ss_run_ss_local" = "1" ] ; then
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 chmod 777 "/usr/sbin/ss-local"
 	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="3"
@@ -1996,7 +2292,7 @@ if [ "$optssredir" = "1" ] ; then
 	chmod 777 "/opt/bin/ssrr-redir"
 hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
 fi
-if [ "$ss_run_ss_local" = "1" ] ; then
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 chmod 777 "/opt/bin/ssrr-local"
 	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
 	hash ssrr-local 2>/dev/null || optssredir="3"
@@ -2023,7 +2319,7 @@ if [ "$optssredir" = "1" ] ; then
 	chmod 777 "/opt/bin/ssr-redir"
 hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
 fi
-if [ "$ss_run_ss_local" = "1" ] ; then
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 chmod 777 "/usr/sbin/ssr-local"
 	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
 	hash ssr-local 2>/dev/null || optssredir="3"
@@ -2082,6 +2378,7 @@ echo "Debug: $DNS_Server"
 	fi
 	dnsmasq_reconf
 	start_ss_redir
+	start_ss_redir_threads
 	start_ss_redir_check
 	start_ss_rules
 
@@ -2251,7 +2548,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_threads$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
@@ -2434,8 +2731,9 @@ fi
 NUM=`ps -w | grep ss-redir_ | grep -v grep |wc -l`
 SSRNUM=1
 [ ! -z "$ss_rdd_server" ] && SSRNUM=2
+[ "$ss_threads" != 0 ] && SSRNUM=`expr $threads * $SSRNUM + 1`
 if [ "$NUM" -lt "$SSRNUM" ] ; then
-	logger -t "【SS】" "找不到 $SSRNUM shadowsocks 进程 $rebss, 重启SS."
+	logger -t "【SS】" "$NUM 找不到 $SSRNUM shadowsocks 进程 $rebss, 重启SS."
 	nvram set ss_status=0
 	eval "$scriptfilepath &"
 	sleep 10
@@ -2630,18 +2928,18 @@ if [ ! -z "$ss_rdd_server" ] ; then
 	logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】检测到问题, 尝试切换到 $Server_ip 【$Server】"
 	nvram set ss_internet="2"
 	#端口切换
-	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $CURRENT
-	iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $Server
+	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $CURRENT
+	iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $Server
 	if [ "$ss_udp_enable" == 1 ] ; then
 		iptables -t mangle -D SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $CURRENT --tproxy-mark 0x01/0x01
 		iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $Server --tproxy-mark 0x01/0x01
 	fi
 	if [ "$ss_pdnsd_wo_redir" == 0 ] ; then
 	# pdnsd 是否直连  1、直连；0、走代理
-		iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $CURRENT
-		iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $CURRENT
-		iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $Server
-		iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $Server
+		iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $CURRENT
+		iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $CURRENT
+		iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $Server
+		iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $Server
 	fi
 	#加上切换标记
 	nvram set ss_working_port=$Server
@@ -2739,18 +3037,18 @@ if [ ! -z "$ss_rdd_server" ] && [ "$ss_internet" = "1" ] ; then
 	logger -t "【SS】" "手动切换 $ss_info 服务器 $CURRENT_ip 【$CURRENT】"
 	nvram set ss_internet="2"
 	#端口切换
-	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $CURRENT
-	iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-port $Server
+	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $CURRENT
+	iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $Server
 	if [ "$ss_udp_enable" == 1 ] ; then
 		iptables -t mangle -D SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $CURRENT --tproxy-mark 0x01/0x01
 		iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $Server --tproxy-mark 0x01/0x01
 	fi
 	if [ "$ss_pdnsd_wo_redir" == 0 ] ; then
 	# pdnsd 是否直连  1、直连；0、走代理
-		iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $CURRENT
-		iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $CURRENT
-		iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $Server
-		iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $Server
+		iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $CURRENT
+		iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $CURRENT
+		iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $Server
+		iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $Server
 	fi
 	#加上切换标记
 	nvram set ss_working_port=$Server

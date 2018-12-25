@@ -406,8 +406,8 @@ gen_prerouting_rules nat tcp $wifidognx
 
 
 
-iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $v2ray_door
-iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $v2ray_door
+iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $v2ray_door
+iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $v2ray_door
 
 # 同时将代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理
 NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
@@ -463,15 +463,15 @@ flush_r() {
 	done
 	v2ray_door_tmp=`nvram get v2ray_door_tmp`
 	[ -z $v2ray_door_tmp ] && v2ray_door_tmp=$v2ray_door && nvram set v2ray_door_tmp=$v2ray_door_tmp
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $v2ray_door_tmp
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $v2ray_door_tmp
+	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $v2ray_door_tmp
+	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $v2ray_door_tmp
 	[ "$v2ray_door_tmp"x != "$v2ray_door"x ] && v2ray_door_tmp=$v2ray_door && nvram set v2ray_door_tmp=$v2ray_door_tmp
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port $v2ray_door
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port $v2ray_door
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port 1090
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port 1090
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-port 1091
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-port 1091
+	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $v2ray_door
+	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $v2ray_door
+	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 1090
+	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 1090
+	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 1091
+	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 1091
 	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j RETURN
 	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j RETURN
 	if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
@@ -519,6 +519,7 @@ include_ac_rules() {
 *$1
 :SS_SPEC_V2RAY_LAN_DG - [0:0]
 :SS_SPEC_WAN_FW - [0:0]
+-A SS_SPEC_V2RAY_LAN_DG -p tcp -m mark --mark 0xff -j RETURN
 -A SS_SPEC_V2RAY_LAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
 -A SS_SPEC_V2RAY_LAN_DG -j SS_SPEC_WAN_FW
 COMMIT

@@ -135,10 +135,10 @@ done
 
 fakeincn_close () {
 sed -Ei '/【fakeincn】|^$/d' /tmp/script/_opt_script_check
-iptables -t nat -D PREROUTING -p tcp -m set --match-set rtocn dst -j REDIRECT --to-port 1008
-iptables -t nat -D OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-port 1008
-iptables -t nat -D PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-port 1008
-iptables -t nat -D OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-port 1008
+iptables -t nat -D PREROUTING -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -D OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -D PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -D OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 rm -rf /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
 restart_dhcpd
 [ ! -z "$fakeincn_path" ] && eval $(ps -w | grep 'l 1008' | grep -v grep | awk '{print "kill "$1";";}')
@@ -194,10 +194,10 @@ logger -t "【fakeincn】" "防火墙规则恢复，开始返回国内规则"
 
 ipset -! -N tocn iphash
 
-iptables -t nat -D PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-port 1008
-iptables -t nat -D OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-port 1008
-iptables -t nat -A PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-port 1008
-iptables -t nat -A OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-port 1008
+iptables -t nat -D PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -D OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -A PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -A OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 
 while read line ; do ipset add tocn $line ;done <<-EOF
 120.92.96.181
@@ -294,10 +294,10 @@ logger -t "【fakeincn】" "国内IP规则设置完成"
 ipset -! -N rtocn hash:net
 ipset add rtocn 106.11.1.1/16
 
-iptables -t nat -D PREROUTING -p tcp -m set --match-set rtocn dst -j REDIRECT --to-port 1008
-iptables -t nat -D OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-port 1008
-iptables -t nat -A PREROUTING -p tcp -m set --match-set rtocn dst -j REDIRECT --to-port 1008
-iptables -t nat -A OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-port 1008
+iptables -t nat -D PREROUTING -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -D OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -A PREROUTING -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
+iptables -t nat -A OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
 logger -t "【fakeincn】" "优酷IP规则设置完成"
 
 cp -f /etc/storage/app_2.sh /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
