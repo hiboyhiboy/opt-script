@@ -70,7 +70,7 @@ fakeincn_get_status () {
 
 #lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get fakeincn_status`
-B_restart="$fakeincn_enable$fakeincn_path$(cat /etc/storage/app_1.sh /etc/storage/app_2.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$fakeincn_enable$fakeincn_path$(cat /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set fakeincn_status=$B_restart
@@ -199,93 +199,13 @@ iptables -t nat -D OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-po
 iptables -t nat -A PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 iptables -t nat -A OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 
-while read line ; do ipset add tocn $line ;done <<-EOF
-120.92.96.181
-101.227.139.217
-101.227.169.200
-103.7.30.89
-103.7.31.186
-106.11.186.4
-106.11.47.20
-106.11.47.19
-106.11.209.2
-111.13.127.46
-111.206.208.163
-111.206.208.164
-111.206.208.166
-111.206.208.36
-111.206.208.37
-111.206.208.38
-111.206.208.61
-111.206.208.62
-111.206.211.129
-111.206.211.130
-111.206.211.131
-111.206.211.145
-111.206.211.146
-111.206.211.147
-111.206.211.148
-115.182.200.50
-115.182.200.51
-115.182.200.52
-115.182.200.53
-115.182.200.54
-115.182.63.51
-115.182.63.93
-117.185.116.152
-118.244.244.124
-122.72.82.31
-123.125.89.101
-123.125.89.102
-123.125.89.103
-123.125.89.157
-123.125.89.159
-123.125.89.6
-123.126.32.134
-123.126.99.39
-123.126.99.57
-123.59.122.104
-123.59.122.75
-123.59.122.76
-123.59.122.77
-14.152.77.22
-14.152.77.25
-14.152.77.26
-14.152.77.32
-14.18.245.250
-140.207.69.99
-163.177.90.61
-180.153.225.136
-182.16.230.98
-182.254.11.174
-182.254.116.117
-182.254.34.151
-182.254.4.234
-183.192.192.139
-183.232.119.198
-183.232.126.23
-183.232.229.21
-183.232.229.22
-183.232.229.25
-183.232.229.32
-203.205.151.23
-210.129.145.150
-211.151.157.15
-211.151.158.155
-211.151.50.10
-220.181.153.113
-220.181.154.137
-220.181.185.150
-220.249.243.70
-223.167.82.139
-36.110.222.105
-36.110.222.119
-36.110.222.146
-36.110.222.156
-59.37.96.220
-61.135.196.99
-103.7.30.79
-EOF
+while read line
+do
+if [ ! -z "$line" ] ; then
+	ipset add tocn $line
+fi
+done < /etc/storage/app_12.sh
+
 
 logger -t "【fakeincn】" "国内IP规则设置完成"
 
@@ -331,22 +251,17 @@ if [ ! -f "/etc/storage/app_1.sh" ] || [ ! -s "/etc/storage/app_1.sh" ] ; then
 #!/bin/sh
 # FakeInChina(假装在中国) 
 # 用途：与“由于版权限制，你所在的地区不能播放”告别，目前支持大多数主流的视音频app，包括：youku、iqiyi、qq（音乐、视频）、网易、乐视、CNTV等等，数量太多，不全部列出了。
-# 这个功能模块需要使用国内SS服务器，其实最早让H大把ss-server集成到基础固件就是为了这一个模块，只是由于前一段时间基本上在国内，也就一直没有时间去调试这个模块，这段时间终于有时间和条件进行调试了。
+# 这个功能模块需要使用国内SS服务器，其实最早让 Hiboy 把ss-server集成到 PADAVAN 基础固件就是为了这一个模块，只是由于前一段时间基本上在国内，也就一直没有时间去调试这个模块，这段时间终于有时间和条件进行调试了。
 # 模块运行时候，仅对检测服务器进行流量伪装（可能会包括部分网页文字以及图片），视音频码流依然直连线路，因此，对国内的SS服务器流量需求极低，一般普通家庭用的宽带便可以使用，在国内家人或者朋友的路由上运行SS-server，你在国外就可以正常使用。
 # 毕竟大多数国内宽带IP是动态的，并且很多地区会限制时间自动断线，模块支持多台ss服务器备份，会自动检测可用的SS服务器，自动重连。
-# 目前这个模块在我自己的路由上跑了将近2个月，没有遇到任何问题，各APP均使用正常。
-# 由于各大公司检测IP的方法可能会变，某些规则会出现失效，某些服务商针对不同地区会用不同IP的服务器进行检测（例如youku，美国和德国地区用于地区检测的服务器就不同），所以我仅能保证我所居住的德国地区可以使用正常。
-# 如果你所用的app出现了地区限制，可以发邮件给我：gaocuo@gmail.com。邮件内请说明你使用的app（无论如何请尽量使用最新版本的app，iOS系统是无法安装旧版本进行测试的）、你所在的国家、出现版权限制的视音频节目，我会尽量解决，但这不是保证。
-# 如果是由于地区不同而导致检测服务器不同出现的地区限制，恕我无能为力。
-
-# bigANDY  gaocuo@gmail.com
-# 2018-01-16@DE
-# Ver 0.2
-
+# 目前这个模块在我自己的路由上跑了将近半年了，前一段时间由于检测地区的网站在国内很难打开，因此升级了一个小版本，顺便开源了。
+# 项目地址: https://github.com/gaocuo/fic
+# https://github.com/gaocuo/fic/blob/master/添加其他应用的方法.txt
 # 配置文件包括以下几个：
-# /etc/storage/script/Sh20_fakeincn.sh  ，启动脚本 和 用于初始化流量伪装表。
-# /etc/storage/app_2.sh  这个文件复制到 /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf ，其中的 https://api.ip.sb/geoip 是用于检测地区的，你也可以在模块运行后浏览器访问 https://api.ip.sb/geoip 看看到底流量伪装是否成功。
-# /etc/storage/app_1.sh  这个文件用于自动检测 ss 是否正常，自动切换ss 服务器。里面需要设置你自己的ss服务器参数，请保证各台ss-server 的端口、密码、加密方式的一致，我是个懒人，不想处理那么复杂的情况。
+# /etc/storage/script/Sh20_fakeincn.sh # 启动脚本 和 用于初始化流量伪装表。
+# /etc/storage/app_1.sh # 这个文件用于自动检测 ss 是否正常，自动切换ss 服务器。里面需要设置你自己的ss服务器参数，请保证各台ss-server 的端口、密码、加密方式的一致，我是个懒人，不想处理那么复杂的情况。
+# 国内IP段的伪装表(/etc/storage/app_12.sh) # 这个文件IP进行流量伪装
+# 伪装表r.tocn.conf(/etc/storage/app_2.sh) # 这个文件复制到 /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf ，其中的 https://api.ip.sb/geoip 是用于检测地区的，你也可以在模块运行后浏览器访问 https://api.ip.sb/geoip 看看到底流量伪装是否成功。
 
 # ↓↓↓↓↓配置你自己的ss服务器参数↓↓↓↓↓
 server1=xxx1.dynu.net
@@ -398,7 +313,7 @@ while [ "$fakeincn_enable" = "1" ]; do
 	fi
 fakeincn_enable=`nvram get app_7` #fakeincn_enable
 done
-fakeincn_v=2018-2-19
+fakeincn_v=2018-12-31
 
 EOF
 fi
@@ -411,12 +326,15 @@ ipset=/a.play.api.3g.youku.com/tocn
 ipset=/ac.qq.com/tocn
 ipset=/acc.music.qq.com/tocn
 ipset=/access.tv.sohu.com/tocn
+ipset=/acs.youku.com/tocn
 ipset=/aid.video.qq.com/tocn
 ipset=/aidbak.video.qq.com/tocn
 ipset=/antiserver.kuwo.cn/tocn
 ipset=/api.3g.tudou.com/tocn
 ipset=/api.3g.youku.com/tocn
+ipset=/api.aixifan.com/tocn
 ipset=/api.appsdk.soku.com/tocn
+ipset=/api.ip.sb/tocn
 ipset=/api.itv.letv.com/tocn
 ipset=/api.le.com/tocn
 ipset=/api.letv.com/tocn
@@ -448,6 +366,8 @@ ipset=/data.bilibili.com/tocn
 ipset=/data.video.iqiyi.com/tocn
 ipset=/data.video.qiyi.com/tocn
 ipset=/dispatcher.video.sina.com.cn/tocn
+ipset=/dmd-fifa-h5-ikuweb.youku.com/tocn
+ipset=/dmd-fifajs-h5-ikuweb.youku.com/tocn
 ipset=/douban.fm/tocn
 ipset=/dpool.sina.com.cn/tocn
 ipset=/dyn.ugc.pps.tv/tocn
@@ -460,11 +380,11 @@ ipset=/epg.api.pptv.com/tocn
 ipset=/geo.js.kankan.com/tocn
 ipset=/hot.vrs.letv.com/tocn
 ipset=/hot.vrs.sohu.com/tocn
-ipset=/i-play.mobile.youku.com/tocn
 ipset=/i.play.api.3g.youku.com/tocn
 ipset=/i.y.qq.com/tocn
 ipset=/iface.iqiyi.com/tocn
 ipset=/iface2.iqiyi.com/tocn
+ipset=/ifconfig.co/tocn
 ipset=/info.zb.qq.com/tocn
 ipset=/info.zb.video.qq.com/tocn
 ipset=/inner.kandian.com/tocn
@@ -475,6 +395,9 @@ ipset=/ip.kankan.com/tocn
 ipset=/ip.kugou.com/tocn
 ipset=/ip2.kugou.com/tocn
 ipset=/ipcheck.kuwo.cn/tocn
+ipset=/ipinfo.io/tocn
+ipset=/ipip.net/tocn
+ipset=/i-play.mobile.youku.com/tocn
 ipset=/iplocation.geo.iqiyi.com/tocn
 ipset=/iplocation.geo.qiyi.com/tocn
 ipset=/ipservice.163.com/tocn
@@ -509,17 +432,20 @@ ipset=/pay.youku.com/tocn
 ipset=/paybak.video.qq.com/tocn
 ipset=/pcweb.api.mgtv.com/tocn
 ipset=/pl-ali.youku.com/tocn
-ipset=/play-ali.youku.com/tocn
-ipset=/play-dxk.youku.com/tocn
 ipset=/play.api.3g.tudou.com/tocn
 ipset=/play.api.3g.youku.com/tocn
 ipset=/play.api.pptv.com/tocn
 ipset=/play.baidu.com/tocn
 ipset=/play.youku.com/tocn
-ipset=/player-pc.le.com/tocn
+ipset=/play-ali.youku.com/tocn
+ipset=/play-dxk.youku.com/tocn
+ipset=/player.aplus.pptv.com/tocn
 ipset=/player.pc.le.com/tocn
+ipset=/player-pc.le.com/tocn
+ipset=/ppi.api.pptv.com/tocn
 ipset=/proxy.music.qq.com/tocn
 ipset=/proxymc.qq.com/tocn
+ipset=/pstream.api.mgtv.com/tocn
 ipset=/qzs.qq.com/tocn
 ipset=/s.plcloud.music.qq.com/tocn
 ipset=/search.api.3g.tudou.com/tocn
@@ -541,15 +467,19 @@ ipset=/tools.aplusapi.pptv.com/tocn
 ipset=/tv.api.3g.tudou.com/tocn
 ipset=/tv.api.3g.youku.com/tocn
 ipset=/tv.weibo.com/tocn
+ipset=/u.y.qq.com/tocn
 ipset=/ups.youku.com/tocn
 ipset=/v.api.hunantv.com/tocn
 ipset=/v.api.mgtv.com/tocn
 ipset=/v.iask.com/tocn
 ipset=/v.pps.tv/tocn
+ipset=/v.pptv.com/tocn
 ipset=/v.youku.com/tocn
 ipset=/v5.pc.duomi.com/tocn
+ipset=/vd.l.qq.com/tocn
 ipset=/vdn.apps.cntv.cn/tocn
 ipset=/vdn.live.cntv.cn/tocn
+ipset=/vi.l.qq.com/tocn
 ipset=/video.qq.com/tocn
 ipset=/video.sina.com.cn/tocn
 ipset=/video.tudou.com/tocn
@@ -558,6 +488,7 @@ ipset=/vxml.56.com/tocn
 ipset=/web-play.pplive.cn/tocn
 ipset=/web-play.pptv.com/tocn
 ipset=/wtv.v.iask.com/tocn
+ipset=/www.acfun.cn/tocn
 ipset=/www.bilibili.com/tocn
 ipset=/www.iqiyi.com/tocn
 ipset=/www.kugou.com/tocn
@@ -569,14 +500,105 @@ ipset=/www.xiami.com/tocn
 ipset=/www.yinyuetai.com/tocn
 ipset=/www.youku.com/tocn
 ipset=/zb.s.qq.com/tocn
-ipset=/ipip.net/tocn
-ipset=/ipinfo.io/tocn
-ipset=/ifconfig.co/tocn
 
 EOF
 fi
 
-chmod 777 /etc/storage/app_1.sh /etc/storage/app_2.sh
+# 国内IP伪装表
+if [ ! -f "/etc/storage/app_12.sh" ] || [ ! -s "/etc/storage/app_12.sh" ] ; then
+	cat >> "/etc/storage/app_12.sh" <<-\EOF
+101.227.139.217
+101.227.169.200
+103.65.41.125
+103.65.41.126
+103.7.30.79
+103.7.30.89
+103.7.31.186
+106.11.186.4
+106.11.209.2
+106.11.47.19
+106.11.47.20
+111.13.127.46
+111.206.208.163
+111.206.208.164
+111.206.208.166
+111.206.208.36
+111.206.208.37
+111.206.208.38
+111.206.208.61
+111.206.208.62
+111.206.211.129
+111.206.211.130
+111.206.211.131
+111.206.211.145
+111.206.211.146
+111.206.211.147
+111.206.211.148
+115.182.200.50
+115.182.200.51
+115.182.200.52
+115.182.200.53
+115.182.200.54
+115.182.63.51
+115.182.63.93
+117.185.116.152
+118.244.244.124
+120.92.96.181
+122.72.82.31
+123.125.89.101
+123.125.89.102
+123.125.89.103
+123.125.89.157
+123.125.89.159
+123.125.89.6
+123.126.32.134
+123.126.99.39
+123.126.99.57
+123.59.122.104
+123.59.122.75
+123.59.122.75                
+123.59.122.76
+123.59.122.77
+14.152.77.22
+14.152.77.25
+14.152.77.26
+14.152.77.32
+14.18.245.250
+140.207.69.99
+163.177.90.61
+180.153.225.136
+182.16.230.98
+182.254.11.174
+182.254.116.117
+182.254.34.151
+182.254.4.234
+183.192.192.139
+183.232.119.198
+183.232.126.23
+183.232.229.21
+183.232.229.22
+183.232.229.25
+183.232.229.32
+203.205.151.23
+210.129.145.150
+211.151.157.15
+211.151.158.155
+211.151.50.10
+220.181.153.113
+220.181.154.137
+220.181.185.150
+220.249.243.70
+223.167.82.139
+36.110.222.105
+36.110.222.119
+36.110.222.146
+36.110.222.156
+59.37.96.220
+61.135.196.99
+EOF
+fi
+
+chmod 777 /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh
 
 }
 
@@ -584,7 +606,7 @@ initconfig
 
 update_app () {
 if [ "$1" = "del" ] ; then
-	rm -rf /etc/storage/app_1.sh /etc/storage/app_2.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
+	rm -rf /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
 fi
 
 initconfig
@@ -597,7 +619,7 @@ fi
 umount /www/Advanced_Extensions_app02.asp
 mount --bind /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp /www/Advanced_Extensions_app02.asp
 # 更新程序启动脚本
-[ "$1" = "del" ] && rm -rf /etc/storage/app_2.sh
+[ "$1" = "del" ] && rm -rf /etc/storage/app_2.sh rm -rf /etc/storage/app_12.sh
 [ "$1" = "del" ] && /etc/storage/www_sh/假装在中国 del &
 }
 

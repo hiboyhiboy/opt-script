@@ -229,6 +229,9 @@ if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
 	mkdir -p /opt/etc/ssl/certs
 	rm -f /etc/ssl/certs
 	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
+	if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] && [ -s /etc_ro/certs.tgz ]; then
+		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/
+	fi
 	if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
 		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
 		if [ ! -s "/opt/app/ipk/certs.tgz" ] ; then
@@ -519,7 +522,7 @@ include_ac_rules() {
 *$1
 :SS_SPEC_V2RAY_LAN_DG - [0:0]
 :SS_SPEC_WAN_FW - [0:0]
--A SS_SPEC_V2RAY_LAN_DG -p tcp -m mark --mark 0xff -j RETURN
+-A SS_SPEC_V2RAY_LAN_DG -m mark --mark 0xff -j RETURN
 -A SS_SPEC_V2RAY_LAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
 -A SS_SPEC_V2RAY_LAN_DG -j SS_SPEC_WAN_FW
 COMMIT

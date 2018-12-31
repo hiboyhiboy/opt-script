@@ -38,13 +38,13 @@ get_app ()
 {
 
 # 更新程序启动脚本
-[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh20_fakeincn.sh /etc/storage/app_2.sh
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh20_fakeincn.sh /etc/storage/app_2.sh /etc/storage/app_12.sh
 if [ ! -f "/etc/storage/script/Sh20_fakeincn.sh" ] || [ ! -s "/etc/storage/script/Sh20_fakeincn.sh" ] ; then
 	wgetcurl.sh /etc/storage/script/Sh20_fakeincn.sh "$hiboyscript/script/Sh20_fakeincn.sh" "$hiboyscript/script/Sh20_fakeincn.sh"
 fi
 chmod 777 /etc/storage/script -R
 # 初始配置脚本
-if [ ! -f "/etc/storage/app_1.sh" ] || [ ! -s "/etc/storage/app_1.sh" ] || [ ! -f "/etc/storage/app_2.sh" ] || [ ! -s "/etc/storage/app_2.sh" ] ; then
+if [ ! -f "/etc/storage/app_1.sh" ] || [ ! -s "/etc/storage/app_1.sh" ] || [ ! -f "/etc/storage/app_2.sh" ] || [ ! -s "/etc/storage/app_2.sh" ] || [ ! -f "/etc/storage/app_12.sh" ] || [ ! -s "/etc/storage/app_12.sh" ] ; then
 	/etc/storage/script/Sh20_fakeincn.sh update_app
 fi
 [ "$1" = "del" ] && exit

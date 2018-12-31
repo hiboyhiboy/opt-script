@@ -503,7 +503,9 @@ ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e 
 ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
 
 # 启动程序
-/tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l 1090 -b 0.0.0.0 -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
+ss_s1_redir_port=1090
+[ "$ss_threads" != 0 ] && ss_s1_redir_port=1092
+/tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l $ss_s1_redir_port -b 0.0.0.0 -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
 killall_ss_redir
 check_ssr
 cmd_name="SS_1_redir"
@@ -511,9 +513,11 @@ eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
 sleep 1
 if [ ! -z $ss_server2 ] ; then
 	#启动第二个SS 连线
+	ss_s2_redir_port=1091
+	[ "$ss_threads" != 0 ] && ss_s2_redir_port=1093
 	[ -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS2: $ss_server2 服务器IP，麻烦看看哪里错了？"; clean_SS; } 
 	logger -t "【SS】" "SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
-	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l 1091 -b 0.0.0.0 -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
+	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l $ss_s2_redir_port -b 0.0.0.0 -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
 	cmd_name="SS_2_redir"
 	eval "ss-redir -c /tmp/ss-redir_2.json $options2 $cmd_log" &
 	sleep 1
@@ -558,7 +562,7 @@ start_ss_redir_threads()
 {
 # 多线程启动
 if [ "$ss_threads" != 0 ] ; then
-logger -t "【SS-V2ray】" "启动多线程ss-local，使用v2ray随机轮询负载，占用端口1090-1091，10901-10904，109011-10914"
+logger -t "【SS-V2ray】" "启动多线程ss-local，使用v2ray随机轮询负载，占用端口1090-1093，10901-10904，109011-10914"
 mkdir -p /tmp/cpu4
 v2ray_cpu4_pb="/tmp/cpu4/ss-redir_v2ray.pb"
 v2ray_cpu4_json="/tmp/cpu4/ss-redir_v2ray.json"
@@ -737,6 +741,12 @@ cat > $v2ray_cpu4_json <<-END
         ]
       },
       {
+        "tag": "1090udp",
+        "selector": [
+          "10901"
+        ]
+      },
+      {
         "tag": "1091cpu4",
         "selector": [
           "10911",
@@ -759,19 +769,37 @@ cat > $v2ray_cpu4_json <<-END
           "10911",
           "10912"
         ]
+      },
+      {
+        "tag": "1091udp",
+        "selector": [
+          "10911"
+        ]
       }
     ],
     "rules": [
       {
         "type": "field",
-        "network": "tcp,udp",
+        "network": "tcp",
         "balancerTag": "1090cpu$threads",
         "inboundTag": ["door1090"]
       },
       {
         "type": "field",
-        "network": "tcp,udp",
+        "network": "udp",
+        "balancerTag": "1090udp",
+        "inboundTag": ["door1090"]
+      },
+      {
+        "type": "field",
+        "network": "tcp",
         "balancerTag": "1091cpu$threads",
+        "inboundTag": ["door1091"]
+      },
+      {
+        "type": "field",
+        "network": "udp",
+        "balancerTag": "1091udp",
         "inboundTag": ["door1091"]
       }
     ]
@@ -781,12 +809,12 @@ cat > $v2ray_cpu4_json <<-END
 END
 chmod 666 $v2ray_cpu4_json
 logger -t "【SS】" "检测到【$(cat /proc/cpuinfo | grep 'processor' | wc -l)】核CPU：使用 $threads 线程启动"
-killall_ss_redir
+[ "$ss_udp_enable" == 0 ] && killall_ss_redir
 cd /tmp/cpu4
 rm -f /tmp/cpu4/ss-redir /tmp/cpu4/v2ctl
 ln -sf "$v2ray_path" /tmp/cpu4/ss-redir
 ln -sf "$v2ctl_path" /tmp/cpu4/v2ctl
-killall ss-redir
+kill_ps /tmp/cpu4/ss-redir
 cmd_name="ss-v2ray"
 eval "/tmp/cpu4/ss-redir -format json -config $v2ray_cpu4_json $cmd_log" &
 rm -f /tmp/cpu4/ss-local_
@@ -1295,10 +1323,18 @@ if [ "$ss_udp_enable" == 1 ] ; then
 	gen_prerouting_rules mangle $wifidognx
 	[ "$ss_DNS_Redirect" != "1" ] && iptables -t mangle -A SS_SPEC_WAN_KCPTUN -p udp --dport 53  -m set ! --match-set ss_spec_dst_fw dst -j RETURN
 	[ "$ss_DNS_Redirect" == "1" ] && iptables -t mangle -A SS_SPEC_WAN_KCPTUN -p udp --dport 53  -j RETURN
-	iptables -t mangle -A SS_SPEC_WAN_KCPTUN -p udp -j TPROXY --on-port 1091 --tproxy-mark 0x01/0x01
+	ss_working_port_udp=1091
+	if [ "$ss_threads" != 0 ] ; then
+		ss_working_port_udp=`expr $ss_working_port_udp  + 2`
+	fi
+	iptables -t mangle -A SS_SPEC_WAN_KCPTUN -p udp -j TPROXY --on-port $ss_working_port_udp --tproxy-mark 0x01/0x01
 	[ "$ss_DNS_Redirect" != "1" ] && iptables -t mangle -A SS_SPEC_WAN_FW -p udp --dport 53  -m set ! --match-set ss_spec_dst_fw dst -j RETURN
 	[ "$ss_DNS_Redirect" == "1" ] && iptables -t mangle -A SS_SPEC_WAN_FW -p udp --dport 53  -j RETURN
-	iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $ss_working_port --tproxy-mark 0x01/0x01
+	ss_working_port_udp=$ss_working_port
+	if [ "$ss_threads" != 0 ] ; then
+		ss_working_port_udp=`expr $ss_working_port_udp  + 2`
+	fi
+	iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $ss_working_port_udp --tproxy-mark 0x01/0x01
 fi
 # 加载 pdnsd 规则
 logger -t "【SS】" "DNS程序 $ss_dnsproxy_x 模式: $ss_pdnsd_wo_redir 【0走代理 1直连】"
@@ -1729,6 +1765,7 @@ include_ac_rules() {
 :SS_SPEC_WAN_CHN - [0:0]
 :SS_SPEC_WAN_CHNGFW - [0:0]
 :SS_SPEC_WAN_KCPTUN - [0:0]
+-A SS_SPEC_LAN_DG -m mark --mark 0xff -j RETURN
 -A SS_SPEC_LAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
 -A SS_SPEC_LAN_DG -j SS_SPEC_LAN_AC
 -A SS_SPEC_LAN_AC -m set --match-set ss_spec_src_bp src -j RETURN
@@ -2730,8 +2767,10 @@ fi
 
 NUM=`ps -w | grep ss-redir_ | grep -v grep |wc -l`
 SSRNUM=1
+SSRNUM_udp=0
 [ ! -z "$ss_rdd_server" ] && SSRNUM=2
-[ "$ss_threads" != 0 ] && SSRNUM=`expr $threads * $SSRNUM + 1`
+[ "$ss_udp_enable" == 1 ] && SSRNUM_udp=$SSRNUM
+[ "$ss_threads" != 0 ] && SSRNUM=`expr $threads * $SSRNUM + 1 + $SSRNUM_udp`
 if [ "$NUM" -lt "$SSRNUM" ] ; then
 	logger -t "【SS】" "$NUM 找不到 $SSRNUM shadowsocks 进程 $rebss, 重启SS."
 	nvram set ss_status=0
@@ -2931,8 +2970,15 @@ if [ ! -z "$ss_rdd_server" ] ; then
 	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $CURRENT
 	iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $Server
 	if [ "$ss_udp_enable" == 1 ] ; then
-		iptables -t mangle -D SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $CURRENT --tproxy-mark 0x01/0x01
-		iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $Server --tproxy-mark 0x01/0x01
+		CURRENT_udp=$CURRENT
+		Server_udp=$Server
+		if [ "$ss_threads" != 0 ] ; then
+			CURRENT_udp=`expr $CURRENT_udp  + 2`
+			Server_udp=`expr $Server_udp  + 2`
+			
+		fi
+		iptables -t mangle -D SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $CURRENT_udp --tproxy-mark 0x01/0x01
+		iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $Server_udp --tproxy-mark 0x01/0x01
 	fi
 	if [ "$ss_pdnsd_wo_redir" == 0 ] ; then
 	# pdnsd 是否直连  1、直连；0、走代理
@@ -3040,8 +3086,15 @@ if [ ! -z "$ss_rdd_server" ] && [ "$ss_internet" = "1" ] ; then
 	iptables -t nat -D SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $CURRENT
 	iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $Server
 	if [ "$ss_udp_enable" == 1 ] ; then
-		iptables -t mangle -D SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $CURRENT --tproxy-mark 0x01/0x01
-		iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $Server --tproxy-mark 0x01/0x01
+		CURRENT_udp=$CURRENT
+		Server_udp=$Server
+		if [ "$ss_threads" != 0 ] ; then
+			CURRENT_udp=`expr $CURRENT_udp  + 2`
+			Server_udp=`expr $Server_udp  + 2`
+			
+		fi
+		iptables -t mangle -D SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $CURRENT_udp --tproxy-mark 0x01/0x01
+		iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $Server_udp --tproxy-mark 0x01/0x01
 	fi
 	if [ "$ss_pdnsd_wo_redir" == 0 ] ; then
 	# pdnsd 是否直连  1、直连；0、走代理
