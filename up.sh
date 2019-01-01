@@ -9,7 +9,7 @@ rm -f /tmp/padavan/*
 wget --no-check-certificate  -O /tmp/padavan/MD5.txt https://opt.cn2qq.com/padavan/MD5.txt
 dos2unix /tmp/padavan/MD5.txt
 if [ "$Firmware"x = "x" ] ; then
-PN=`grep Web_Title= /www/EN.dict | sed 's/Web_Title=//g'| sed 's/ 无线路由器//g'`
+PN=`grep Web_Title= /www/EN.dict | sed 's/Web_Title=//g'| sed 's/ 无线路由器\| Wireless Router//g'`
 [ "$PN"x != "x" ] && Firmware=`cat /tmp/padavan/MD5.txt | grep -Eo "$PN"'_.*' | sed -n '1p'`
 fi
 logger_echo () {
