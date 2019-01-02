@@ -112,6 +112,11 @@ source /tmp/ss/link/daochu_4.txt
 rm -rf /tmp/ss/link
 }
 
+rt_ssnum_x=$(nvram get rt_ssnum_x)
+[ -z $rt_ssnum_x ] && rt_ssnum_x="0"
+[ $rt_ssnum_x -lt 0 ] && rt_ssnum_x="0" || { [ $rt_ssnum_x -gt 0 ] || rt_ssnum_x="0" ; }
+nvram set rt_ssnum_x=$rt_ssnum_x
+
 rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
 [ -z "$rt_ssnum_x_tmp" ] && rt_ssnum_x_tmp="" && nvram set rt_ssnum_x_tmp=""
 if [ "$rt_ssnum_x_tmp"x = "del"x ] ; then
