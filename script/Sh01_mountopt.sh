@@ -266,18 +266,18 @@ re_size () {
 
 AiDisk00 () {
 re_size &
-if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
+if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 # 安装ca-certificates
 mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载
-if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
+if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	mkdir -p /opt/app/ipk/
 	mkdir -p /opt/etc/ssl/certs
 	rm -f /etc/ssl/certs
 	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
-	if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] && [ -s /etc_ro/certs.tgz ]; then
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
 		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/
 	fi
-	if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
 		if [ ! -s "/opt/app/ipk/certs.tgz" ] ; then
 			logger -t "【opt】" "下载证书"

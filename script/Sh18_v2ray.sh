@@ -224,15 +224,15 @@ if [ ! -s "$geosite_path" ] ; then
 	wgetcurl.sh $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
 	chmod 755 "$geosite_path"
 fi
-if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
+if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	mkdir -p /opt/app/ipk/
 	mkdir -p /opt/etc/ssl/certs
 	rm -f /etc/ssl/certs
 	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
-	if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] && [ -s /etc_ro/certs.tgz ]; then
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
 		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/
 	fi
-	if [ ! -s "/etc/ssl/certs/Comodo_AAA_Services_root.crt" ] ; then
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
 		if [ ! -s "/opt/app/ipk/certs.tgz" ] ; then
 			logger -t "【opt】" "下载证书"
