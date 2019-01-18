@@ -198,7 +198,7 @@ get_recordid() {
 }
 
 get_recordIP() {
-	grep -Eo '"Value":"[^"]*"' | awk -F 'Value":"' '{print $2}' | tr -d '"' |head -n1
+	sed -e "s/"'"TTL":'"/"' \n '"/g" | grep '"Type":"'$domain_type'"' | head -n1 | grep -Eo '"Value":"[^"]*"' | awk -F 'Value":"' '{print $2}' | tr -d '"' |head -n1
 }
 
 query_recordInfo() {
@@ -206,7 +206,7 @@ query_recordInfo() {
 }
 
 query_recordid() {
-	send_request "DescribeSubDomainRecords" "SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&SubDomain=$name1.$domain&Timestamp=$timestamp"
+	send_request "DescribeSubDomainRecords" "SignatureMethod=HMAC-SHA1&SignatureNonce=$timestamp&SignatureVersion=1.0&SubDomain=$name1.$domain&Timestamp=$timestamp&Type=$domain_type"
 }
 
 update_record() {
@@ -232,6 +232,11 @@ case  $name  in
 		;;
 esac
 
+	if [ "$IPv6" = "1" ]; then
+		domain_type="AAAA"
+	else
+		domain_type="A"
+	fi
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 	# 获得域名ID
 	aliddns_record_id=""
@@ -247,7 +252,7 @@ esac
 	else
 	# Output IP
 	case "$recordIP" in 
-	[1-9][0-9]*)
+	[1-9]*)
 		echo $recordIP
 		return 0
 		;;

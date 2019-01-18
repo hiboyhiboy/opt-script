@@ -165,6 +165,11 @@ Zone_ID=$(echo $Zone_ID|grep -o "id\":\"[0-9a-z]*\",\"name\":\"$host_tmp\",\"sta
 arDdnsInfo() {
 host_tmp=$1
 domian_tmp=$2
+if [ "$IPv6" = "1" ]; then
+	domain_type="AAAA"
+else
+	domain_type="A"
+fi
 # 获得Zone_ID
 get_Zone_ID $host_tmp
 # 获得最后更新IP
@@ -172,13 +177,13 @@ recordIP=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_I
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
-recordIP=$(echo $recordIP|grep -o "name\":\"$domian_tmp.$host_tmp\",\"content\":\"[^\"]*\""| awk -F 'content":"' '{print $2}' | tr -d '"' |head -n1)
+recordIP=$(echo $recordIP | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | head -n1 | grep -o "name\":\"$domian_tmp.$host_tmp\",\"content\":\"[^\"]*\""| awk -F 'content":"' '{print $2}' | tr -d '"' |head -n1)
 	if [ "$IPv6" = "1" ]; then
 	echo $recordIP
 	return 0
 	else
 	case "$recordIP" in 
-	[1-9][0-9]*)
+	[1-9]*)
 		echo $recordIP
 		return 0
 		;;
@@ -246,6 +251,11 @@ host_tmp=$1
 domian_tmp=$2
 I=3
 RECORD_ID=""
+if [ "$IPv6" = "1" ]; then
+	domain_type="AAAA"
+else
+	domain_type="A"
+fi
 while [ "$RECORD_ID" = "" ] ; do
 	I=$(($I - 1))
 	[ $I -lt 0 ] && break
@@ -256,7 +266,7 @@ RECORD_ID=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
-RECORD_ID=$(echo $RECORD_ID|grep -o "id\":\"[0-9a-z]\{32,\}\",\"type\":\"[^\"]*\",\"name\":\"$domian_tmp.$host_tmp\",\"content\":\""|grep -o "id\":\"[0-9a-z]\{32,\}\",\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
+RECORD_ID=$(echo $RECORD_ID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | head -n1 | grep -o "id\":\"[0-9a-z]\{32,\}\",\"type\":\"[^\"]*\",\"name\":\"$domian_tmp.$host_tmp\",\"content\":\""|grep -o "id\":\"[0-9a-z]\{32,\}\",\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
 # 检查是否有名称重复的子域名
 if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 	for Delete_RECORD_ID in $RECORD_ID
@@ -272,11 +282,6 @@ fi
 #echo "RECORD ID: $RECORD_ID"
 sleep 1
 done
-if [ "$IPv6" = "1" ]; then
-	domain_type="AAAA"
-else
-	domain_type="A"
-fi
 if [ "$RECORD_ID" = "" ] ; then
 	# 添加子域名记录IP
 	RESULT=$(curl -k -s -X POST "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \

@@ -207,7 +207,7 @@ get_codeDesc() {
 }
 
 query_recordid() {
-	send_request "RecordList" "domain=$domain&subDomain=$name1"
+	send_request "RecordList" "domain=$domain&recordType=$domain_type&subDomain=$name1"
 }
 
 update_record() {
@@ -225,6 +225,11 @@ add_record() {
 arDdnsInfo() {
 name1=$name
 
+	if [ "$IPv6" = "1" ]; then
+		domain_type="AAAA"
+	else
+		domain_type="A"
+	fi
 	sleep 1
 	timestamp=`date +%s`
 	# 获得最后更新IP
@@ -236,7 +241,7 @@ name1=$name
 	else
 	# Output IP
 	case "$recordIP" in 
-	[1-9][0-9]*)
+	[1-9]*)
 		echo $recordIP
 		return 0
 		;;
