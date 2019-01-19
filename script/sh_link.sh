@@ -75,8 +75,7 @@ cat /tmp/ss/link/daochu_1.txt | sort -u | grep -v "^$" > /tmp/ss/link/daochu_2.t
 grep "🔗" /tmp/ss/link/daochu_2.txt | cut -d '=' -f1 | awk -F '_x' '{print $2}' | sort -u > /tmp/ss/link/daochu_3.txt
 while read line
 do
-    del_line="_x$line="
-    sed -Ei "/$del_line/d" /tmp/ss/link/daochu_2.txt
+    sed -Ei "/rt_ss_name_x$line=|rt_ss_port_x$line=|rt_ss_password_x$line=|rt_ss_server_x$line=|rt_ss_usage_x$line=|rt_ss_method_x$line=/d" /tmp/ss/link/daochu_2.txt
 done < /tmp/ss/link/daochu_3.txt
 # 重排序
 ss_s=/tmp/ss/link/daochu_2.txt
@@ -84,28 +83,47 @@ for ss_i in $(seq 0 $ss_x)
 do
     for ss_ii in $(seq $ss_i $ss_x)
     do
-        if [ ! -z "$(grep "_x$ss_ii=" $ss_s)" ] ; then
-            sed -Ei s/_x$ss_ii=/_x$ss_i=/g $ss_s
+        ss_iii=0
+        if [ ! -z "$(grep "rt_ss_name_x$ss_ii=" $ss_s)" ] ; then
+            sed -Ei s/rt_ss_name_x$ss_ii=/rt_ss_name_x$ss_i=/g $ss_s
+            sed -Ei s/rt_ss_port_x$ss_ii=/rt_ss_port_x$ss_i=/g $ss_s
+            sed -Ei s/rt_ss_password_x$ss_ii=/rt_ss_password_x$ss_i=/g $ss_s
+            sed -Ei s/rt_ss_server_x$ss_ii=/rt_ss_server_x$ss_i=/g $ss_s
+            sed -Ei s/rt_ss_usage_x$ss_ii=/rt_ss_usage_x$ss_i=/g $ss_s
+            sed -Ei s/rt_ss_method_x$ss_ii=/rt_ss_method_x$ss_i=/g $ss_s
+            ss_iii=1
+        fi
+        if [ "$ss_iii"x == "1x" ] ; then
             break
         fi
     done
 done
 # 提取运行命令
-cat /tmp/ss/link/daochu_2.txt | grep '=' | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}' | sed 's/^/nvram set /' | sort -u > /tmp/ss/link/daochu_4.txt
-source /tmp/ss/link/daochu_4.txt
+while read line
+do
+    ss_a="$(echo $line  | grep -Eo  'rt_ss_.*=' | awk -F '=' '{print $1}')"
+    ss_b="$(echo $line | awk -F $ss_a'=' '{print $2}' )"
+    eval "nvram set $ss_a=\"\$ss_b\""
+done < /tmp/ss/link/daochu_2.txt
+#cat /tmp/ss/link/daochu_2.txt | grep '=' | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}' | sed 's/^/nvram set /' | sort -u > /tmp/ss/link/daochu_4.txt
+#source /tmp/ss/link/daochu_4.txt
 # 保存有效节点数量
-rt_ssnum_x=$(grep rt_ss_name_x /tmp/ss/link/daochu_4.txt | wc -l)
+rt_ssnum_x=$(grep rt_ss_name_x /tmp/ss/link/daochu_2.txt | wc -l)
 [ -z $rt_ssnum_x ] && rt_ssnum_x="0"
 nvram set rt_ssnum_x=$rt_ssnum_x
 # 写入空白记录 nvram unset 
 ss_x=`nvram get rt_ssnum_x`
 ss_x=$(( ss_x - 1 ))
 # 导出节点配置
-nvram showall | grep '=' | grep rt_ss_ | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}' | sed 's/^/nvram unset /' | sort -u > /tmp/ss/link/daochu_1.txt
+nvram showall | grep '=' | grep rt_ss_ | sed 's/^/nvram unset /' | sort -u > /tmp/ss/link/daochu_1.txt
 # 删除非订阅连接
 cat /tmp/ss/link/daochu_1.txt | sort -u | grep -v "^$" > /tmp/ss/link/daochu_2.txt
 seq 0 $ss_x | awk '{print "_x"$0"="}' > /tmp/ss/link/daochu_3.txt
-sed -Ei "/$(cat /tmp/ss/link/daochu_3.txt | sed ":a;N;s/\n/|/g;ta")/d" /tmp/ss/link/daochu_2.txt
+while read line
+do
+    sed -Ei "/rt_ss_name$line|rt_ss_port$line|rt_ss_password$line|rt_ss_server$line|rt_ss_usage$line|rt_ss_method$line/d" /tmp/ss/link/daochu_2.txt
+done < /tmp/ss/link/daochu_3.txt
+#sed -Ei "/$(cat /tmp/ss/link/daochu_3.txt | sed ":a;N;s/\n/|/g;ta")/d" /tmp/ss/link/daochu_2.txt
 # 提取运行命令
 cat /tmp/ss/link/daochu_2.txt | sort -u | awk -F '=' '{print $1}' > /tmp/ss/link/daochu_4.txt
 source /tmp/ss/link/daochu_4.txt
