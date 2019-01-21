@@ -114,7 +114,7 @@ arDdnsInfo() {
 	
 	# 获得记录ID
 	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-	recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | head -n1 | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+	recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 	
 	# 获得最后更新IP
 	recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
@@ -228,7 +228,7 @@ while [ "$recordID" = "" ] ; do
 	sleep 1
 	# 获得记录ID
 	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-	recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | head -n1 | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+	recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 done
 	#echo "更新记录信息 recordID: " $recordID
 	if [ "$recordID" = "" ] ; then
@@ -248,7 +248,7 @@ done
 		sleep 10
 		# 获得记录ID
 		recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-		recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | head -n1 | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+		recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 		
 		# 获得最后更新IP
 		recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
