@@ -304,7 +304,7 @@ fi
 # 更新记录信息
 # 参数: 主域名 子域名
 arDdnsUpdate() {
-name1=$name
+name1="$name"
 	if [ "$IPv6" = "1" ]; then
 		domain_type="AAAA"
 	else
@@ -376,20 +376,20 @@ arDdnsCheck() {
 			return 1
 		fi
 	fi
-	echo "Updating Domain: ${2}.${1}"
+	echo "Updating Domain: $name.$domain"
 	echo "hostIP: ${hostIP}"
-	lastIP=$(arDdnsInfo "$1 $2")
+	lastIP=$(arDdnsInfo)
 	if [ $? -eq 1 ]; then
-		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "${2}.${1}")
-		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "${2}.${1}")
+		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$name.$domain")
+		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$name.$domain")
 	fi
 	echo "lastIP: ${lastIP}"
 	if [ "$lastIP" != "$hostIP" ] ; then
-		logger -t "【qcloud动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
+		logger -t "【qcloud动态域名】" "开始更新 $name.$domain 域名 IP 指向"
 		logger -t "【qcloud动态域名】" "目前 IP: ${hostIP}"
 		logger -t "【qcloud动态域名】" "上次 IP: ${lastIP}"
 		sleep 1
-		postRS=$(arDdnsUpdate $1 $2)
+		postRS=$(arDdnsUpdate)
 		if [ $? -eq 0 ]; then
 			echo "postRS: ${postRS}"
 			logger -t "【qcloud动态域名】" "更新动态DNS记录成功！"

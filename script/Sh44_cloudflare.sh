@@ -20,6 +20,8 @@ IPv6=0
 domain_type=""
 hostIP=""
 Zone_ID=""
+DOMAIN=""
+HOST=""
 [ -z $cloudflare_interval ] && cloudflare_interval=120 && nvram set cloudflare_interval=$cloudflare_interval
 cloudflare_renum=`nvram get cloudflare_renum`
 
@@ -90,6 +92,7 @@ fi
 if [ "$cloudflare_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		cloudflare_close
+		sleep 1
 		eval "$scriptfilepath keep &"
 		exit 0
 	else
@@ -137,47 +140,79 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 fi
 IPv6=0
 if [ "$cloudflare_domian"x != "x" ] ; then
-	arDdnsCheck $cloudflare_domian $cloudflare_host
+	DOMAIN="$cloudflare_domian"
+	HOST="$cloudflare_host"
+	arDdnsCheck
 fi
 if [ "$cloudflare_domian2"x != "x" ] ; then
 	sleep 1
-	arDdnsCheck $cloudflare_domian2 $cloudflare_host2
+	DOMAIN="$cloudflare_domian2"
+	HOST="$cloudflare_host2"
+	arDdnsCheck
 fi
 if [ "$cloudflare_domian6"x != "x" ] ; then
 	sleep 1
 	IPv6=1
-	arDdnsCheck $cloudflare_domian6 $cloudflare_host6
+	DOMAIN="$cloudflare_domian6"
+	HOST="$cloudflare_host6"
+	arDdnsCheck
 fi
 }
 
 Zone_ID=""
 get_Zone_ID() {
-host_tmp=$1
 # 获得Zone_ID
 Zone_ID=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
-Zone_ID=$(echo $Zone_ID|grep -o "id\":\"[0-9a-z]*\",\"name\":\"$host_tmp\",\"status\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
+Zone_ID=$(echo $Zone_ID|grep -o "id\":\"[0-9a-z]*\",\"name\":\"$DOMAIN\",\"status\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
 
 }
 
 arDdnsInfo() {
-host_tmp=$1
-domian_tmp=$2
 if [ "$IPv6" = "1" ]; then
 	domain_type="AAAA"
 else
 	domain_type="A"
 fi
+
+case  $HOST  in
+	  \*)
+		host_domian="\\$HOST.$DOMAIN"
+		;;
+	  \@)
+		host_domian="$DOMAIN"
+		;;
+	  *)
+		host_domian="$HOST.$DOMAIN"
+		;;
+esac
+
 # 获得Zone_ID
-get_Zone_ID $host_tmp
+get_Zone_ID
 # 获得最后更新IP
 recordIP=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
-recordIP=$(echo $recordIP | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -o "name\":\"$domian_tmp.$host_tmp\",\"content\":\"[^\"]*\""| awk -F 'content":"' '{print $2}' | tr -d '"' |head -n1)
+RECORD_ID=$(echo $recordIP | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep -o "id\":\"[0-9a-z]\{32,\}\",\"type\":\"[^\"]*\",\"name\":\"$host_domian\",\"content\":\""|grep -o "id\":\"[0-9a-z]\{32,\}\",\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
+recordIP=$(echo $recordIP | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep -o "name\":\"$host_domian\",\"content\":\"[^\"]*\""| awk -F 'content":"' '{print $2}' | tr -d '"' |head -n1)
+# 检查是否有名称重复的子域名
+if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
+	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 获得最后更新IP时发现重复的子域名！"
+	for Delete_RECORD_ID in $RECORD_ID
+	do
+	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 删除名称重复的子域名！ID: $Delete_RECORD_ID"
+	RESULT=$(curl -k -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
+     -H "X-Auth-Email: $cloudflare_Email" \
+     -H "X-Auth-Key: $cloudflare_Key" \
+     -H "Content-Type: application/json")
+	done
+	recordIP="0"
+	echo $recordIP
+	return 0
+fi
 	if [ "$IPv6" = "1" ]; then
 	echo $recordIP
 	return 0
@@ -247,8 +282,6 @@ fi
 # 更新记录信息
 # 参数: 主域名 子域名
 arDdnsUpdate() {
-host_tmp=$1
-domian_tmp=$2
 I=3
 RECORD_ID=""
 if [ "$IPv6" = "1" ]; then
@@ -256,23 +289,37 @@ if [ "$IPv6" = "1" ]; then
 else
 	domain_type="A"
 fi
+
+case  $HOST  in
+	  \*)
+		host_domian="\\$HOST.$DOMAIN"
+		;;
+	  \@)
+		host_domian="$DOMAIN"
+		;;
+	  *)
+		host_domian="$HOST.$DOMAIN"
+		;;
+esac
+
 while [ "$RECORD_ID" = "" ] ; do
 	I=$(($I - 1))
 	[ $I -lt 0 ] && break
 # 获得Zone_ID
-get_Zone_ID $host_tmp
+get_Zone_ID
 # 获得记录ID
 RECORD_ID=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
-RECORD_ID=$(echo $RECORD_ID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -o "id\":\"[0-9a-z]\{32,\}\",\"type\":\"[^\"]*\",\"name\":\"$domian_tmp.$host_tmp\",\"content\":\""|grep -o "id\":\"[0-9a-z]\{32,\}\",\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
+RECORD_ID=$(echo $RECORD_ID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep -o "id\":\"[0-9a-z]\{32,\}\",\"type\":\"[^\"]*\",\"name\":\"$host_domian\",\"content\":\""|grep -o "id\":\"[0-9a-z]\{32,\}\",\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
 # 检查是否有名称重复的子域名
 if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
+	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 更新记录信息时发现重复的子域名！"
 	for Delete_RECORD_ID in $RECORD_ID
 	do
-	logger -t "【cloudflare动态域名】" "$domian_tmp.$host_tmp 删除名称重复的子域名！ID: $Delete_RECORD_ID"
-	RESULT=$(curl -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
+	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 删除名称重复的子域名！ID: $Delete_RECORD_ID"
+	RESULT=$(curl -k -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
@@ -288,7 +335,7 @@ if [ "$RECORD_ID" = "" ] ; then
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json" \
-     --data '{"type":"'$domain_type'","name":"'$domian_tmp'","content":"'$hostIP'","ttl":120,"proxied":false}')
+     --data '{"type":"'$domain_type'","name":"'$HOST'","content":"'$hostIP'","ttl":120,"proxied":false}')
 	RESULT=$(echo $RESULT | grep -o "success\":[a-z]*,"|awk -F : '{print $2}'|grep -o "[a-z]*")
 	echo "创建dns_records: $RESULT"
 else
@@ -297,7 +344,7 @@ else
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json" \
-     --data '{"type":"'$domain_type'","name":"'$domian_tmp'","content":"'$hostIP'","ttl":120,"proxied":false}')
+     --data '{"type":"'$domain_type'","name":"'$HOST'","content":"'$hostIP'","ttl":120,"proxied":false}')
 	RESULT=$(echo $RESULT | grep -o "success\":[a-z]*,"|awk -F : '{print $2}'|grep -o "[a-z]*")
 	echo "更新dns_records: $RESULT"
 fi
@@ -342,26 +389,26 @@ arDdnsCheck() {
 			return 1
 		fi
 	fi
-	echo "Updating Domain: ${2}.${1}"
-	echo "hostIP: ${hostIP}"
-	lastIP=$(arDdnsInfo "$1" "$2")
+	echo "Updating Domain: $HOST.$DOMAIN"
+	echo "hostIP: $hostIP"
+	lastIP=$(arDdnsInfo)
 	if [ $? -eq 1 ]; then
-		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "${2}.${1}")
-		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "${2}.${1}")
+		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$HOST.$DOMAIN")
+		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$HOST.$DOMAIN")
 	fi
-	echo "lastIP: ${lastIP}"
+	echo "lastIP: $lastIP"
 	if [ "$lastIP" != "$hostIP" ] ; then
-		logger -t "【cloudflare动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
-		logger -t "【cloudflare动态域名】" "目前 IP: ${hostIP}"
-		logger -t "【cloudflare动态域名】" "上次 IP: ${lastIP}"
+		logger -t "【cloudflare动态域名】" "开始更新 "$HOST.$DOMAIN" 域名 IP 指向"
+		logger -t "【cloudflare动态域名】" "目前 IP: $hostIP"
+		logger -t "【cloudflare动态域名】" "上次 IP: $lastIP"
 		sleep 1
-		postRS=$(arDdnsUpdate $1 $2)
+		postRS=$(arDdnsUpdate)
 		if [ $? -eq 0 ]; then
-			echo "postRS: ${postRS}"
+			echo "postRS: $postRS"
 			logger -t "【cloudflare动态域名】" "更新动态DNS记录成功！"
 			return 0
 		else
-			echo ${postRS}
+			echo $postRS
 			logger -t "【cloudflare动态域名】" "更新动态DNS记录失败！请检查您的网络。"
 			if [ "$IPv6" = "1" ] ; then 
 				IPv6=0
@@ -371,7 +418,7 @@ arDdnsCheck() {
 			return 1
 		fi
 	fi
-	echo ${lastIP}
+	echo $lastIP
 	echo "Last IP is the same as current IP!"
 	return 1
 }

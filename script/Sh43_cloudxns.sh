@@ -162,6 +162,18 @@ fi
 }
 
 arDdnsInfo() {
+case  $HOST  in
+	  \*)
+		HOST2="\\*"
+		;;
+	  \@)
+		HOST2="@"
+		;;
+	  *)
+		HOST2="$HOST"
+		;;
+esac
+
 	if [ "$IPv6" = "1" ]; then
 		domain_type="AAAA"
 	else
@@ -178,7 +190,7 @@ arDdnsInfo() {
 	URL_R="https://www.cloudxns.net/api2/record/$DOMAIN_ID?host_id=0&row_num=500"
 	HMAC_R=$(printf "%s" "$API_KEY$URL_R$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
 	recordIP=$(curl -k -s "$URL_R" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_R")
-	recordIP=$(echo $recordIP | sed -e "s/"'"status":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -o "\"host\":\"$HOST\",.*" | awk -F type\":\"A '{print $1}' |grep -o "value\":\"[^\"]*\"" | awk -F 'value":"' '{print $2}' | tr -d '"' |head -n1)
+	recordIP=$(echo $recordIP | sed -e "s/"'"status":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -o "\"host\":\"$HOST2\",.*" | awk -F type\":\"A '{print $1}' |grep -o "value\":\"[^\"]*\"" | awk -F 'value":"' '{print $2}' | tr -d '"' |head -n1)
 
 	#echo "arDdnsInfo recordIP: $recordIP"
 	
@@ -252,6 +264,17 @@ fi
 # 更新记录信息
 # 参数: 主域名 子域名
 arDdnsUpdate() {
+case  $HOST  in
+	  \*)
+		HOST2="\\*"
+		;;
+	  \@)
+		HOST2="@"
+		;;
+	  *)
+		HOST2="$HOST"
+		;;
+esac
 	if [ "$IPv6" = "1" ]; then
 		domain_type="AAAA"
 	else
@@ -274,7 +297,7 @@ while [ "$RECORD_ID" = "" ] ; do
 	URL_R="https://www.cloudxns.net/api2/record/$DOMAIN_ID?host_id=0&row_num=500"
 	HMAC_R=$(printf "%s" "$API_KEY$URL_R$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
 	RECORD_ID=$(curl -k -s "$URL_R" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_R")
-	RECORD_ID=$(echo $RECORD_ID | sed -e "s/"'"status":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -o "record_id\":\"[0-9]*\",\"host_id\":\"[0-9]*\",\"host\":\"$HOST\""|grep -o "record_id\":\"[0-9]*"|grep -o "[0-9]*" |head -n1)
+	RECORD_ID=$(echo $RECORD_ID | sed -e "s/"'"status":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -o "record_id\":\"[0-9]*\",\"host_id\":\"[0-9]*\",\"host\":\"$HOST2\""|grep -o "record_id\":\"[0-9]*"|grep -o "[0-9]*" |head -n1)
 	echo "RECORD ID: $RECORD_ID"
 done
 	if [ "$RECORD_ID" = "" ] ; then
@@ -287,7 +310,7 @@ done
 		# echo "LINE ID: $LINE_ID"
 
 		# 添加子域名记录IP
-		logger -t "【CloudXNS动态域名】" "添加子域名 ${HOST} 记录IP"
+		logger -t "【CloudXNS动态域名】" "添加子域名 $HOST 记录IP"
 		IP=$hostIP
 		URL_A="https://www.cloudxns.net/api2/record"
 
@@ -350,20 +373,20 @@ arDdnsCheck() {
 			return 1
 		fi
 	fi
-	echo "Updating Domain: ${2}.${1}"
+	echo "Updating Domain: $HOST.$DOMAIN"
 	echo "hostIP: ${hostIP}"
-	lastIP=$(arDdnsInfo "$1" "$2")
+	lastIP=$(arDdnsInfo "$DOMAIN" "$HOST")
 	if [ $? -eq 1 ]; then
-		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "${2}.${1}")
-		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "${2}.${1}")
+		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$HOST.$DOMAIN")
+		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$HOST.$DOMAIN")
 	fi
 	echo "lastIP: ${lastIP}"
 	if [ "$lastIP" != "$hostIP" ] ; then
-		logger -t "【CloudXNS动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
+		logger -t "【CloudXNS动态域名】" "开始更新 $HOST.$DOMAIN 域名 IP 指向"
 		logger -t "【CloudXNS动态域名】" "目前 IP: ${hostIP}"
 		logger -t "【CloudXNS动态域名】" "上次 IP: ${lastIP}"
 		sleep 1
-		postRS=$(arDdnsUpdate $1 $2)
+		postRS=$(arDdnsUpdate "$DOMAIN" "$HOST")
 		if [ $? -eq 0 ]; then
 			echo "postRS: ${postRS}"
 			logger -t "【CloudXNS动态域名】" "更新动态DNS记录成功！"

@@ -112,14 +112,20 @@ kill_ps "$scriptname"
 dns_com_pod_start () {
 IPv6=0
 if [ "$dns_com_pod_domian"x != "x" ] ; then
+	DOMAIN="$dns_com_pod_domian"
+	HOST="$dns_com_pod_host"
 arDdnsCheck $dns_com_pod_domian $dns_com_pod_host
 fi
 if [ "$dns_com_pod_domian2"x != "x" ] ; then
 	sleep 1
+	DOMAIN="$dns_com_pod_domian2"
+	HOST="$dns_com_pod_host2"
 	arDdnsCheck $dns_com_pod_domian2 $dns_com_pod_host2
 fi
 if [ "$dns_com_pod_domian6"x != "x" ] ; then
 	IPv6=1
+	DOMAIN="$dns_com_pod_domian6"
+	HOST="$dns_com_pod_host6"
 	arDdnsCheck $dns_com_pod_domian6 $dns_com_pod_host6
 fi
 }
@@ -134,12 +140,12 @@ arDdnsInfo() {
 		post_type="Record.Ddns"
 	fi
 	# 获得域名ID
-	domainID=$(arApiPost "Domain.Info" "domain=${1}")
+	domainID=$(arApiPost "Domain.Info" "domain=$DOMAIN")
 	domainID=$(echo $domainID | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
 	
 	# 获得记录ID
-	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-	recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=$HOST")
+	recordID=$(echo $recordID | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 	
 	# 获得最后更新IP
 	recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
@@ -216,7 +222,7 @@ fi
 arApiPost() {
 	inter="https://api.dnspod.com/${1:?'Info.Version'}"
 	
-	param="user_token=${dns_com_pod_user_token}&format=json&${2}"
+	param="user_token=${dns_com_pod_user_token}&format=json&$2"
 	
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
@@ -243,23 +249,23 @@ while [ "$recordID" = "" ] ; do
 	I=$(($I - 1))
 	[ $I -lt 0 ] && break
 	# 获得域名ID
-	domainID=$(arApiPost "Domain.Info" "domain=${1}")
+	domainID=$(arApiPost "Domain.Info" "domain=$DOMAIN")
 	domainID=$(echo $domainID  | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
 	sleep 1
 	# 获得记录ID
-	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-	recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+	recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=$HOST")
+	recordID=$(echo $recordID | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 done
 	#echo "更新记录信息 recordID: " $recordID
 	if [ "$recordID" = "" ] ; then
 		# 添加子域名记录IP
 		myIP=$hostIP
-		logger -t "【dns_com_pod动态域名】" "添加子域名 ${2} 记录IP: $myIP"
-		recordRS=$(arApiPost "Record.Create" "domain_id=${domainID}&sub_domain=${2}&record_type=${domain_type}&value=${myIP}&record_line=default")
+		logger -t "【dns_com_pod动态域名】" "添加子域名 $HOST 记录IP: $myIP"
+		recordRS=$(arApiPost "Record.Create" "domain_id=${domainID}&sub_domain=$HOST&record_type=${domain_type}&value=${myIP}&record_line=default")
 	else
 		# 更新记录IP
 		myIP=$hostIP
-		recordRS=$(arApiPost "${post_type}" "domain_id=${domainID}&record_id=${recordID}&sub_domain=${2}&record_type=${domain_type}&value=${myIP}&record_line=default")
+		recordRS=$(arApiPost "${post_type}" "domain_id=${domainID}&record_id=${recordID}&sub_domain=$HOST&record_type=${domain_type}&value=${myIP}&record_line=default")
 	fi
 	recordCD=$(echo $recordRS | grep -Eo '"code":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
 	recordIP=$(echo $recordRS | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"')
@@ -267,8 +273,8 @@ done
 	if [ "$recordIP" = "" ] ; then
 		sleep 10
 		# 获得记录ID
-		recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
-		recordID=$(echo $recordID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+		recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=$HOST")
+		recordID=$(echo $recordID | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 		
 		# 获得最后更新IP
 		recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
@@ -322,21 +328,21 @@ arDdnsCheck() {
 			return 1
 		fi
 	fi
-	echo "Updating Domain: ${2}.${1}"
+	echo "Updating Domain: $HOST.$DOMAIN"
 	echo "hostIP: ${hostIP}"
-	#lastIP=$(arNslookup "${2}.${1}")
-	lastIP=$(arDdnsInfo "$1" "$2")
+	#lastIP=$(arNslookup "$HOST.$DOMAIN")
+	lastIP=$(arDdnsInfo "$DOMAIN" "$HOST")
 	if [ $? -eq 1 ]; then
-		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "${2}.${1}")
-		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "${2}.${1}")
+		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$HOST.$DOMAIN")
+		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$HOST.$DOMAIN")
 	fi
 	echo "lastIP: ${lastIP}"
 	if [ "$lastIP" != "$hostIP" ] ; then
-		logger -t "【dns_com_pod动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
+		logger -t "【dns_com_pod动态域名】" "开始更新 $HOST.$DOMAIN 域名 IP 指向"
 		logger -t "【dns_com_pod动态域名】" "目前 IP: ${hostIP}"
 		logger -t "【dns_com_pod动态域名】" "上次 IP: ${lastIP}"
 		sleep 1
-		postRS=$(arDdnsUpdate $1 $2)
+		postRS=$(arDdnsUpdate "$DOMAIN" "$HOST")
 		if [ $? -eq 0 ]; then
 			echo "postRS: ${postRS}"
 			logger -t "【dns_com_pod动态域名】" "更新动态DNS记录成功！提交的IP: ${postRS}"
