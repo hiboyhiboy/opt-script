@@ -295,76 +295,78 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss)" ]  && [ !
 	chmod 777 /tmp/script/_ss
 fi
 
-# 创建JSON
-cat > "/tmp/SSJSON.sh" <<-\SSJSONSH
-while getopts "a:o:O:g:G:s:p:b:l:k:m:f:h:v:" arg; do
-	case "$arg" in
-		a)
-			a="$OPTARG"
-			;;
-		o)
-			obfs="$OPTARG"
-			;;
-		O)
-			protocol="$OPTARG"
-			;;
-		g)
-			obfs_param="$OPTARG"
-			[ "$a" = 1 ] && obfs_param="`nvram get $OPTARG`"
-			;;
-		G)
-			protocol_param="$OPTARG"
-			[ "$a" = 2 ] && protocol_param="`nvram get $OPTARG`"
-			;;
-		s)
-			server="$OPTARG"
-			;;
-		p)
-			server_port="$OPTARG"
-			;;
-		b)
-			local_address="$OPTARG"
-			;;
-		l)
-			local_port="$OPTARG"
-			;;
-		k)
-			password="$OPTARG"
-			[ "$a" = 3 ] && password="`nvram get $OPTARG`"
-			;;
-		m)
-			method="$OPTARG"
-			;;
-		f)
-			config_file="$OPTARG"
-			;;
-		h)
-			obfs_plugin="`nvram get $OPTARG`"
-			;;
-		v)
-			plugin_c="`nvram get $OPTARG`"
-			;;
-	esac
-done
+SSJSON_sh()
+{
+
+config_file="$1"
+if [ "$2" == "1" ]; then
+server_json="$ss_s1_ip"
+server_por_jsont="$ss_s1_port"
+if [ "$3" == "r" ]; then
+local_address_json="0.0.0.0"
+local_port_json="$ss_s1_redir_port"
+fi
+if [ "$3" == "l" ]; then
+local_address_json="$ss_s1_local_address"
+local_port_json="$ss_s1_local_port"
+fi
+if [ "$3" == "c" ]; then
+local_address_json="$4"
+local_port_json="$5"
+fi
+password_json="$(nvram get ss_s1_key)"
+method_json="$(nvram get ss_s1_method | tr 'A-Z' 'a-z')"
+protocol_json="$ssr_protocol"
+protocol_param_json="$ssr_type_protocol_custom"
+obfs_json="$ssr_obfs"
+obfs_param_json="$ssr_type_obfs_custom"
+plugin_json="$(nvram get ss_plugin_name)"
+obfs_plugin_json="$(nvram get ss_plugin_config)"
+fi
+if [ "$2" == "2" ]; then
+server_json="$ss_s2_ip"
+server_por_jsont="$ss_s2_port"
+if [ "$3" == "r" ]; then
+local_address_json="0.0.0.0"
+local_port_json="$ss_s2_redir_port"
+fi
+if [ "$3" == "l" ]; then
+local_address_json="$ss_s2_local_address"
+local_port_json="$ss_s2_local_port"
+fi
+if [ "$3" == "c" ]; then
+local_address_json="$4"
+local_port_json="$5"
+fi
+password_json="$(nvram get ss_s2_key)"
+method_json="$(nvram get ss_s2_method | tr 'A-Z' 'a-z')"
+protocol_json="$ssr2_protocol"
+protocol_param_json="$ssr2_type_protocol_custom"
+obfs_json="$ssr2_obfs"
+obfs_param_json="$ssr2_type_obfs_custom"
+plugin_json="$(nvram get ss2_plugin_name)"
+obfs_plugin_json="$(nvram get ss2_plugin_config)"
+fi
+
 cat > "$config_file" <<-SSJSON
 {
-"server": "$server",
-"server_port": "$server_port",
-"local_address": "$local_address",
-"local_port": "$local_port",
-"password": "$password",
+"server": "$server_json",
+"server_port": "$server_por_jsont",
+"local_address": "$local_address_json",
+"local_port": "$local_port_json",
+"password": "$password_json",
 "timeout": "180",
-"method": "$method",
-"protocol": "$protocol",
-"protocol_param": "$protocol_param",
-"obfs": "$obfs",
-"obfs_param": "$obfs_param",
-"plugin": "$plugin_c",
-"plugin_opts": "$obfs_plugin"
+"method": "$method_json",
+"protocol": "$protocol_json",
+"protocol_param": "$protocol_param_json",
+"obfs": "$obfs_json",
+"obfs_param": "$obfs_param_json",
+"plugin": "$plugin_json",
+"plugin_opts": "$obfs_plugin_json"
 }
 SSJSON
-SSJSONSH
-chmod 755 /tmp/SSJSON.sh
+
+}
 
 #检查  libsodium.so.23
 [ -f /lib/libsodium.so.23 ] && libsodium_so=libsodium.so.23
@@ -421,6 +423,7 @@ if [ ! -z "$ss_usage_obfs_custom" ] ; then
 	[ ! -z "$ss_usage_obfs_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_obfs_custom_tmp@@g" `"
 	ss_usage="`echo "$ss_usage" | sed -e "s/ -g //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
+	ssr_type_obfs_custom="$ss_usage_obfs_custom_tmp"
 else
 	ss_usage="`echo "$ss_usage" | sed -e "s/ -g//g" `" # 删除空的混淆参数
 	[ ! -z "$ssr_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="-a 1 -g ssr_type_obfs_custom"
@@ -435,6 +438,7 @@ if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then
 	[ ! -z "$ss_s2_usage_obfs_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_obfs_custom_tmp@@g" `"
 	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_s2_usage_obfs_custom_tmp ，服务2优先使用此 混淆参数"
+	ssr2_type_obfs_custom="$ss_s2_usage_obfs_custom_tmp"
 else
 	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g//g" `" # 删除空的混淆参数
 	[ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="-a 1 -g ssr2_type_obfs_custom"
@@ -453,6 +457,7 @@ if [ ! -z "$ss_usage_protocol_custom" ] ; then
 	[ ! -z "$ss_usage_protocol_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_protocol_custom_tmp@@g" `"
 	ss_usage="`echo "$ss_usage" | sed -e "s/ -G //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_usage_protocol_custom_tmp ，服务1优先使用此 协议参数"
+	ssr_type_protocol_custom="$ss_usage_protocol_custom_tmp"
 else
 	ss_usage="`echo "$ss_usage" | sed -e "s/ -G//g" `" # 删除空的协议参数
 	[ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -a 2 -G ssr_type_protocol_custom"
@@ -467,20 +472,39 @@ if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then
 	[ ! -z "$ss_s2_usage_protocol_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_protocol_custom_tmp@@g" `"
 	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G //g" `"
 	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_s2_usage_protocol_custom_tmp ，服务2优先使用此 协议参数"
+	ssr2_type_protocol_custom="$ss_s2_usage_protocol_custom_tmp"
 else
 	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G//g" `" # 删除空的协议参数
 	[ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ssr2_type_protocol_custom"
 fi
 
 ss_usage_custom="$(echo $ss_usage | grep -Eo '\-o[ ]+[^-]+')"
-if [ -z "$ss_usage_custom" ] ; then
-	logger -t "【SS】" "混淆插件方式:未填写"
-	logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1;
+if [ ! -z "$ss_usage_custom" ] ; then
+	ssr_obfs="${ss_usage##* -o }"
+	ssr_obfs="${ssr_obfs%% -*}"
+	ssr_obfs="`echo -n "$ssr_obfs" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr混淆插件方式: $ssr_obfs"
+fi
+ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-o[ ]+[^-]+')"
+if [ ! -z "$ss_s2_usage_custom" ] ; then
+	ssr2_obfs="${ss_s2_usage##* -o }"
+	ssr2_obfs="${ssr_obfs%% -*}"
+	ssr2_obfs="`echo -n "$ssr_obfs" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr2混淆插件方式: $ssr2_obfs"
 fi
 ss_usage_custom="$(echo $ss_usage | grep -Eo '\-O[ ]+[^-]+')"
-if [ -z "$ss_usage_custom" ] ; then
-	logger -t "【SS】" "协议插件方式:未填写"
-	logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1;
+if [ ! -z "$ss_usage_custom" ] ; then
+	ssr_protocol="${ss_usage##* -O }"
+	ssr_protocol="${ssr_protocol%% -*}"
+	ssr_protocol="`echo -n "$ssr_protocol" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr协议插件方式: $ssr_protocol"
+fi
+ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-O[ ]+[^-]+')"
+if [ ! -z "$ss_s2_usage_custom" ] ; then
+	ssr2_protocol="${ss_s2_usage##* -O }"
+	ssr2_protocol="${ssr_protocol%% -*}"
+	ssr2_protocol="`echo -n "$ssr_protocol" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr2协议插件方式: $ssr_protocol"
 fi
 
 else
@@ -488,6 +512,10 @@ ssr_type_obfs_custom=""
 ssr2_type_obfs_custom=""
 ssr_type_protocol_custom=""
 ssr2_type_protocol_custom=""
+ssr_protocol=""
+ssr2_protocol=""
+ssr_obfs=""
+ssr2_obfs=""
 fi
 
 ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
@@ -505,7 +533,7 @@ ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | s
 # 启动程序
 ss_s1_redir_port=1090
 [ "$ss_threads" != 0 ] && ss_s1_redir_port=1092
-/tmp/SSJSON.sh -f /tmp/ss-redir_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -l $ss_s1_redir_port -b 0.0.0.0 -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
+SSJSON_sh "/tmp/ss-redir_1.json" "1" "r"
 killall_ss_redir
 check_ssr
 cmd_name="SS_1_redir"
@@ -517,15 +545,16 @@ if [ ! -z $ss_server2 ] ; then
 	[ "$ss_threads" != 0 ] && ss_s2_redir_port=1093
 	[ -z "$ss_s2_ip" ] && { logger -t "【SS】" "[错误!!] 实在找不到你的SS2: $ss_server2 服务器IP，麻烦看看哪里错了？"; clean_SS; } 
 	logger -t "【SS】" "SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
-	/tmp/SSJSON.sh -f /tmp/ss-redir_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -l $ss_s2_redir_port -b 0.0.0.0 -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
+	SSJSON_sh "/tmp/ss-redir_2.json" "2" "r"
 	cmd_name="SS_2_redir"
 	eval "ss-redir -c /tmp/ss-redir_2.json $options2 $cmd_log" &
 	sleep 1
 fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
+	killall_ss_local
 	logger -t "【ss-local】" "启动所有的 ss-local 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
 	logger -t "【ss-local】" "本地监听地址：$ss_s1_local_address 本地代理端口：$ss_s1_local_port SS服务器1 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
-	/tmp/SSJSON.sh -f /tmp/ss-local_1.json $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b $ss_s1_local_address -l $ss_s1_local_port -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
+	SSJSON_sh "/tmp/ss-local_1.json" "1" "l"
 	killall_ss_local
 	cmd_name="SS_1_local"
 	eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
@@ -534,7 +563,7 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 		#启动第二个SS 连线
 		[  -z "$ss_s2_ip" ] && { logger -t "【ss-local】" "[错误!!] 无法获得 SS 服务器2的IP,请核查设置"; stop_SS; clean_SS; }
 		logger -t "【ss-local】" "本地监听地址：$ss_s2_local_address 本地代理端口：$ss_s2_local_port SS服务器2 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
-		/tmp/SSJSON.sh -f /tmp/ss-local_2.json $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b $ss_s2_local_address -l $ss_s2_local_port -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
+		SSJSON_sh "/tmp/ss-local_2.json" "2" "l"
 		cmd_name="SS_2_local"
 		eval "ss-local -c /tmp/ss-local_2.json $options2 $cmd_log" &
 	sleep 1
@@ -823,7 +852,7 @@ killall ss-local_
 for cpu_i in $(seq 1 $threads)  
 do
 	logger -t "【ss-local_1_$cpu_i】" "启动ss-local 1_$cpu_i 设置内容：$ss_server1 端口:$ss_s1_port 加密方式:$ss_s1_method "
-	/tmp/SSJSON.sh -f "/tmp/ss-redir_1_$cpu_i.json" $ss_usage $ss_usage_json -s $ss_s1_ip -p $ss_s1_port -b 127.0.0.1 -l "1090$cpu_i" -a 3 -k ss_s1_key -m $ss_s1_method -h ss_plugin_config -v ss_plugin_name
+	SSJSON_sh "/tmp/ss-redir_1_$cpu_i.json" "1" "c" "127.0.0.1" "1090$cpu_i"
 	cmd_name="ss-local_1_$cpu_i"
 	eval "/tmp/cpu4/ss-local_ -c /tmp/ss-redir_1_$cpu_i.json $options1 $cmd_log" &
 	sleep 1
@@ -832,7 +861,7 @@ if [ ! -z $ss_server2 ] ; then
 for cpu_i in $(seq 1 $threads)  
 do
 	logger -t "【ss-local_2_$cpu_i】" "启动ss-local 2_$cpu_i 设置内容：$ss_server2 端口:$ss_s2_port 加密方式:$ss_s2_method "
-	/tmp/SSJSON.sh -f "/tmp/ss-redir_2_$cpu_i.json" $ss_s2_usage $ss_s2_usage_json -s $ss_s2_ip -p $ss_s2_port -b 127.0.0.1 -l "1091$cpu_i" -a 3 -k ss_s2_key -m $ss_s2_method -h ss2_plugin_config -v ss2_plugin_name
+	SSJSON_sh "/tmp/ss-redir_2_$cpu_i.json" "2" "c" "127.0.0.1" "1091$cpu_i"
 	cmd_name="ss-local_2_$cpu_i"
 	eval "/tmp/cpu4/ss-local_ -c /tmp/ss-redir_2_$cpu_i.json $options2 $cmd_log" &
 	sleep 1

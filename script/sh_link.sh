@@ -180,10 +180,11 @@ mkdir -p /tmp/ss/link
 wgetcurl.sh /tmp/ss/link/0_link.txt "$ssr_link_i" "$ssr_link_i" N
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	rm -f /tmp/ss/link/0_link.txt
-	wget --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3427.400 QQBrowser/9.6.12088.400' -O /tmp/ss/link/0_link.txt "$ssr_link"
+	wget --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3427.400 QQBrowser/9.6.12088.400' -O /tmp/ss/link/0_link.txt "$ssr_link_i"
 fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
-	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载失败！请检查服务器配置"
+	logger -t "【SS】" "$ssr_link_i"
+	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载失败！请检查下载地址"
 fi
 sed -e '/^$/d' -i /tmp/ss/link/0_link.txt
 sed -e 's/$/&==/g' -i /tmp/ss/link/0_link.txt
