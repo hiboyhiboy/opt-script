@@ -425,8 +425,18 @@ fi
 }
 
 upopt () {
+if [ "$upopt_enable" = "1" ] ; then
 wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+nvram set optt="`cat /tmp/opti.txt`"
+else
+rm -rf /tmp/opti.txt
+upopt2 &
+fi
 nvram set opto="`cat /opt/opti.txt`"
+}
+
+upopt2 () {
+wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
 nvram set optt="`cat /tmp/opti.txt`"
 }
 
