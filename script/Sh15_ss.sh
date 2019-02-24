@@ -981,8 +981,8 @@ if [ "$ss_check" = "1" ] ; then
 		if [ ! -z "$action_ssip" ] ; then
 			logger -t "【ss-redir】" "check_ip 检查 SS 服务器$action_port是否能用"
 			lan_ipaddr=`nvram get lan_ipaddr`
-			[ -z "$kcptun_server" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":" `,`echo "$ss_s2_ip" | grep -v ":" `"
-			[ ! -z "$kcptun_server" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":" `,`echo "$ss_s2_ip" | grep -v ":" `,`echo "$kcptun_server" | grep -v ":" `"
+			BP_IP="`echo "$ss_s1_ip" | grep -v ":" `,`echo "$ss_s2_ip" | grep -v ":" `"
+			[ ! -z "$kcptun_server" ] && [ "$kcptun_enable" != "0" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":" `,`echo "$ss_s2_ip" | grep -v ":" `,`echo "$kcptun_server" | grep -v ":" `"
 			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,5353' -o -O
 			sleep 1
 			check=0
