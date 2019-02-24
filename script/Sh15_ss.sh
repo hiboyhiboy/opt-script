@@ -485,13 +485,15 @@ if [ ! -z "$ss_usage_custom" ] ; then
 	ssr_obfs="`echo -n "$ssr_obfs" | sed -e "s@ @@g" `"
 	logger -t "【SS】" "ssr混淆插件方式: $ssr_obfs"
 fi
+ss_usage_custom=""
 ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-o[ ]+[^-]+')"
 if [ ! -z "$ss_s2_usage_custom" ] ; then
 	ssr2_obfs="${ss_s2_usage##* -o }"
-	ssr2_obfs="${ssr_obfs%% -*}"
-	ssr2_obfs="`echo -n "$ssr_obfs" | sed -e "s@ @@g" `"
+	ssr2_obfs="${ssr2_obfs%% -*}"
+	ssr2_obfs="`echo -n "$ssr2_obfs" | sed -e "s@ @@g" `"
 	logger -t "【SS】" "ssr2混淆插件方式: $ssr2_obfs"
 fi
+ss_s2_usage_custom=""
 ss_usage_custom="$(echo $ss_usage | grep -Eo '\-O[ ]+[^-]+')"
 if [ ! -z "$ss_usage_custom" ] ; then
 	ssr_protocol="${ss_usage##* -O }"
@@ -499,13 +501,15 @@ if [ ! -z "$ss_usage_custom" ] ; then
 	ssr_protocol="`echo -n "$ssr_protocol" | sed -e "s@ @@g" `"
 	logger -t "【SS】" "ssr协议插件方式: $ssr_protocol"
 fi
+ss_usage_custom=""
 ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-O[ ]+[^-]+')"
 if [ ! -z "$ss_s2_usage_custom" ] ; then
 	ssr2_protocol="${ss_s2_usage##* -O }"
-	ssr2_protocol="${ssr_protocol%% -*}"
-	ssr2_protocol="`echo -n "$ssr_protocol" | sed -e "s@ @@g" `"
-	logger -t "【SS】" "ssr2协议插件方式: $ssr_protocol"
+	ssr2_protocol="${ssr2_protocol%% -*}"
+	ssr2_protocol="`echo -n "$ssr2_protocol" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr2协议插件方式: $ssr2_protocol"
 fi
+ss_s2_usage_custom=""
 
 else
 ssr_type_obfs_custom=""
