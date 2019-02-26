@@ -1237,7 +1237,7 @@ if [ "$ss_mode_x" = "0" ] ; then
 	fi
 	if [ -f /tmp/ss/chnroute.txt ] ; then
 		ipset flush ss_spec_dst_sh
-		grep -v '^#' /tmp/ss/chnroute.txt | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9]+' | sed -e "s/^/-A ss_spec_dst_sh &/g" | ipset -R -!
+		grep -v '^#' /tmp/ss/chnroute.txt | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A ss_spec_dst_sh &/g" | ipset -R -!
 	fi
 fi
 
@@ -1262,7 +1262,7 @@ fi
 #   1: 大陆白名单, 此前缀的主机IP 使用 大陆白名单模式 走 SS
 #   2: gfwlist, 此前缀的主机IP 使用 gfwlist模式 走 SS
 logger -t "【SS】" "设置内网(LAN)访问控制"
-grep -v '^#' /etc/storage/shadowsocks_ss_spec_lan.sh | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9]+' | sed s/！/!/g > /tmp/ss_spec_lan.txt
+grep -v '^#' /etc/storage/shadowsocks_ss_spec_lan.sh | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed s/！/!/g > /tmp/ss_spec_lan.txt
 while read line
 do
 for host in $line; do
@@ -1443,12 +1443,12 @@ nvram set button_script_2_s="$ss_info"
 	fi
 		net_line=`echo $line |grep "WAN+"`
 	if [ ! -z "$net_line" ] ; then
-		net_line=`echo $net_line | sed s/WAN+//g | grep -E -o '([0-9]+\.){3}[0-9]+'` #WAN+开头的 IP网段/掩码 使用 代理
+		net_line=`echo $net_line | sed s/WAN+//g | grep -E -o '([0-9]+\.){3}[0-9/]+'` #WAN+开头的 IP网段/掩码 使用 代理
 		echo $net_line  >> /tmp/ss/wantoss.list
 	fi
 		net_line=`echo $line |grep "WAN-"`
 	if [ ! -z "$net_line" ] ; then
-		net_line=`echo $net_line | sed s/WAN-//g | grep -E -o '([0-9]+\.){3}[0-9]+'` #WAN-开头的 IP网段/掩码 忽略 代理
+		net_line=`echo $net_line | sed s/WAN-//g | grep -E -o '([0-9]+\.){3}[0-9/]+'` #WAN-开头的 IP网段/掩码 忽略 代理
 		echo $net_line  >> /tmp/ss/wannoss.list
 	fi
 	done < /tmp/ss_spec_wan.txt
@@ -1946,7 +1946,7 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 	if [ ! -z "$ss_sub6" ] ; then
 		logger -t "【SS】" "正在获取 GFW IP 列表...."
 		wgetcurl.sh /tmp/ss/gfwdomain_6.txt $ss_sub6 $ss_sub6 Y
-		grep -v '^#' /tmp/ss/gfwdomain_6.txt | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9]+' | sed -e "s/^/-A ss_spec_dst_fw &/g" | ipset -R -!
+		grep -v '^#' /tmp/ss/gfwdomain_6.txt | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A ss_spec_dst_fw &/g" | ipset -R -!
 	fi
 	if [ "$ss_3p_enable" = "1" ] ; then
 		if [ "$ss_3p_gfwlist" = "1" ] ; then
@@ -2141,7 +2141,7 @@ fi
 		ipset flush ss_spec_dst_sh
 		grep -v '^#' /tmp/ss/chnroute.txt | sort -u | grep -v "^$" > /tmp/ss/tmp_chnroute.txt
 		mv -f /tmp/ss/tmp_chnroute.txt /tmp/ss/chnroute.txt
-		grep -v '^#' /tmp/ss/chnroute.txt | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9]+' | sed -e "s/^/-A ss_spec_dst_sh &/g" | ipset -R -!
+		grep -v '^#' /tmp/ss/chnroute.txt | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A ss_spec_dst_sh &/g" | ipset -R -!
 	
 	nvram set gfwlist3="chnroutes规则`ipset list ss_spec_dst_sh -t | awk -F: '/Number/{print $2}'` 行 Update: $(date)"
 	echo `nvram get gfwlist3`
