@@ -90,15 +90,16 @@ sed -Ei '/【天猫精灵】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
 	[ -z "\`pidof caddy_tmall\`" ] || [ ! -s "/opt/tmall/caddy_tmall" ] && nvram set tmall_status=00 && logger -t "【天猫精灵】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【天猫精灵】|^$/d' /tmp/script/_opt_script_check # 【天猫精灵】
 OSC
-return
+#return
 fi
 
 while true; do
-	if [ -z "`pidof caddy_tmall`" ] || [ ! -s "/opt/tmall/caddy_tmall" ] ; then
-		logger -t "【天猫精灵】" "重新启动"
-		tmall_restart
+	if [ -f "/tmp/tmall/RUN" ] ; then
+		logger -t "【天猫精灵】" "运行远程命令"
+		source /tmp/tmall/RUN
+		rm -f /tmp/tmall/RUN
 	fi
-sleep 263
+sleep 10
 done
 }
 
@@ -114,6 +115,7 @@ kill_ps "$scriptname"
 tmall_start () {
 SVC_PATH="/opt/tmall/caddy_tmall"
 mkdir -p "/opt/tmall"
+mkdir -p "/tmp/tmall"
 if [ ! -s "$SVC_PATH" ] && [ -d "/opt/tmall" ] ; then
 	logger -t "【天猫精灵】" "找不到 $SVC_PATH ，安装 caddy_tmall 程序"
 	logger -t "【天猫精灵】" "开始下载 caddy_tmall"
@@ -182,6 +184,7 @@ if [ ! -f "$app_14" ] || [ ! -s "$app_14" ] ; then
 [ "POST" = "$REQUEST_METHOD" -a -n "$CONTENT_LENGTH" ] && read -n "$CONTENT_LENGTH" POST_DATA
 POST_DATA2=$(echo "$POST_DATA" | sed "s/\///g" | sed "s/[[:space:]]//g" | grep -o "\"intentName\":\".*\"," | awk -F : '{print $2}'| awk -F , '{print $1}' | sed -e 's@"@@g')
 REPLY_DATA="好的"
+RUN_DATA="/tmp/tmall/RUN"
 # 更多自定义命令请自行参考添加修改
 if [ "$POST_DATA2" = "打开网络" ]; then
   radio2_guest_enable
@@ -199,6 +202,26 @@ if [ "$POST_DATA2" = "打开电脑" ]; then
   # 下面的00:00:00:00:00:00改为电脑网卡地址即可唤醒
   ether-wake -b -i br0 00:00:00:00:00:00
   REPLY_DATA="打开电脑"
+fi
+
+if [ "$POST_DATA2" = "打开代理" ]; then
+  cat > "$RUN_DATA" <<-\RRR
+  nvram set ss_status=0
+  nvram set ss_enable=1
+  nvram commit
+  /tmp/script/_ss &
+RRR
+  REPLY_DATA="打开代理"
+fi
+
+if [ "$POST_DATA2" = "关闭代理" ]; then
+  cat > "$RUN_DATA" <<-\RRR
+  nvram set ss_status=1
+  nvram set ss_enable=0
+  nvram commit
+  /tmp/script/_ss &
+RRR
+  REPLY_DATA="关闭代理"
 fi
 
 
