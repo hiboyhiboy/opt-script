@@ -113,8 +113,8 @@ kill_ps "$scriptname"
 
 tmall_start () {
 SVC_PATH="/opt/tmall/caddy_tmall"
+mkdir -p "/opt/tmall"
 if [ ! -s "$SVC_PATH" ] && [ -d "/opt/tmall" ] ; then
-	mkdir -p "/opt/tmall"
 	logger -t "【天猫精灵】" "找不到 $SVC_PATH ，安装 caddy_tmall 程序"
 	logger -t "【天猫精灵】" "开始下载 caddy_tmall"
 	wgetcurl.sh "/opt/tmall/caddy_tmall" "$hiboyfile/caddy" "$hiboyfile2/caddy"

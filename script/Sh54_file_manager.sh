@@ -9,7 +9,7 @@ filemanager_wan=`nvram get app_16`
 [ -z $filemanager_wan ] && filemanager_wan=0 && nvram set app_16=0
 caddy_enable=`nvram get app_54`
 [ -z $caddy_enable ] && caddy_enable=0 && nvram set app_54=0
-[ "$caddy_enable" = "1" ] && filemanager_exe="caddy" || filemanager_exe="filemanager"
+[ "$caddy_enable" = "1" ] && filemanager_exe="caddy_filebrowser" || filemanager_exe="filemanager"
 filemanager_upanPath=`nvram get filemanager_upanPath`
 #if [ "$filemanager_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep filemanager | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -84,7 +84,7 @@ filemanager_check () {
 
 filemanager_get_status
 if [ "$filemanager_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "`pidof caddy`" ] && logger -t "【filemanager】" "停止 $filemanager_exe" && filemanager_close
+	[ ! -z "`pidof caddy_filebrowser`" ] && logger -t "【filemanager】" "停止 $filemanager_exe" && filemanager_close
 	[ ! -z "`pidof filemanager`" ] && logger -t "【filemanager】" "停止 $filemanager_exe" && filemanager_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
@@ -122,8 +122,8 @@ filemanager_close () {
 
 sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
-killall filemanager caddy
-killall -9 filemanager caddy
+killall filemanager caddy_filebrowser
+killall -9 filemanager caddy_filebrowser
 kill_ps "/tmp/script/_app5"
 kill_ps "_file_manager.sh"
 kill_ps "$scriptname"
@@ -167,10 +167,12 @@ mkdir -p "$upanPath/filemanager/"
 if [ ! -s "$SVC_PATH" ] && [ -d "$upanPath/filemanager" ] ; then
 	logger -t "【filemanager】" "找不到 $SVC_PATH ，安装 $filemanager_exe 程序"
 	logger -t "【filemanager】" "开始下载 $filemanager_exe"
-	wgetcurl.sh "$upanPath/filemanager/$filemanager_exe" "$hiboyfile/$filemanager_exe" "$hiboyfile2/$filemanager_exe"
+	[ "$caddy_enable" = "1" ] && wgetcurl.sh "$upanPath/filemanager/$filemanager_exe" "$hiboyfile/caddy" "$hiboyfile2/caddy"
+	[ "$caddy_enable" = "1" ] || wgetcurl.sh "$upanPath/filemanager/$filemanager_exe" "$hiboyfile/filemanager_exe" "$hiboyfile2/filemanager_exe"
 fi
 chmod 777 "$SVC_PATH"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
+[ "$caddy_enable" = "1" ] && { [ -z "$($SVC_PATH -plugins 2>&1 | grep http.filebrowser)" ] && rm -rf $SVC_PATH ; }
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【filemanager】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【filemanager】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
@@ -214,7 +216,7 @@ caddy_start () {
 
 filemanager_v=$($SVC_PATH -version | cut -d'(' -f1 | tr -d ' ' | sed -n '1p')
 nvram set filemanager_v="$filemanager_v"
-logger -t "【filemanager】" "运行 caddy"
+logger -t "【filemanager】" "运行 caddy_filebrowser"
 
 filemanager_wan_port=`cat /etc/storage/app_11.sh | grep -Eo ':[0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
 nvram set app_14=$filemanager_wan_port
@@ -222,9 +224,16 @@ iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 
 filemanager_upanPath="$upanPath"
 nvram set filemanager_upanPath="$upanPath"
+mkdir -p /tmp/AiDisk_00/filebrowser
+if [ -z "$(grep filebrowser /etc/storage/app_11.sh)" ] ; then
+	logger -t "【filemanager】" "使用新版 caddy_filebrowser 更新配置文件 ，请使用默认密码登录重新配置"
+	rm -f /etc/storage/app_11.sh
+	initconfig
+fi
 rm -f /tmp/Caddyfile
 ln -sf /etc/storage/app_11.sh /tmp/Caddyfile
-eval "$upanPath/filemanager/caddy -conf /tmp/Caddyfile $cmd_log" &
+
+eval "$upanPath/filemanager/caddy_filebrowser -conf /tmp/Caddyfile $cmd_log" &
 
 }
 
@@ -266,13 +275,11 @@ fi
 if [ ! -f "/etc/storage/app_11.sh" ] || [ ! -s "/etc/storage/app_11.sh" ] ; then
 	cat >> "/etc/storage/app_11.sh" <<-\EOF
 :888 {
- root /tmp/AiDisk_00
+ root /tmp/AiDisk_00/filebrowser
  timeouts none
  gzip
- filemanager / /tmp/AiDisk_00 {
-  database /etc/storage/caddy_filemanager.db
-  locale zh-cn
-  alternative_recaptcha
+ filebrowser / /tmp/AiDisk_00/filebrowser {
+  database /etc/storage/caddy_filebrowser.db
  }
 }
 EOF
@@ -302,7 +309,7 @@ mkdir -p /opt/app/filemanager
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/filemanager/Advanced_Extensions_filemanager.asp
 	[ -f "$filemanager_upanPath/filemanager/filemanager" ] && rm -f $filemanager_upanPath/filemanager/filemanager
-	[ -f "$filemanager_upanPath/filemanager/caddy" ] && rm -f $filemanager_upanPath/filemanager/caddy
+	[ -f "$filemanager_upanPath/filemanager/caddy_filebrowser" ] && rm -f $filemanager_upanPath/filemanager/caddy_filebrowser
 fi
 
 initconfig
