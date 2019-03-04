@@ -130,57 +130,18 @@ source /tmp/ss/link/daochu_4.txt
 rm -rf /tmp/ss/link
 }
 
-rt_ssnum_x=$(nvram get rt_ssnum_x)
-[ -z $rt_ssnum_x ] && rt_ssnum_x="0"
-[ $rt_ssnum_x -lt 0 ] && rt_ssnum_x="0" || { [ $rt_ssnum_x -gt 0 ] || rt_ssnum_x="0" ; }
-nvram set rt_ssnum_x=$rt_ssnum_x
-
-rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
-[ -z "$rt_ssnum_x_tmp" ] && rt_ssnum_x_tmp="" && nvram set rt_ssnum_x_tmp=""
-if [ "$rt_ssnum_x_tmp"x = "del"x ] ; then
-	shlinksh=$$
-	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
-	clear_link
-	nvram set rt_ssnum_x_tmp=0
-	nvram commit
-	exit
-fi
-
-
-ssr_link="`nvram get ssr_link`"
-[ -z "$ssr_link" ] && ssr_link="" && nvram set ssr_link=""
-A_restart=`nvram get ss_link_status`
-#B_restart="$ssr_link"
-B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set ss_link_status=$B_restart
-	if [ -z "$ssr_link" ] ; then
-		cru.sh d ss_link_update
-		logger -t "【SS】" "停止 SSR 服务器订阅"
-		return
-	else
-		cru.sh a ss_link_update "12 */3 * * * $scriptfilepath uplink &" &
-		logger -t "【SS】" "启动 SSR 服务器订阅: $ssr_link"
-	fi
-fi
-if [ -z "$ssr_link" ] ; then
-	return
-fi
-shlinksh=$$
-eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
-
-# 清空上次订阅节点配置
-clear_link
-
-
-for ssr_link_i in $ssr_link
-do
+do_link () {
 mkdir -p /tmp/ss/link
 #logger -t "【SS】" "订阅文件下载: $ssr_link_i"
+rm -f /tmp/ss/link/0_link.txt
 wgetcurl.sh /tmp/ss/link/0_link.txt "$ssr_link_i" "$ssr_link_i" N
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	rm -f /tmp/ss/link/0_link.txt
-	wget --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.104 Safari/537.36 Core/1.53.3427.400 QQBrowser/9.6.12088.400' -O /tmp/ss/link/0_link.txt "$ssr_link_i"
+	wget --no-check-certificate --user-agent "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36" -O /tmp/ss/link/0_link.txt "$ssr_link_i"
+fi
+if [ ! -s /tmp/ss/link/0_link.txt ] ; then
+	rm -f /tmp/ss/link/0_link.txt
+	curl -k --user-agent 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36' -o /tmp/ss/link/0_link.txt "$ssr_link_i"
 fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	logger -t "【SS】" "$ssr_link_i"
@@ -263,6 +224,62 @@ rt_ssnum_x=`nvram get rt_ssnum_x`
 [ -z $rt_ssnum_x ] && rt_ssnum_x=0 && nvram set rt_ssnum_x=0
 [ $rt_ssnum_x -lt $i ] && nvram set rt_ssnum_x=$i
 rm -rf /tmp/ss/link
-done
 nvram commit
 
+}
+
+rt_ssnum_x=$(nvram get rt_ssnum_x)
+[ -z $rt_ssnum_x ] && rt_ssnum_x="0"
+[ $rt_ssnum_x -lt 0 ] && rt_ssnum_x="0" || { [ $rt_ssnum_x -gt 0 ] || rt_ssnum_x="0" ; }
+nvram set rt_ssnum_x=$rt_ssnum_x
+
+rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
+[ -z "$rt_ssnum_x_tmp" ] && rt_ssnum_x_tmp="" && nvram set rt_ssnum_x_tmp=""
+if [ "$rt_ssnum_x_tmp"x = "del"x ] ; then
+	shlinksh=$$
+	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
+	clear_link
+	nvram set rt_ssnum_x_tmp=0
+	nvram commit
+	exit
+fi
+
+
+ssr_link="`nvram get ssr_link`"
+[ -z "$ssr_link" ] && ssr_link="" && nvram set ssr_link=""
+A_restart=`nvram get ss_link_status`
+#B_restart="$ssr_link"
+B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+if [ "$A_restart" != "$B_restart" ] ; then
+	nvram set ss_link_status=$B_restart
+	if [ -z "$ssr_link" ] ; then
+		cru.sh d ss_link_update
+		logger -t "【SS】" "停止 SSR 服务器订阅"
+		return
+	else
+		cru.sh a ss_link_update "12 */3 * * * $scriptfilepath uplink &" &
+		logger -t "【SS】" "启动 SSR 服务器订阅: $ssr_link"
+	fi
+fi
+if [ -z "$ssr_link" ] ; then
+	return
+fi
+shlinksh=$$
+eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
+
+logger -t "【SS】" "服务器订阅：清空上次订阅节点配置"
+# 清空上次订阅节点配置
+clear_link
+ssr_link="$(echo "$ssr_link" | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
+ssr_link_i=""
+if [ ! -z "$(echo "$ssr_link" | awk -F ' ' '{print $2}')" ] ; then
+	for ssr_link_ii in $ssr_link
+	do
+		ssr_link_i="$ssr_link_ii"
+		do_link
+	done
+else
+	ssr_link_i="$ssr_link"
+	do_link
+fi
+logger -t "【SS】" "服务器订阅：完成"

@@ -135,7 +135,7 @@ rm -f /opt/tmall/app_14.sh
 ln -sf /etc/storage/app_14.sh /opt/tmall/app_14.sh
 mkdir -p "/opt/tmall/www/aligenie"
 cd /opt/tmall/www/aligenie
-echo "$tmall_id" | awk -F \  '{print $2}' > ./$(echo "$(echo "$tmall_id" | awk -F \  '{print $1}')" | awk -F . '{print $1}').txt
+echo -n $(echo "$tmall_id" | awk -F \  '{print $2}') > ./$(echo "$(echo "$tmall_id" | awk -F \  '{print $1}')" | awk -F . '{print $1}').txt
 chmod 444 /opt/tmall/www/aligenie/*
 
 logger -t "【天猫精灵】" "运行 /opt/tmall/caddy_tmall"
