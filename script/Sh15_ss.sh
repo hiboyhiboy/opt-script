@@ -1262,10 +1262,11 @@ fi
 #   1: 大陆白名单, 此前缀的主机IP 使用 大陆白名单模式 走 SS
 #   2: gfwlist, 此前缀的主机IP 使用 gfwlist模式 走 SS
 logger -t "【SS】" "设置内网(LAN)访问控制"
-grep -v '^#' /etc/storage/shadowsocks_ss_spec_lan.sh | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed s/！/!/g > /tmp/ss_spec_lan.txt
+grep -v '^#' /etc/storage/shadowsocks_ss_spec_lan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_lan.txt
 while read line
 do
 for host in $line; do
+if [ ! -z "$(echo ${host:2} | grep -E -o '([0-9]+\.){3}[0-9/]+')" ] ; then
 	case "${host:0:1}" in
 		n|N)
 			ipset add ss_spec_src_ac ${host:2}
@@ -1283,6 +1284,7 @@ for host in $line; do
 			ipset add ss_spec_src_gfw ${host:2}
 			;;
 	esac
+fi
 done
 done < /tmp/ss_spec_lan.txt
 
@@ -1390,8 +1392,6 @@ nvram set button_script_2_s="$ss_info"
 
 # 外网(WAN)访问控制
 	logger -t "【SS】" "外网(WAN)访问控制，设置 WAN IP 转发或忽略代理中转"
-	sed -e '/.*opt.cn2qq.com/d' -i /etc/storage/shadowsocks_ss_spec_wan.sh
-	echo "WAN@opt.cn2qq.com" >> /etc/storage/shadowsocks_ss_spec_wan.sh
 	speedup_enable=`nvram get app_10`
 	[ -z $speedup_enable ] && speedup_enable=0 && nvram set app_10=0
 	if [ "$speedup_enable" != "0" ] ; then

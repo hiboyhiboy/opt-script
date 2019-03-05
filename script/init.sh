@@ -18,6 +18,7 @@ scriptname=$(basename $0)
 #echo $scriptname
 cmd_log2=' 2>&1 | awk '"'"'{cmd="logger -t '"'"'"'"'"'"'"'"'【'"'"'$cmd_name'"'"'】'"'"'"'"'"' '"'"' "'"'"'"$0"'"'"'"'"'"' "'"'"';";system(cmd)}'"'" 
 chmod 755 /etc/storage/*.sh
+ulimit -HSn 65536
 
 kill_ps () {
 
