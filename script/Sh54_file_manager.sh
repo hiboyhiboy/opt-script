@@ -168,7 +168,7 @@ if [ ! -s "$SVC_PATH" ] && [ -d "$upanPath/filemanager" ] ; then
 	logger -t "【filemanager】" "找不到 $SVC_PATH ，安装 $filemanager_exe 程序"
 	logger -t "【filemanager】" "开始下载 $filemanager_exe"
 	[ "$caddy_enable" = "1" ] && wgetcurl.sh "$upanPath/filemanager/$filemanager_exe" "$hiboyfile/caddy" "$hiboyfile2/caddy"
-	[ "$caddy_enable" = "1" ] || wgetcurl.sh "$upanPath/filemanager/$filemanager_exe" "$hiboyfile/filemanager_exe" "$hiboyfile2/filemanager_exe"
+	[ "$caddy_enable" = "1" ] || wgetcurl.sh "$upanPath/filemanager/$filemanager_exe" "$hiboyfile/filemanager" "$hiboyfile2/filemanager"
 fi
 chmod 777 "$SVC_PATH"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
