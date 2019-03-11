@@ -3,12 +3,32 @@
 source /etc/storage/script/init.sh
 frp_enable=`nvram get frp_enable`
 [ -z $frp_enable ] && frp_enable=0 && nvram set frp_enable=0
+frp_version_2="0.25.0"
+frp_version_0="0.24.1"
+frp_version_1="0.16.1"
+frp_version_3="使用最新版"
+frp_version_4="使用最新版"
+frp_version_5="使用最新版"
+frp_version_6="使用最新版"
+frp_version_7="使用最新版"
+frp_version_8="使用最新版"
+frp_version_9="使用最新版"
+nvram set frp_version_2="$frp_version_2"
+nvram set frp_version_0="$frp_version_0"
+nvram set frp_version_1="$frp_version_1"
+nvram set frp_version_3="$frp_version_3"
+nvram set frp_version_4="$frp_version_4"
+nvram set frp_version_5="$frp_version_5"
+nvram set frp_version_6="$frp_version_6"
+nvram set frp_version_7="$frp_version_7"
+nvram set frp_version_8="$frp_version_8"
+nvram set frp_version_9="$frp_version_9"
+frp_version=`nvram get frp_version`
+[ -z $frp_version ] && frp_version=9 && nvram set frp_version=9
 if [ "$frp_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep frp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 frpc_enable=`nvram get frpc_enable`
 frps_enable=`nvram get frps_enable`
-frp_version=`nvram get frp_version`
-[ -z $frp_version ] && frp_version=0 && nvram set frp_version=0
 frp_renum=`nvram get frp_renum`
 frp_renum=${frp_renum:-"0"}
 cmd_log_enable=`nvram get cmd_log_enable`
@@ -140,13 +160,21 @@ kill_ps "$scriptname"
 frp_start () {
 action_for=""
 frp_ver_wget=""
+[ "$frp_version" = "2" ] && frp_ver_wget="0.25.0"
+[ "$frp_version" = "0" ] && frp_ver_wget="0.24.1"
 [ "$frp_version" = "1" ] && frp_ver_wget="0.16.1"
+[ "$frp_version" = "3" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "4" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "5" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "6" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "7" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "8" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "9" ] && frp_ver_wget="0.25.0"
 [ "$frpc_enable" = "1" ] && action_for="frpc"
 [ "$frps_enable" = "1" ] && action_for=$action_for" frps"
-if [ "$frp_version" != "0" ] ; then
 for action_frp in $action_for
 do
-if [ "$frp_version" = "1" ] && [ -s "/opt/bin/$action_frp" ] ; then
+if [ -s "/opt/bin/$action_frp" ] ; then
 	frp_ver="`/opt/bin/$action_frp --version`"
 	if [ "$frp_ver" != "$frp_ver_wget" ] ; then
 		logger -t "【frp】" "$action_frp 当前版本 $frp_ver ,需要安装 $frp_ver_wget ,自动重新下载"
@@ -154,7 +182,6 @@ if [ "$frp_version" = "1" ] && [ -s "/opt/bin/$action_frp" ] ; then
 	fi
 fi
 done
-fi
 for action_frp in $action_for
 do
 	SVC_PATH="/opt/bin/$action_frp"
@@ -286,6 +313,23 @@ fi
 
 initconfig
 
+update_app () {
+
+if [ "$1" = "del" ] ; then
+	rm -rf /opt/bin/frpc /opt/bin/frps
+fi
+
+initconfig
+
+# 加载更新程序启动脚本
+if [ ! -f "/etc/storage/www_sh/frp" ] || [ -z "$(grep "更新程序启动脚本" /etc/storage/www_sh/frp)" ] ; then
+	wgetcurl.sh /etc/storage/www_sh/frp "$hiboyfile/www_sh/frp" "$hiboyfile2/www_sh/frp"
+fi
+# 更新程序启动脚本
+
+[ "$1" = "del" ] && /etc/storage/www_sh/frp del &
+}
+
 case $ACTION in
 start)
 	frp_close
@@ -304,7 +348,7 @@ keep)
 updatefrp)
 	frp_restart o
 	[ "$frp_enable" = "1" ] && nvram set frp_status="updatefrp" && logger -t "【frp】" "重启" && frp_restart
-	[ "$frp_enable" != "1" ] && nvram set frpc_v="" && nvram set frps_v="" && logger -t "【frp】" "frpc、frps更新" && rm -rf /opt/bin/frpc /opt/bin/frps
+	[ "$frp_enable" != "1" ] && nvram set frpc_v="" && nvram set frps_v="" && logger -t "【frp】" "frpc、frps更新" && update_app del
 	;;
 *)
 	frp_check

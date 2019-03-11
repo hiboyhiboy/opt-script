@@ -9,9 +9,32 @@ if [ "$1"x = "stop"x ] ; then
     exit
 fi
 
+if [ "$1" != "del" ] ; then
 eval 'nvram set tablink'$1'='$link';'
 
 nvram set frp_L2="$(($3 + 10))"
 nvram set frp_L3="$2"
 #     show_menu(8,<% nvram_get_x("", "frp_L2"); %>,<% nvram_get_x("", "frp_L3"); %>);
+fi
 
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh32_frp.sh
+if [ ! -f "/etc/storage/script/Sh32_frp.sh" ] || [ ! -s "/etc/storage/script/Sh32_frp.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh32_frp.sh "$hiboyscript/script/Sh32_frp.sh" "$hiboyscript/script/Sh32_frp.sh"
+fi
+chmod 777 /etc/storage/script -R
+if [ ! -f "/etc/storage/frp_script.sh" ] || [ ! -s "/etc/storage/frp_script.sh" ] ; then
+/etc/storage/script/Sh32_frp.sh updatefrp
+fi
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
