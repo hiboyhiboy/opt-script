@@ -1968,7 +1968,7 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 		fi
 		# /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwdomain_2.txt 、koolshare以及自定义列表
 	fi
-	rm -rf /tmp/ss/gfwdomain_tmp.txt
+	rm -f /tmp/ss/gfwdomain_tmp.txt
 	#合并多个域名列表（自定义域名，GFWLIST，自带的三个列表）
 	logger -t "【SS】" "根据选项不同，分别会合并固件自带、gfwlist官方、订阅下载地址自定义域名 ...."
 	touch /etc/storage/shadowsocks_mydomain_script.sh
@@ -2049,7 +2049,7 @@ if [ "$ss_3p_enable" = "1" ] ; then
 			eval $awk_cmd
 			#awk '{printf("server=/%s/114.114.114.114\n", $1 )}'  >> $confdir/r.sub.conf
 	fi
-	rm -rf /tmp/ss/tmp_sub.txt
+	rm -f /tmp/ss/tmp_sub.txt
 fi
 	#订阅处理完成
 	#删除ipset=，留下server=
@@ -2137,7 +2137,7 @@ else
 		logger -t "【SS】" "启动时使用 固件内置chnroutes规则 列表...."
 		cat /etc/storage/china_ip_list.txt > /tmp/ss/chnroute.txt
 fi
-		rm -rf /tmp/ss/tmp_chnroute.txt
+		rm -f /tmp/ss/tmp_chnroute.txt
 		ipset flush ss_spec_dst_sh
 		grep -v '^#' /tmp/ss/chnroute.txt | sort -u | grep -v "^$" > /tmp/ss/tmp_chnroute.txt
 		mv -f /tmp/ss/tmp_chnroute.txt /tmp/ss/chnroute.txt
@@ -2161,7 +2161,7 @@ fi
 		cat /tmp/ss/tmp_accelerated-domains.china.conf |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			awk '{printf("server=/%s/%s\n", $1, "'"$DNS_china"'" )}' > /tmp/ss/accelerated-domains.china.conf
-		rm -rf /tmp/ss/tmp_accelerated-domains.china.conf
+		rm -f /tmp/ss/tmp_accelerated-domains.china.conf
 		sed -Ei '/accelerated-domains/d' /etc/storage/dnsmasq/dnsmasq.conf
 		echo "conf-file=/tmp/ss/accelerated-domains.china.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 	fi
@@ -2528,8 +2528,13 @@ logger -t "【SS】" "重置 SS IP 规则文件并重启 SS"
 stop_SS
 sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
 rm -f /tmp/ss/dnsmasq.d/*
+mkdir -p /tmp/ss/
+cd /tmp/ss/
+rm_tmp="`ls -p /tmp/ss | grep -v dnsmasq.d/ | grep -v link/`"
+[ ! -z "$rm_tmp" ] && rm -rf $rm_tmp
+rm_tmp=""
 restart_dhcpd
-rm -rf /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt /tmp/ss/*
+rm -f /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt
 [ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
 [ ! -f /etc/storage/basedomain.txt ] && tar -xzvf /etc_ro/basedomain.tgz -C /tmp && ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
 sync
