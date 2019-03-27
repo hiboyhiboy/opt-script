@@ -178,7 +178,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【filemanager】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
 fi
 chmod 777 "$SVC_PATH"
-if [ "$filemanager_enable" = "1" ] ; then
+if [ "$caddy_enable" = "1" ] ; then
 	caddy_start
 else
 	filebrowser_start
