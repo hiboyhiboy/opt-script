@@ -13,6 +13,7 @@ frp_version_6="使用最新版"
 frp_version_7="使用最新版"
 frp_version_8="使用最新版"
 frp_version_9="使用最新版"
+frp_version_10="不变动版本"
 nvram set frp_version_2="$frp_version_2"
 nvram set frp_version_0="$frp_version_0"
 nvram set frp_version_1="$frp_version_1"
@@ -23,8 +24,9 @@ nvram set frp_version_6="$frp_version_6"
 nvram set frp_version_7="$frp_version_7"
 nvram set frp_version_8="$frp_version_8"
 nvram set frp_version_9="$frp_version_9"
+nvram set frp_version_10="$frp_version_10"
 frp_version=`nvram get frp_version`
-[ -z $frp_version ] && frp_version=9 && nvram set frp_version=9
+[ -z $frp_version ] && frp_version=10 && nvram set frp_version=10
 if [ "$frp_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep frp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 frpc_enable=`nvram get frpc_enable`
@@ -170,9 +172,11 @@ frp_ver_wget=""
 [ "$frp_version" = "7" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
 [ "$frp_version" = "8" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
 [ "$frp_version" = "9" ] && frp_ver_wget="0.25.0" && frp_version_txt=$frp_version_2
+[ "$frp_version" = "10" ] && frp_ver_wget="0.25.0"
 [ "$frpc_enable" = "1" ] && action_for="frpc"
 [ "$frps_enable" = "1" ] && action_for=$action_for" frps"
 del_tmp=0
+if [ "$frp_version" != "10" ] ; then
 for action_frp in $action_for
 do
 if [ -s "/opt/bin/$action_frp" ] ; then
@@ -191,6 +195,7 @@ if [ "$del_tmp" = "1" ] ; then
 	fi
 	frp_restart o
 	logger -t "【frp】" "重启" && frp_restart
+fi
 fi
 for action_frp in $action_for
 do
