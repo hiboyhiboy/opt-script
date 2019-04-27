@@ -32,16 +32,17 @@ echo $MD5_down
 echo $MD5_txt
 if [ -s /tmp/padavan/$Firmware ] && [ "$MD5_txt"x = "$MD5_down"x ] ; then
     logger_echo " 下载【$Firmware】，md5匹配，开始更新！请勿断电！"
-    mtd_write write /tmp/padavan/$Firmware Firmware_Stub  > /tmp/padavan/log.txt  2>&1
+    mtd_write -r write /tmp/padavan/$Firmware Firmware_Stub  > /tmp/padavan/log.txt  2>&1
     mtd_log=`cat /tmp/padavan/log.txt | grep -Eo '\[ok\]'`
     if [ -s /tmp/padavan/log.txt ] && [ "$mtd_log"x = '[ok]x' ] ; then
         logger_echo " 更新【$Firmware】，[ok]！"
         logger_echo " 稍等【$Firmware】，自动重启！"
-        logger_echo " 出现[ok]！为刷入成功，自动重启失败可尝试手动重启路由"
-        reboot
+        logger_echo " 出现[ok]！为刷入成功，自动重启路由"
         export LD_LIBRARY_PATH=/tmp/padavan
         /sbin/reboot
+        logger_echo "如果自动重启失败可尝试手动重启路由"
     else
+        logger_echo "`cat /tmp/padavan/log.txt`"
         logger_echo " 出错【$Firmware】，更新失败！"
     fi
 else
