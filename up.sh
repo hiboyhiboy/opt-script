@@ -38,6 +38,7 @@ if [ -s /tmp/padavan/$Firmware ] && [ "$MD5_txt"x = "$MD5_down"x ] ; then
         logger_echo " 更新【$Firmware】，[ok]！"
         logger_echo " 稍等【$Firmware】，自动重启！"
         logger_echo " 出现[ok]！为刷入成功，自动重启失败可尝试手动重启路由"
+        reboot
         export LD_LIBRARY_PATH=/tmp/padavan
         /sbin/reboot
     else
