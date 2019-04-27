@@ -191,7 +191,7 @@ done
 if [ "$del_tmp" = "1" ] ; then
 	rm -rf /etc/storage/script/Sh32_frp.sh
 	if [ ! -f "/etc/storage/script/Sh32_frp.sh" ] || [ ! -s "/etc/storage/script/Sh32_frp.sh" ] ; then
-		wgetcurl.sh /etc/storage/script/Sh32_frp.sh "$hiboyscript/script/Sh32_frp.sh" "$hiboyscript/script/Sh32_frp.sh"
+		wgetcurl.sh /etc/storage/script/Sh32_frp.sh "$hiboyscript/script/Sh32_frp.sh" "$hiboyscript2/script/Sh32_frp.sh"
 	fi
 	frp_restart o
 	logger -t "【frp】" "重启" && frp_restart
@@ -338,7 +338,7 @@ initconfig
 
 # 加载更新程序启动脚本
 if [ ! -f "/etc/storage/www_sh/frp" ] || [ -z "$(grep "更新程序启动脚本" /etc/storage/www_sh/frp)" ] ; then
-	wgetcurl.sh /etc/storage/www_sh/frp "$hiboyfile/www_sh/frp" "$hiboyfile2/www_sh/frp"
+	wgetcurl.sh /etc/storage/www_sh/frp "$hiboyscript/www_sh/frp" "$hiboyscript2/www_sh/frp"
 fi
 # 更新程序启动脚本
 

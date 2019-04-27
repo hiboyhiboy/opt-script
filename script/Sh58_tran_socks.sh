@@ -273,7 +273,7 @@ initconfig
 
 transocks_port_dpt () {
 if [ ! -f "/etc/storage/script/Sh15_ss.sh" ] || [ ! -s "/etc/storage/script/Sh15_ss.sh" ] ; then
-	wgetcurl.sh /etc/storage/script/Sh15_ss.sh "$hiboyscript/script/Sh15_ss.sh" "$hiboyscript/script/Sh15_ss.sh"
+	wgetcurl.sh /etc/storage/script/Sh15_ss.sh "$hiboyscript/script/Sh15_ss.sh" "$hiboyscript2/script/Sh15_ss.sh"
 fi
 
 /etc/storage/script/Sh15_ss.sh transock_start
