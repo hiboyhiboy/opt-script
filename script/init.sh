@@ -33,3 +33,26 @@ fi
 }
 
 
+wgetcurl_checkmd5 () {
+output="$1"
+url1="$2"
+url2="$3"
+check_n="$4"
+check_lines="$5"
+wgetcurl.sh $output $url1 $url2 $check_n $check_lines
+if [ -s "$output" ] ; then
+	eval $(md5sum $output | awk '{print "MD5_down="$1;}')
+	mkdir -p /tmp/checkmd5/
+	checkmd5tmp=$$
+	wgetcurl.sh /tmp/checkmd5/$checkmd5tmp $url1 $url2 $check_n $check_lines
+	eval $(md5sum /tmp/checkmd5/$checkmd5tmp | awk '{print "MD5_txt="$1;}')
+	rm -f /tmp/checkmd5/$checkmd5tmp
+	echo $MD5_down;echo $MD5_txt;
+	if [ "$MD5_txt"x = "$MD5_down"x ] ; then
+		logger -t "【下载】" "下载【$output】成功，2次下载md5匹配！【$url1】"
+	else
+		logger -t "【下载】" "下载【$output】错误，2次下载md5不匹配！【$url1】"
+		rm -f $output
+	fi
+fi
+}

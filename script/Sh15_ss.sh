@@ -1938,20 +1938,20 @@ _CONF
 if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 	if [ ! -z "$ss_sub5" ] ; then
 		logger -t "【SS】" "正在获取 GFW 自定义域名 列表...."
-		wgetcurl.sh /tmp/ss/gfwdomain_5.txt $ss_sub5 $ss_sub5 Y
+		wgetcurl_checkmd5 /tmp/ss/gfwdomain_5.txt $ss_sub5 $ss_sub5 Y
 		cat /tmp/ss/gfwdomain_5.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_5_1.txt
 		grep -v '^#' /tmp/ss/gfwdomain_5_1.txt | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss/gfwdomain_5.txt
 		rm -f /tmp/ss/gfwdomain_5_1.txt
 	fi
 	if [ ! -z "$ss_sub6" ] ; then
 		logger -t "【SS】" "正在获取 GFW IP 列表...."
-		wgetcurl.sh /tmp/ss/gfwdomain_6.txt $ss_sub6 $ss_sub6 Y
+		wgetcurl_checkmd5 /tmp/ss/gfwdomain_6.txt $ss_sub6 $ss_sub6 Y
 		grep -v '^#' /tmp/ss/gfwdomain_6.txt | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A ss_spec_dst_fw &/g" | ipset -R -!
 	fi
 	if [ "$ss_3p_enable" = "1" ] ; then
 		if [ "$ss_3p_gfwlist" = "1" ] ; then
 			logger -t "【SS】" "正在获取官方 gfwlist...."
-			wgetcurl.sh /tmp/ss/gfwlist.b64 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt N
+			wgetcurl_checkmd5 /tmp/ss/gfwlist.b64 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt N
 			base64 -d  /tmp/ss/gfwlist.b64 > /tmp/ss/gfwlist.txt
 			cat /tmp/ss/gfwlist.txt | sort -u |
 					sed '/^$\|@@/d'|
@@ -1963,7 +1963,7 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 		if [ "$ss_3p_kool" = "1" ] ; then
 			# 2 获取koolshare.github.io/maintain_files/gfwlist.conf
 			logger -t "【SS】" "正在获取 koolshare 列表...."
-			wgetcurl.sh /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf N 5
+			wgetcurl_checkmd5 /tmp/ss/gfwdomain_tmp.txt https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf N 5
 			cat /tmp/ss/gfwdomain_tmp.txt | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /tmp/ss/gfwdomain_1.txt
 		fi
 		# /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwdomain_2.txt 、koolshare以及自定义列表
@@ -2023,7 +2023,7 @@ fi
 if [ "$ss_3p_enable" = "1" ] ; then
 	if [ "$ss_sub1" = "1" ] ; then
 		logger -t "【SS】" "处理订阅列表1....海外加速"
-		wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt N
+		wgetcurl_checkmd5 /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/list.txt N
 		cat /tmp/ss/tmp_sub.txt |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			awk '{printf("server=/%s/127.0.0.1#8053\nipset=/%s/gfwlist\n", $1, $1 )}'  > $confdir/r.sub.conf
@@ -2031,7 +2031,7 @@ if [ "$ss_3p_enable" = "1" ] ; then
 	#处理只做dns解释的域名
 	if [ "$ss_sub2" = "1" ] ; then
 		logger -t "【SS】" "处理订阅列表2....处理只做dns解释的域名"
-		wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt N
+		wgetcurl_checkmd5 /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/dnsonly.txt N
 		cat /tmp/ss/tmp_sub.txt |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			awk '{printf("server=/%s/127.0.0.1#8053\n", $1 )}'  >> $confdir/r.sub.conf
@@ -2043,7 +2043,7 @@ if [ "$ss_3p_enable" = "1" ] ; then
 		[ -z "$DNS" ] && DNS="114.114.114.114"
 	awk_cmd="awk '{printf(\"server=/%s/$DNS\\n\", \$1 )}'  >> $confdir/r.sub.conf"
 	#echo $awk_cmd
-	wgetcurl.sh /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/passby.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/passby.txt N
+	wgetcurl_checkmd5 /tmp/ss/tmp_sub.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/passby.txt https://coding.net/u/bigandy/p/DogcomBooster/git/raw/master/passby.txt N
 		cat /tmp/ss/tmp_sub.txt |
 			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' |
 			eval $awk_cmd
@@ -2115,20 +2115,20 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 		echo ss_spec_dst_sh
 		# wget --no-check-certificate -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > /tmp/ss/chnroute.txt
 		# echo ""  >> /tmp/ss/chnroute.txt
-		wgetcurl.sh /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt N 5
+		wgetcurl_checkmd5 /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt N 5
 		cat /tmp/ss/tmp_chnroute.txt > /tmp/ss/chnroute.txt
 		echo ""  >> /tmp/ss/chnroute.txt
-		wgetcurl.sh /tmp/ss/tmp_chnroute.txt "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt" N 5
+		wgetcurl_checkmd5 /tmp/ss/tmp_chnroute.txt "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt" N 5
 		cat /tmp/ss/tmp_chnroute.txt >> /tmp/ss/chnroute.txt
 		if [ ! -z "$ss_sub7" ] ; then
 			logger -t "【SS】" "正在获取 ① 大陆白名单 IP 下载地址...."
-			wgetcurl.sh /tmp/ss/tmp_chnroute.txt $ss_sub7 $ss_sub7 Y
+			wgetcurl_checkmd5 /tmp/ss/tmp_chnroute.txt $ss_sub7 $ss_sub7 Y
 			cat /tmp/ss/tmp_chnroute.txt >> /tmp/ss/chnroute.txt
 			echo ""  >> /tmp/ss/chnroute.txt
 		fi
 		if [ ! -z "$ss_sub8" ] ; then
 			logger -t "【SS】" "正在获取 ② 大陆白名单 IP 下载地址...."
-			wgetcurl.sh /tmp/ss/tmp_chnroute.txt $ss_sub8 $ss_sub8 Y
+			wgetcurl_checkmd5 /tmp/ss/tmp_chnroute.txt $ss_sub8 $ss_sub8 Y
 			cat /tmp/ss/tmp_chnroute.txt >> /tmp/ss/chnroute.txt
 			echo ""  >> /tmp/ss/chnroute.txt
 		fi
@@ -2152,7 +2152,7 @@ fi
 		DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="114.114.114.114"
 		if [ ! -s /tmp/ss/accelerated-domains.china.conf ] ; then
-			wgetcurl.sh /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt" Y 5
+			wgetcurl_checkmd5 /tmp/ss/tmp_accelerated-domains.china.conf "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt" Y 5
 		else
 			[ -s /tmp/ss/accelerated-domains.china.conf ] && mv -f /tmp/ss/accelerated-domains.china.conf /tmp/ss/tmp_accelerated-domains.china.conf
 			sed -e "s@server=/@@g" -i  /tmp/ss/tmp_accelerated-domains.china.conf

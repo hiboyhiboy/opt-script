@@ -603,7 +603,7 @@ if [ -s "$confdir$gfwlist" ] && [ -s /tmp/adbyby_host.conf ] && [ ! -z "$gfw_bla
 		logger -t "【iptables】" "gfwlist 规则处理完毕"
 	fi
 	rm -f $confdir/cflist.conf
-	ln -sf /tmp/cflist.conf $confdir/cflist.conf
+	[ -s /tmp/cflist.conf ] && cp -f /tmp/cflist.conf $confdir/cflist.conf
 	[ -s /tmp/cflist.conf ] && echo "conf-file=/tmp/cflist.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 fi
 echo "conf-file=/tmp/adbyby_host.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"

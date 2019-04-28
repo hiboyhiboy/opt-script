@@ -483,6 +483,7 @@ if [ "$adbyby_mode_x" == 1 ] && [ -s /tmp/adbyby_host.conf ] ; then
 logger -t "【iptables】" "添加 ipset 转发规则"
 sed -Ei '/adbyby_host.conf|cflist.conf/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed  "s/\/adm_list/\/adbybylist/" -i  /tmp/adbyby_host.conf
+adbyby_whitehost=`nvram get adbyby_whitehost`
 [ ! -z $whitehost ] && sed -Ei "/$(echo $whitehost | tr , \|)/d" /tmp/adbyby_host.conf
 [ -f "$confdir$gfwlist" ] && gfw_black=$(grep "/$gfw_black_list" "$confdir$gfwlist" | sed 's/.*\=//g')
 if [ -s "$confdir$gfwlist" ] && [ -s /tmp/adbyby_host.conf ] && [ ! -z "$gfw_black" ] ; then
@@ -507,7 +508,7 @@ if [ -s "$confdir$gfwlist" ] && [ -s /tmp/adbyby_host.conf ] && [ ! -z "$gfw_bla
 		logger -t "【iptables】" "gfwlist 规则处理完毕"
 	fi
 	rm -f $confdir/cflist.conf
-	ln -sf /tmp/cflist.conf $confdir/cflist.conf
+	[ -s /tmp/cflist.conf ] && cp -f /tmp/cflist.conf $confdir/cflist.conf
 	[ -s /tmp/cflist.conf ] && echo "conf-file=/tmp/cflist.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 fi
 echo "conf-file=/tmp/adbyby_host.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
