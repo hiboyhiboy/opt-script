@@ -36,8 +36,7 @@ koolproxyfile22="$hiboyfile2/koolproxy"
 koolproxyfile3="$hiboyfile/7620koolproxy.tgz"
 koolproxyfile33="$hiboyfile2/7620koolproxy.tgz"
 koolproxy_rules_list="/etc/storage/koolproxy_rules_list.sh"
-[ -z "$(grep -Eo "\|koolproxy.txt\|https://kprule.com/koolproxy.txt\|" $koolproxy_rules_list)" ] && rm -f $koolproxy_rules_list
-
+[ -z "$(grep '1|user.txt||' $koolproxy_rules_list)" ] && rm -f $koolproxy_rules_list
 FWI="/tmp/firewall.adbyby.pdcn" # firewall include file
 AD_LAN_AC_IP=`nvram get AD_LAN_AC_IP`
 [ -z $AD_LAN_AC_IP ] && AD_LAN_AC_IP=0 && nvram set AD_LAN_AC_IP=$AD_LAN_AC_IP
@@ -446,6 +445,10 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 		logger -t "【koolproxy】" "重置data/source.list"
 		initconfig
 	fi
+	if [ ! -z "$(grep '1|koolproxy.txt|https://kprule.com/koolproxy.txt|' $koolproxy_rules_list)" ] ; then
+		logger -t "【koolproxy】" "kp规则停止更新！停用kprule.com规则！"
+		sed -e 's@1|koolproxy.txt|https://kprule.com/koolproxy.txt|@0|koolproxy.txt|https://kprule.com/koolproxy.txt|@' -e 's@1|daily.txt|https://kprule.com/daily.txt|@0|daily.txt|https://kprule.com/daily.txt|@' -e 's@1|kp.dat|https://kprule.com/kp.dat|@0|kp.dat|https://kprule.com/kp.dat|@' -i $koolproxy_rules_list
+	fi
 	source_list="/tmp/7620koolproxy/data/source.list"
 	cat $koolproxy_rules_list | grep -v '#' | grep -v "^$" > $source_list
 	if [ "$koolproxy_video" = "1" ] ; then
@@ -494,10 +497,14 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	cd /tmp/7620koolproxy/
 	/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
 	rm -f /tmp/adbyby_host.conf
-	sleep 4
+	sleep 10
 	[ -z "`pidof koolproxy`" ] && sleep 4
 	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动成功" && koolproxy_restart o
 	[ -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && koolproxy_restart x
+	#[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "等待规则下载，请等待40秒！" && sleep 10
+	#[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "等待规则下载，请等待30秒！" && sleep 10
+	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "等待规则下载，请等待20秒！" && sleep 10
+	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "等待规则下载，请等待10秒！" && sleep 10
 	hash krdl 2>/dev/null && krdl_ipset
 fi
 if [ -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] ; then
@@ -559,7 +566,7 @@ cat  /tmp/7620koolproxy/domain.txt | grep  -Ev '^[0-9\.]*$' | sort -u > /tmp/762
 sed -e "s/^/ipset=\/\./" -e "s/$/\/black_koolproxy/" -i /tmp/7620koolproxy/domain2.txt
 cat /tmp/7620koolproxy/domain2.txt /tmp/7620koolproxy/data/koolproxy_ipset.conf | sort -u > /tmp/adbyby_host.conf
 # 删tmp
-rm -f /tmp/7620koolproxy/data/rules/*.txt.http /tmp/7620koolproxy/data/rules/*.txt.https
+rm -f "/tmp/7620koolproxy/data/rules/*.txt.http" "/tmp/7620koolproxy/data/rules/*.txt.https"
 rm -f /tmp/7620koolproxy/domain.txt /tmp/7620koolproxy/domain2.txt /tmp/7620koolproxy/ip.txt
 }
 
@@ -1021,23 +1028,7 @@ fi
 koolproxy_rules_list="/etc/storage/koolproxy_rules_list.sh"
 if [ ! -f "$koolproxy_rules_list" ] || [ ! -s "$koolproxy_rules_list" ] ; then
 	cat > "$koolproxy_rules_list" <<-\EEE
-#规则控制功能为大家提供了经过koolproxy兼容认证的规则，其中包括：静态规则、每日规则、视频规则、自定规则，
-#koolproxy用户可以根据自己的需求选取相应的规则。【规则在文字说明后面】
-
-#koolproxy兼容认证规则介绍：
-#1:静态规则（koolproxy.txt）：该规则包含了较多国内网站和部分知名国外网站的页面元素、js库等屏蔽规则，
-#使用该规则可以屏蔽对应网站的一些推广内容
-
-#2:每日规则（daily.txt）：每日规则不定时更新，是静态规则的补充，因为静态规则文件较大，
-#因此更新较小的每日规则，以避免每次更新静态规则消耗过多服务器流量。
-
-#3:视频规则（kp.dat）：
-#视频规则为加密规则，多为过滤一些flash内嵌元素和一些不良网站，为避免不良网站被人获取，所以采取加密处理。
-
-#4:自定规则（user.txt）：
-#用户可以为网站编写自己的规则并用koolproxy引擎来进行过滤。
-
-#5:第三方规则：
+第三方规则：
 #你也能在此处添加第三方规则，不过第三方规则不能保证其和koolproxy的兼容性，有时候甚至会其它规则出现相互冲突。
 #请确保第三方规则链接有对应的.md5链接，例如https://kprule.com/daily.txt，
 #应该有对应的https://kprule.com/daily.txt.md5 链接，koolproxy才能正确下载规则。
@@ -1047,9 +1038,11 @@ if [ ! -f "$koolproxy_rules_list" ] || [ ! -s "$koolproxy_rules_list" ] ; then
 #维护人员采纳后会通过规则推送，来实现这些网站元素的屏蔽。
 #规则的更新由koolproxy主程序发起，用户只需要添加规则文件名，规则地址等信息即可获得相应规则。
 #（可选项：前面添加#停用规则,删除前面的#可生效）
-1|koolproxy.txt|https://kprule.com/koolproxy.txt|
-1|daily.txt|https://kprule.com/daily.txt|
-1|kp.dat|https://kprule.com/kp.dat|
+# 开关 0表示关闭 1表示开启
+# 开关|规则名字|规则网址|规则备注名字
+0|koolproxy.txt|https://kprule.com/koolproxy.txt|
+0|daily.txt|https://kprule.com/daily.txt|
+0|kp.dat|https://kprule.com/kp.dat|
 1|user.txt||
 
 EEE

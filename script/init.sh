@@ -52,6 +52,7 @@ if [ -s "$output" ] ; then
 		logger -t "【下载】" "下载【$output】成功，2次下载md5匹配！【$url1】"
 	else
 		logger -t "【下载】" "下载【$output】错误，2次下载md5不匹配！【$url1】"
+		logger -t "【下载】" "删除【$output】文件，麻烦看看哪里问题！"
 		rm -f $output
 	fi
 fi
