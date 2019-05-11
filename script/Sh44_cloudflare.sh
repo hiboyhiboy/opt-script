@@ -139,18 +139,18 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	fi
 fi
 IPv6=0
-if [ "$cloudflare_domian"x != "x" ] ; then
+if [ "$cloudflare_domian"x != "x" ] && [ "$cloudflare_host"x != "x" ] ; then
 	DOMAIN="$cloudflare_domian"
 	HOST="$cloudflare_host"
 	arDdnsCheck
 fi
-if [ "$cloudflare_domian2"x != "x" ] ; then
+if [ "$cloudflare_domian2"x != "x" ] && [ "$cloudflare_host2"x != "x" ] ; then
 	sleep 1
 	DOMAIN="$cloudflare_domian2"
 	HOST="$cloudflare_host2"
 	arDdnsCheck
 fi
-if [ "$cloudflare_domian6"x != "x" ] ; then
+if [ "$cloudflare_domian6"x != "x" ] && [ "$cloudflare_host6"x != "x" ] ; then
 	sleep 1
 	IPv6=1
 	DOMAIN="$cloudflare_domian6"

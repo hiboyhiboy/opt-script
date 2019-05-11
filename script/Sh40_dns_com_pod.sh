@@ -111,18 +111,18 @@ kill_ps "$scriptname"
 
 dns_com_pod_start () {
 IPv6=0
-if [ "$dns_com_pod_domian"x != "x" ] ; then
+if [ "$dns_com_pod_domian"x != "x" ] && [ "$dns_com_pod_host"x != "x" ] ; then
 	DOMAIN="$dns_com_pod_domian"
 	HOST="$dns_com_pod_host"
 arDdnsCheck $dns_com_pod_domian $dns_com_pod_host
 fi
-if [ "$dns_com_pod_domian2"x != "x" ] ; then
+if [ "$dns_com_pod_domian2"x != "x" ] && [ "$dns_com_pod_host2"x != "x" ] ; then
 	sleep 1
 	DOMAIN="$dns_com_pod_domian2"
 	HOST="$dns_com_pod_host2"
 	arDdnsCheck $dns_com_pod_domian2 $dns_com_pod_host2
 fi
-if [ "$dns_com_pod_domian6"x != "x" ] ; then
+if [ "$dns_com_pod_domian6"x != "x" ] && [ "$dns_com_pod_host6"x != "x" ] ; then
 	IPv6=1
 	DOMAIN="$dns_com_pod_domian6"
 	HOST="$dns_com_pod_host6"

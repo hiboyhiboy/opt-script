@@ -86,18 +86,18 @@ kill_ps "$scriptname"
 
 dnspod_start () {
 IPv6=0
-if [ "$dnspod_domian"x != "x" ] ; then
+if [ "$dnspod_domian"x != "x" ] && [ "$dnspod_host"x != "x" ] ; then
 	DOMAIN="$dnspod_domian"
 	HOST="$dnspod_host"
 	arDdnsCheck $dnspod_domian $dnspod_host
 fi
-if [ "$dnspod_domian2"x != "x" ] ; then
+if [ "$dnspod_domian2"x != "x" ] && [ "$dnspod_host2"x != "x" ] ; then
 	sleep 1
 	DOMAIN="$dnspod_domian2"
 	HOST="$dnspod_host2"
 	arDdnsCheck $dnspod_domian2 $dnspod_host2
 fi
-if [ "$dnspod_domian6"x != "x" ] ; then
+if [ "$dnspod_domian6"x != "x" ] && [ "$dnspod_host6"x != "x" ] ; then
 	IPv6=1
 	DOMAIN="$dnspod_domian6"
 	HOST="$dnspod_host6"

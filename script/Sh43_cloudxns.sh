@@ -141,18 +141,18 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 fi
 
 IPv6=0
-if [ "$cloudxns_domian"x != "x" ] ; then
+if [ "$cloudxns_domian"x != "x" ] && [ "$cloudxns_host"x != "x" ] ; then
 	DOMAIN="$cloudxns_domian"
 	HOST="$cloudxns_host"
 	arDdnsCheck $cloudxns_domian $cloudxns_host
 fi
-if [ "$cloudxns_domian2"x != "x" ] ; then
+if [ "$cloudxns_domian2"x != "x" ] && [ "$cloudxns_host2"x != "x" ] ; then
 	sleep 1
 	DOMAIN="$cloudxns_domian2"
 	HOST="$cloudxns_host2"
 	arDdnsCheck $cloudxns_domian2 $cloudxns_host2
 fi
-if [ "$cloudxns_domian6"x != "x" ] ; then
+if [ "$cloudxns_domian6"x != "x" ] && [ "$cloudxns_host6"x != "x" ] ; then
 	IPv6=1
 	sleep 1
 	DOMAIN="$cloudxns_domian6"

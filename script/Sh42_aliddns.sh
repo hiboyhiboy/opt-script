@@ -142,7 +142,7 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	fi
 fi
 IPv6=0
-if [ "$aliddns_domain"x != "x" ] ; then
+if [ "$aliddns_domain"x != "x" ] && [ "$aliddns_name"x != "x" ] ; then
 	sleep 1
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 	aliddns_record_id=""
@@ -150,7 +150,7 @@ if [ "$aliddns_domain"x != "x" ] ; then
 	name="$aliddns_name"
 	arDdnsCheck $aliddns_domain $aliddns_name
 fi
-if [ "$aliddns_domain2"x != "x" ] ; then
+if [ "$aliddns_domain2"x != "x" ] && [ "$aliddns_name2"x != "x" ] ; then
 	sleep 1
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 	aliddns_record_id=""
@@ -158,7 +158,7 @@ if [ "$aliddns_domain2"x != "x" ] ; then
 	name="$aliddns_name2"
 	arDdnsCheck $aliddns_domain2 $aliddns_name2
 fi
-if [ "$aliddns_domain6"x != "x" ] ; then
+if [ "$aliddns_domain6"x != "x" ] && [ "$aliddns_name6"x != "x" ] ; then
 	IPv6=1
 	sleep 1
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`

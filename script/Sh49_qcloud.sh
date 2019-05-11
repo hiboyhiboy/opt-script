@@ -142,7 +142,7 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	fi
 fi
 IPv6=0
-if [ "$qcloud_domain"x != "x" ] ; then
+if [ "$qcloud_domain"x != "x" ] && [ "$qcloud_name"x != "x" ] ; then
 	sleep 1
 	timestamp=`date +%s`
 	qcloud_record_id=""
@@ -150,7 +150,7 @@ if [ "$qcloud_domain"x != "x" ] ; then
 	name="$qcloud_name"
 	arDdnsCheck $qcloud_domain $qcloud_name
 fi
-if [ "$qcloud_domain2"x != "x" ] ; then
+if [ "$qcloud_domain2"x != "x" ] && [ "$qcloud_name2"x != "x" ] ; then
 	sleep 1
 	timestamp=`date +%s`
 	qcloud_record_id=""
@@ -158,7 +158,7 @@ if [ "$qcloud_domain2"x != "x" ] ; then
 	name="$qcloud_name2"
 	arDdnsCheck $qcloud_domain2 $qcloud_name2
 fi
-if [ "$qcloud_domain6"x != "x" ] ; then
+if [ "$qcloud_domain6"x != "x" ] && [ "$qcloud_name6"x != "x" ] ; then
 	IPv6=1
 	sleep 1
 	timestamp=`date +%s`
