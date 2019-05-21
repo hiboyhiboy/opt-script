@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-3-18"
+Builds="/etc/storage/Builds-2018-10-28"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -28,7 +28,6 @@ shadowsocks_ss_spec_wan="/etc/storage/shadowsocks_ss_spec_wan.sh"
 ad_config_script="/etc/storage/ad_config_script.sh"
 FastDick_script="/etc/storage/FastDick_script.sh"
 crontabs_script="/etc/storage/crontabs_script.sh"
-kmskey="/etc/storage/key"
 jbls_script="/etc/storage/jbls_script.sh"
 vlmcsdini_script="/etc/storage/vlmcsdini_script.sh"
 DNSPOD_script="/etc/storage/DNSPOD_script.sh"
@@ -143,6 +142,7 @@ func_save()
 		result=1
 		echo "Error! Invalid storage final data size: $fsz"
 		logger -t "Storage save" "Invalid storage final data size: $fsz"
+		[ $fsz -gt $mtd_part_size ] && logger -t "Storage save" "Storage using data size: $fsz > flash partition size: $mtd_part_size"
 	fi
 	rm -f $tmp
 	rm -f $tbz
@@ -241,7 +241,7 @@ func_resetsh()
 		rm -f /etc/storage/v2ray_script.sh /etc/storage/cow_script.sh /etc/storage/meow_script.sh /etc/storage/softether_script.sh
 		
 		#删除内部脚本文件
-		rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $kmskey $DNSPOD_script $cloudxns_script $aliddns_script
+		rm -f $script0_script $script_script $script1_script $script2_script $script3_script $crontabs_script $DNSPOD_script $cloudxns_script $aliddns_script
 		rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
 	fi
 
@@ -288,7 +288,7 @@ ln -sf /etc/storage/init.status /etc/init.status &
 [ -s /etc/storage/script/init.sh ] && chmod 777 /etc/storage/script -R
 [ ! -s /etc/storage/www_sh/menu_title.sh ] && [ -s /etc_ro/www_sh.tgz ] && tar -xzvf /etc_ro/www_sh.tgz -C /etc/storage/
 [ -s /etc/storage/www_sh/menu_title.sh ] && chmod 777 /etc/storage/www_sh -R
-[ ! -s /etc/storage/bin/daydayup ] && [ -s /etc_ro/daydayup ] && ln -sf /etc_ro/daydayup /etc/storage/bin/daydayup
+#[ ! -s /etc/storage/bin/daydayup ] && [ -s /etc_ro/daydayup ] && ln -sf /etc_ro/daydayup /etc/storage/bin/daydayup
 } &
 	user_hosts="$dir_dnsmasq/hosts"
 	user_dnsmasq_conf="$dir_dnsmasq/dnsmasq.conf"
@@ -334,8 +334,9 @@ modprobe xt_set
     confdir="/tmp/ss/dnsmasq.d"
 #fi
 [ ! -d "$confdir" ] && mkdir -p $confdir
-### SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
-### 说明：username=、password=填账号密码，删除代码前面的#启用功能。
+# SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
+# 说明：【192.168.123.66】为共享服务器的IP，【nas】为共享文件夹名称
+# 说明：username=、password=填账号密码，删除代码前面的#启用功能。
 #sleep 10
 #modprobe des_generic
 #modprobe cifs CIFSMaxBufSize=64512
@@ -443,10 +444,10 @@ mkdir -p /tmp/bwmon
 
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then 
     #已挂载储存设备
@@ -1809,6 +1810,10 @@ client-to-client
 ### Allow clients with duplicate "Common Name"
 ;duplicate-cn
 
+### Legacy LZO adaptive compression
+;comp-lzo adaptive
+;push "comp-lzo adaptive"
+
 ### Keepalive and timeout
 keepalive 10 60
 
@@ -1882,8 +1887,6 @@ if [ ! -f "$script0_script" ] ; then
 touch /tmp/script0.lock
 #脚本修改日期：2017-11-29
 #↓↓↓功能详细设置(应用设置重启后生效，不能断电重启，要点击右上角重启按钮)↓↓↓
-#多次检测断线后自动重启功能 0关闭；1启动
-echo "0" > /tmp/reb.lock
 source /etc/storage/script/init.sh
 
 # 迅雷快鸟 功能
@@ -1921,7 +1924,6 @@ func_fill2
 if [ ! -f "$Builds" ] ; then
 #	强制更新脚本reset
 	/sbin/mtd_storage.sh resetsh
-	nvram set ss_multiport="22,80,443"
 fi
 
 }
@@ -1965,8 +1967,11 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 #copyright by hiboy
 if [ $1 == "up" ] ; then
     nvram set dnspod_status=0
+    nvram set dns_com_pod_status=0
+    nvram set cloudflare_status=0
     nvram set cloudxns_status=0
     nvram set aliddns_status=0
+    nvram set qcloud_status=0
     nvram set ngrok_status=0
     nvram set kcptun_status=0
     nvram set tinyproxy_status=0
@@ -2053,8 +2058,14 @@ cat > "/tmp/crontabs_DOMAIN.txt" <<-\EOF
 # 每1小时重启CloudXNS 域名解析
 #16 */1 * * * nvram set cloudxns_status=123 && /tmp/script/_cloudxns & #删除开头的#启动命令
 
+# 每1小时重启Cloudflare 域名解析
+#16 */1 * * * nvram set cloudflare_status=123 && /tmp/script/_cloudflare & #删除开头的#启动命令
+
 # 每1小时重启aliddns 域名解析
 #16 */1 * * * nvram set aliddns_status=123 && /tmp/script/_aliddns & #删除开头的#启动命令
+
+# 每1小时重启aliddns 域名解析
+#16 */1 * * * nvram set qcloud_status=123 && /tmp/script/_qcloud & #删除开头的#启动命令
 
 # 早上8点开启微信推送：
 #0 8 * * * nvram set serverchan_enable=1 && nvram set serverchan_status=0 && /tmp/script/_server_chan & #删除开头的#启动命令
@@ -2339,9 +2350,9 @@ if [[ $(cat /tmp/apauto.lock) == 1 ]] ; then
 	/tmp/sh_apauto.sh &
 fi
 [ -d /etc/storage/script ] && chmod 777 /etc/storage/script -R
+/etc/storage/script/Sh01_mountopt.sh upopt
 /etc/storage/script/sh_upscript.sh
 /etc/storage/www_sh/menu_title.sh upver &
-/etc/storage/script/Sh01_mountopt.sh upopt
 /etc/storage/script/Sh01_mountopt.sh libmd5_check
 /tmp/sh_theme.sh &
 run_aria
@@ -2375,11 +2386,68 @@ fi
 
 }
 
+func_flock()
+{
+
+st=$1
+st2=$(expr "$st" + 5)
+date "+%s" > $sfl
+(
+	sleep 1
+	flock 333
+	expr_time
+	[ $ctime -lt 0 ] && return 1
+	expr_time
+	[ $ctime -gt 0 ] && sleep $st
+	while [ $ctime -lt $st2 ]; do 
+		sleep 1
+		expr_time
+		if [ $ctime -ge $st ] ; then
+			date "+%s0" > $sfl
+			[ -f "$slk" ] && return 1
+			touch "$slk"
+			logger -t "【mtd_storage.sh】" "保存 /etc/storage/ 内容到闪存！请勿关机"
+			/sbin/mtd_storage.sh save_2
+			rm -f $slk
+			logger -t "【mtd_storage.sh】" "保存 /etc/storage/ 内容到闪存！执行完成"
+			return 0
+		fi
+	done
+
+) 333>/var/lock/storage_flock.lock
+
+}
+
+atime=0
+btime=0
+ctime=0
+sfl="/tmp/.storage_flock_locked"
+expr_time()
+{
+atime=$(cat $sfl)
+atime=`echo ${atime:5}`
+btime=$(date "+%s")
+btime=`echo ${btime:5}`
+ctime=$(expr "$btime" - "$atime")
+}
+
+
 case "$1" in
 load)
     func_get_mtd
     func_mdir
     func_load
+    ;;
+save_flock)
+    func_mdir
+    func_fill
+    func_flock 3 &
+    ;;
+save_2)
+    func_get_mtd
+    func_mdir
+    func_tarb
+    func_save
     ;;
 save)
     [ -f "$slk" ] && exit 1

@@ -6,7 +6,20 @@ goflyway_enable=`nvram get app_23`
 #if [ "$goflyway_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep goflyway | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
+mkdir -p /etc/storage/goflyway
+keypem_s_path="/etc/storage/goflyway/key.pem"
+capem_s_path="/etc/storage/goflyway/ca.pem"
+keypem_path="/opt/bin/key.pem"
+capem_path="/opt/bin/ca.pem"
 
+goflyway_renum=`nvram get goflyway_renum`
+goflyway_renum=${goflyway_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="goflyway"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$goflyway_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep gofly_way)" ]  && [ ! -s /tmp/script/_app7 ]; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app7
@@ -121,35 +134,49 @@ if [ ! -s "$SVC_PATH" ] ; then
 	wgetcurl.sh "/opt/bin/goflyway" "$hiboyfile/goflyway" "$hiboyfile2/goflyway"
 fi
 chmod 777 "$SVC_PATH"
-
-capem_path="/opt/bin/ca.pem"
+if [ -s "$SVC_PATH" ] ; then
+if [ ! -s "$capem_s_path" ] && [ -s "$capem_path" ] ; then
+cp -f "$keypem_path" "$keypem_s_path"
+cp -f "$capem_path" "$capem_s_path"
+fi
+rm -f  "$keypem_path" "$capem_path"
+ln -sf "$keypem_s_path" "$keypem_path"
+ln -sf "$capem_s_path" "$capem_path"
+if [ ! -s "$capem_path" ] && [[ "$(goflyway -h 2>&1 | grep gen-ca | wc -l)" -gt 0 ]] ; then
+	logger -t "【goflyway】" "找不到 $capem_path 正在生成 ca.pem、key.pem 稍等几分钟"
+	cd /opt/bin/
+	./goflyway -gen-ca
+fi
 if [ ! -s "$capem_path" ] ; then
 	logger -t "【goflyway】" "找不到 $capem_path 下载文件"
-	wgetcurl.sh $capem_path "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem"
-	chmod 755 "$capem_path"
+	wgetcurl.sh "$capem_path" "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem"
+fi
+if [ -s "$capem_path" ] ; then
+	chmod 755 "$capem_path" "$keypem_path"
 fi
 chinalist_path="/opt/bin/chinalist.txt"
 if [ ! -s "$chinalist_path" ] ; then
 	logger -t "【goflyway】" "找不到 $chinalist_path 下载文件"
-	wgetcurl.sh $chinalist_path "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
+	wgetcurl.sh "$chinalist_path" "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
 	chmod 755 "$chinalist_path"
 fi
-
+fi
 [[ "$(goflyway -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/goflyway
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【goflyway】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【goflyway】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && goflyway_restart x
 fi
 chmod 777 "$SVC_PATH"
-goflyway_v=$(goflyway -v | grep goflyway | sed -n '1p')
+goflyway_v=$(goflyway -version | grep goflyway | sed -n '1p')
 nvram set goflyway_v="$goflyway_v"
 logger -t "【goflyway】" "运行 goflyway"
 
 #运行脚本启动/opt/bin/goflyway
+chmod 777 /etc/storage/app_7.sh
 cd $(dirname `which goflyway`)
-/etc/storage/app_7.sh
+eval "/etc/storage/app_7.sh $cmd_log" &
 
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "goflyway" | grep -v grep )" ] && logger -t "【goflyway】" "启动成功" && goflyway_restart o
 [ -z "$(ps -w | grep "goflyway" | grep -v grep )" ] && logger -t "【goflyway】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && goflyway_restart x
 initopt
@@ -157,6 +184,7 @@ initopt
 
 #goflyway_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {
@@ -178,10 +206,10 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 # https://github.com/coyove/goflyway/wiki/使用教程
 cd $(dirname ` which goflyway`)
 #在服务器执行下面命令即可启动服务端，KEY123为自定义密码，默认监听8100。本地执行
-#./goflyway -k=KEY123 -l="0.0.0.0:8100" &
+#./goflyway -t 0 -k=KEY123 -l="0.0.0.0:8100" 2>&1 &
 
 #客户端命令（1.2.3.4要修改为服务器IP，默认监听8100）
-goflyway -k=KEY123 -up="1.2.3.4:8100" -l="0.0.0.0:8100" &
+goflyway -t 0 -k=KEY123 -up="1.2.3.4:8100" -l="0.0.0.0:8100" 2>&1 &
 
 #可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用
 #请设置以上软件的本地代理为 192.168.123.1:8100（协议为HTTP或SOCKS5代理，192.168.123.1为路由器IP）
@@ -198,7 +226,9 @@ update_app () {
 mkdir -p /opt/app/goflyway
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/goflyway/Advanced_Extensions_goflyway.asp
-	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /etc/storage/app_7.sh
+	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /opt/bin/chinalist.txt /etc/storage/app_7.sh
+	[ -f "$capem_s_path" ] && rm -f  "$keypem_s_path" "$capem_s_path" "$keypem_path" "$capem_path"
+
 fi
 
 initconfig

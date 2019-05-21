@@ -7,6 +7,14 @@ vpnproxy_enable=`nvram get vpnproxy_enable`
 if [ "$vpnproxy_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep vpnproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 vpnproxy_vpn_port=`nvram get vpnproxy_vpn_port`
+vpnproxy_renum=`nvram get vpnproxy_renum`
+vpnproxy_renum=${vpnproxy_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="vpnproxy"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$vpnproxy_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep vpnproxy)" ]  && [ ! -s /tmp/script/_vpnproxy ]; then
@@ -134,15 +142,16 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 chmod 777 "$SVC_PATH"
 logger -t "【vpnproxy】" "运行 $SVC_PATH"
-$SVC_PATH -port=$vpnproxy_wan_port -proxy=127.0.0.1:$vpnproxy_vpn_port &
+eval "$SVC_PATH -port=$vpnproxy_wan_port -proxy=127.0.0.1:$vpnproxy_vpn_port $cmd_log" &
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "启动成功" && vpnproxy_restart o
 [ -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "启动失败, 注意检查端口【netstat -anp | grep LISTEN】是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && vpnproxy_restart x
 vpnproxy_port_dpt
 initopt
 #vpnproxy_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

@@ -22,6 +22,14 @@ ss_rdd_server=`nvram get ss_server2`
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 [ -z $ss_s1_local_port ] && ss_s1_local_port=1081 && nvram set ss_s1_local_port=$ss_s1_local_port
 [ -z $ss_s2_local_port ] && ss_s2_local_port=1082 && nvram set ss_s2_local_port=$ss_s2_local_port
+cow_renum=`nvram get cow_renum`
+cow_renum=${cow_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="cow"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$cow_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 
@@ -161,14 +169,15 @@ cow_path="$SVC_PATH"
 
 logger -t "【cow】" "运行 cow_script"
 /etc/storage/cow_script.sh
-$cow_path -rc /etc/storage/cow_config_script.sh &
+eval "$cow_path -rc /etc/storage/cow_config_script.sh $cmd_log" &
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "启动成功" && cow_restart o
 [ -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && cow_restart x
 initopt
 cow_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

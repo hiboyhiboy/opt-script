@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v3.14
+version=v4.18.0
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -14,23 +14,23 @@ SERVICE_CMD=$(command -v service)
 
 #Check OS
 if [ -f /etc/redhat-release ];then
-        OS='CentOS'
-    elif [ ! -z "`cat /etc/issue | grep bian`" ];then
-        OS='Debian'
-    elif [ ! -z "`cat /etc/issue | grep Ubuntu`" ];then
-        OS='Ubuntu'
-    elif [ ! -z "`cat /etc/issue | grep CentOS`" ];then
-        OS='CentOS'
-    else
-        echo "Not support OS, Please reinstall OS and retry!"
-        exit 1
+		OS='CentOS'
+	elif [ ! -z "`cat /etc/issue | grep bian`" ];then
+		OS='Debian'
+	elif [ ! -z "`cat /etc/issue | grep Ubuntu`" ];then
+		OS='Ubuntu'
+	elif [ ! -z "`cat /etc/issue | grep CentOS`" ];then
+		OS='CentOS'
+	else
+		echo "Not support OS, Please reinstall OS and retry!"
+		exit 1
 fi
 
 
 # Get Public IP address
 ipc=$(ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1)
 if [[ "$IP" = "" ]]; then
-    ipc=$(wget -qO- -t1 -T2 ipv4.icanhazip.com)
+	ipc=$(wget -qO- -t1 -T2 ipv4.icanhazip.com)
 fi
 
 uuid=$(cat /proc/sys/kernel/random/uuid)
@@ -57,22 +57,21 @@ ntpdate us.pool.ntp.org
 
 #Disable SELinux
 if [ -s /etc/selinux/config ] && grep 'SELINUX=enforcing' /etc/selinux/config; then
-    sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
-    setenforce 0
+	sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+	setenforce 0
 fi
 
 #Run Install
 cd /root
 
-curl -L  -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+curl -L  -k https://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
 if [ ! -s /root/go.sh ]; then
-  rm -f /root/go.sh
-  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+	rm -f /root/go.sh
+	wget --no-check-certificate https://opt.cn2qq.com/opt-script/go.sh
 fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
 /root/go.sh --version $version
-check_daemon
 rm -f /root/v2ray_server_json
 ln -sf /etc/v2ray /root/v2ray_server_json
 echo "安装完成"
@@ -84,10 +83,10 @@ echo '删除 V2ray 请稍候！'
 
 cd /root
 
-curl -L  -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+curl -L  -k https://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
 if [ ! -s /root/go.sh ]; then
-  rm -f /root/go.sh
-  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+	rm -f /root/go.sh
+	wget --no-check-certificate https://opt.cn2qq.com/opt-script/go.sh
 fi
 chmod +x "/root/go.sh"
 /root/go.sh --remove
@@ -98,179 +97,46 @@ echo '删除 V2ray 完成！'
 
 function up_v2ray(){
 
-  if [ -n "${SYSTEMCTL_CMD}" ]; then
-    if [ -f "/lib/systemd/system/v2ray.service" ]; then
-      killall keey.sh
-      ${SYSTEMCTL_CMD} stop v2ray
-    fi
-  elif [ -n "${SERVICE_CMD}" ]; then
-    if [ -f "/etc/init.d/v2ray" ]; then
-      killall keey.sh
-      ${SERVICE_CMD} v2ray stop
-    fi
-  fi
+if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
+	killall keey.sh
+	${SYSTEMCTL_CMD} stop v2ray
+	systemctl disable v2ray.service
+fi
+if [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
+	killall keey.sh
+	${SERVICE_CMD} v2ray stop
+fi
 
-curl -L -s -k http://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
+curl -L -s -k https://opt.cn2qq.com/opt-script/go.sh > /root/go.sh 
 if [ ! -s /root/go.sh ]; then
-  rm -f /root/go.sh
-  wget --no-check-certificate http://opt.cn2qq.com/opt-script/go.sh
+	rm -f /root/go.sh
+	wget --no-check-certificate https://opt.cn2qq.com/opt-script/go.sh
 fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
 /root/go.sh --version $version
-check_daemon
 echo "安装完成"
 ntpdate us.pool.ntp.org &
 if [ -f "/etc/v2ray/config.back0" ]; then
-  if [ -n "${SYSTEMCTL_CMD}" ]; then
-    if [ -f "/lib/systemd/system/v2ray.service" ]; then
-      echo "Restarting V2Ray service."
-      ${SYSTEMCTL_CMD} start v2ray
-    fi
-  elif [ -n "${SERVICE_CMD}" ]; then
-    if [ -f "/etc/init.d/v2ray" ]; then
-      echo "Restarting V2Ray service."
-      ${SERVICE_CMD} v2ray start
-    fi
-  fi
-cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
-exit
+	cp -f /etc/v2ray/config.back0 /etc/v2ray/config.json
+	if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
+		echo "Restarting V2Ray service."
+		systemctl enable v2ray.service
+		${SYSTEMCTL_CMD} start v2ray
+	elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
+		echo "Restarting V2Ray service."
+		${SERVICE_CMD} v2ray start
+	fi
+	echo '##########################################################################'
+	rm -f /root/v2ray_config.pb
+	/usr/bin/v2ray/v2ctl config < /root/config.json > /root/v2ray_config.pb
+	[ -f /root/v2ray_config.pb ] && echo "已经生成 pb 配置文件 /root/v2ray_config.pb"
+	echo '##########################################################################'
+	exit
 else
-  echo "未完成配置生成，请继续配置"
+	echo "未完成配置生成，请继续配置"
 fi
 }
-
-function check_daemon(){
-hash start-stop-daemon 2>/dev/null || daemon_x=1
-echo $daemon_x
-if [ ! -f "/etc/init.d/v2ray" ] || [ "$daemon_x" = "1" ] ; then
-rm -f /root/keey.sh /etc/init.d/v2ray
-cat > "/etc/init.d/v2ray" <<-\VVRinit
-#!/bin/sh
-### BEGIN INIT INFO
-# Provides:          v2ray
-# Required-Start:    $network $local_fs $remote_fs
-# Required-Stop:     $remote_fs
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: V2Ray proxy services
-# Description:       V2Ray proxy services
-### END INIT INFO
-
-# Acknowledgements: Isulew Li <netcookies@gmail.com>
-
-DESC=v2ray
-NAME=v2ray
-DAEMON=/usr/bin/v2ray/v2ray
-PIDFILE=/var/run/$NAME.pid
-SCRIPTNAME=/etc/init.d/$NAME
-
-DAEMON_OPTS="-config /etc/v2ray/config.json"
-
-# Exit if the package is not installed
-[ -x $DAEMON ] || exit 0
-
-RETVAL=0
-
-check_running(){
-    PID=`ps -ef | grep -v grep | grep -i "${DAEMON}" | awk '{print $2}'`
-    if [ ! -z $PID ]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-do_start(){
-    check_running
-    if [ $? -eq 0 ]; then
-        echo "$NAME (pid $PID) is already running..."
-        keep
-        exit 0
-    else
-        cd /usr/bin/v2ray/
-        ntpdate us.pool.ntp.org &
-        $DAEMON $DAEMON_OPTS &
-        RETVAL=$?
-        if [ $RETVAL -eq 0 ]; then
-            echo "Starting $NAME success"
-            keep
-        else
-            echo "Starting $NAME failed"
-        fi
-    fi
-}
-
-do_stop(){
-    check_running
-    if [ $? -eq 0 ]; then
-        killall keey.sh
-        killall v2ray
-        RETVAL=$?
-        if [ $RETVAL -eq 0 ]; then
-            echo "Stopping $NAME success"
-        else
-            echo "Stopping $NAME failed"
-        fi
-    else
-        echo "$NAME is stopped"
-        RETVAL=1
-    fi
-}
-
-do_status(){
-    check_running
-    if [ $? -eq 0 ]; then
-        echo "$NAME (pid $PID) is running..."
-    else
-        echo "$NAME is stopped"
-        RETVAL=1
-    fi
-}
-
-do_restart(){
-    do_stop
-    do_start
-}
-
-keep () {
-if [ ! -f "/root/keey.sh" ]; then
-cat > "/root/keey.sh" <<-\SSMK
-#!/bin/sh
-#/usr/bin/v2ray/v2ray
-sleep 60
-service v2ray start
-SSMK
-chmod +x "/root/keey.sh"
-fi
-killall keey.sh
-/root/keey.sh &
-
-}
-
-
-case "$1" in
-    start|stop|restart|status)
-    do_$1
-    ;;
-    *)
-    echo "Usage: $0 { start | stop | restart | status }"
-    RETVAL=1
-    ;;
-esac
-
-exit $RETVAL
-
-
-VVRinit
-
-chmod 755 /etc/init.d/v2ray
-
-fi
-
-
-}
-
 
 echo 'V2Ray 输入数字继续一键安装'
 while :; do echo
@@ -293,7 +159,7 @@ fi
 echo 'V2Ray 一键安装|配置脚本 Author：Kirito && 雨落无声'
 
 echo ''
-echo '此脚本会关闭iptables防火墙，切勿用于生产环境！'
+echo '此脚本会关闭iptables防火墙（可选项），切勿用于生产环境！'
 
 while :; do echo
 	read -p "输入用户等级（自用请输入1，共享请输入0）:" level
@@ -315,10 +181,13 @@ read -p "输入主要端口（默认：$mainport_x ）:" mainport
 echo ''
 
 read -p "是否启用HTTP伪装?（默认开启y） [y/n]:" ifhttpheader
-	[ -z "$ifhttpheader" ] && ifhttpheader='y'
-	if [[ $ifhttpheader == 'y' ]];then
-		httpheader=',
+[ -z "$ifhttpheader" ] && ifhttpheader='y'
+if [[ $ifhttpheader == 'y' ]];then
+	httpheader=',
     "streamSettings": {
+      "sockopt": {
+        "mark": 255
+      },
       "network": "tcp",
       "tcpSettings": {
         "connectionReuse": true,
@@ -353,47 +222,57 @@ read -p "是否启用HTTP伪装?（默认开启y） [y/n]:" ifhttpheader
         }
       }
     }'
-	else
+else
+	httpheader=',
+    "streamSettings": {
+      "sockopt": {
+        "mark": 255
+      }
+    }'
+	read -p "是否启用mKCP协议?（默认开启y） [y/n]:" ifmkcp
+	[ -z "$ifmkcp" ] && ifmkcp='y'
+	if [[ $ifmkcp == 'y' ]];then
 		httpheader=''
-		read -p "是否启用mKCP协议?（默认开启y） [y/n]:" ifmkcp
-		[ -z "$ifmkcp" ] && ifmkcp='y'
-		if [[ $ifmkcp == 'y' ]];then
-        		mkcp=',
-   		 		"streamSettings": {
-   			 	"network": "kcp"
-  				}'
-		else
-				mkcp=''
-		fi
+		mkcp=',
+    "streamSettings": {
+      "sockopt": {
+        "mark": 255
+      }
+    },
+    "network": "kcp"
+    }'
+	else
+		mkcp=''
+	fi
 fi
 
 echo ''
 
 read -p "是否启用动态端口?（默认开启y） [y/n]:" ifdynamicport
-  [ -z "$ifdynamicport" ] && ifdynamicport='y'
-  if [[ $ifdynamicport == 'y' ]];then
-subport1_x=$(($mainport_x + 1))
-#32001
-    read -p "输入数据端口起点（默认：$subport1_x ）:" subport1
-    [ -z "$subport1" ] && subport1=$subport1_x
+[ -z "$ifdynamicport" ] && ifdynamicport='y'
+if [[ $ifdynamicport == 'y' ]];then
+	subport1_x=$(($mainport_x + 1))
+	#32001
+	read -p "输入数据端口起点（默认：$subport1_x ）:" subport1
+	[ -z "$subport1" ] && subport1=$subport1_x
 
-subport2_x=$(($mainport_x + 1500))
-#32500
-    read -p "输入数据端口终点（默认：$subport2_x ）:" subport2
-    [ -z "$subport2" ] && subport2=$subport2_x
+	subport2_x=$(($mainport_x + 1500))
+	#32500
+	read -p "输入数据端口终点（默认：$subport2_x ）:" subport2
+	[ -z "$subport2" ] && subport2=$subport2_x
 
-SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-portnum_x=`echo $SEED 8 15|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-#10
-    read -p "输入每次开放端口数（默认：$portnum_x ）:" portnum
-    [ -z "$portnum" ] && portnum=$portnum_x
+	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+	portnum_x=`echo $SEED 8 15|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	#10
+	read -p "输入每次开放端口数（默认：$portnum_x ）:" portnum
+	[ -z "$portnum" ] && portnum=$portnum_x
 
-SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-porttime_x=`echo $SEED 4 7|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-#5
-    read -p "输入端口变更时间（单位：分钟）（默认：$porttime_x ）:" porttime
-    [ -z "$porttime" ] && porttime=$porttime_x
-    dynamicport="
+	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+	porttime_x=`echo $SEED 4 7|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	#5
+	read -p "输入端口变更时间（单位：分钟）（默认：$porttime_x ）:" porttime
+	[ -z "$porttime" ] && porttime=$porttime_x
+	dynamicport="
   \"inboundDetour\": [
     {
       \"protocol\": \"vmess\",
@@ -408,34 +287,34 @@ porttime_x=`echo $SEED 4 7|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'
             }
   ],
     "
-  else
-    dynamicport=''
-  fi
+else
+	dynamicport=''
+fi
 
 echo ''
 
 read -p "是否启用 Mux.Cool?（默认开启y） [y/n]:" ifmux
-  [ -z "$ifmux" ] && ifmux='y'
-  if [[ $ifmux == 'y' ]];then
-    mux=',
+[ -z "$ifmux" ] && ifmux='y'
+if [[ $ifmux == 'y' ]];then
+	mux=',
     "mux": {
       "enabled": true
     }
     '
-  else
-    mux=""
-  fi
+else
+	mux=""
+fi
 
 while :; do echo
-  echo '1. HTTP代理（默认1）'
-  echo '2. Socks代理'
-  read -p "请选择客户端代理类型: " chooseproxytype
-  [ -z "$chooseproxytype" ] && chooseproxytype=1
-  if [[ ! $chooseproxytype =~ ^[1-2]$ ]]; then
-    echo '输入错误，请输入正确的数字！'
-  else
-    break
-  fi
+	echo '1. HTTP代理（默认1）'
+	echo '2. Socks代理'
+	read -p "请选择客户端代理类型: " chooseproxytype
+	[ -z "$chooseproxytype" ] && chooseproxytype=1
+	if [[ ! $chooseproxytype =~ ^[1-2]$ ]]; then
+		echo '输入错误，请输入正确的数字！'
+	else
+		break
+	fi
 done
 
 if [[ $chooseproxytype == 1 ]];then
@@ -487,18 +366,15 @@ else
 	fi
 fi
 
-  if [ -n "${SYSTEMCTL_CMD}" ]; then
-    if [ -f "/lib/systemd/system/v2ray.service" ]; then
-
-      killall keey.sh
-      ${SYSTEMCTL_CMD} stop v2ray
-    fi
-  elif [ -n "${SERVICE_CMD}" ]; then
-    if [ -f "/etc/init.d/v2ray" ]; then
-      killall keey.sh
-      ${SERVICE_CMD} v2ray stop
-    fi
-  fi
+if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
+	killall keey.sh
+	${SYSTEMCTL_CMD} stop v2ray
+	systemctl disable v2ray.service
+fi
+	if [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
+	killall keey.sh
+	${SERVICE_CMD} v2ray stop
+fi
 #Configure Server
 #service v2ray stop
 rm -rf config
@@ -515,7 +391,7 @@ cat << EOF > config
             {
                 "id": "$uuid",
                 "level": $level,
-                "alterId": 100
+                "alterId": 32
             }
         ]
     }${mkcp}${httpheader}
@@ -594,6 +470,11 @@ cat << EOF > /root/config.json
       "auth": "noauth",
       "udp": true,
       "ip": "$ipip"
+    },
+    "streamSettings": {
+      "sockopt": {
+        "mark": 255
+      }
     }
   },
   "inboundDetour": [
@@ -618,7 +499,7 @@ cat << EOF > /root/config.json
                 "users": [
                     {
                         "id": "$uuid",
-                        "alterId": 100
+                        "alterId": 32
                     }
                 ]
             }
@@ -629,7 +510,12 @@ cat << EOF > /root/config.json
     {
       "protocol": "freedom",
       "settings": {},
-      "tag": "direct"
+      "tag": "direct",
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255
+        }
+      }
     }
   ],
   "dns": {
@@ -653,7 +539,6 @@ cat << EOF > /root/config.json
             "0.0.0.0/8",
             "10.0.0.0/8",
             "100.64.0.0/10",
-            "127.0.0.0/8",
             "169.254.0.0/16",
             "172.16.0.0/12",
             "192.0.0.0/24",
@@ -665,7 +550,6 @@ cat << EOF > /root/config.json
             "100.100.100.100/32",
             "188.188.188.188/32",
             "110.110.110.110/32",
-            "104.160.185.171/32",
             "::1/128",
             "fc00::/7",
             "fe80::/10"
@@ -680,21 +564,19 @@ cat << EOF > /root/config.json
     }
   }
 }
+
 EOF
 
 
 ntpdate us.pool.ntp.org &
-  if [ -n "${SYSTEMCTL_CMD}" ]; then
-    if [ -f "/lib/systemd/system/v2ray.service" ]; then
-      echo "Restarting V2Ray service."
-      ${SYSTEMCTL_CMD} start v2ray
-    fi
-  elif [ -n "${SERVICE_CMD}" ]; then
-    if [ -f "/etc/init.d/v2ray" ]; then
-      echo "Restarting V2Ray service."
-      ${SERVICE_CMD} v2ray start
-    fi
-  fi
+if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ] || [ -f "/etc/systemd/system/v2ray.service" ]; then
+	echo "Restarting V2Ray service."
+	systemctl enable v2ray.service
+	${SYSTEMCTL_CMD} start v2ray
+elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
+	echo "Restarting V2Ray service."
+	${SERVICE_CMD} v2ray start
+fi
 
 #service v2ray start
 #clear
@@ -702,7 +584,7 @@ ntpdate us.pool.ntp.org &
 echo 'Telegram Group: https://t.me/functionclub'
 echo 'Github: https://github.com/FunctionClub'
 echo '教程地址：https://github.com/FunctionClub/V2ray-Bash/blob/master/README.md'
-echo ''
+echo '##########################################################################'
 echo '配置完成，客户端配置文件在 /root/config.json'
 echo '配置完成，客户端配置文件在 /root/config.json'
 echo '配置完成，客户端配置文件在 /root/config.json'
@@ -711,4 +593,10 @@ echo "程序主端口：$mainport"
 echo "UUID: $uuid"
 echo 'cat /root/config.json'
 echo "打开 /root/config.json 复制里面的内容到路由的 v2ray 配置文件"
+echo '##########################################################################'
+rm -f /root/v2ray_config.pb
+/usr/bin/v2ray/v2ctl config < /root/config.json > /root/v2ray_config.pb
+[ -f /root/v2ray_config.pb ] && echo "已经生成 pb 配置文件 /root/v2ray_config.pb"
+echo '##########################################################################'
+
 

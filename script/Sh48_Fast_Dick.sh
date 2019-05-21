@@ -10,6 +10,14 @@ FastDick_uid=`nvram get FastDick_uid`
 FastDick_pwd=`nvram get FastDick_pwd`
 FastDicks=`nvram get FastDicks`
 
+FastDicks_renum=`nvram get FastDicks_renum`
+FastDicks_renum=${FastDicks_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="FastDicks"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$FastDicks_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ]  && [ ! -s /tmp/script/_Fast_Dick ]; then
@@ -115,14 +123,14 @@ if [ "$FastDicks" = "2" ] ; then
 	logger -t "【迅雷快鸟】" "稍等几分钟，ssh 到路由，控制台输入【ps】命令查看[/etc/storage/FastDick_script.sh]进程是否存在，是否正常启动，提速是否成功。"
 	logger -t "【迅雷快鸟】" "免 U盘 启动"
 	chmod 777 "/etc/storage/FastDick_script.sh"
-	/etc/storage/FastDick_script.sh &
+	eval "/etc/storage/FastDick_script.sh $cmd_log" &
 else
 	ss_opt_x=`nvram get ss_opt_x`
 	upanPath=""
-	[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-	[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	if [ "$ss_opt_x" = "5" ] ; then
 		# 指定目录
 		opt_cifs_dir=`nvram get opt_cifs_dir`
@@ -130,9 +138,15 @@ else
 			upanPath="$opt_cifs_dir"
 		else
 			logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-			upanPath=""
-			[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-			[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		fi
+	fi
+	if [ "$ss_opt_x" = "6" ] ; then
+		opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+		# 远程共享
+		if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+			upanPath="$opt_cifs_2_dir"
+		else
+			logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
 		fi
 	fi
 	echo "$upanPath"
@@ -167,7 +181,7 @@ else
 	chmod 777 /opt/FastDick -R
 	cd /opt/FastDick
 	export LD_LIBRARY_PATH=/lib:/opt/lib
-	python /opt/FastDick/swjsq.py 2>&1 > /opt/FastDick/swjsq.log &
+	eval "python /opt/FastDick/swjsq.py $cmd_log" &
 	chmod 777 "/opt/FastDick" -R
 	sleep 30
 	chmod 777 "/opt/FastDick" -R
@@ -185,7 +199,6 @@ EEF
 		chmod 777 "/etc/storage/FastDick_script.sh"
 	fi
 	logger -t "【迅雷快鸟】" "启动 python 完成"
-	logger -t "【迅雷快鸟】" "`cat /opt/FastDick/swjsq.log`"
 	optw_enable=`nvram get optw_enable`
 	if [ "$optw_enable" != "2" ] ; then
 		nvram set optw_enable=2
@@ -200,6 +213,7 @@ else
 fi
 FastDick_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initconfig () {

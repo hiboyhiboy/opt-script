@@ -20,6 +20,7 @@ Info="$speedup_Info"
 [ -z "$Info" ] && Info=1
 STATUS="N"
 SN=""
+speedup_renum=`nvram get speedup_renum`
 fi
 speedup_path="/opt/app/speedup/speedup"
 
@@ -32,7 +33,6 @@ fi
 
 speedup_restart () {
 
-speedup_renum=`nvram get speedup_renum`
 relock="/var/lock/speedup_restart.lock"
 if [ "$1" = "o" ] ; then
 	nvram set speedup_renum="0"
@@ -169,7 +169,7 @@ sleep 2
 
 speedup_get_status
 eval "$scriptfilepath keep &"
-
+exit 0
 }
 
 speedup_start_path () {

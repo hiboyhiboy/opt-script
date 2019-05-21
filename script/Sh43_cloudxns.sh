@@ -12,8 +12,12 @@ cloudxns_domian=`nvram get cloudxns_domian`
 cloudxns_host=`nvram get cloudxns_host`
 cloudxns_domian2=`nvram get cloudxns_domian2`
 cloudxns_host2=`nvram get cloudxns_host2`
+cloudxns_domian6=`nvram get cloudxns_domian6`
+cloudxns_host6=`nvram get cloudxns_host6`
 cloudxns_interval=`nvram get cloudxns_interval`
 
+IPv6=0
+domain_type=""
 hostIP=""
 IP=""
 API_KEY="$cloudxns_username"
@@ -21,6 +25,8 @@ SECRET_KEY="$cloudxns_password"
 DOMAIN="$cloudxns_domian"
 HOST="$cloudxns_host"
 [ -z $cloudxns_interval ] && cloudxns_interval=600 && nvram set cloudxns_interval=$cloudxns_interval
+cloudxns_renum=`nvram get cloudxns_renum`
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cloudxns)" ]  && [ ! -s /tmp/script/_cloudxns ]; then
@@ -68,7 +74,7 @@ exit 0
 cloudxns_get_status () {
 
 A_restart=`nvram get cloudxns_status`
-B_restart="$cloudxns_enable$cloudxns_username$cloudxns_password$cloudxns_domian$cloudxns_host$cloudxns_domian2$cloudxns_host2$cloudxns_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$cloudxns_enable$cloudxns_username$cloudxns_password$cloudxns_domian$cloudxns_host$cloudxns_domian2$cloudxns_host2cloudxns_domian6$cloudxns_host6$cloudxns_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set cloudxns_status=$B_restart
@@ -89,6 +95,7 @@ if [ "$cloudxns_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		cloudxns_close
 		eval "$scriptfilepath keep &"
+		exit 0
 	else
 		[ -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] || [ ! -s "`which curl`" ] && cloudxns_restart
 	fi
@@ -133,18 +140,45 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	fi
 fi
 
-DOMAIN="$cloudxns_domian"
-HOST="$cloudxns_host"
-arDdnsCheck $cloudxns_domian $cloudxns_host
-if [ "$cloudxns_domian2"x != "x" ] && [ "$cloudxns_domian2" != "baidu.com" ] ; then
+IPv6=0
+if [ "$cloudxns_domian"x != "x" ] && [ "$cloudxns_host"x != "x" ] ; then
+	DOMAIN="$cloudxns_domian"
+	HOST="$cloudxns_host"
+	arDdnsCheck $cloudxns_domian $cloudxns_host
+fi
+if [ "$cloudxns_domian2"x != "x" ] && [ "$cloudxns_host2"x != "x" ] ; then
 	sleep 1
 	DOMAIN="$cloudxns_domian2"
 	HOST="$cloudxns_host2"
 	arDdnsCheck $cloudxns_domian2 $cloudxns_host2
 fi
+if [ "$cloudxns_domian6"x != "x" ] && [ "$cloudxns_host6"x != "x" ] ; then
+	IPv6=1
+	sleep 1
+	DOMAIN="$cloudxns_domian6"
+	HOST="$cloudxns_host6"
+	arDdnsCheck $cloudxns_domian6 $cloudxns_host6
+fi
 }
 
 arDdnsInfo() {
+case  $HOST  in
+	  \*)
+		HOST2="\\*"
+		;;
+	  \@)
+		HOST2="@"
+		;;
+	  *)
+		HOST2="$HOST"
+		;;
+esac
+
+	if [ "$IPv6" = "1" ]; then
+		domain_type="AAAA"
+	else
+		domain_type="A"
+	fi
 	# 获得域名ID
 	URL_D="https://www.cloudxns.net/api2/domain"
 	DATE=$(date)
@@ -156,14 +190,18 @@ arDdnsInfo() {
 	URL_R="https://www.cloudxns.net/api2/record/$DOMAIN_ID?host_id=0&row_num=500"
 	HMAC_R=$(printf "%s" "$API_KEY$URL_R$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
 	recordIP=$(curl -k -s "$URL_R" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_R")
-	recordIP=$(echo $recordIP|grep -o "\"host\":\"$HOST\",.*" | awk -F type\":\"A\"  '{print $1}'|grep -o "value\":\"[0-9\.]*"|grep -o "[0-9\.]*")
+	recordIP=$(echo $recordIP | sed -e "s/"'"status":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -o "\"host\":\"$HOST2\",.*" | awk -F type\":\"A '{print $1}' |grep -o "value\":\"[^\"]*\"" | awk -F 'value":"' '{print $2}' | tr -d '"' |head -n1)
 
 	#echo "arDdnsInfo recordIP: $recordIP"
 	
 
 	# Output IP
+	if [ "$IPv6" = "1" ]; then
+	echo $recordIP
+	return 0
+	else
 	case "$recordIP" in 
-	[1-9][0-9]*)
+	[1-9]*)
 		echo $recordIP
 		return 0
 		;;
@@ -173,11 +211,25 @@ arDdnsInfo() {
 		return 1
 		;;
 	esac
+	fi
 }
 
 # 查询域名地址
 # 参数: 待查询域名
 arNslookup() {
+mkdir -p /tmp/arNslookup
+nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":" | sed -n '1p' > /tmp/arNslookup/$$ &
+I=5
+while [ ! -s /tmp/arNslookup/$$ ] ; do
+		I=$(($I - 1))
+		[ $I -lt 0 ] && break
+		sleep 1
+done
+killall nslookup
+if [ -s /tmp/arNslookup/$$ ] ; then
+cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
+rm -f /tmp/arNslookup/$$
+else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		Address="`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
@@ -185,16 +237,54 @@ arNslookup() {
 		echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
 	else
-		Address="`curl -k http://119.29.29.29/d?dn=$1`"
+		Address="`curl -k -s http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
 	fi
+fi
+}
+
+arNslookup6() {
+mkdir -p /tmp/arNslookup
+nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep ":" | sed -n '1p' > /tmp/arNslookup/$$ &
+I=5
+while [ ! -s /tmp/arNslookup/$$ ] ; do
+		I=$(($I - 1))
+		[ $I -lt 0 ] && break
+		sleep 1
+done
+killall nslookup
+if [ -s /tmp/arNslookup/$$ ] ; then
+	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
+	rm -f /tmp/arNslookup/$$
+fi
 }
 
 # 更新记录信息
 # 参数: 主域名 子域名
 arDdnsUpdate() {
+case  $HOST  in
+	  \*)
+		HOST2="\\*"
+		;;
+	  \@)
+		HOST2="@"
+		;;
+	  *)
+		HOST2="$HOST"
+		;;
+esac
+	if [ "$IPv6" = "1" ]; then
+		domain_type="AAAA"
+	else
+		domain_type="A"
+	fi
+I=3
+RECORD_ID=""
+while [ "$RECORD_ID" = "" ] ; do
+	I=$(($I - 1))
+	[ $I -lt 0 ] && break
 	# 获得域名ID
 	URL_D="https://www.cloudxns.net/api2/domain"
 	DATE=$(date)
@@ -202,13 +292,14 @@ arDdnsUpdate() {
 	DOMAIN_ID=$(curl -k -s $URL_D -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_D")
 	DOMAIN_ID=$(echo $DOMAIN_ID|grep -o "id\":\"[0-9]*\",\"domain\":\"$DOMAIN"|grep -o "[0-9]*"|head -n1)
 	echo "DOMAIN ID: $DOMAIN_ID"
-
+	sleep 1
 	# 获得记录ID
 	URL_R="https://www.cloudxns.net/api2/record/$DOMAIN_ID?host_id=0&row_num=500"
 	HMAC_R=$(printf "%s" "$API_KEY$URL_R$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
 	RECORD_ID=$(curl -k -s "$URL_R" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_R")
-	RECORD_ID=$(echo $RECORD_ID|grep -o "record_id\":\"[0-9]*\",\"host_id\":\"[0-9]*\",\"host\":\"$HOST\""|grep -o "record_id\":\"[0-9]*"|grep -o "[0-9]*")
+	RECORD_ID=$(echo $RECORD_ID | sed -e "s/"'"status":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -o "record_id\":\"[0-9]*\",\"host_id\":\"[0-9]*\",\"host\":\"$HOST2\""|grep -o "record_id\":\"[0-9]*"|grep -o "[0-9]*" |head -n1)
 	echo "RECORD ID: $RECORD_ID"
+done
 	if [ "$RECORD_ID" = "" ] ; then
 		# 获取线路ID
 		# URL_I="https://www.cloudxns.net/api2/line"
@@ -219,11 +310,11 @@ arDdnsUpdate() {
 		# echo "LINE ID: $LINE_ID"
 
 		# 添加子域名记录IP
-		logger -t "【CloudXNS动态域名】" "添加子域名 ${HOST} 记录IP"
+		logger -t "【CloudXNS动态域名】" "添加子域名 $HOST 记录IP"
 		IP=$hostIP
 		URL_A="https://www.cloudxns.net/api2/record"
 
-		PARAM_BODY="{\"domain_id\":\"$DOMAIN_ID\",\"host\":\"$HOST\",\"type\":\"A\",\"value\":\"$IP\",\"line_id\":\"1\"}"
+		PARAM_BODY="{\"domain_id\":\"$DOMAIN_ID\",\"host\":\"$HOST\",\"type\":\"$domain_type\",\"value\":\"$IP\",\"line_id\":\"1\"}"
 		HMAC_A=$(printf "%s" "$API_KEY$URL_A$PARAM_BODY$DATE$SECRET_KEY"|md5sum|cut -d" " -f1)
 
 		RESULT=$(curl -k -s "$URL_A" -X POST -d "$PARAM_BODY" -H "API-KEY: $API_KEY" -H "API-REQUEST-DATE: $DATE" -H "API-HMAC: $HMAC_A" -H 'Content-Type: application/json')
@@ -254,35 +345,48 @@ arDdnsUpdate() {
 # 动态检查更新
 # 参数: 主域名 子域名
 arDdnsCheck() {
-	local postRS
-	local lastIP
+	#local postRS
+	#local lastIP
 	source /etc/storage/ddns_script.sh
 	hostIP=$arIpAddress
+	hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`
+	if [ -z $(echo "$hostIP" | grep : | grep -v "\.") ] && [ "$IPv6" = "1" ] ; then 
+		IPv6=0
+		logger -t "【CloudXNS动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+		return 1
+	fi
 	if [ "$hostIP"x = "x"  ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			hostIP=`wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net/" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 		else
-			hostIP=`curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 		fi
 		if [ "$hostIP"x = "x"  ] ; then
 			logger -t "【CloudXNS动态域名】" "错误！获取目前 IP 失败，请在脚本更换其他获取地址"
 			return 1
 		fi
 	fi
-	echo "Updating Domain: ${2}.${1}"
+	echo "Updating Domain: $HOST.$DOMAIN"
 	echo "hostIP: ${hostIP}"
-	lastIP=$(arDdnsInfo "$1" "$2")
+	lastIP=$(arDdnsInfo "$DOMAIN" "$HOST")
 	if [ $? -eq 1 ]; then
-		lastIP=$(arNslookup "${2}.${1}")
+		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$HOST.$DOMAIN")
+		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$HOST.$DOMAIN")
 	fi
 	echo "lastIP: ${lastIP}"
 	if [ "$lastIP" != "$hostIP" ] ; then
-		logger -t "【CloudXNS动态域名】" "开始更新 ${2}.${1} 域名 IP 指向"
+		logger -t "【CloudXNS动态域名】" "开始更新 $HOST.$DOMAIN 域名 IP 指向"
 		logger -t "【CloudXNS动态域名】" "目前 IP: ${hostIP}"
 		logger -t "【CloudXNS动态域名】" "上次 IP: ${lastIP}"
 		sleep 1
-		postRS=$(arDdnsUpdate $1 $2)
+		postRS=$(arDdnsUpdate "$DOMAIN" "$HOST")
 		if [ $? -eq 0 ]; then
 			echo "postRS: ${postRS}"
 			logger -t "【CloudXNS动态域名】" "更新动态DNS记录成功！"
@@ -290,6 +394,11 @@ arDdnsCheck() {
 		else
 			echo ${postRS}
 			logger -t "【CloudXNS动态域名】" "更新动态DNS记录失败！请检查您的网络。"
+			if [ "$IPv6" = "1" ] ; then 
+				IPv6=0
+				logger -t "【CloudXNS动态域名】" "错误！$hostIP 获取目前 IPv6 失败，请在脚本更换其他获取地址，保证取得IPv6地址(例如:ff03:0:0:0:0:0:0:c1)"
+				return 1
+			fi
 			return 1
 		fi
 	fi
@@ -311,23 +420,33 @@ initconfig () {
 
 if [ ! -s "/etc/storage/ddns_script.sh" ] ; then
 cat > "/etc/storage/ddns_script.sh" <<-\EEE
-# 获得外网地址
 # 自行测试哪个代码能获取正确的IP，删除前面的#可生效
 arIpAddress () {
+# IPv4地址获取
+# 获得外网地址
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-    wget --no-check-certificate --quiet --output-document=- "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
 else
-    curl -L -k -s "http://www.ipip.net" | grep "您当前的IP：" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+'
-    #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+'
+    #curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
 fi
 }
+arIpAddress6 () {
+# IPv6地址获取
+# 因为一般ipv6没有nat ipv6的获得可以本机获得
+ifconfig $(nvram get wan0_ifname_t) | awk '/Global/{print $3}' | awk -F/ '{print $1}'
+}
+if [ "$IPv6" = "1" ] ; then
+arIpAddress=$(arIpAddress6)
+else
 arIpAddress=$(arIpAddress)
+fi
 EEE
 	chmod 755 "$ddns_script"
 fi

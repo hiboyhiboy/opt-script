@@ -19,6 +19,15 @@ display_aqidata="beijing"
 nvram set display_aqidata="beijing"
 fi
 
+display_renum=`nvram get display_renum`
+display_renum=${display_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="相框显示"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$display_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ]  && [ ! -s /tmp/script/_display ]; then
@@ -144,10 +153,10 @@ kill_ps "$scriptname"
 display_start () {
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 if [ "$ss_opt_x" = "5" ] ; then
 	# 指定目录
 	opt_cifs_dir=`nvram get opt_cifs_dir`
@@ -155,9 +164,15 @@ if [ "$ss_opt_x" = "5" ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	fi
+fi
+if [ "$ss_opt_x" = "6" ] ; then
+	opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+	# 远程共享
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
 	fi
 fi
 echo "$upanPath"
@@ -180,25 +195,27 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【相框显示】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
-if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
-	lcd1="$hiboyfile/lcd.tgz"
+if [ ! -s "/opt/lcd4linux/lcd4linux.conf" ] || [ ! -s "/opt/lcd4linux/scripts/drawchart2.py" ] ; then
+	lcd1="$hiboyfile/lcd2.tgz"
 	logger -t "【相框显示】" "下载LCD文件 $lcd1"
-	wgetcurl.sh "/opt/lcd.tgz" "$hiboyfile/lcd.tgz" "$hiboyfile2/lcd.tgz"
+	wgetcurl.sh "/opt/lcd.tgz" "$hiboyfile/lcd2.tgz" "$hiboyfile2/lcd2.tgz"
 	untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
+	cp -f /opt/lcd4linux/lcd4linux.conf /etc/storage/display_lcd4linux_script.sh
+fi
+if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	cp -f /opt/lcd4linux/lcd4linux.conf /etc/storage/display_lcd4linux_script.sh
 fi
 if [ ! -s "/etc/storage/display_lcd4linux_script.sh" ] ; then
 	logger -t "【相框显示】" "缺少 /etc/storage/display_lcd4linux_script.sh 文件, 启动失败"
 	logger -t "【相框显示】" "停止程序, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 fi
-[ ! -f /tmp/AiDisk_00/opt/bin/lcd4linux ] && /etc/storage/script/Sh01_mountopt.sh
 # 修改显示空间
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 if [ "$ss_opt_x" = "5" ] ; then
 	# 指定目录
 	opt_cifs_dir=`nvram get opt_cifs_dir`
@@ -206,11 +223,18 @@ if [ "$ss_opt_x" = "5" ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	fi
 fi
+if [ "$ss_opt_x" = "6" ] ; then
+	opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+	# 远程共享
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
+	fi
+fi
+echo "$upanPath"
 if [ ! -z "$upanPath" ] ; then
 	upanPath2="SpaceDir  \'\/media\/$upanPath\' #显示空间"
 else
@@ -225,20 +249,21 @@ sleep 5
 logger -t "【相框显示】" "运行 lcd4linux"
 cd /opt/bin/
 export LD_LIBRARY_PATH=/opt/lib
- lcd4linux -f /tmp/lcd4linux.conf
+eval "lcd4linux -f /tmp/lcd4linux.conf $cmd_log" &
 export LD_LIBRARY_PATH=/lib:/opt/lib
-sleep 2
 logger -t "【相框显示】" "开始显示数据"
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功" && display_restart o
 [ -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && display_restart x
 initopt
 display_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 getweather () {
 
+mkdir -p /opt/lcd4linux/tmp/
 #http://weather.yahoo.com/2146704
 #The location parameter needs to be a WOEID. 
 #To find your WOEID, browse or search for your city from the Weather home page. 
@@ -250,27 +275,27 @@ getweather () {
 #changping2151334
 #beijing 2151330
 
-#wget -O /tmp/weather "http://xml.weather.yahoo.com/forecastrss?w=$display_weather&u=c"
+#wget -O /opt/lcd4linux/tmp/weather "http://xml.weather.yahoo.com/forecastrss?w=$display_weather&u=c"
 #获取天气信息
 yahooweb='https://query.yahooapis.com/v1/public/yql?q=SELECT%20*%20FROM%20weather.forecast%20WHERE%20woeid%3D"'$display_weather'"%20and%20u%3D"c"%20%7C%20truncate(count%3D1)&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys'
 echo $yahooweb
-rm -f /tmp/weatherweb
-#wget -O /tmp/weatherweb $yahooweb
-wgetcurl.sh /tmp/weatherweb "$yahooweb" "$yahooweb" N
-if [ -s /tmp/weatherweb ]; then
-	cat /tmp/weatherweb | grep '<yweather' | awk -F'<yweather' '{ \
+rm -f /opt/lcd4linux/tmp/weatherweb
+#wget -O /opt/lcd4linux/tmp/weatherweb $yahooweb
+wgetcurl.sh /opt/lcd4linux/tmp/weatherweb "$yahooweb" "$yahooweb" N
+if [ -s /opt/lcd4linux/tmp/weatherweb ]; then
+	cat /opt/lcd4linux/tmp/weatherweb | grep '<yweather' | awk -F'<yweather' '{ \
 		{L1="<yweather"$3; L2="<yweather"$2; L3="<yweather"$4; L4="<yweather"$5; L5="<yweather"$6; L6="<yweather"$7; L7="<yweather"$8; L8="<yweather"$9}} \
 		END \
 		{ printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n", \
 		L1,L2,L3,L4,L5,L6,L7,L8}' \
-		> /tmp/weather
-	if [ ! -s /tmp/weather ]; then
+		> /opt/lcd4linux/tmp/weather
+	if [ ! -s /opt/lcd4linux/tmp/weather ]; then
 		logger -t "【相框显示】" "获取天气信息错误！请检查链接："
 		logger -t "【相框显示】" "$yahooweb"
 		return 1
 	fi
 	logger -t "【相框显示】" "获取天气信息"
-	cat /tmp/weather | grep '<yweather' | awk -F'"' '{C1++;}{ \
+	cat /opt/lcd4linux/tmp/weather | grep '<yweather' | awk -F'"' '{C1++;}{ \
 		{if (substr($1, 11, 8)=="location") L1=$4} \
 		{if (substr($1, 11, 4)=="wind") {L81=$4; L82=$6; L83=$8; \
 		{if($6=="0") L84="N"} {if($6=="90") L84="E"} {if($6=="180") L84="S"} {if($6=="270") L84="W"} {if(("01"<$6)&&($6<90)) L84="EN"} {if(("90"<$6)&&($6<180)) L84="ES"} {if(("180"<$6)&&($6<"270")) L84="WS"} {if(("270"<$6)&&($6<"360")) L84="WN"}}} \
@@ -287,7 +312,7 @@ if [ -s /tmp/weatherweb ]; then
 		printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\042\040%s\n%skm/h\n%s%%\n%skm\n%smb\n%s\n%s\n%s\n%s\n%s\n", \
 		L1,L2,L3,L4,L5,L6,L7,L81,L82,L84,L83,L91,L92,L93,L94,LA1,LA2,Xss,Xse}' \
                 > /opt/lcd4linux/data/weather
-	cat /tmp/weather | grep '<lastBuildDate>' | awk -F'<lastBuildDate>' '{ \
+	cat /opt/lcd4linux/tmp/weather | grep '<lastBuildDate>' | awk -F'<lastBuildDate>' '{ \
 		{L1=(substr($2, 6, 20))}} \
 		END \
 		{ printf "%s\n", \
@@ -299,12 +324,13 @@ fi
 
 getaqidata () {
 
+mkdir -p /opt/lcd4linux/tmp/
 #获取AQI数据和数据绘图。http://www.aqicn.org
-rm -f /tmp/aqicn
+rm -f /opt/lcd4linux/tmp/aqicn
 aqicnorg="http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
-#wget -c -O /tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --no-check-certificate
-wgetcurl.sh /tmp/aqicn "$aqicnorg" "$aqicnorg" N
-if [ ! -s /tmp/aqicn ]; then
+#wget -c -O /opt/lcd4linux/tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --no-check-certificate
+wgetcurl.sh /opt/lcd4linux/tmp/aqicn "$aqicnorg" "$aqicnorg" N
+if [ ! -s /opt/lcd4linux/tmp/aqicn ]; then
 	logger -t "【相框显示】" "获取AQI数据错误！请检查链接："
 	logger -t "【相框显示】" "$aqicnorg"
 	return 1
@@ -312,149 +338,149 @@ fi
 logger -t "【相框显示】" "获取AQI数据和数据绘图"
 
 timeh=`date +%H`
-mkdir -p /tmp/aqii
+mkdir -p /opt/lcd4linux/tmp/aqii
 #记录小于24个需要补零
-touch /tmp/aqii/apm25
-FFS=`cat /tmp/aqii/apm25 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /tmp/aqii/apm25 ]; then
-echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /tmp/aqii/apm25
+touch /opt/lcd4linux/tmp/aqii/apm25
+FFS=`cat /opt/lcd4linux/tmp/aqii/apm25 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/apm25 ]; then
+echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/apm25
 fi
-touch /tmp/aqii/apm10
-FFS=`cat /tmp/aqii/apm10 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /tmp/aqii/apm10 ]; then
-echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /tmp/aqii/apm10
+touch /opt/lcd4linux/tmp/aqii/apm10
+FFS=`cat /opt/lcd4linux/tmp/aqii/apm10 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/apm10 ]; then
+echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/apm10
 fi
-touch /tmp/aqii/aso2
-FFS=`cat /tmp/aqii/aso2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /tmp/aqii/aso2 ]; then
-echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /tmp/aqii/aso2
+touch /opt/lcd4linux/tmp/aqii/aso2
+FFS=`cat /opt/lcd4linux/tmp/aqii/aso2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/aso2 ]; then
+echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/aso2
 fi
-touch /tmp/aqii/ano2
-FFS=`cat /tmp/aqii/ano2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /tmp/aqii/ano2 ]; then
-echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /tmp/aqii/ano2
+touch /opt/lcd4linux/tmp/aqii/ano2
+FFS=`cat /opt/lcd4linux/tmp/aqii/ano2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/ano2 ]; then
+echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/ano2
 fi
-touch /tmp/aqii/ao3
-FFS=`cat /tmp/aqii/ao3 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /tmp/aqii/ao3 ]; then
-echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /tmp/aqii/ao3
+touch /opt/lcd4linux/tmp/aqii/ao3
+FFS=`cat /opt/lcd4linux/tmp/aqii/ao3 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/ao3 ]; then
+echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/ao3
 fi
-touch /tmp/aqii/aco
-FFS=`cat /tmp/aqii/aco |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /tmp/aqii/aco ]; then
-echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /tmp/aqii/aco
+touch /opt/lcd4linux/tmp/aqii/aco
+FFS=`cat /opt/lcd4linux/tmp/aqii/aco |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/aco ]; then
+echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/aco
 fi
-touch /tmp/aqii/atime
-FFS=`cat /tmp/aqii/atime |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /tmp/aqii/atime ]; then
-echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /tmp/aqii/atime
+touch /opt/lcd4linux/tmp/aqii/atime
+FFS=`cat /opt/lcd4linux/tmp/aqii/atime |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/atime ]; then
+echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/atime
 fi
 
 #pm25
-aqicn=`cat /tmp/aqicn`
+aqicn=`cat /opt/lcd4linux/tmp/aqicn`
 aqicn=`echo ${aqicn#*pm25\"\:\{\"val\"\:}`
 #重新构建AQI记录
-echo -ne ${aqicn%%,\"date*}";">> /tmp/aqii/apm25;
-FFS=`cat /tmp/aqii/apm25 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+echo -ne ${aqicn%%,\"date*}";">> /opt/lcd4linux/tmp/aqii/apm25;
+FFS=`cat /opt/lcd4linux/tmp/aqii/apm25 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
 if [ "$FFS" -gt 25 ]; then
 #大于24个记录时删除旧记录
-aqicn=`cat /tmp/aqii/apm25`
-echo ${aqicn#*;}> /tmp/aqii/apm25
+aqicn=`cat /opt/lcd4linux/tmp/aqii/apm25`
+echo ${aqicn#*;}> /opt/lcd4linux/tmp/aqii/apm25
 fi
-sed -Ei s/[[:space:]]//g /tmp/aqii/apm25
+sed -Ei s/[[:space:]]//g /opt/lcd4linux/tmp/aqii/apm25
 #pm10
-aqicn=`cat /tmp/aqicn`
+aqicn=`cat /opt/lcd4linux/tmp/aqicn`
 aqicn=`echo ${aqicn#*pm10\"\:\{\"val\"\:}`
 #重新构建AQI记录
-echo -ne ${aqicn%%,\"date*}";" >> /tmp/aqii/apm10;
-FFS=`cat /tmp/aqii/apm10 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/apm10;
+FFS=`cat /opt/lcd4linux/tmp/aqii/apm10 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
 if [ "$FFS" -gt 25 ]; then
 #大于24个记录时删除旧记录
-aqicn=`cat /tmp/aqii/apm10`
-echo ${aqicn#*;} > /tmp/aqii/apm10
+aqicn=`cat /opt/lcd4linux/tmp/aqii/apm10`
+echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/apm10
 fi
-sed -Ei s/[[:space:]]//g /tmp/aqii/apm10
+sed -Ei s/[[:space:]]//g /opt/lcd4linux/tmp/aqii/apm10
 #so2
-aqicn=`cat /tmp/aqicn`
+aqicn=`cat /opt/lcd4linux/tmp/aqicn`
 aqicn=`echo ${aqicn#*so2\"\:\{\"val\"\:}`
 #重新构建AQI记录
-echo -ne ${aqicn%%,\"date*}";" >> /tmp/aqii/aso2;
-FFS=`cat /tmp/aqii/aso2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/aso2;
+FFS=`cat /opt/lcd4linux/tmp/aqii/aso2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
 if [ "$FFS" -gt 25 ]; then
 #大于24个记录时删除旧记录
-aqicn=`cat /tmp/aqii/aso2`
-echo ${aqicn#*;} > /tmp/aqii/aso2
+aqicn=`cat /opt/lcd4linux/tmp/aqii/aso2`
+echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/aso2
 fi
-sed -Ei s/[[:space:]]//g /tmp/aqii/aso2
+sed -Ei s/[[:space:]]//g /opt/lcd4linux/tmp/aqii/aso2
 #no2
-aqicn=`cat /tmp/aqicn`
+aqicn=`cat /opt/lcd4linux/tmp/aqicn`
 aqicn=`echo ${aqicn#*no2\"\:\{\"val\"\:}`
 #重新构建AQI记录
-echo -ne ${aqicn%%,\"date*}";" >> /tmp/aqii/ano2;
-FFS=`cat /tmp/aqii/ano2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/ano2;
+FFS=`cat /opt/lcd4linux/tmp/aqii/ano2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
 if [ "$FFS" -gt 25 ]; then
 #大于24个记录时删除旧记录
-aqicn=`cat /tmp/aqii/ano2`
-echo ${aqicn#*;} > /tmp/aqii/ano2
+aqicn=`cat /opt/lcd4linux/tmp/aqii/ano2`
+echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/ano2
 fi
-sed -Ei s/[[:space:]]//g /tmp/aqii/ano2
+sed -Ei s/[[:space:]]//g /opt/lcd4linux/tmp/aqii/ano2
 #o3
-aqicn=`cat /tmp/aqicn`
+aqicn=`cat /opt/lcd4linux/tmp/aqicn`
 aqicn=`echo ${aqicn#*o3\"\:\{\"val\"\:}`
 #重新构建AQI记录
-echo -ne ${aqicn%%,\"date*}";" >> /tmp/aqii/ao3;
-FFS=`cat /tmp/aqii/ao3 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/ao3;
+FFS=`cat /opt/lcd4linux/tmp/aqii/ao3 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
 if [ "$FFS" -gt 25 ]; then
 #大于24个记录时删除旧记录
-aqicn=`cat /tmp/aqii/ao3`
-echo ${aqicn#*;} > /tmp/aqii/ao3
+aqicn=`cat /opt/lcd4linux/tmp/aqii/ao3`
+echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/ao3
 fi
-sed -Ei s/[[:space:]]//g /tmp/aqii/ao3
+sed -Ei s/[[:space:]]//g /opt/lcd4linux/tmp/aqii/ao3
 #co
-aqicn=`cat /tmp/aqicn`
+aqicn=`cat /opt/lcd4linux/tmp/aqicn`
 aqicn=`echo ${aqicn#*co\"\:\{\"val\"\:}`
 #重新构建AQI记录
-echo -ne ${aqicn%%,\"date*}";" >> /tmp/aqii/aco;
-FFS=`cat /tmp/aqii/aco |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/aco;
+FFS=`cat /opt/lcd4linux/tmp/aqii/aco |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
 if [ "$FFS" -gt 25 ]; then
 #大于24个记录时删除旧记录
-aqicn=`cat /tmp/aqii/aco`
-echo ${aqicn#*;} > /tmp/aqii/aco
+aqicn=`cat /opt/lcd4linux/tmp/aqii/aco`
+echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/aco
 fi
-sed -Ei s/[[:space:]]//g /tmp/aqii/aco
+sed -Ei s/[[:space:]]//g /opt/lcd4linux/tmp/aqii/aco
 #tmie
 aqicn="`date "+%Y-%m-%d %H:%M:%S"`"
 #重新构建AQI记录
-echo -ne $aqicn";" >> /tmp/aqii/atime;
-FFS=`cat /tmp/aqii/atime |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
+echo -ne $aqicn";" >> /opt/lcd4linux/tmp/aqii/atime;
+FFS=`cat /opt/lcd4linux/tmp/aqii/atime |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
 if [ "$FFS" -gt 25 ]; then
 #大于24个记录时删除旧记录
-aqicn=`cat /tmp/aqii/atime`
-echo ${aqicn#*;} > /tmp/aqii/atime
+aqicn=`cat /opt/lcd4linux/tmp/aqii/atime`
+echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/atime
 fi
-sed -Ei s/[[:space:]]/-/g /tmp/aqii/atime
+sed -Ei s/[[:space:]]/-/g /opt/lcd4linux/tmp/aqii/atime
 #生成数据
-cat /tmp/aqii/apm25  > /tmp/aqi
-echo "" >> /tmp/aqi
-cat /tmp/aqii/apm10  >> /tmp/aqi
-echo "" >> /tmp/aqi
-cat /tmp/aqii/aso2  >> /tmp/aqi
-echo "" >> /tmp/aqi
-cat /tmp/aqii/ano2  >> /tmp/aqi
-echo "" >> /tmp/aqi
-cat /tmp/aqii/ao3  >> /tmp/aqi
-echo "" >> /tmp/aqi
-cat /tmp/aqii/aco  >> /tmp/aqi
-echo "" >> /tmp/aqi
-cat /tmp/aqii/atime  >> /tmp/aqi
-echo "" >> /tmp/atime
+cat /opt/lcd4linux/tmp/aqii/apm25  > /opt/lcd4linux/tmp/aqi
+echo "" >> /opt/lcd4linux/tmp/aqi
+cat /opt/lcd4linux/tmp/aqii/apm10  >> /opt/lcd4linux/tmp/aqi
+echo "" >> /opt/lcd4linux/tmp/aqi
+cat /opt/lcd4linux/tmp/aqii/aso2  >> /opt/lcd4linux/tmp/aqi
+echo "" >> /opt/lcd4linux/tmp/aqi
+cat /opt/lcd4linux/tmp/aqii/ano2  >> /opt/lcd4linux/tmp/aqi
+echo "" >> /opt/lcd4linux/tmp/aqi
+cat /opt/lcd4linux/tmp/aqii/ao3  >> /opt/lcd4linux/tmp/aqi
+echo "" >> /opt/lcd4linux/tmp/aqi
+cat /opt/lcd4linux/tmp/aqii/aco  >> /opt/lcd4linux/tmp/aqi
+echo "" >> /opt/lcd4linux/tmp/aqi
+cat /opt/lcd4linux/tmp/aqii/atime  >> /opt/lcd4linux/tmp/aqi
+echo "" >> /opt/lcd4linux/tmp/atime
 
 
 #分类污染物24小时数据获取并计算出AQI和相应颜色数据写入到指定文件中供显示和绘图；
 
 #aqicn.org直接获取AQI指数，不用计算
 
-cat /tmp/aqi| awk -F";" '{for (i=2;i<=NF;i++) \
+cat /opt/lcd4linux/tmp/aqi| awk -F";" '{for (i=2;i<=NF;i++) \
 { \
   {if (NR==1) AQIpm25[i-2]=$i+0}  \
   {if (NR==2) AQIpm10[i-2]=$i+0}  \
@@ -495,7 +521,7 @@ cat /tmp/aqi| awk -F";" '{for (i=2;i<=NF;i++) \
 
 
 #python绘图
-python /opt/lcd4linux/scripts/drawchart.py &
+python /opt/lcd4linux/scripts/drawchart2.py &
 
 }
 

@@ -17,6 +17,18 @@ ssserver_usage=" `nvram get ssserver_usage` "
 [ -z $ssserver_time ] && ssserver_time=120 && nvram set ssserver_time=$ssserver_time
 [ -z $ssserver_port ] && ssserver_port=8388 && nvram set ssserver_port=$ssserver_port
 [ -z $ssserver_method ] && ssserver_method="aes-256-cfb" && nvram set ssserver_method="aes-256-cfb"
+ssserver_renum=`nvram get ssserver_renum`
+ssserver_renum=${ssserver_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="SS_server"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$ssserver_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
+#检查  libsodium.so.23
+[ -f /lib/libsodium.so.23 ] && libsodium_so=libsodium.so.23
+[ -f /lib/libsodium.so.18 ] && libsodium_so=libsodium.so.18
+
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ssserver)" ]  && [ ! -s /tmp/script/_ssserver ]; then
 	mkdir -p /tmp/script
@@ -34,7 +46,7 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
-		logger -t "【ssserver】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【SS_server】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
 	ssserver_renum=${ssserver_renum:-"0"}
@@ -43,7 +55,7 @@ if [ "$1" = "x" ] ; then
 	if [ "$ssserver_renum" -gt "2" ] ; then
 		I=19
 		echo $I > $relock
-		logger -t "【ssserver】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【SS_server】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do
 			I=$(($I - 1))
 			echo $I > $relock
@@ -114,8 +126,8 @@ ssserver_close () {
 sed -Ei '/【SS_server】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
-killall ss-server obfs-server
-killall -9 ss-server obfs-server
+killall ss-server obfs-server gq-server
+killall -9 ss-server obfs-server gq-server
 kill_ps "/tmp/script/_ssserver"
 kill_ps "_ssserver.sh"
 kill_ps "$scriptname"
@@ -136,7 +148,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/ss-server "$hiboyfile/ss-server" "$hiboyfile2/ss-server"
+	wgetcurl.sh /opt/bin/ss-server "$hiboyfile/$libsodium_so/ss-server" "$hiboyfile2/$libsodium_so/ss-server"
 	chmod 755 "/opt/bin/ss-server"
 else
 	logger -t "【SS_server】" "找到 $SVC_PATH"
@@ -145,7 +157,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【SS_server】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 fi
-if [ ! -z "echo $ssserver_usage | grep plugin" ] ; then
+if [ ! -z "echo $ssserver_usage | grep obfs-server" ] ; then
 	if [ ! -s "/opt/bin/obfs-server" ] ; then
 		logger -t "【SS_server】" "找不到 /opt/bin/obfs-server，安装 opt 程序"
 		/tmp/script/_mountopt start
@@ -159,21 +171,35 @@ if [ ! -z "echo $ssserver_usage | grep plugin" ] ; then
 		logger -t "【SS_server】" "找到 /opt/bin/obfs-server"
 	fi
 fi
+if [ ! -z "echo $ssserver_usage | grep gq-server" ] ; then
+	if [ ! -s "/opt/bin/gq-server" ] ; then
+		logger -t "【SS_server】" "找不到 /opt/bin/gq-server，安装 opt 程序"
+		/tmp/script/_mountopt start
+		initopt
+	fi
+	if [ ! -s "/opt/bin/gq-server" ] ; then
+		logger -t "【SS_server】" "找不到 /opt/bin/gq-server 下载程序"
+		wgetcurl.sh /opt/bin/gq-server "$hiboyfile/gq-server" "$hiboyfile2/gq-server"
+		chmod 755 "/opt/bin/gq-server"
+	else
+		logger -t "【SS_server】" "找到 /opt/bin/gq-server"
+	fi
+fi
 logger -t "【SS_server】" "启动 ss-server 服务"
 if [ "$ssserver_udp" == "1" ] ; then
-	ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage  -f /tmp/ssserver.pid
+	eval "ss-server -s 0.0.0.0 -s ::0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time -u $ssserver_usage $cmd_log" &
 else
-	ss-server -s 0.0.0.0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_usage -f /tmp/ssserver.pid
+	eval "ss-server -s 0.0.0.0 -s ::0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_usage $cmd_log" &
 fi
 
-sleep 2
+sleep 4
 [ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动成功" && ssserver_restart o
 [ -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 logger -t "【SS_server】" "`ps -w | grep ss-server | grep -v grep`"
 ssserver_port_dpt
 #ssserver_get_status
 eval "$scriptfilepath keep &"
-
+exit 0
 }
 
 initopt () {

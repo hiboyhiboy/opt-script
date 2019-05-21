@@ -4,7 +4,10 @@ source /etc/storage/script/init.sh
 kcptun_enable=`nvram get kcptun_enable`
 [ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
 kcptun_path=`nvram get kcptun_path`
-[ -z $kcptun_path ] && kcptun_path="/opt/bin/client_linux_mips" && nvram set kcptun_path=$kcptun_path
+[ -z $kcptun_path ] && kcptun_path="/opt/bin/client_linux_mipsle" && nvram set kcptun_path=$kcptun_path
+[ -f "/opt/bin/client_linux_mips" ] && rm -f /opt/bin/client_linux_mips
+[ -f "/opt/opt_backup/bin/client_linux_mips" ] && rm -f /opt/opt_backup/bin/client_linux_mips
+[ "$kcptun_path" == "/opt/bin/client_linux_mips" ] && kcptun_path="/opt/bin/client_linux_mipsle" && nvram set kcptun_path=$kcptun_path
 if [ "$kcptun_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -37,6 +40,14 @@ kcptun_s_server=""
 [ -z $kcptun_datashard ] && kcptun_datashard=10 && nvram set kcptun_datashard=$kcptun_datashard
 [ -z $kcptun_parityshard ] && kcptun_parityshard=3 && nvram set kcptun_parityshard=$kcptun_parityshard
 [ -z $kcptun_autoexpire ] && kcptun_autoexpire=0 && nvram set kcptun_autoexpire=$kcptun_autoexpire
+kcptun_renum=`nvram get kcptun_renum`
+kcptun_renum=${kcptun_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="kcptun"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$kcptun_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kcp_tun)" ]  && [ ! -s /tmp/script/_kcp_tun ]; then
 	mkdir -p /tmp/script
@@ -140,8 +151,8 @@ kcptun_close () {
 
 sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$kcptun_path" ] && kill_ps "$kcptun_path"
-killall client_linux_mips kcptun_script.sh sh_kcpkeep.sh
-killall -9 client_linux_mips kcptun_script.sh sh_kcpkeep.sh
+killall client_linux_mipsle kcptun_script.sh sh_kcpkeep.sh
+killall -9 client_linux_mipsle kcptun_script.sh sh_kcpkeep.sh
 kill_ps "/tmp/script/_kcp_tun"
 kill_ps "_kcp_tun.sh"
 kill_ps "$scriptname"
@@ -151,18 +162,18 @@ kcptun_start () {
 
 SVC_PATH="$kcptun_path"
 if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/bin/client_linux_mips"
+	SVC_PATH="/opt/bin/client_linux_mipsle"
 fi
 chmod 777 "$SVC_PATH"
-[[ "$(client_linux_mips -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/client_linux_mips
+[[ "$(client_linux_mipsle -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/client_linux_mipsle
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $kcptun_path，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/client_linux_mips "$hiboyfile/client_linux_mips" "$hiboyfile2/client_linux_mips"
-	chmod 755 "/opt/bin/client_linux_mips"
+	wgetcurl.sh /opt/bin/client_linux_mipsle "$hiboyfile/client_linux_mipsle" "$hiboyfile2/client_linux_mipsle"
+	chmod 755 "/opt/bin/client_linux_mipsle"
 else
 	logger -t "【kcptun】" "找到 $SVC_PATH"
 fi
@@ -180,9 +191,17 @@ nvram set kcptun_v=$kcptun_v
 logger -t "【kcptun】" "kcptun-version: $kcptun_v"
 logger -t "【kcptun】" "运行 kcptun_script"
 
+if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
+[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $kcptun_server | grep : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup6 $kcptun_server | sed -n '1p'` 
 kcptun_s_server=$resolveip
+else
+# IPv6
+kcptun_s_server=$kcptun_server
+fi
+
 [ -z "$kcptun_s_server" ] && logger -t "【kcptun】" "[错误!!] 实在找不到你的 kcptun 服务器IP，麻烦看看哪里错了？10 秒后自动尝试重新启动" && sleep 10 && kcptun_restart x
 
 sed -Ei '/UI设置自动生成/d' /etc/storage/kcptun_script.sh
@@ -193,7 +212,7 @@ sed -Ei '/^$/d' /etc/storage/kcptun_script.sh
 
 cat >> "/etc/storage/kcptun_script.sh" <<-EUI
 # UI设置自动生成  客户端启动参数
-$SVC_PATH $kcptun_user -r "$kcptun_s_server:$kcptun_sport" -l ":$kcptun_lport" -key $kcptun_key -mtu $kcptun_mtu -sndwnd $kcptun_sndwnd -rcvwnd $kcptun_rcvwnd -crypt $kcptun_crypt -mode $kcptun_mode -dscp $kcptun_dscp -datashard $kcptun_datashard -parityshard $kcptun_parityshard -autoexpire $kcptun_autoexpire -nocomp & #UI设置自动生成
+$SVC_PATH $kcptun_user -r "$kcptun_s_server:$kcptun_sport" -l ":$kcptun_lport" -key $kcptun_key -mtu $kcptun_mtu -sndwnd $kcptun_sndwnd -rcvwnd $kcptun_rcvwnd -crypt $kcptun_crypt -mode $kcptun_mode -dscp $kcptun_dscp -datashard $kcptun_datashard -parityshard $kcptun_parityshard -autoexpire $kcptun_autoexpire -nocomp $cmd_log & #UI设置自动生成
 # UI设置自动生成  默认启用 -nocomp 参数,需在服务端使用此参数来禁止压缩传输
 EUI
 
@@ -208,12 +227,13 @@ EUI
 
 /etc/storage/kcptun_script.sh &
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "启动成功" && kcptun_restart o
 [ -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && kcptun_restart x
 initopt
 kcptun_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 arNslookup() {
@@ -225,6 +245,7 @@ while [ ! -s /tmp/arNslookup/$$ ] ; do
 		[ $I -lt 0 ] && break
 		sleep 1
 done
+killall nslookup 
 if [ -s /tmp/arNslookup/$$ ] ; then
 cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
 rm -f /tmp/arNslookup/$$
@@ -236,7 +257,7 @@ else
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
 	else
-		Address="`curl -k http://119.29.29.29/d?dn=$1`"
+		Address="`curl -k -s http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
@@ -244,6 +265,21 @@ else
 fi
 }
 
+arNslookup6() {
+mkdir -p /tmp/arNslookup
+nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep ":" > /tmp/arNslookup/$$ &
+I=5
+while [ ! -s /tmp/arNslookup/$$ ] ; do
+		I=$(($I - 1))
+		[ $I -lt 0 ] && break
+		sleep 1
+done
+killall nslookup 
+if [ -s /tmp/arNslookup/$$ ] ; then
+	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
+	rm -f /tmp/arNslookup/$$
+fi
+}
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
@@ -268,8 +304,8 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 # https://blog.kuoruan.com/102.html
 # http://www.cmsky.com/kcptun/
 # kcptun服务端主程序下载：
-# 32位系统：wget --no-check-certificate http://opt.cn2qq.com/opt-file/server_linux_386 && chmod 755 server_linux_*
-# 64位系统：wget --no-check-certificate http://opt.cn2qq.com/opt-file/server_linux_amd64 && chmod 755 server_linux_*
+# 32位系统：wget https://opt.cn2qq.com/opt-file/server_linux_386 && chmod 755 server_linux_*
+# 64位系统：wget https://opt.cn2qq.com/opt-file/server_linux_amd64 && chmod 755 server_linux_*
 # 注意！！由于路由参数默认加上--nocomp，服务端也要加上--nocomp，在两端同时设定以关闭压缩。
 # 两端参数必须一致的有:
 # datashard
@@ -300,7 +336,7 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 ################################################################
 # 客户端进程数量（守护脚本判断数据，请正确填写）
 KCPNUM=1
-killall client_linux_mips
+killall client_linux_mipsle
 #
 ################################################################
 EEE

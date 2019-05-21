@@ -11,6 +11,7 @@ serverchan_notify_1=`nvram get serverchan_notify_1`
 serverchan_notify_2=`nvram get serverchan_notify_2`
 serverchan_notify_3=`nvram get serverchan_notify_3`
 serverchan_notify_4=`nvram get serverchan_notify_4`
+serverchan_renum=`nvram get serverchan_renum`
 
 fi
 
@@ -142,6 +143,7 @@ sleep 3
 [ -z "$(ps -w | grep "serverchan_scri" | grep -v grep )" ] && logger -t "【微信推送】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && serverchan_restart x
 #serverchan_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {
@@ -177,18 +179,20 @@ resub=1
     arIpAddress() {
     curltest=`which curl`
     if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-        wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip"
-        #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx"
-        #wget --no-check-certificate --quiet --output-document=- "ip.3322.net"
+        #wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        #wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
     else
-        curl -k -s "http://members.3322.org/dyndns/getip"
-        #curl -k -s ip.6655.com/ip.aspx
-        #curl -k -s ip.3322.net
+        #curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
     fi
     }
 # 读取最近外网地址
     lastIPAddress() {
-        local inter="/etc/storage/lastIPAddress"
+        inter="/etc/storage/lastIPAddress"
         cat $inter
     }
 
@@ -213,12 +217,28 @@ fi
 if [ ! -z "$ping_time" ] ; then
 echo "online"
 if [ "$serverchan_notify_1" = "1" ] ; then
-    local hostIP=$(arIpAddress)
-    local lastIP=$(lastIPAddress)
+    hostIP=$(arIpAddress)
+    hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`
+    if [ "$hostIP"x = "x"  ] ; then
+        curltest=`which curl`
+        if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+            [ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.6655.com/ip.aspx" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net/" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+        else
+            [ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+        fi
+    fi
+    lastIP=$(lastIPAddress)
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
     sleep 60
-        local hostIP=$(arIpAddress)
-        local lastIP=$(lastIPAddress)
+        hostIP=$(arIpAddress)
+        hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`
+        lastIP=$(lastIPAddress)
     fi
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
         logger -t "【互联网 IP 变动】" "目前 IP: ${hostIP}"
@@ -301,6 +321,7 @@ done
 EEE
 	chmod 755 "$serverchan_script"
 fi
+sed -Ei 's@local @@g' $serverchan_script
 
 }
 

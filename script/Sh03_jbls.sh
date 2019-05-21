@@ -53,12 +53,18 @@ kill_ps "$scriptname"
 }
 
 jbls_start () {
+
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="jbls"
+cmd_log=""
+[ "$cmd_log_enable" = "1" ] && cmd_log="$cmd_log2"
 #jblicsvr -d -p 1027
-/etc/storage/jbls_script.sh
-sleep 2
+eval "/etc/storage/jbls_script.sh $cmd_log" &
+sleep 4
 [ ! -z "$(ps -w | grep "jblicsvr" | grep -v grep )" ] && logger -t "【jbls】" "启动成功"
 [ -z "$(ps -w | grep "jblicsvr" | grep -v grep )" ] && logger -t "【jbls】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initconfig () {
@@ -103,7 +109,7 @@ nvram set lan_domain="lan"
 lan_ipaddr=`nvram get lan_ipaddr`
 echo "txt-record=_jetbrains-license-server.lan,url=http://$lan_ipaddr:1027" >> /etc/storage/dnsmasq/dnsmasq.conf
 killall jblicsvr
-jblicsvr -d -p 1027
+jblicsvr -d -p 1027  2>&1 &
 restart_dhcpd
 
 EEE

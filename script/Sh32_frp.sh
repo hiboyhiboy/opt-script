@@ -3,10 +3,42 @@
 source /etc/storage/script/init.sh
 frp_enable=`nvram get frp_enable`
 [ -z $frp_enable ] && frp_enable=0 && nvram set frp_enable=0
+frp_version_2="0.27.0"
+frp_version_0="0.24.1"
+frp_version_1="0.16.1"
+frp_version_3="使用最新版"
+frp_version_4="使用最新版"
+frp_version_5="使用最新版"
+frp_version_6="使用最新版"
+frp_version_7="使用最新版"
+frp_version_8="使用最新版"
+frp_version_9="使用最新版"
+frp_version_10="不变动版本"
+nvram set frp_version_2="$frp_version_2"
+nvram set frp_version_0="$frp_version_0"
+nvram set frp_version_1="$frp_version_1"
+nvram set frp_version_3="$frp_version_3"
+nvram set frp_version_4="$frp_version_4"
+nvram set frp_version_5="$frp_version_5"
+nvram set frp_version_6="$frp_version_6"
+nvram set frp_version_7="$frp_version_7"
+nvram set frp_version_8="$frp_version_8"
+nvram set frp_version_9="$frp_version_9"
+nvram set frp_version_10="$frp_version_10"
+frp_version=`nvram get frp_version`
+[ -z $frp_version ] && frp_version=10 && nvram set frp_version=10
 if [ "$frp_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep frp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 frpc_enable=`nvram get frpc_enable`
 frps_enable=`nvram get frps_enable`
+frp_renum=`nvram get frp_renum`
+frp_renum=${frp_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="frp"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$frp_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep frp)" ]  && [ ! -s /tmp/script/_frp ]; then
@@ -54,7 +86,7 @@ exit 0
 frp_get_status () {
 
 A_restart=`nvram get frp_status`
-B_restart="$frp_enable$frpc_enable$frps_enable$(cat /etc/storage/frp_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$frp_enable$frpc_enable$frps_enable$frp_version$(cat /etc/storage/frp_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 nvram set frp_status=$B_restart
@@ -129,8 +161,42 @@ kill_ps "$scriptname"
 
 frp_start () {
 action_for=""
+frp_ver_wget=""
+[ "$frp_version" = "2" ] && frp_ver_wget="0.25.0" && frp_version_txt=$frp_version_2
+[ "$frp_version" = "0" ] && frp_ver_wget="0.24.1" && frp_version_txt=$frp_version_0
+[ "$frp_version" = "1" ] && frp_ver_wget="0.16.1" && frp_version_txt=$frp_version_1
+[ "$frp_version" = "3" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "4" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "5" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "6" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "7" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "8" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
+[ "$frp_version" = "9" ] && frp_ver_wget="0.25.0" && frp_version_txt=$frp_version_2
+[ "$frp_version" = "10" ] && frp_ver_wget="0.25.0"
 [ "$frpc_enable" = "1" ] && action_for="frpc"
 [ "$frps_enable" = "1" ] && action_for=$action_for" frps"
+del_tmp=0
+if [ "$frp_version" != "10" ] ; then
+for action_frp in $action_for
+do
+if [ -s "/opt/bin/$action_frp" ] ; then
+	frp_ver="`/opt/bin/$action_frp --version`"
+	if [ "$frp_ver" != "$frp_version_txt" ] ; then
+		logger -t "【frp】" "$action_frp 当前版本 $frp_ver ,需要安装 $frp_version_txt ,自动重新下载"
+		[ -s "/opt/bin/$action_frp" ] && rm -f /opt/bin/$action_frp
+		del_tmp=1
+	fi
+fi
+done
+if [ "$del_tmp" = "1" ] ; then
+	rm -rf /etc/storage/script/Sh32_frp.sh
+	if [ ! -f "/etc/storage/script/Sh32_frp.sh" ] || [ ! -s "/etc/storage/script/Sh32_frp.sh" ] ; then
+		wgetcurl.sh /etc/storage/script/Sh32_frp.sh "$hiboyscript/script/Sh32_frp.sh" "$hiboyscript2/script/Sh32_frp.sh"
+	fi
+	frp_restart o
+	logger -t "【frp】" "重启" && frp_restart
+fi
+fi
 for action_frp in $action_for
 do
 	SVC_PATH="/opt/bin/$action_frp"
@@ -143,7 +209,7 @@ do
 	fi
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【frp】" "找不到 $SVC_PATH 下载程序"
-		wgetcurl.sh /opt/bin/$action_frp "$hiboyfile/$action_frp" "$hiboyfile2/$action_frp"
+		wgetcurl.sh /opt/bin/$action_frp "$hiboyfile/$action_frp$frp_ver_wget" "$hiboyfile2/$action_frp$frp_ver_wget"
 		chmod 755 "/opt/bin/$action_frp"
 	else
 		logger -t "【frp】" "找到 $SVC_PATH"
@@ -155,9 +221,10 @@ do
 done
 
 logger -t "【frp】" "运行 frp_script"
-/etc/storage/frp_script.sh
+
+eval "/etc/storage/frp_script.sh $cmd_log" &
 restart_dhcpd
-sleep 2
+sleep 4
 if [ "$frpc_enable" = "1" ] ; then
 	frpc_v="`/opt/bin/frpc --version`"
 	nvram set frpc_v=$frpc_v
@@ -174,6 +241,7 @@ fi
 [ "$frps_enable" = "1" ] && [ -z "`pidof frps`" ] && logger -t "【frp】" "frps启动成功" && frp_restart o
 #frp_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {
@@ -196,50 +264,48 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 killall frpc frps
 mkdir -p /tmp/frp
 #启动frp功能后会运行以下脚本
-#使用方法请查看论坛教程地址: http://www.right.com.cn/forum/thread-191839-1-1.html
 #frp项目地址教程: https://github.com/fatedier/frp/blob/master/README_zh.md
-#请自行修改 auth_token 用于对客户端连接进行身份验证
+#请自行修改 token 用于对客户端连接进行身份验证
 # IP查询： http://119.29.29.29/d?dn=github.com
 
-#客户端配置：
 cat > "/tmp/frp/myfrpc.ini" <<-\EOF
+# ==========客户端配置：==========
 [common]
-server_addr = 远端frp服务器ip
+server_addr = 远端frp服务器ip或域名
 server_port = 7000
-privilege_token = 12345
+token = 12345
+
+#log_file = /dev/null
+#log_level = info
+#log_max_days = 3
 
 [web]
-privilege_mode = true
 remote_port = 6000
 type = http
 local_ip = 192.168.123.1
 local_port = 80
-use_gzip = true
-#subdomain = test
-custom_domains = 你公网访问的域名
+subdomain = test
 #host_header_rewrite = 实际你内网访问的域名，可以供公网的域名不一致，如果一致可以不写
-log_file = /dev/null
-log_level = info
-log_max_days = 3
+# ====================
 EOF
 
-#服务端配置：
 #请手动配置【外部网络 (WAN) - 端口转发 (UPnP)】开启 WAN 外网端口
 cat > "/tmp/frp/myfrps.ini" <<-\EOF
+# ==========服务端配置：==========
 [common]
 bind_port = 7000
 dashboard_port = 7500
-# dashboard 用户名密码可选，默认都为 admin
+# dashboard 用户名密码，默认都为 admin
 dashboard_user = admin
 dashboard_pwd = admin
 vhost_http_port = 88
-privilege_mode = true
-privilege_token = 12345
-#subdomain_host = frps.com
+token = 12345
+subdomain_host = frps.com
 max_pool_count = 50
-log_file = /dev/null
-log_level = info
-log_max_days = 3
+#log_file = /dev/null
+#log_level = info
+#log_max_days = 3
+# ====================
 EOF
 
 #启动：
@@ -248,10 +314,10 @@ frpc_enable=${frpc_enable:-"0"}
 frps_enable=`nvram get frps_enable`
 frps_enable=${frps_enable:-"0"}
 if [ "$frpc_enable" = "1" ] ; then
-    frpc -c /tmp/frp/myfrpc.ini &
+    frpc -c /tmp/frp/myfrpc.ini 2>&1 &
 fi
 if [ "$frps_enable" = "1" ] ; then
-    frps -c /tmp/frp/myfrps.ini &
+    frps -c /tmp/frp/myfrps.ini 2>&1 &
 fi
 
 EEE
@@ -261,6 +327,23 @@ fi
 }
 
 initconfig
+
+update_app () {
+
+if [ "$1" = "del" ] ; then
+	rm -rf /opt/bin/frpc /opt/bin/frps
+fi
+
+initconfig
+
+# 加载更新程序启动脚本
+if [ ! -f "/etc/storage/www_sh/frp" ] || [ -z "$(grep "更新程序启动脚本" /etc/storage/www_sh/frp)" ] ; then
+	wgetcurl.sh /etc/storage/www_sh/frp "$hiboyscript/www_sh/frp" "$hiboyscript2/www_sh/frp"
+fi
+# 更新程序启动脚本
+
+[ "$1" = "del" ] && /etc/storage/www_sh/frp del &
+}
 
 case $ACTION in
 start)
@@ -280,7 +363,7 @@ keep)
 updatefrp)
 	frp_restart o
 	[ "$frp_enable" = "1" ] && nvram set frp_status="updatefrp" && logger -t "【frp】" "重启" && frp_restart
-	[ "$frp_enable" != "1" ] && nvram set frpc_v="" && nvram set frps_v="" && logger -t "【frp】" "frpc、frps更新" && rm -rf /opt/bin/frpc /opt/bin/frps
+	[ "$frp_enable" != "1" ] && nvram set frpc_v="" && nvram set frps_v="" && logger -t "【frp】" "frpc、frps更新" && update_app del
 	;;
 *)
 	frp_check

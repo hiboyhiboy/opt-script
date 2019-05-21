@@ -8,6 +8,14 @@ if [ "$xunleis" != "0" ] ; then
 
 xunleis_dir=`nvram get xunleis_dir`
 
+xunleis_renum=`nvram get xunleis_renum`
+xunleis_renum=${xunleis_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="迅雷下载"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$xunleis_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep xun_lei)" ]  && [ ! -s /tmp/script/_xun_lei ]; then
@@ -26,7 +34,7 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
-		logger -t "【xunleis】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【迅雷下载】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
 	xunleis_renum=${xunleis_renum:-"0"}
@@ -35,7 +43,7 @@ if [ "$1" = "x" ] ; then
 	if [ "$xunleis_renum" -gt "2" ] ; then
 		I=19
 		echo $I > $relock
-		logger -t "【xunleis】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【迅雷下载】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do
 			I=$(($I - 1))
 			echo $I > $relock
@@ -146,10 +154,10 @@ SVC_PATH="$xunleis_dir/xunlei/portal"
 if [ ! -s "$SVC_PATH" ] ; then
 	ss_opt_x=`nvram get ss_opt_x`
 	upanPath=""
-	[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-	[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+	[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	if [ "$ss_opt_x" = "5" ] ; then
 		# 指定目录
 		opt_cifs_dir=`nvram get opt_cifs_dir`
@@ -157,9 +165,15 @@ if [ ! -s "$SVC_PATH" ] ; then
 			upanPath="$opt_cifs_dir"
 		else
 			logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-			upanPath=""
-			[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-			[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+		fi
+	fi
+	if [ "$ss_opt_x" = "6" ] ; then
+		opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+		# 远程共享
+		if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+			upanPath="$opt_cifs_2_dir"
+		else
+			logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
 		fi
 	fi
 	echo "$upanPath"
@@ -191,7 +205,7 @@ chmod 777 "$xunleis_dir/xunlei" -R
 logger -t "【迅雷下载】" "启动程序"
 cd "$xunleis_dir/xunlei"
 export LD_LIBRARY_PATH="$xunleis_dir/xunlei/lib:/lib:/opt/lib"
-"$xunleis_dir/xunlei/portal" &
+eval "$xunleis_dir/xunlei/portal $cmd_log" &
 sleep 2
 export LD_LIBRARY_PATH="/lib:/opt/lib"
 sleep 5
@@ -200,6 +214,7 @@ sleep 5
 initopt
 xunlei_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

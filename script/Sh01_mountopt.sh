@@ -7,6 +7,14 @@ ss_opt_x=`nvram get ss_opt_x`
 upopt_enable=`nvram get upopt_enable`
 opt_cifs_dir=`nvram get opt_cifs_dir`
 [ -z $opt_cifs_dir ] && opt_cifs_dir="/media/cifs" && nvram set opt_cifs_dir="$opt_cifs_dir"
+opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+[ -z $opt_cifs_2_dir ] && opt_cifs_2_dir="/media/cifs" && nvram set opt_cifs_2_dir="$opt_cifs_2_dir"
+opt_cifs_block=`nvram get opt_cifs_block`
+[ -z $opt_cifs_block ] && opt_cifs_block="1999" && nvram set opt_cifs_block="$opt_cifs_block"
+size_tmpfs=`nvram get size_tmpfs`
+[ -z $size_tmpfs ] && size_tmpfs="0" && nvram set size_tmpfs="$size_tmpfs"
+size_media_enable=`nvram get size_media_enable`
+[ -z $size_media_enable ] && size_media_enable="0" && nvram set size_media_enable="$size_media_enable"
 
 [ -z $ss_opt_x ] && ss_opt_x=1 && nvram set ss_opt_x="$ss_opt_x"
 
@@ -15,46 +23,72 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mountopt)" ]  
 	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' ; } > /tmp/script/_mountopt
 	chmod 777 /tmp/script/_mountopt
 fi
+
 # /etc/storage/script/sh01_mountopt.sh
- opttmpfile="$hiboyfile/opttmpg7.tgz"
- opttmpfile2="$hiboyfile2/opttmpg7.tgz"
- optupanfile="$hiboyfile/optupang7.tgz"
- optupanfile3="$hiboyfile2/optupang7.tgz"
- optupanfile2="$hiboyfile/optg7.txt"
- optupanfile4="$hiboyfile2/optg7.txt"
+ opttmpfile="$hiboyfile/opttmpg8.tgz"
+ opttmpfile2="$hiboyfile2/opttmpg8.tgz"
+ optupanfile="$hiboyfile/optupang8.tgz"
+ optupanfile3="$hiboyfile2/optupang8.tgz"
+ optupanfile2="$hiboyfile/optg8.txt"
+ optupanfile4="$hiboyfile2/optg8.txt"
+
 # ss_opt_x 
 # 1 >>自动选择:SD→U盘→内存
 # 2 >>安装到内存:需要空余内存(10M+)
 # 3 >>安装到 SD
 # 4 >>安装到 U盘
 # 5 >>安装到 指定目录
-
-mount_check() {
-
+# 6 >>安装到 远程共享
+# 不是ext4磁盘时用镜像生成opt
+#set -x
+mount_check_lock() {
+# 检查挂载异常设备
+dev_full=$(cat  /proc/mounts | awk '{print $1}' | grep -v -E "$(echo $(/usr/bin/find /dev/ -name '*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/dev/")
+[ ! -z "$dev_full" ] && dev_mount=$(cat  /proc/mounts | grep $dev_full | grep /media/ | awk '{print $2}')
+if [ ! -z "$dev_mount" ] && [ ! -z "$dev_full" ] ; then
+if mountpoint -q "$dev_mount" ; then
+	logger -t "【opt】" "发现挂载异常设备，尝试移除： $dev_full   $dev_mount"
+	mountres2=`losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}'`
+	[ ! -z "$mountres2" ] && /usr/bin/opt-umount.sh $dev_full   $dev_mount
+	mountres2=`losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}'`
+	if [ ! -z "$mountres2" ] ; then
+		/usr/bin/opt-umount.sh $dev_full   $dev_mount
+		for varloop0 in $(echo $(grep "$(losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}')" /proc/mounts | grep -v /media/o_p_t_img | awk -F' ' '{print $2}'))
+		do
+			umount -l "$varloop0"
+		done
+		mountpoint -q /media/o_p_t_img && { fuser -m -k /media/o_p_t_img 2>/dev/null ; umount /media/o_p_t_img ; }
+		mountpoint -q /media/o_p_t_img && umount -l /media/o_p_t_img
+		losetup -d `losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}'`
+	fi
+	for varloop0 in $(echo $(grep "$dev_full" /proc/mounts | grep -v $dev_mount | awk -F' ' '{print $2}'))
+	do
+		umount -l "$varloop0"
+	done
+	mountpoint -q "$dev_mount" && umount -l $dev_mount
+	mountpoint -q "$dev_mount" && fuser -m -k $dev_mount 2>/dev/null
+	mountpoint -q "$dev_mount" && umount -l $dev_mount
+	if mountpoint -q "$dev_mount" ; then
+		logger -t "【opt】" "挂载异常设备，尝试移除失败"
+	fi
+fi
+fi
 ss_opt_x=`nvram get ss_opt_x`
 mountp="mountp"
 mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载
 if [ "$mountp" = "0" ] ; then
-	if [ "$ss_opt_x" != "5" ] ; then
-		optPath="`grep ' /opt ' /proc/mounts | grep tmpfs| awk '{print $1}'`"
-		[ -z "$optPath" ] && optPath="`df -m | grep "$(df -m | grep '% /opt' | awk 'NR==1' | awk '{print $1}')" | grep "/media"| awk '{print $NF}' | awk 'NR==1' `"
-		if [ -z "$optPath" ] ; then
-			logger -t "【opt】" "opt 选项[$ss_opt_x] 挂载异常，重新挂载：umount -l /opt"
-			umount -l /opt
-			mount_opt
-		else
-			logger -t "【opt】" "opt 挂载正常：$optPath"
-		fi
+	# 找不到opt所在设备
+	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs| awk '{print $1}'`"
+	[ -z "$optPath" ] && optPath=$(grep ' /opt ' /proc/mounts | awk '{print $1}' | grep -E "$(echo $(/usr/bin/find /dev/ -name '*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')")
+	if [ -z "$optPath" ] ; then
+		logger -t "【opt】" "opt 选项[$ss_opt_x] 挂载异常，重新挂载：umount -l /opt"
+		/usr/bin/opt-umount.sh $(grep ' /opt ' /proc/mounts | awk '{print $1}')    $(df -m | grep "$(df -m | grep '% /opt' | awk 'NR==1' | awk '{print $1}')" | grep "/media"| awk '{print $NF}' | awk 'NR==1' )
+		mountpoint -q /opt && umount /opt
+		mountpoint -q /opt && umount -l /opt
+		mountpoint -q /opt && { fuser -m -k /opt 2>/dev/null ; umount -l /opt ; }
+		mount_opt
 	else
-		# 指定目录
-		optPath="`grep ' /opt ' /proc/mounts | awk '{print $1}'`"
-		if [ -z "$optPath" ] ; then
-			logger -t "【opt】" "opt 指定目录 挂载异常，重新挂载：umount -l /opt"
-			umount -l /opt
-			mount_opt
-		else
-			logger -t "【opt】" "opt 挂载正常：$optPath"
-		fi
+		logger -t "【opt】" "opt 挂载正常：$optPath"
 	fi
 else
 	logger -t "【opt】" "opt 没挂载，重新挂载"
@@ -72,18 +106,11 @@ prepare_authorized_keys () {
 # prepare /etc/localtime
 ln -sf /opt/etc/localtime /etc/localtime
 
-ss_opt_x=`nvram get ss_opt_x`
-if [ "$ss_opt_x" != "5" ] ; then
-	# expand home to opt
-	if [ -d /opt/home/admin ] ; then
-		rm -f /home/admin
-		ln -sf /opt/home/admin /home/admin
-		chmod 700 /opt/home/admin
-	fi
-else
-	# restore home
+# expand home to opt
+if [ -d /opt/home/admin ] ; then
 	rm -f /home/admin
-	ln -sf /home/root /home/admin
+	ln -sf /opt/home/admin /home/admin
+	chmod 700 /opt/home/admin
 fi
 
 # prepare ssh authorized_keys
@@ -91,9 +118,36 @@ if [ -f /etc/storage/authorized_keys ] && [ ! -f /opt/home/admin/.ssh/authorized
 	mkdir -p /opt/home/admin/.ssh
 	cp -f /etc/storage/authorized_keys /opt/home/admin/.ssh
 fi
-[ -d /opt/home/admin/.ssh ] && chmod 700 /opt/home/admin/.ssh
-[ -f /opt/home/admin/.ssh/authorized_keys ] && chmod 600 /opt/home/admin/.ssh/authorized_keys
+[ -d /home/admin/.ssh ] && chmod 700 /home/admin/.ssh
+[ -f /home/admin/.ssh/authorized_keys ] && chmod 600 /home/admin/.ssh/authorized_keys
+# Fix for multiuser environment
+chmod 777 /opt/tmp
+ln -sf /etc/TZ /opt/etc/TZ
+ln -sf /etc/group /opt/etc/group
+ln -sf /etc/passwd /opt/etc/passwd
+# now try create symlinks - it is a std installation
+if [ -f /etc/shells ]
+then
+	ln -sf /etc/shells /opt/etc/shells
+else
+	cp /opt/etc/shells.1 /opt/etc/shells
+fi
 
+if [ -f /etc/shadow ]
+then
+	ln -sf /etc/shadow /opt/etc/shadow
+fi
+
+if [ -f /etc/gshadow ]
+then
+	ln -sf /etc/gshadow /opt/etc/gshadow
+fi
+
+if [ -f /etc/localtime ]
+then
+	ln -sf /etc/localtime /opt/etc/localtime
+fi	
+ldconfig > /dev/null 2>&1
 #使用文件创建swap分区
 #bs  blocksize ，每个块大小为1k.count=204800。则总大小为200M的文件
 #dd if=/dev/zero of=/opt/.swap bs=1k count=204800
@@ -120,30 +174,54 @@ fi
 mount_opt () {
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "6" ] ; then
+	# 远程共享
+	if ! mountpoint -q "$opt_cifs_2_dir" || [ ! -d $opt_cifs_2_dir ] ; then
+		source /etc/storage/cifs_script.sh
+	fi
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
+	fi
+fi
 if [ "$ss_opt_x" = "5" ] ; then
 	# 指定目录
-	opt_cifs_dir=`nvram get opt_cifs_dir`
 	if [ -d $opt_cifs_dir ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	fi
 fi
 if [ ! -z "$upanPath" ] ; then
-	mkdir -p "$upanPath/opt"
-	mount -o bind "$upanPath/opt" /opt
+	# 检测ext4磁盘
+	mkdir -p /tmp/AiDisk_opt
+	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
+	mount -o bind "$upanPath" /tmp/AiDisk_opt
+	[ "$(cat  /proc/mounts | grep " /tmp/AiDisk_opt " | awk '{print $3}')" = "ext4" ] && ext4_check=1 || ext4_check=0
+	umount -l /tmp/AiDisk_opt
+	rm -f /tmp/AiDisk_opt
+	if [ "$(losetup -h 2>&1 | wc -l)" -gt 2 ] && [ "$ext4_check" = "0" ] ; then
+		# 不是ext4磁盘时用镜像生成opt
+		mkoptimg "$upanPath"
+	else
+		[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
+		logger -t "【opt】" "$upanPath/opt文件夹模式挂载/opt"
+		mount -o bind "$upanPath/opt" /opt
+	fi
 	rm -f /tmp/AiDisk_00
+	[ -d /tmp/AiDisk_00 ] || rm -rf /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
+	sync
 	# prepare ssh authorized_keys
 	prepare_authorized_keys
 else
+	logger -t "【opt】" "/tmp/AiDisk_00/opt文件夹模式挂载/opt"
+	rm -rf /tmp/AiDisk_00
 	mkdir -p /tmp/AiDisk_00/opt
 	mount -o bind /tmp/AiDisk_00/opt /opt
 fi
@@ -151,30 +229,96 @@ mkdir -p /opt/bin
 
 }
 
+mkoptimg () {
+# 创建o_p_t.img
+upanPath="$1"
+logger -t "【opt】" "$upanPath/opt/o_p_t.img镜像(ext4)模式挂载/media/o_p_t_img"
+if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
+	[ -d "$upanPath/opt" ] && mv -f "$upanPath/opt" "$upanPath/opt_old_"$(date "+%Y-%m-%d_%H-%M-%S")
+	[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
+	block="$(check_network 5 $upanPath)"
+	logger -t "【opt】" "路径$upanPath剩余空间：$block M"
+	[ ! -z $block ] && [ "$block" -lt "$opt_cifs_block" ] && opt_cifs_block=$block
+	logger -t "【opt】" "创建$upanPath/opt/o_p_t.img镜像(ext4)文件，$opt_cifs_block M"
+	dd if=/dev/zero of=$upanPath/opt/o_p_t.img bs=1M seek=$opt_cifs_block count=0
+	losetup `losetup -f` $upanPath/opt/o_p_t.img
+	mkfs.ext4 -i 16384 `losetup -a | grep o_p_t.img | awk -F ':' '{print $1}'`
+fi
+[ -z "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" ] && losetup `losetup -f` $upanPath/opt/o_p_t.img
+[ -z "$(df -m | grep "/dev/loop" | grep "/media/o_p_t_img")" ] && { modprobe -q ext4 ; mkdir -p /media/o_p_t_img ; mount -t ext4 -o noatime "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" "/media/o_p_t_img" ; }
+mountpoint -q /media/o_p_t_img && mount -o bind "/media/o_p_t_img" /opt
+
+}
+
+re_size () {
+#/tmp最大空间，调整已挂载分区的大小
+[ ! -f /tmp/size_tmp ] && echo -n $(df -m | grep "% /tmp" | awk 'NR==1' | awk -F' ' '{print $4}')"M" > /tmp/size_tmp
+[ "$size_tmpfs" = "0" ] && mount -o remount,size=$(cat /tmp/size_tmp) tmpfs /tmp
+[ "$size_tmpfs" = "1" ] && mount -o remount,size=50% tmpfs /tmp
+[ "$size_tmpfs" = "2" ] && mount -o remount,size=60% tmpfs /tmp
+[ "$size_tmpfs" = "3" ] && mount -o remount,size=70% tmpfs /tmp
+[ "$size_tmpfs" = "4" ] && mount -o remount,size=80% tmpfs /tmp
+[ "$size_tmpfs" = "5" ] && mount -o remount,size=90% tmpfs /tmp
+[ "$size_media_enable" = "0" ] && mount -o remount,size=8K tmpfs /media
+[ "$size_media_enable" = "1" ] && mount -o remount,size=10485760M tmpfs /media
+
+}
+
 AiDisk00 () {
+re_size &
+if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+# 安装ca-certificates
+mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载
+if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+	mkdir -p /opt/app/ipk/
+	mkdir -p /opt/etc/ssl/certs
+	rm -f /etc/ssl/certs
+	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
+		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/
+	fi
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
+		logger -t "【opt】" "下载证书"
+		wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
+		logger -t "【opt】" "安装证书"
+		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
+		rm -f /opt/app/ipk/certs.tgz
+	fi
+	chmod 644 /opt/etc/ssl/certs -R
+fi
+fi
+# flush buffers
+sync
+# 目录检测
 [ -d /tmp/AiDisk_00/opt ] && return
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
-[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "6" ] ; then
+	# 远程共享
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
+	fi
+fi
 if [ "$ss_opt_x" = "5" ] ; then
 	# 指定目录
-	opt_cifs_dir=`nvram get opt_cifs_dir`
 	if [ -d $opt_cifs_dir ] ; then
 		upanPath="$opt_cifs_dir"
 	else
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
-		upanPath=""
-		[ -z "$upanPath" ] && upanPath="`df -m | grep /dev/mmcb | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
-		[ -z "$upanPath" ] && upanPath="`df -m | grep "/dev/sd" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 	fi
 fi
 if [ ! -z "$upanPath" ] ; then
-	mkdir -p "$upanPath/opt"
 	rm -f /tmp/AiDisk_00
+	[ -d /tmp/AiDisk_00 ] || rm -rf /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
+	sync
 else
 	mkdir -p /tmp/AiDisk_00/opt
 fi
@@ -188,27 +332,43 @@ sync
 
 }
 
+opt_Available () {
+
+Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $2}')
+Available_C=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+Available_D=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $2}')
+Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
+Available_I=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $5}')
+if [ -z "$(echo $Available_M | grep '%')" ] ; then
+Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $3}')
+Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $1}')
+Available_C=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $3}')
+Available_D=$(df -i | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $1}')
+Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+Available_I=$(df -i | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')
+fi
+logger -t "【opt】" "/opt 剩余可用数据空间[M] $Available_A/$Available_B"
+logger -t "【opt】" "/opt 剩余可用节点空间[Inodes] $Available_C/$Available_D"
+logger -t "【opt】" "/opt 已用数据空间[M] $Available_M/100%"
+logger -t "【opt】" "/opt 已用节点空间[Inodes] $Available_I/100%"
+logger -t "【opt】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 opt.tgz 解压运行，请重新正确格式化 U盘。"
+}
+
 opt_file () {
+
 if [ ! -f /opt/opt.tgz ]  ; then
-	if [ "$ss_opt_x" = "5" ] ; then
-		Available_M=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
-		[ ! -z "$(echo $Available_M | grep '%')" ] && Available_M=$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $3}')
-		logger -t "【opt】" "/opt 可用空间：$Available_M M"
-		optPath="`grep ' /opt ' /proc/mounts`"
-		[ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile3"; }
-	else
-		logger -t "【opt】" "/opt 可用空间：$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')M"
-		optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
-		[ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
-		optPath="`grep ' /opt ' /proc/mounts | grep /dev`"
-		[ ! -z "$optPath" ] && { wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile3"; }
-		logger -t "【opt】" "/opt/opt.tgz 下载完成，开始解压"
-	fi
+	rm -f /opt/opt.tgz
+	logger -t "【opt】" "/opt 可用空间：$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')M"
+	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
+	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $opttmpfile" ; wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
+	optPath="`grep ' /opt ' /proc/mounts | grep /dev`"
+	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile"; }
+	logger -t "【opt】" "/opt/opt.tgz 下载完成，开始解压"
 else
 	logger -t "【opt】" "/opt/opt.tgz 已经存在，开始解压"
 fi
 tar -xzvf /opt/opt.tgz -C /opt
-
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 [ ! -z "$optPath" ] && rm -f /opt/opt.tgz
 # flush buffers
@@ -239,21 +399,20 @@ if [ ! -f "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "opt 第二次下载/opt/opt.tgz"
 		opt_file
 	fi
+	opt_Available
 	if [ -s "/opt/opti.txt" ] ; then
-		logger -t "【opt】" "opt 解压完成"
-		chmod 777 /opt -R
+		logger -t "【opt】" "/opt 解压完成"
+		#chmod 777 /opt -R
 		prepare_authorized_keys
 	else
-		logger -t "【opt】" "opt 解压失败"
+		logger -t "【opt】" "/opt 解压失败"
 	fi
 	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 	if [ -z "$optPath" ] && [ -s "/opt/opt.tgz" ] ; then
-		logger -t "【opt】" "opt 解压完成"
-		chmod 777 /opt -R
-		prepare_authorized_keys
 		logger -t "【opt】" "备份文件到 /opt/opt_backup"
 		mkdir -p /opt/opt_backup
 		tar -xzvf /opt/opt.tgz -C /opt/opt_backup
+		opt_Available
 		if [ -s "/opt/opt_backup/opti.txt" ] ; then
 			logger -t "【opt】" "/opt/opt_backup 解压完成"
 			# flush buffers
@@ -266,12 +425,19 @@ fi
 }
 
 upopt () {
+if [ "$upopt_enable" = "1" ] ; then
 wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
-[ -s /tmp/opti.txt ] && cp -f /tmp/opti.txt /tmp/lnmpi.txt
-nvram set opto="`cat /opt/opti.txt`"
 nvram set optt="`cat /tmp/opti.txt`"
-nvram set lnmpo="`cat /opt/lnmp.txt`"
-nvram set lnmpt="`cat /tmp/lnmpi.txt`"
+else
+rm -rf /tmp/opti.txt
+upopt2 &
+fi
+nvram set opto="`cat /opt/opti.txt`"
+}
+
+upopt2 () {
+wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+nvram set optt="`cat /tmp/opti.txt`"
 }
 
 libmd5_check () {
@@ -299,7 +465,7 @@ while read line
 do
 if [ -f "$line" ] ; then
 	MD5_backup="$(md5sum $line | awk '{print $1;}')"
-	b_line="$(echo $line | sed  "s/$\/opt\/opt_backup\//$\/opt\//g")"
+	b_line="$(echo $line | sed  "s@^/opt/opt_backup/@/opt/@g")"
 	MD5_OPT="$(md5sum $b_line | awk '{print $1;}')"
 	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
 	logger -t "【libmd5_恢复】" "【 $b_line 】，md5不匹配！"
@@ -312,7 +478,7 @@ fi
 done < /tmp/md5/libmd5f
 logger -t "【libmd5_恢复】" "md5对比，完成！"
 # flush buffers
-sync
+sync;echo 3 > /proc/sys/vm/drop_caches
 
 }
 
@@ -331,7 +497,7 @@ while read line
 do
 if [ -f "$line" ] ; then
 	MD5_backup="$(md5sum $line | awk '{print $1;}')"
-	b_line="$(echo $line | sed  "s/$\/opt\//$\/opt\/opt_backup\//g")"
+	b_line="$(echo $line | sed  "s@^/opt/@/opt/opt_backup/@g")"
 	MD5_OPT="$(md5sum $b_line | awk '{print $1;}')"
 	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
 	logger -t "【libmd5_备份】" "【 $b_line 】，md5不匹配！"
@@ -344,7 +510,36 @@ fi
 done < /tmp/md5/libmd5f
 logger -t "【libmd5_备份】" "md5对比，完成！"
 # flush buffers
-sync
+sync;echo 3 > /proc/sys/vm/drop_caches
+
+}
+initconfig () {
+cifs_script="/etc/storage/cifs_script.sh"
+if [ ! -f "$cifs_script" ] || [ ! -s "$cifs_script" ] ; then
+	cat > "$cifs_script" <<-\EEE
+#!/bin/sh
+# SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
+# 说明：【192.168.123.66】为共享服务器的IP，【nas】为共享文件夹名称
+# 说明：username=、password=填账号密码
+modprobe des_generic
+modprobe cifs CIFSMaxBufSize=64512
+mkdir -p /media/cifs
+umount /media/cifs
+mount -t cifs //192.168.123.66/nas /media/cifs -o username=user,password=pass,dynperm,nounix,noserverino,file_mode=0777,dir_mode=0777
+
+EEE
+	chmod 755 "$cifs_script"
+fi
+
+}
+
+initconfig
+
+mount_check () {
+(
+	flock 101
+mount_check_lock
+) 101>/var/lock/101_flock.lock
 
 }
 
@@ -392,4 +587,5 @@ libmd5_backup)
 	fi
 	;;
 esac
+
 

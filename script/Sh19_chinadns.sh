@@ -20,6 +20,14 @@ chinadns_dnss=`nvram get app_5`
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
 
+chinadns_renum=`nvram get chinadns_renum`
+chinadns_renum=${chinadns_renum:-"0"}
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="chinadns"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$chinadns_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep chinadns)" ]  && [ ! -s /tmp/script/_app1 ]; then
@@ -30,7 +38,6 @@ fi
 
 chinadns_restart () {
 
-chinadns_renum=`nvram get chinadns_renum`
 relock="/var/lock/chinadns_restart.lock"
 if [ "$1" = "o" ] ; then
 	nvram set chinadns_renum="0"
@@ -173,8 +180,13 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/chinadns "$hiboyfile/chinadns" "$hiboyfile2/chinadns"
+	wgetcurl.sh /opt/bin/chinadns "$hiboyfile/chinadns2" "$hiboyfile2/chinadns2"
 	chmod 755 "/opt/bin/chinadns"
+	if [[ "$(chinadns -h | wc -l)" -lt 2 ]] ; then
+		rm -rf /opt/bin/chinadns
+		wgetcurl.sh /opt/bin/chinadns "$hiboyfile/chinadns" "$hiboyfile2/chinadns"
+		chmod 755 "/opt/bin/chinadns"
+	fi
 else
 	logger -t "【chinadns】" "找到 $SVC_PATH"
 fi
@@ -208,8 +220,8 @@ nvram set chinadns_v="$chinadns_v"
 killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 killall pdnsd && killall -9 pdnsd 2>/dev/null
 logger -t "【chinadns】" "运行 $SVC_PATH"
-$chinadns_path -p $chinadns_port -s $chinadns_dnss -l /opt/app/chinadns/chinadns_iplist.txt -c /etc/storage/china_ip_list.txt $usage &
-sleep 2
+eval "$chinadns_path -p $chinadns_port -s $chinadns_dnss -l /opt/app/chinadns/chinadns_iplist.txt -c /etc/storage/china_ip_list.txt $usage $cmd_log" &
+sleep 4
 [ ! -z "$(ps -w | grep "$chinadns_path" | grep -v grep )" ] && logger -t "【chinadns】" "启动成功 $chinadns_v " && chinadns_restart o
 [ -z "$(ps -w | grep "$chinadns_path" | grep -v grep )" ] && logger -t "【chinadns】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_restart x
 
@@ -228,6 +240,7 @@ restart_dhcpd
 
 chinadns_get_status
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initopt () {

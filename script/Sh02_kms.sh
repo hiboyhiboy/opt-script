@@ -53,18 +53,23 @@ kill_ps "$scriptname"
 }
 
 kms_start () {
-[ ! -f /etc_ro/vlmcsd.kmd ] && /usr/bin/vlmcsd -i /etc/storage/vlmcsdini_script.sh -l /tmp/vlmcsd.log
-[ -f /etc_ro/vlmcsd.kmd ] && /usr/bin/vlmcsd -j /etc_ro/vlmcsd.kmd -i /etc/storage/vlmcsdini_script.sh -l /tmp/vlmcsd.log
+
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_log=' -l /tmp/vlmcsd.log '
+[ "$cmd_log_enable" = "1" ] && cmd_log=' -v -l syslog '
+[ ! -f /etc_ro/vlmcsd.kmd ] && /usr/bin/vlmcsd -i /etc/storage/vlmcsdini_script.sh $cmd_log
+[ -f /etc_ro/vlmcsd.kmd ] && /usr/bin/vlmcsd -j /etc_ro/vlmcsd.kmd -i /etc/storage/vlmcsdini_script.sh $cmd_log
 computer_name=`nvram get computer_name`
 sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf
 nvram set lan_domain="lan"
 echo "srv-host=_vlmcs._tcp.lan,$computer_name.lan,1688,0,100" >> /etc/storage/dnsmasq/dnsmasq.conf
 /etc/storage/vlmcsdini_script.sh
 restart_dhcpd
-sleep 2
+sleep 4
 [ ! -z "$(ps -w | grep "vlmcsd" | grep -v grep )" ] && logger -t "【kms】" "启动成功"
 [ -z "$(ps -w | grep "vlmcsd" | grep -v grep )" ] && logger -t "【kms】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
 eval "$scriptfilepath keep &"
+exit 0
 }
 
 initconfig () {
@@ -87,35 +92,37 @@ if [ ! -f "$vlmcsdini_script" ] || [ ! -s "$vlmcsdini_script" ] ; then
 # slmgr.vbs /xpr
 
 # key查看
-# cat /etc/storage/key
+# https://docs.microsoft.com/en-us/windows-server/get-started/kmsclientkeys
 
 
 #开头的字符号（#）或分号（;）的每一行被视为注释；删除（;）启用指定选项。
-#ePID/HwId设置Windows为显式
-;Windows = 06401-00206-471-111111-03-1033-9600.0000-3622014 / 01 02 03 04 05 06 07 08
+#明确设置Windows的ePID / HwId
+;Windows = 06401-00206-471-111111-03-1033-17763.0000-2822018 / 01 02 03 04 05 06 07 08
 
-#ePID设置Office2010（包含Visio和Project）为显式
-;Office2010 = 06401-00096-199-222222-03-1033-9600.0000-3622014
+#明确设置Office 2010（包括Visio和Project）的ePID
+;Office2010 = 06401-00096-199-222222-03-1033-17763.0000-2822018
 
-#ePID/HwId设置Office2013（包含Visio和Project）为显式
-;Office2013 = 06401-00206-234-333333-03-1033-9600.0000-3622014 / 01 02 03 04 05 06 07 08
+#明确设置Office 2013（包括Visio和Project）的ePID / HwId
+;Office2013 = 06401-00206-234-333333-03-1033-17763.0000-2822018 / 01 02 03 04 05 06 07 08
 
-#ePID/HwId设置Office2016（包含Visio和Project）为显式
-;Office2016 = 06401-00206-437-444444-03-1033-9600.0000-3622014 / 01 02 03 04 05 06 07 08
+#明确设置Office 2016（包括Visio和Project）的ePID / HwId
+;Office2016 = 06401-00206-437-444444-03-1033-17763.0000-2822018 / 01 02 03 04 05 06 07 08
 
-# Set ePID/HwId for Windows China Government (Enterprise G/GN) explicitly
-;WinChinaGov = 06401-03858-000-555555-03-1033-9600.0000-3622014 / 01 02 03 04 05 06 07 08
+#明确设置Office 2019（包括Visio和Project）的ePID / HwId
+;Office2019 = 06401-00206-666-666666-03-1033-17763.0000-2822018 / 01 02 03 04 05 06 07 08
+#明确为Windows中国政府（企业G / GN）设置ePID / HwId
+;WinChinaGov = 06401-03858-000-555555-03-1033-17763.0000-2822018 / 01 02 03 04 05 06 07 08
 
 #使用兼容的VPN设备创建隐藏的本地IPv4地址
-#命令行：-O
-#VPN = <VPN适配器名称> [= <IPv4地址>] [/ <CIDR掩码>] [：<DHCP租期>
-#使用VPN适配器“KMS镜像”，它的IP地址为192.168.123.100，租期为一天，使整个192.168.128.x成为隐藏的本地IPv4地址。
+#命令行： -O
+#VPN = <VPN适配器名称> [= <IPv4地址>] [/ <CIDR掩码>] [：<DHCP租约持续时间>]
+#使用VPN适配器“KMS Mirror”为其提供IP地址192.168.123.100，租期为一天，并使整个192.168.128.x成为隐藏的本地IPv4地址。
 ;VPN = KMS Mirror=192.168.123.100/24:1d
 
-#使用自定义的TCP端口
-#命令行：-P
-#*** Port命令只有在vlmcsd被编译为使用MS RPC或简单套接字时才有效
-#***使用Listen否则
+#使用自定义TCP端口
+#命令行： -P
+#***只有在编译vlmcsd以使用MS RPC或简单套接字时，Port指令才有效
+#***否则使用Listen
 ;Port = 1688
 
 #监听所有IPv4地址（默认端口1688）
@@ -127,35 +134,39 @@ if [ ! -f "$vlmcsdini_script" ] || [ ! -s "$vlmcsdini_script" ] ; then
 # Command line: -L
 ;Listen = [::]:1688
 
-#侦听所有私有IP地址，并拒绝来自公共IP地址的请求
+#侦听所有私有IP地址并拒绝来自公共IP地址的传入请求
 # Command line: -o
 # PublicIPProtectionLevel = 3
 
-#允许绑定外部IP地址
+#允许绑定到外部IP地址
 # Command line: -F0 and -F1
 ;FreeBind = true
 
-#程序启动时随机ePIDs（只有那些未指定的显式）
+#在程序启动时随机化ePID（仅限未明确指定的那些）
 # Command line: -r
 ;RandomizationLevel = 1
 
-#在ePIDs中使用特定区域 (1033 = 美国英语)，即使ePID是随机的
+#即使ePID是随机的，也要在ePID中使用特定的主机版本
+# Command line: -H
+;HostBuild = 17763
+
+#即使ePID是随机的，也要在ePID中使用特定的文化（1033 = English US）
 # Command line: -C
 ;LCID = 1033
 
-#设置最多4个同时工作（分叉进程或线程）
+#最多设置4个同时工作（分叉进程或线程）
 # Command line: -m
 ;MaxWorkers = 4
 
-#闲置30秒后断开用户
+#在30秒不活动后断开用户连接
 # Command line: -t
 ;ConnectionTimeout = 30
 
-#每次请求后立即断开客户端
+#每次请求后立即断开客户端连接
 # Command line: -d and -k
 ;DisconnectClientsImmediately = yes
 
-#写一个pid文件（包含vlmcsd的进程ID的文件）
+#编写一个pid文件（包含进程ID为vlmcsd的文件）
 # Command line: -p
 ;PidFile = /var/run/vlmcsd.pid
 
@@ -163,11 +174,11 @@ if [ ! -f "$vlmcsdini_script" ] || [ ! -s "$vlmcsdini_script" ] ; then
 # Command line: -j
 ;KmsData = /etc/vlmcsd.kmd
 
-#写日志到/var/log/vlmcsd.log
+#将日志写入/var/log/vlmcsd.log
 # Command line: -l (-e and -f also override this directive)
 ;LogFile = /var/log/vlmcsd.log
 
-#不要在日志中包括日期和时间（默认值为true）
+#不要在日志中包含日期和时间（默认为true）
 # Command line: -T0 and -T1
 ;LogDateAndTime = false
 
@@ -225,28 +236,6 @@ EEE
 	chmod 755 "$vlmcsdini_script"
 fi
 
-kmskey="/tmp/key"
-ln -sf /tmp/key /etc/storage/key
-if [ ! -f "$kmskey" ] ; then
-	cat > "$kmskey" <<-\EEE
-# Office手动激活命令：
-
-# cd C:\Program Files\Microsoft Office\Office15
-# cscript ospp.vbs /sethst:192.168.123.1
-# cscript ospp.vbs /act
-# cscript ospp.vbs /dstatus
-
-# windows手动激活命令
-
-# slmgr.vbs /upk
-# slmgr.vbs /skms 192.168.123.1
-# slmgr.vbs /ipk XXXXX-XXXXX-XXXXX-XXXXX-XXXXX
-# slmgr.vbs /ato
-# slmgr.vbs /xpr
-
-EEE
-	chmod 666 "$kmskey"
-fi
 
 }
 
