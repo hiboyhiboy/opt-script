@@ -2001,8 +2001,8 @@ fi
 	fi
 	done < /tmp/ss_spec_wan.txt
 
-	cat /tmp/ss/gfwall_domain.txt | sort -u | grep -v "^$" > /tmp/ss/all_domain.txt
-
+	cat /tmp/ss/gfwall_domain.txt | sort -u | grep -v "^$" | grep '\.' | grep -v '\-\-\-' > /tmp/ss/all_domain.txt
+	
 	# 到此全域名列表都已经获取完毕，开始构造dnsmasq.conf
 	rm -f /tmp/ss/gfw*.txt
 	rm -f $confdir/r.gfwlist.conf
