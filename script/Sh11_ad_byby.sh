@@ -717,6 +717,7 @@ done < /tmp/ad_spec_lan.txt
 
 
 gen_special_purpose_ip () {
+
 #处理肯定不走通道的目标网段
 lan_ipaddr=`nvram get lan_ipaddr`
 kcptun_enable=`nvram get kcptun_enable`

@@ -17,6 +17,19 @@ aliddns_domain6=`nvram get aliddns_domain6`
 aliddns_name6=`nvram get aliddns_name6`
 aliddns_ttl=`nvram get aliddns_ttl`
 
+if [ "$aliddns_domain"x != "x" ] && [ "$aliddns_name"x = "x" ] ; then
+	aliddns_name="www"
+	nvram set aliddns_name="www"
+fi
+if [ "$aliddns_domain2"x != "x" ] && [ "$aliddns_name2"x = "x" ] ; then
+	aliddns_name2="www"
+	nvram set aliddns_name2="www"
+fi
+if [ "$aliddns_domain6"x != "x" ] && [ "$aliddns_name6"x = "x" ] ; then
+	aliddns_name6="www"
+	nvram set aliddns_name6="www"
+fi
+
 IPv6=0
 domain_type=""
 hostIP=""

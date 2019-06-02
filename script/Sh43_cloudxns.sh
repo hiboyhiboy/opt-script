@@ -16,6 +16,19 @@ cloudxns_domian6=`nvram get cloudxns_domian6`
 cloudxns_host6=`nvram get cloudxns_host6`
 cloudxns_interval=`nvram get cloudxns_interval`
 
+if [ "$cloudxns_domian"x != "x" ] && [ "$cloudxns_host"x = "x" ] ; then
+	cloudxns_host="www"
+	nvram set cloudxns_host="www"
+fi
+if [ "$cloudxns_domian2"x != "x" ] && [ "$cloudxns_host2"x = "x" ] ; then
+	cloudxns_host2="www"
+	nvram set cloudxns_host2="www"
+fi
+if [ "$cloudxns_domian6"x != "x" ] && [ "$cloudxns_host6"x = "x" ] ; then
+	cloudxns_host6="www"
+	nvram set cloudxns_host6="www"
+fi
+
 IPv6=0
 domain_type=""
 hostIP=""

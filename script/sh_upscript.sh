@@ -7,19 +7,41 @@ scriptt=`nvram get scriptt`
 scripto=`nvram get scripto`
 [ "$ACTION" = "upscript" ] && upscript_enable=1
 
+opt_force () {
+
+# 自定义 opt 环境下载地址
+opt_force_enable=`nvram get opt_force_enable`
+[ -z $opt_force_enable ] && opt_force_enable="0" && nvram set opt_force_enable="$opt_force_enable"
+opt_force_www=`nvram get opt_force_www`
+[ -z $opt_force_www ] && opt_force_www="https://opt.cn2qq.com/" && nvram set opt_force_www="$opt_force_www"
+if [ "$opt_force_enable" != "0" ] ; then
+	opt_force_www="$(echo $opt_force_www | sed  "s@/\$@@g")"
+	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
+	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
+	echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
+	echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
+	hiboyfile="$opt_force_www/opt-file"
+	hiboyscript="$opt_force_www/opt-script"
+fi
+}
+
+opt_force
+
 file_o_check () {
+
 #获取script的sh*文件MD5
 eval $(md5sum `/usr/bin/find /etc/storage/script/ -perm '-u+x' -name '*.sh' | sort -r` | awk '{print $2"_o="$1;}' | awk -F '/' '{print $NF;}' | sed 's/\.sh//g')
 }
 
 file_t_check () {
+
 #获取最新script的sh*文件MD5
 rm -f /tmp/scriptsh.txt
 wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scriptsh.txt"
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2019-5-26"
+	nvram set scripto="2019-6-2"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -42,6 +64,7 @@ if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
 			logger -t "【script】" " 更新【$file_name.sh】，md5匹配，更新成功！"
 			mv -f /tmp/script/$file_name.sh /etc/storage/script/$file_name.sh
 			if [ "$file_name"x = "initx" ] ; then
+				opt_force
 				source /etc/storage/script/init.sh
 			fi
 		else

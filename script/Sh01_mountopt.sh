@@ -24,6 +24,25 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mountopt)" ]  
 	chmod 777 /tmp/script/_mountopt
 fi
 
+# 自定义 opt 环境下载地址
+opt_force_enable=`nvram get opt_force_enable`
+[ -z $opt_force_enable ] && opt_force_enable="0" && nvram set opt_force_enable="$opt_force_enable"
+opt_force_www=`nvram get opt_force_www`
+[ -z $opt_force_www ] && opt_force_www="https://opt.cn2qq.com" && nvram set opt_force_www="$opt_force_www"
+if [ "$opt_force_enable" != "0" ] ; then
+	opt_force_www="$(echo $opt_force_www | sed  "s@/\$@@g")"
+	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
+	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
+	echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
+	echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
+	hiboyfile="$opt_force_www/opt-file"
+	hiboyscript="$opt_force_www/opt-script"
+fi
+
+# 部署离线 opt 环境下载地址
+opt_download_enable=`nvram get opt_download_enable`
+[ -z $opt_download_enable ] && opt_download_enable="0" && nvram set opt_download_enable="$opt_download_enable"
+
 # /etc/storage/script/sh01_mountopt.sh
  opttmpfile="$hiboyfile/opttmpg8.tgz"
  opttmpfile2="$hiboyfile2/opttmpg8.tgz"
@@ -41,7 +60,9 @@ fi
 # 6 >>安装到 远程共享
 # 不是ext4磁盘时用镜像生成opt
 #set -x
-mount_check_lock() {
+
+mount_check_lock () {
+
 # 检查挂载异常设备
 dev_full=$(cat  /proc/mounts | awk '{print $1}' | grep -v -E "$(echo $(/usr/bin/find /dev/ -name '*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/dev/")
 [ ! -z "$dev_full" ] && dev_mount=$(cat  /proc/mounts | grep $dev_full | grep /media/ | awk '{print $2}')
@@ -89,6 +110,8 @@ if [ "$mountp" = "0" ] ; then
 		mount_opt
 	else
 		logger -t "【opt】" "opt 挂载正常：$optPath"
+		# 部署离线 opt 环境下载地址
+		opt_download
 	fi
 else
 	logger -t "【opt】" "opt 没挂载，重新挂载"
@@ -219,6 +242,8 @@ if [ ! -z "$upanPath" ] ; then
 	sync
 	# prepare ssh authorized_keys
 	prepare_authorized_keys
+	# 部署离线 opt 环境下载地址
+	opt_download
 else
 	logger -t "【opt】" "/tmp/AiDisk_00/opt文件夹模式挂载/opt"
 	rm -rf /tmp/AiDisk_00
@@ -229,7 +254,93 @@ mkdir -p /opt/bin
 
 }
 
+opt_download () {
+
+[ ! -d /tmp/AiDisk_00/ ] && return
+# 部署离线 opt 环境下载地址
+if [ "$opt_download_enable" != "0" ] ; then
+# 目录检测
+if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] || [ ! -d /tmp/AiDisk_00/cn2qq/opt-file ] ; then
+logger -t "【opt】" "部署离线 opt 环境到 USB/cn2qq/opt-script 和 USB/cn2qq/opt-file"
+mkdir -p /tmp/AiDisk_00/cn2qq
+if [[ "$(unzip -h 2>&1 | wc -l)" -gt 2 ]] ; then
+	opt_download_script="https://github.com/hiboyhiboy/opt-script/archive/master.zip"
+	opt_download_file="https://github.com/hiboyhiboy/opt-file/archive/master.zip"
+else
+	opt_download_script="https://opt.cn2qq.com/opt-script.tgz"
+	opt_download_file="https://opt.cn2qq.com/opt-file.tgz"
+fi
+if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] ; then
+if [ ! -f /tmp/AiDisk_00/cn2qq/opt-script.tgz ]  ; then
+	rm -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
+	logger -t "【opt】" "/tmp/AiDisk_00/cn2qq 可用空间：$(df -m | grep '% /tmp/AiDisk_00/cn2qq' | awk 'NR==1' | awk -F' ' '{print $4}')M"
+	logger -t "【opt】" "下载: $opt_download_script"
+	logger -t "【opt】" "下载到 USB/cn2qq/opt-script.tgz"
+	wgetcurl.sh '/tmp/AiDisk_00/cn2qq/opt-script.tgz' "$opt_download_script" "$opt_download_script"
+	logger -t "【opt】" "/tmp/AiDisk_00/cn2qq/opt-script.tgz 下载完成，开始解压"
+else
+	logger -t "【opt】" "/tmp/AiDisk_00/cn2qq/opt-script.tgz 已经存在，开始解压"
+fi
+if [[ "$(unzip -h 2>&1 | wc -l)" -gt 2 ]] ; then
+	unzip -o /tmp/AiDisk_00/cn2qq/opt-script.tgz -d /tmp/AiDisk_00/cn2qq/
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-script; mv -f /tmp/AiDisk_00/cn2qq/opt-script-master /tmp/AiDisk_00/cn2qq/opt-script; }
+else
+	tar -xz -C /tmp/AiDisk_00/cn2qq/ -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
+fi
+if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] ; then
+	tar -xz -C /tmp/AiDisk_00/cn2qq/ -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
+	unzip -o /tmp/AiDisk_00/cn2qq/opt-script.tgz -d /tmp/AiDisk_00/cn2qq/
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-script; mv -f /tmp/AiDisk_00/cn2qq/opt-script-master /tmp/AiDisk_00/cn2qq/opt-script; }
+fi
+# flush buffers
+sync
+fi
+if [ ! -d /tmp/AiDisk_00/cn2qq/opt-file ] ; then
+if [ ! -f /tmp/AiDisk_00/cn2qq/opt-file.tgz ]  ; then
+	rm -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
+	logger -t "【opt】" "/tmp/AiDisk_00/cn2qq 可用空间：$(df -m | grep '% /tmp/AiDisk_00/cn2qq' | awk 'NR==1' | awk -F' ' '{print $4}')M"
+	logger -t "【opt】" "下载: $opt_download_file"
+	logger -t "【opt】" "下载到 USB/cn2qq/opt-file.tgz"
+	wgetcurl.sh '/tmp/AiDisk_00/cn2qq/opt-file.tgz' "$opt_download_file" "$opt_download_file"
+	logger -t "【opt】" "/tmp/AiDisk_00/cn2qq/opt-file.tgz 下载完成，开始解压"
+else
+	logger -t "【opt】" "/tmp/AiDisk_00/cn2qq/opt-file.tgz 已经存在，开始解压"
+fi
+if [[ "$(unzip -h 2>&1 | wc -l)" -gt 2 ]] ; then
+	unzip -o /tmp/AiDisk_00/cn2qq/opt-file.tgz -d /tmp/AiDisk_00/cn2qq/
+	[ -d /tmp/AiDisk_00/cn2qq/opt-file-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-file; mv -f /tmp/AiDisk_00/cn2qq/opt-file-master /tmp/AiDisk_00/cn2qq/opt-file; }
+else
+	tar -xz -C /tmp/AiDisk_00/cn2qq/ -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
+fi
+if [ ! -d /tmp/AiDisk_00/cn2qq/opt-file ] ; then
+	tar -xz -C /tmp/AiDisk_00/cn2qq/ -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
+	unzip -o /tmp/AiDisk_00/cn2qq/opt-file.tgz -d /tmp/AiDisk_00/cn2qq/
+	[ -d /tmp/AiDisk_00/cn2qq/opt-file-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-file; mv -f /tmp/AiDisk_00/cn2qq/opt-file-master /tmp/AiDisk_00/cn2qq/opt-file; }
+fi
+# flush buffers
+sync
+fi
+fi
+# 设置下载地址
+http_proto=`nvram get http_proto`
+http_lanport=`nvram get http_lanport`
+[ -z $http_lanport ] && http_lanport=80 && nvram set http_lanport=80
+lan_ipaddr=`nvram get lan_ipaddr`
+[ "$http_proto" == "0" ] && opt_force_www="http://127.0.0.1:$http_lanport" && nvram set opt_force_www="$opt_force_www"
+[ "$http_proto" != "0" ] && opt_force_www="https://127.0.0.1:$http_lanport" && nvram set opt_force_www="$opt_force_www"
+opt_force_www=`nvram get opt_force_www`
+sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
+sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
+echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
+echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
+hiboyfile="$opt_force_www/opt-file"
+hiboyscript="$opt_force_www/opt-script"
+fi
+
+}
+
 mkoptimg () {
+
 # 创建o_p_t.img
 upanPath="$1"
 logger -t "【opt】" "$upanPath/opt/o_p_t.img镜像(ext4)模式挂载/media/o_p_t_img"
@@ -251,6 +362,7 @@ mountpoint -q /media/o_p_t_img && mount -o bind "/media/o_p_t_img" /opt
 }
 
 re_size () {
+
 #/tmp最大空间，调整已挂载分区的大小
 [ ! -f /tmp/size_tmp ] && echo -n $(df -m | grep "% /tmp" | awk 'NR==1' | awk -F' ' '{print $4}')"M" > /tmp/size_tmp
 [ "$size_tmpfs" = "0" ] && mount -o remount,size=$(cat /tmp/size_tmp) tmpfs /tmp
@@ -314,19 +426,21 @@ if [ "$ss_opt_x" = "5" ] ; then
 		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
 	fi
 fi
-if [ ! -z "$upanPath" ] ; then
-	rm -f /tmp/AiDisk_00
-	[ -d /tmp/AiDisk_00 ] || rm -rf /tmp/AiDisk_00
-	ln -sf "$upanPath" /tmp/AiDisk_00
-	sync
-else
-	mkdir -p /tmp/AiDisk_00/opt
-fi
 mkdir -p /opt/bin
 if [ ! -f /sbin/check_network ] && [ ! -f /opt/bin/check_network ] ; then
 	wgetcurl.sh '/opt/bin/check_network' "$hiboyfile/check_network" "$hiboyfile2/check_network"
 fi
 [ -f /sbin/check_network ] && [ -f /opt/bin/check_network ] && rm -f /opt/bin/check_network
+if [ ! -z "$upanPath" ] ; then
+	rm -f /tmp/AiDisk_00
+	[ -d /tmp/AiDisk_00 ] || rm -rf /tmp/AiDisk_00
+	ln -sf "$upanPath" /tmp/AiDisk_00
+	sync
+	# 部署离线 opt 环境下载地址
+	opt_download
+else
+	mkdir -p /tmp/AiDisk_00/opt
+fi
 # flush buffers
 sync
 
@@ -377,6 +491,7 @@ sync
 }
 
 opt_wget () {
+
 #opt检查更新
 upopt
 if [ "$(cat /tmp/opti.txt)"x != "$(cat /opt/opti.txt)"x ] && [ "$upopt_enable" = "1" ] && [ -f /tmp/opti.txt ] ; then
@@ -579,6 +694,14 @@ libmd5_check)
 	;;
 libmd5_backup)
 	libmd5_backup &
+	;;
+opt_download)
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script
+	[ -d /tmp/AiDisk_00/cn2qq/opt-file ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-file
+	[ -f /tmp/AiDisk_00/cn2qq/opt-script.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
+	[ -f /tmp/AiDisk_00/cn2qq/opt-file.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
+	opt_download_enable=1
+	opt_download &
 	;;
 *)
 	mount_check

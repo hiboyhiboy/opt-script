@@ -17,6 +17,19 @@ dnspod_domian6=`nvram get dnspod_domian6`
 dnspod_host6=`nvram get dnspod_host6`
 dnspod_interval=`nvram get dnspod_interval`
 
+if [ "$dnspod_domian"x != "x" ] && [ "$dnspod_host"x = "x" ] ; then
+	dnspod_host="www"
+	nvram set dnspod_host="www"
+fi
+if [ "$dnspod_domian2"x != "x" ] && [ "$dnspod_host2"x = "x" ] ; then
+	dnspod_host2="www"
+	nvram set dnspod_host2="www"
+fi
+if [ "$dnspod_domian6"x != "x" ] && [ "$dnspod_host6"x = "x" ] ; then
+	dnspod_host6="www"
+	nvram set dnspod_host6="www"
+fi
+
 IPv6=0
 domain_type=""
 post_type=""

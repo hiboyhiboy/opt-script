@@ -32,7 +32,6 @@ if [ "$2" == "exit0" ] ; then
 fi
 }
 
-
 wgetcurl_checkmd5 () {
 output="$1"
 url1="$2"
@@ -57,3 +56,4 @@ if [ -s "$output" ] ; then
 	fi
 fi
 }
+

@@ -17,6 +17,19 @@ dns_com_pod_domian6=`nvram get dns_com_pod_domian6`
 dns_com_pod_host6=`nvram get dns_com_pod_host6`
 dns_com_pod_interval=`nvram get dns_com_pod_interval`
 
+if [ "$dns_com_pod_domian"x != "x" ] && [ "$dns_com_pod_host"x = "x" ] ; then
+	dns_com_pod_host="www"
+	nvram set dns_com_pod_host="www"
+fi
+if [ "$dns_com_pod_domian2"x != "x" ] && [ "$dns_com_pod_host2"x = "x" ] ; then
+	dns_com_pod_host2="www"
+	nvram set dns_com_pod_host2="www"
+fi
+if [ "$dns_com_pod_domian6"x != "x" ] && [ "$dns_com_pod_host6"x = "x" ] ; then
+	dns_com_pod_host6="www"
+	nvram set dns_com_pod_host6="www"
+fi
+
 IPv6=0
 domain_type=""
 post_type=""

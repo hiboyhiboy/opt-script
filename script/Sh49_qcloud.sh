@@ -17,6 +17,19 @@ qcloud_domain6=`nvram get qcloud_domain6`
 qcloud_name6=`nvram get qcloud_name6`
 qcloud_ttl=`nvram get qcloud_ttl`
 
+if [ "$qcloud_domain"x != "x" ] && [ "$qcloud_name"x = "x" ] ; then
+	qcloud_name="www"
+	nvram set qcloud_name="www"
+fi
+if [ "$qcloud_domain2"x != "x" ] && [ "$qcloud_name2"x = "x" ] ; then
+	qcloud_name2="www"
+	nvram set qcloud_name2="www"
+fi
+if [ "$qcloud_domain6"x != "x" ] && [ "$qcloud_name6"x = "x" ] ; then
+	qcloud_name6="www"
+	nvram set qcloud_name6="www"
+fi
+
 IPv6=0
 domain_type=""
 hostIP=""

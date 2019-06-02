@@ -16,6 +16,19 @@ cloudflare_domian6=`nvram get cloudflare_domian6`
 cloudflare_host6=`nvram get cloudflare_host6`
 cloudflare_interval=`nvram get cloudflare_interval`
 
+if [ "$cloudflare_domian"x != "x" ] && [ "$cloudflare_host"x = "x" ] ; then
+	cloudflare_host="www"
+	nvram set cloudflare_host="www"
+fi
+if [ "$cloudflare_domian2"x != "x" ] && [ "$cloudflare_host2"x = "x" ] ; then
+	cloudflare_host2="www"
+	nvram set cloudflare_host2="www"
+fi
+if [ "$cloudflare_domian6"x != "x" ] && [ "$cloudflare_host6"x = "x" ] ; then
+	cloudflare_host6="www"
+	nvram set cloudflare_host6="www"
+fi
+
 IPv6=0
 domain_type=""
 hostIP=""

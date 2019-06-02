@@ -54,6 +54,7 @@ ss_link_protoparam=""
 }
 
 clear_link () {
+
 # 自定义节点配置靠前保存
 mkdir -p /tmp/ss/link
 ss_x=`nvram get rt_ssnum_x`
