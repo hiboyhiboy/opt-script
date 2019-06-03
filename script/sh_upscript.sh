@@ -13,7 +13,7 @@ opt_force () {
 opt_force_enable=`nvram get opt_force_enable`
 [ -z $opt_force_enable ] && opt_force_enable="0" && nvram set opt_force_enable="$opt_force_enable"
 opt_force_www=`nvram get opt_force_www`
-[ -z $opt_force_www ] && opt_force_www="https://opt.cn2qq.com/" && nvram set opt_force_www="$opt_force_www"
+[ -z $opt_force_www ] && opt_force_www="https://opt.cn2qq.com" && nvram set opt_force_www="$opt_force_www"
 if [ "$opt_force_enable" != "0" ] ; then
 	opt_force_www="$(echo $opt_force_www | sed  "s@/\$@@g")"
 	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
@@ -22,6 +22,13 @@ if [ "$opt_force_enable" != "0" ] ; then
 	echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
 	hiboyfile="$opt_force_www/opt-file"
 	hiboyscript="$opt_force_www/opt-script"
+else
+	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
+	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
+	echo 'hiboyfile="https://opt.cn2qq.com/opt-file"' >> /etc/storage/script/init.sh
+	echo 'hiboyscript="https://opt.cn2qq.com/opt-script"' >> /etc/storage/script/init.sh
+	hiboyfile="https://opt.cn2qq.com/opt-file"
+	hiboyscript="https://opt.cn2qq.com/opt-script"
 fi
 }
 
@@ -41,7 +48,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2019-6-2"
+	nvram set scripto="2019-6-3"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi

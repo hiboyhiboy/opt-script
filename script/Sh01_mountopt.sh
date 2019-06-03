@@ -37,11 +37,49 @@ if [ "$opt_force_enable" != "0" ] ; then
 	echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
 	hiboyfile="$opt_force_www/opt-file"
 	hiboyscript="$opt_force_www/opt-script"
+else
+	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
+	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
+	echo 'hiboyfile="https://opt.cn2qq.com/opt-file"' >> /etc/storage/script/init.sh
+	echo 'hiboyscript="https://opt.cn2qq.com/opt-script"' >> /etc/storage/script/init.sh
+	hiboyfile="https://opt.cn2qq.com/opt-file"
+	hiboyscript="https://opt.cn2qq.com/opt-script"
 fi
 
 # 部署离线 opt 环境下载地址
 opt_download_enable=`nvram get opt_download_enable`
 [ -z $opt_download_enable ] && opt_download_enable="0" && nvram set opt_download_enable="$opt_download_enable"
+http_proto=`nvram get http_proto`
+http_lanport=`nvram get http_lanport`
+[ -z $http_lanport ] && http_lanport=80 && nvram set http_lanport=80
+lan_ipaddr=`nvram get lan_ipaddr`
+[ "$http_proto" != "1" ] && opt_force_www_tmp="http://127.0.0.1:$http_lanport"
+[ "$http_proto" == "1" ] && opt_force_www_tmp="https://127.0.0.1:$http_lanport"
+if [ "$opt_download_enable" != "0" ] ; then
+	nvram set opt_force_enable=1
+	# 设置下载地址
+	if [ "$opt_force_www" != "$opt_force_www_tmp" ] ; then
+		nvram set opt_force_www="$opt_force_www_tmp"
+		opt_force_www="$opt_force_www_tmp"
+		sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
+		sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
+		echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
+		echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
+		hiboyfile="$opt_force_www/opt-file"
+		hiboyscript="$opt_force_www/opt-script"
+	fi
+else
+	if [ "$opt_force_www" == "$opt_force_www_tmp" ] ; then
+		nvram set opt_force_www="https://opt.cn2qq.com"
+		opt_force_www="https://opt.cn2qq.com"
+		sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
+		sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
+		echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
+		echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
+		hiboyfile="$opt_force_www/opt-file"
+		hiboyscript="$opt_force_www/opt-script"
+	fi
+fi
 
 # /etc/storage/script/sh01_mountopt.sh
  opttmpfile="$hiboyfile/opttmpg8.tgz"
@@ -283,18 +321,19 @@ else
 fi
 if [[ "$(unzip -h 2>&1 | wc -l)" -gt 2 ]] ; then
 	unzip -o /tmp/AiDisk_00/cn2qq/opt-script.tgz -d /tmp/AiDisk_00/cn2qq/
-	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-script; mv -f /tmp/AiDisk_00/cn2qq/opt-script-master /tmp/AiDisk_00/cn2qq/opt-script; }
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-script; mv /tmp/AiDisk_00/cn2qq/opt-script-master /tmp/AiDisk_00/cn2qq/opt-script; }
 else
 	tar -xz -C /tmp/AiDisk_00/cn2qq/ -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
 fi
 if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] ; then
 	tar -xz -C /tmp/AiDisk_00/cn2qq/ -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
 	unzip -o /tmp/AiDisk_00/cn2qq/opt-script.tgz -d /tmp/AiDisk_00/cn2qq/
-	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-script; mv -f /tmp/AiDisk_00/cn2qq/opt-script-master /tmp/AiDisk_00/cn2qq/opt-script; }
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-script; mv /tmp/AiDisk_00/cn2qq/opt-script-master /tmp/AiDisk_00/cn2qq/opt-script; }
 fi
 # flush buffers
 sync
 fi
+
 if [ ! -d /tmp/AiDisk_00/cn2qq/opt-file ] ; then
 if [ ! -f /tmp/AiDisk_00/cn2qq/opt-file.tgz ]  ; then
 	rm -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
@@ -320,21 +359,9 @@ fi
 # flush buffers
 sync
 fi
+
 fi
-# 设置下载地址
-http_proto=`nvram get http_proto`
-http_lanport=`nvram get http_lanport`
-[ -z $http_lanport ] && http_lanport=80 && nvram set http_lanport=80
-lan_ipaddr=`nvram get lan_ipaddr`
-[ "$http_proto" == "0" ] && opt_force_www="http://127.0.0.1:$http_lanport" && nvram set opt_force_www="$opt_force_www"
-[ "$http_proto" != "0" ] && opt_force_www="https://127.0.0.1:$http_lanport" && nvram set opt_force_www="$opt_force_www"
-opt_force_www=`nvram get opt_force_www`
-sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
-sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
-echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
-echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
-hiboyfile="$opt_force_www/opt-file"
-hiboyscript="$opt_force_www/opt-script"
+
 fi
 
 }
