@@ -56,7 +56,7 @@ exit 0
 tmall_get_status () {
 
 A_restart=`nvram get tmall_status`
-B_restart="$tmall_enable$tmall_id$(cat /etc/storage/app_13.sh cat /etc/storage/app_14.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$tmall_enable$tmall_id$(cat /etc/storage/app_13.sh /etc/storage/app_14.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set tmall_status=$B_restart

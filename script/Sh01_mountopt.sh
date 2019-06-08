@@ -58,16 +58,14 @@ lan_ipaddr=`nvram get lan_ipaddr`
 if [ "$opt_download_enable" != "0" ] ; then
 	nvram set opt_force_enable=1
 	# 设置下载地址
-	if [ "$opt_force_www" != "$opt_force_www_tmp" ] ; then
-		nvram set opt_force_www="$opt_force_www_tmp"
-		opt_force_www="$opt_force_www_tmp"
-		sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
-		sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
-		echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
-		echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
-		hiboyfile="$opt_force_www/opt-file"
-		hiboyscript="$opt_force_www/opt-script"
-	fi
+	nvram set opt_force_www="$opt_force_www_tmp"
+	opt_force_www="$opt_force_www_tmp"
+	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
+	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
+	echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
+	echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
+	hiboyfile="$opt_force_www/opt-file"
+	hiboyscript="$opt_force_www/opt-script"
 else
 	if [ "$opt_force_www" == "$opt_force_www_tmp" ] ; then
 		nvram set opt_force_www="https://opt.cn2qq.com"
@@ -308,7 +306,11 @@ else
 	opt_download_script="https://opt.cn2qq.com/opt-script.tgz"
 	opt_download_file="https://opt.cn2qq.com/opt-file.tgz"
 fi
+
+[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-script; ln -sf /tmp/AiDisk_00/cn2qq/opt-script-master /tmp/AiDisk_00/cn2qq/opt-script; }
 if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] ; then
+	rm -rf /tmp/AiDisk_00/cn2qq/opt-script
+	rm -rf /tmp/AiDisk_00/cn2qq/opt-script-master
 if [ ! -f /tmp/AiDisk_00/cn2qq/opt-script.tgz ]  ; then
 	rm -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
 	logger -t "【opt】" "/tmp/AiDisk_00/cn2qq 可用空间：$(df -m | grep '% /tmp/AiDisk_00/cn2qq' | awk 'NR==1' | awk -F' ' '{print $4}')M"
@@ -335,7 +337,10 @@ logger -t "【opt】" "$upanPath/cn2qq/opt-script.tgz 解压完成！"
 sync
 fi
 
+[ -d /tmp/AiDisk_00/cn2qq/opt-file-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-file; ln -sf /tmp/AiDisk_00/cn2qq/opt-file-master /tmp/AiDisk_00/cn2qq/opt-file; }
 if [ ! -d /tmp/AiDisk_00/cn2qq/opt-file ] ; then
+	rm -rf /tmp/AiDisk_00/cn2qq/opt-file
+	rm -rf /tmp/AiDisk_00/cn2qq/opt-file-master
 if [ ! -f /tmp/AiDisk_00/cn2qq/opt-file.tgz ]  ; then
 	rm -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
 	logger -t "【opt】" "/tmp/AiDisk_00/cn2qq 可用空间：$(df -m | grep '% /tmp/AiDisk_00/cn2qq' | awk 'NR==1' | awk -F' ' '{print $4}')M"

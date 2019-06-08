@@ -5,7 +5,7 @@ menu0_title="配置扩展环境  ShadowSocks 花生壳内网版 广告屏蔽功�
 # 菜单页面排序：空格隔开
 menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端    相框设置 goflyway virtualhere"
 menu_title2="SS配置      SS节点  Kcptun  SS_Server SSR_Server COW    MEOW     SoftEtherVPN"
-menu_title3="花生壳内网版 Ngrok  frp      DNSPod   CloudXNS    Aliddns cloudflare qcloud"
+menu_title3="花生壳内网版 Ngrok  frp      DNSPod   CloudXNS    Aliddns cloudflare qcloud  nps"
 menu_title4="Adbyby     ADM    koolproxy  guestkit transocks    translate   tgbot tmall"
 menu_title5="搭建Web环境 v2ray  chinadns 假装在中国 upd2pro 家庭云提速 filemanager verysync"
 ################################
@@ -39,6 +39,10 @@ nvram set menu5_title1=""
 nvram set menu6_title1=""
 nvram set menu7_title1=""
 nvram set menu8_title1=""
+nvram set menu9_title1=""
+nvram set menu10_title1=""
+nvram set menu11_title1=""
+nvram set menu12_title1=""
 nvram set menu1_title2=""
 nvram set menu2_title2=""
 nvram set menu3_title2=""
@@ -47,6 +51,10 @@ nvram set menu5_title2=""
 nvram set menu6_title2=""
 nvram set menu7_title2=""
 nvram set menu8_title2=""
+nvram set menu9_title2=""
+nvram set menu10_title2=""
+nvram set menu11_title2=""
+nvram set menu12_title2=""
 nvram set menu1_title3=""
 nvram set menu2_title3=""
 nvram set menu3_title3=""
@@ -55,6 +63,10 @@ nvram set menu5_title3=""
 nvram set menu6_title3=""
 nvram set menu7_title3=""
 nvram set menu8_title3=""
+nvram set menu9_title3=""
+nvram set menu10_title3=""
+nvram set menu11_title3=""
+nvram set menu12_title3=""
 nvram set menu1_title4=""
 nvram set menu2_title4=""
 nvram set menu3_title4=""
@@ -63,6 +75,10 @@ nvram set menu5_title4=""
 nvram set menu6_title4=""
 nvram set menu7_title4=""
 nvram set menu8_title4=""
+nvram set menu9_title4=""
+nvram set menu10_title4=""
+nvram set menu11_title4=""
+nvram set menu12_title4=""
 nvram set menu1_title5=""
 nvram set menu2_title5=""
 nvram set menu3_title5=""
@@ -71,6 +87,10 @@ nvram set menu5_title5=""
 nvram set menu6_title5=""
 nvram set menu7_title5=""
 nvram set menu8_title5=""
+nvram set menu9_title5=""
+nvram set menu10_title5=""
+nvram set menu11_title5=""
+nvram set menu12_title5=""
 
 # 写入数据
 i=1
@@ -104,7 +124,7 @@ chmod 777 /etc/storage/www_sh -R
 i=1; ii=1;
 for ii in 1 2 3 4 5
 do
-    for i in 1 2 3 4 5 6 7 8
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12
     do
         echo 'menu'$i'_title'$ii
         nvramrun=`eval 'nvram get menu'$i'_title'$ii`

@@ -237,8 +237,8 @@ if [ "$frps_enable" = "1" ] ; then
 	logger -t "【frp】" "frps-version: $frps_v"
 	[ -z "`pidof frps`" ] && logger -t "【frp】" "frps启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && frp_restart x
 fi
-[ "$frpc_enable" = "1" ] && [ -z "`pidof frpc`" ] && logger -t "【frp】" "frpc启动成功" && frp_restart o
-[ "$frps_enable" = "1" ] && [ -z "`pidof frps`" ] && logger -t "【frp】" "frps启动成功" && frp_restart o
+[ "$frpc_enable" = "1" ] && [ ! -z "`pidof frpc`" ] && logger -t "【frp】" "frpc启动成功" && frp_restart o
+[ "$frps_enable" = "1" ] && [ ! -z "`pidof frps`" ] && logger -t "【frp】" "frps启动成功" && frp_restart o
 #frp_get_status
 eval "$scriptfilepath keep &"
 exit 0

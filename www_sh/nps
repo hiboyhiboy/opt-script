@@ -1,0 +1,59 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app14.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_60=0 #nps_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set nps_L2="$(($3 + 10))"
+nvram set nps_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "nps_L2"); %>,<% nvram_get_x("", "nps_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/nps
+if [ ! -f "/opt/app/nps/Advanced_Extensions_nps.asp" ] || [ ! -s "/opt/app/nps/Advanced_Extensions_nps.asp" ] ; then
+	wgetcurl.sh /opt/app/nps/Advanced_Extensions_nps.asp "$hiboyfile/Advanced_Extensions_npsasp" "$hiboyfile2/Advanced_Extensions_npsasp"
+fi
+umount /www/Advanced_Extensions_app14.asp
+if [ -f "/opt/app/nps/Advanced_Extensions_nps.asp" ] ; then
+	mount --bind /opt/app/nps/Advanced_Extensions_nps.asp /www/Advanced_Extensions_app14.asp
+	app14_ver=$(grep 'app14_ver=' /opt/app/nps/Advanced_Extensions_nps.asp | awk -F '=' '{print $2;}')
+	nvram set app14_ver=${app14_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh30_np_s.sh
+if [ ! -f "/etc/storage/script/Sh30_np_s.sh" ] || [ ! -s "/etc/storage/script/Sh30_np_s.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh30_np_s.sh "$hiboyscript/script/Sh30_np_s.sh" "$hiboyscript/script/Sh30_np_s.sh"
+fi
+chmod 777 /etc/storage/script -R
+if [ ! -f "/etc/storage/app_15.sh" ] || [ ! -s "/etc/storage/app_15.sh" ] || [ ! -f "/etc/storage/app_16.sh" ] || [ ! -s "/etc/storage/app_16.sh" ] ; then
+/etc/storage/script/Sh30_np_s.sh update_app
+fi
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+
