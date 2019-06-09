@@ -152,6 +152,8 @@ action_for=""
 del_tmp=0
 if [ -z "$nps_version" ] ; then
 	nps_tag="$( wget --max-redirect=0  https://github.com/cnlh/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
+	[ -z "$nps_tag" ] && nps_tag="$( wget --no-check-certificate --quiet --output-document=-  https://github.com/cnlh/nps/releases/latest  2>&1 | grep '<a href="/cnlh/nps/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.23.1]" && nps_restart x
 	logger -t "【nps】" "自动下载最新版本 $nps_tag"
 	nps_version=$nps_tag && nvram set app_57=$nps_tag
 	nps_restart o
