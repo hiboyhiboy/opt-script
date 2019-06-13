@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v4.18.0
+version=v4.19.1
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
