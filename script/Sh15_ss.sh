@@ -1014,9 +1014,9 @@ if [ "$ss_check" = "1" ] ; then
 					fi
 					logger -t "【ss-redir】" "wget  检查 $ss_link_1 : $check"
 				else
-					check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+					check=`curl -L -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 					[ "$check" != "200" ] && sleep 1
-					[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+					[ "$check" != "200" ] && check=`curl -L -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 					logger -t "【ss-redir】" "curl  检查 $ss_link_1 : $check"
 				fi
 				ss_link_1_tmp=$ss_link_1
@@ -2314,7 +2314,7 @@ if [ "$optssredir" = "1" ] ; then
 	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
 	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
 	chmod 777 "/opt/bin/ss-redir"
-hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
+	hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 chmod 777 "/usr/sbin/ss-local"
@@ -2330,19 +2330,29 @@ fi
 if [ ! -z "$ss_plugin_name" ] ; then
 	hash $ss_plugin_name 2>/dev/null || optssredir="4"
 	if [ "$optssredir" = "4" ] ; then
-		hash $ss_plugin_name 2>/dev/null || optssredir="4"
-		logger -t "【SS】" "找不到 $ss_plugin_name 、 $ss_plugin_name , opt 下载程序"
+		logger -t "【SS】" "找不到 ss_plugin_name : $ss_plugin_name , opt 下载程序"
 		[ ! -s /opt/bin/$ss_plugin_name ] && wgetcurl.sh "/opt/bin/$ss_plugin_name" "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
 		chmod 777 "/opt/bin/$ss_plugin_name"
+	fi
+fi
+if [ ! -z "$ss_plugin_name" ] ; then
+	hash $ss_plugin_name 2>/dev/null || optssredir="44"
+	if [ "$optssredir" = "44" ] ; then
+		logger -t "【SS】" "找不到 ss_plugin_name :  $ss_plugin_name, 请检查系统"; ss_restart x ;
+	fi
+fi
+if [ ! -z "$ss2_plugin_name" ] ; then
+	hash $ss2_plugin_name 2>/dev/null || optssredir="4"
+	if [ "$optssredir" = "4" ] ; then
+		logger -t "【SS】" "找不到 ss2_plugin_name : $ss2_plugin_name , opt 下载程序"
+		[ ! -s /opt/bin/$ss2_plugin_name ] && wgetcurl.sh "/opt/bin/$ss2_plugin_name" "$hiboyfile/$ss2_plugin_name" "$hiboyfile2/$ss2_plugin_name"
+		chmod 777 "/opt/bin/$ss2_plugin_name"
 	fi
 fi
 if [ ! -z "$ss2_plugin_name" ] ; then
 	hash $ss2_plugin_name 2>/dev/null || optssredir="44"
 	if [ "$optssredir" = "44" ] ; then
-		hash $ss2_plugin_name 2>/dev/null || { logger -t "【SS】" "找不到 $ss2_plugin_name, 请检查系统"; ss_restart x ; }
-		[ ! -s /opt/bin/$ss2_plugin_name ] && wgetcurl.sh "/opt/bin/$ss2_plugin_name" "$hiboyfile/$ss2_plugin_name" "$hiboyfile2/$ss2_plugin_name"
-		chmod 777 "/opt/bin/$ss2_plugin_name"
-		hash $ss2_plugin_name 2>/dev/null || { logger -t "【SS】" "找不到 $ss2_plugin_name, 请检查系统"; ss_restart x ; }
+		logger -t "【SS】" "找不到 ss2_plugin_name :  $ss2_plugin_name, 请检查系统"; ss_restart x ;
 	fi
 fi
 # SS
@@ -2363,7 +2373,7 @@ fi
 if [ "$optssredir" = "1" ] ; then
 	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl.sh "/opt/bin/ssrr-redir" "$hiboyfile/$libsodium_so/ssrr-redir" "$hiboyfile2/$libsodium_so/ssrr-redir"
 	chmod 777 "/opt/bin/ssrr-redir"
-hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
+	hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 chmod 777 "/opt/bin/ssrr-local"
@@ -2390,7 +2400,7 @@ fi
 if [ "$optssredir" = "1" ] ; then
 	[ ! -s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/$libsodium_so/ssr-redir" "$hiboyfile2/$libsodium_so/ssr-redir"
 	chmod 777 "/opt/bin/ssr-redir"
-hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
+	hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
 chmod 777 "/usr/sbin/ssr-local"
@@ -2487,9 +2497,9 @@ echo "Debug: $DNS_Server"
 			fi
 			logger -t "【ss-redir】" "wget  检查 $ss_link_1 : $check"
 		else
-			check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			check=`curl -L -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			[ "$check" != "200" ] && sleep 1
-			[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			[ "$check" != "200" ] && check=`curl -L -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			logger -t "【ss-redir】" "curl  检查 $ss_link_1 : $check"
 		fi
 	fi
@@ -2901,9 +2911,9 @@ if [ "$check" == "404" ] ; then
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
-		check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		check=`curl -L -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check" != "200" ] && check=`curl -L -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 	fi
 fi
 if [ "$check" == "200" ] ; then
@@ -2935,9 +2945,9 @@ if [ "$check" == "404" ] ; then
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
-		check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		check=`curl -L -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check" != "200" ] && check=`curl -L -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
 fi
 if [ "$check" == "200" ] ; then
@@ -2984,9 +2994,9 @@ if [ "$check" == "404" ] ; then
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
-		check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		check=`curl -L -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check" != "200" ] && check=`curl -L -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 	fi
 fi
 if [ "$check" == "200" ] ; then
@@ -3063,9 +3073,9 @@ if [ ! -z "$ss_rdd_server" ] ; then
 				[ "$?" == "0" ] && check=200 || check=404
 			fi
 		else
-			check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+			check=`curl -L -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 			[ "$check" != "200" ] && sleep 1
-			[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+			[ "$check" != "200" ] && check=`curl -L -k -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 		fi
 	fi
 	if [ "$check" == "200" ] ; then

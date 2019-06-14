@@ -185,9 +185,9 @@ resub=1
         #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
     else
         #curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-        curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-        #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-        #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        curl -L -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        #curl -L -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+        #curl -L -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
     fi
     }
 # 读取最近外网地址
@@ -227,9 +227,9 @@ if [ "$serverchan_notify_1" = "1" ] ; then
             [ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
             [ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net/" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
         else
-            [ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-            [ "$hostIP"x = "x"  ] && hostIP=`curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-            [ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+            [ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
             [ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
         fi
     fi
@@ -243,7 +243,7 @@ if [ "$serverchan_notify_1" = "1" ] ; then
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
         logger -t "【互联网 IP 变动】" "目前 IP: ${hostIP}"
         logger -t "【互联网 IP 变动】" "上次 IP: ${lastIP}"
-        curl -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】互联网IP变动" -d "&desp=${hostIP}" &
+        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】互联网IP变动" -d "&desp=${hostIP}" &
         logger -t "【微信推送】" "互联网IP变动:${hostIP}"
         echo -n $hostIP > /etc/storage/lastIPAddress
     fi
@@ -262,7 +262,7 @@ if [ "$serverchan_notify_2" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname相同行.txt /tmp/var/newhostname.txt > /tmp/var/newhostname不重复.txt
     if [ -s "/tmp/var/newhostname不重复.txt" ] ; then
         content=`cat /tmp/var/newhostname不重复.txt | grep -v "^$"`
-        curl -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】新设备加入" -d "&desp=${content}" &
+        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】新设备加入" -d "&desp=${content}" &
         logger -t "【微信推送】" "PDCN新设备加入:${content}"
         cat /tmp/var/newhostname不重复.txt | grep -v "^$" >> /etc/storage/hostname.txt
     fi
@@ -282,7 +282,7 @@ if [ "$serverchan_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname相同行_上线.txt /tmp/var/newhostname.txt > /tmp/var/newhostname不重复_上线.txt
     if [ -s "/tmp/var/newhostname不重复_上线.txt" ] ; then
         content=`cat /tmp/var/newhostname不重复_上线.txt | grep -v "^$"`
-        curl -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】设备【上线】Online" -d "&desp=${content}" &
+        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】设备【上线】Online" -d "&desp=${content}" &
         logger -t "【微信推送】" "PDCN设备【上线】:${content}"
         cat /tmp/var/newhostname不重复_上线.txt | grep -v "^$" >> /etc/storage/hostname_上线.txt
     fi
@@ -290,7 +290,7 @@ if [ "$serverchan_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname.txt /etc/storage/hostname_上线.txt > /tmp/var/newhostname不重复_下线.txt
     if [ -s "/tmp/var/newhostname不重复_下线.txt" ] ; then
         content=`cat /tmp/var/newhostname不重复_下线.txt | grep -v "^$"`
-        curl -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】设备【下线】offline" -d "&desp=${content}" &
+        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】设备【下线】offline" -d "&desp=${content}" &
         logger -t "【微信推送】" "PDCN设备【下线】:${content}"
         cat /tmp/var/newhostname.txt | grep -v "^$" > /etc/storage/hostname_上线.txt
     fi
@@ -304,7 +304,7 @@ if [ "$serverchan_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/osub
         content="新的固件： `cat /tmp/var/nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/osub | grep -v "^$"` "
         logger -t "【微信推送】" "固件 新的更新：${content}"
-        curl -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】固件更新提醒" -d "&desp=${content}" &
+        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】固件更新提醒" -d "&desp=${content}" &
         echo -n `cat /tmp/var/nsub | grep -v "^$"` > /tmp/var/osub
     fi
 fi

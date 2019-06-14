@@ -268,9 +268,9 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 				[ "$?" == "0" ] && check=200 || check=404
 			fi
 		else
-			check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			check=`curl -L -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			[ "$check" != "200" ] &&  sleep 1
-			[ "$check" != "200" ] && check=`curl -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			[ "$check" != "200" ] && check=`curl -L -k -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 		fi
 	fi
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then

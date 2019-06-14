@@ -68,7 +68,7 @@ if [ "$A_restart" != "$B_restart" ] ; then
 	dns_com_pod_user_token=""
 fi
 if [ "x${dns_com_pod_user_token}" = "x" ] ; then # undefine token
-	user_token=`curl -k -X POST https://api.dnspod.com/Auth -d 'login_email='"$dns_com_pod_username"'&login_password='"$dns_com_pod_password"'&format=json'`
+	user_token=`curl -L -k -X POST https://api.dnspod.com/Auth -d 'login_email='"$dns_com_pod_username"'&login_password='"$dns_com_pod_password"'&format=json'`
 	dns_com_pod_user_token="$(echo $user_token  | grep -Eo '"user_token":"[^"]*"' | cut -d':' -f2 | tr -d '"')"
 	if [ "x${dns_com_pod_user_token}" = "x" ] ; then # undefine token
 		# 输出错误信息
@@ -241,7 +241,7 @@ arApiPost() {
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		wget --quiet --no-check-certificate --output-document=- --post-data $param $inter
 	else
-		curl -k -X POST $inter -d $param
+		curl -L -k -X POST $inter -d $param
 	fi
 }
 
@@ -331,9 +331,9 @@ arDdnsCheck() {
 			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net/" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 		else
-			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 		fi
 		if [ "$hostIP"x = "x"  ] ; then
@@ -392,9 +392,9 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
     #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
 else
     #curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-    curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-    #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-    #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    curl -L -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    #curl -L -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    #curl -L -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
 fi
 }
 arIpAddress6 () {

@@ -142,7 +142,7 @@ if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	rm -f /tmp/ss/link/0_link.txt
-	curl -k --user-agent 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36' -o /tmp/ss/link/0_link.txt "$ssr_link_i"
+	curl -L -k --user-agent 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36' -o /tmp/ss/link/0_link.txt "$ssr_link_i"
 fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	logger -t "【SS】" "$ssr_link_i"

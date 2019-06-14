@@ -175,7 +175,7 @@ fi
 Zone_ID=""
 get_Zone_ID() {
 # 获得Zone_ID
-Zone_ID=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones" \
+Zone_ID=$(curl -L -k -s -X GET "https://api.cloudflare.com/client/v4/zones" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
@@ -205,7 +205,7 @@ esac
 # 获得Zone_ID
 get_Zone_ID
 # 获得最后更新IP
-recordIP=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
+recordIP=$(curl -L -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
@@ -217,7 +217,7 @@ if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 	for Delete_RECORD_ID in $RECORD_ID
 	do
 	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 删除名称重复的子域名！ID: $Delete_RECORD_ID"
-	RESULT=$(curl -k -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
+	RESULT=$(curl -L -k -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
@@ -321,7 +321,7 @@ while [ "$RECORD_ID" = "" ] ; do
 # 获得Zone_ID
 get_Zone_ID
 # 获得记录ID
-RECORD_ID=$(curl -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
+RECORD_ID=$(curl -L -k -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
@@ -332,7 +332,7 @@ if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 	for Delete_RECORD_ID in $RECORD_ID
 	do
 	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 删除名称重复的子域名！ID: $Delete_RECORD_ID"
-	RESULT=$(curl -k -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
+	RESULT=$(curl -L -k -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
@@ -344,7 +344,7 @@ sleep 1
 done
 if [ "$RECORD_ID" = "" ] ; then
 	# 添加子域名记录IP
-	RESULT=$(curl -k -s -X POST "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
+	RESULT=$(curl -L -k -s -X POST "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json" \
@@ -353,7 +353,7 @@ if [ "$RECORD_ID" = "" ] ; then
 	echo "创建dns_records: $RESULT"
 else
 	# 更新记录IP
-	RESULT=$(curl -k -s -X PUT "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$RECORD_ID" \
+	RESULT=$(curl -L -k -s -X PUT "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$RECORD_ID" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json" \
@@ -392,9 +392,9 @@ arDdnsCheck() {
 			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 			[ "$hostIP"x = "x"  ] && hostIP=`wget --no-check-certificate --quiet --output-document=- "https://www.ipip.net/" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 		else
-			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
-			[ "$hostIP"x = "x"  ] && hostIP=`curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
+			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 			[ "$hostIP"x = "x"  ] && hostIP=`curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1`
 		fi
 		if [ "$hostIP"x = "x"  ] ; then
@@ -461,9 +461,9 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
     #wget --no-check-certificate --quiet --output-document=- "ip.3322.net" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
 else
     #curl -L -k -s "https://www.ipip.net" | grep "IP地址" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-    curl -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-    #curl -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
-    #curl -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    curl -L -k -s "http://members.3322.org/dyndns/getip" | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    #curl -L -k -s ip.6655.com/ip.aspx | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
+    #curl -L -k -s ip.3322.net | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
 fi
 }
 arIpAddress6 () {
