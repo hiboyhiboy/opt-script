@@ -238,7 +238,7 @@ sleep 4
 [ -z "`pidof cryfs`" ] && logger -t "【cryfs】" "启动失败, 注意检查密码是否有错误,程序是否下载完整,30 秒后自动尝试重新启动" && sleep 30 && cryfs_restart x
 set_app_list_on
 [ ! -z "`pidof cryfs`" ] && logger -t "【cryfs】" "启动成功" && cryfs_restart o
-[ "$cryfs_key_enable" != "1" ] && cryfs_get_status
+[ "$cryfs_key_enable" != "1" ] && cryfs_pass=`nvram get app_63` && cryfs_get_status
 eval "$scriptfilepath keep &"
 exit 0
 
