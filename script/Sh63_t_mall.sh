@@ -180,7 +180,7 @@ app_14="/etc/storage/app_14.sh"
 if [ ! -f "$app_14" ] || [ ! -s "$app_14" ] ; then
 	cat > "$app_14" <<-\EEE
 #!/bin/sh
-#copyright by hiboy 此脚本路径：/etc/storage/app_14.sh
+# 此脚本路径：/etc/storage/app_14.sh
 [ "POST" = "$REQUEST_METHOD" -a -n "$CONTENT_LENGTH" ] && read -n "$CONTENT_LENGTH" POST_DATA
 POST_DATA2=$(echo "$POST_DATA" | sed "s/\///g" | sed "s/[[:space:]]//g" | grep -o "\"intentName\":\".*\"," | awk -F : '{print $2}'| awk -F , '{print $1}' | sed -e 's@"@@g')
 REPLY_DATA="好的"

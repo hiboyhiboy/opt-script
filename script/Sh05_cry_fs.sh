@@ -1,0 +1,377 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+cryfs_enable=`nvram get app_61`
+[ -z $cryfs_enable ] && cryfs_enable=0 && nvram set app_61=0
+cryfs_key_enable=`nvram get app_62`
+[ -z $cryfs_key_enable ] && cryfs_key_enable=0 && nvram set app_62=0
+cryfs_pass=`nvram get app_63`
+if [ "$cryfs_enable" != "0" ] ; then
+#nvramshow=`nvram showall | grep '=' | grep cryfs | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
+
+cryfs_renum=`nvram get cryfs_renum`
+cryfs_renum=${cryfs_renum:-"0"}
+
+upPassword=""
+
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="cryfs"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$cryfs_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
+
+fi
+
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cry_fs)" ]  && [ ! -s /tmp/script/_app15 ]; then
+	mkdir -p /tmp/script
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app14
+	chmod 777 /tmp/script/_app14
+fi
+
+cryfs_restart () {
+
+relock="/var/lock/cryfs_restart.lock"
+if [ "$1" = "o" ] ; then
+	nvram set cryfs_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【cryfs】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	cryfs_renum=${cryfs_renum:-"0"}
+	cryfs_renum=`expr $cryfs_renum + 1`
+	nvram set cryfs_renum="$cryfs_renum"
+	if [ "$cryfs_renum" -gt "2" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【cryfs】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get cryfs_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set cryfs_renum="0"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set cryfs_status=0
+eval "$scriptfilepath &"
+exit 0
+}
+
+cryfs_get_status () {
+
+A_restart=`nvram get cryfs_status`
+B_restart="$cryfs_enable$cryfs_key_enable$cryfs_pass$(cat /etc/storage/app_17.sh /etc/storage/app_18.sh | grep -v '^#' | grep -v "^$")"
+B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+if [ "$A_restart" != "$B_restart" ] ; then
+	nvram set cryfs_status=$B_restart
+	needed_restart=1
+else
+	needed_restart=0
+fi
+}
+
+cryfs_check () {
+
+cryfs_get_status
+if [ "$cryfs_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
+	[ ! -z "$(ps -w | grep "cryfs" | grep -v grep )" ] && logger -t "【cryfs】" "停止 cryfs" && cryfs_close
+	{ kill_ps "$scriptname" exit0; exit 0; }
+fi
+if [ "$cryfs_enable" = "1" ] ; then
+	if [ "$needed_restart" = "1" ] ; then
+		cryfs_close
+		cryfs_start
+	else
+		[ "$cryfs_enable" = "1" ] && [ -z "$(ps -w | grep "cryfs" | grep -v grep )" ] && cryfs_restart
+	fi
+fi
+}
+
+cryfs_keep () {
+logger -t "【cryfs】" "守护进程启动"
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【cryfs】|^$/d' /tmp/script/_opt_script_check
+if [ "$cryfs_enable" = "1" ] ; then
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	[ -z "\`pidof cryfs\`" ] || [ ! -s "/opt/bin/cryfs" ] && nvram set cryfs_status=00 && logger -t "【cryfs】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【cryfs】|^$/d' /tmp/script/_opt_script_check # 【cryfs】
+OSC
+fi
+return
+fi
+
+while true; do
+if [ "$cryfs_enable" = "1" ] ; then
+	if [ -z "`pidof cryfs`" ] || [ ! -s "`which cryfs`" ] ; then
+		logger -t "【cryfs】" "cryfs重新启动"
+		cryfs_restart
+	fi
+fi
+	sleep 205
+done
+}
+
+cryfs_close () {
+sed -Ei '/【cryfs】|^$/d' /tmp/script/_opt_script_check
+killall cryfs app_18.sh
+killall -9 cryfs app_18.sh
+kill_ps "/tmp/script/_app15"
+kill_ps "_cry_fs.sh"
+kill_ps "$scriptname"
+}
+
+cryfs_start () {
+
+ss_opt_x=`nvram get ss_opt_x`
+upanPath=""
+[ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ "$ss_opt_x" = "4" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+[ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
+if [ "$ss_opt_x" = "5" ] ; then
+	# 指定目录
+	opt_cifs_dir=`nvram get opt_cifs_dir`
+	if [ -d $opt_cifs_dir ] ; then
+		upanPath="$opt_cifs_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定目录 $opt_cifs_dir"
+	fi
+fi
+if [ "$ss_opt_x" = "6" ] ; then
+	opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
+	# 远程共享
+	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
+		upanPath="$opt_cifs_2_dir"
+	else
+		logger -t "【opt】" "错误！未找到指定远程共享目录 $opt_cifs_2_dir"
+	fi
+fi
+echo "$upanPath"
+if [ -z "$upanPath" ] ; then 
+	logger -t "【cryfs】" "未挂载储存设备, 请重新检查配置、目录，10 秒后自动尝试重新启动"
+	sleep 10
+	cryfs_restart x
+	exit 0
+fi
+set_app_list_off
+SVC_PATH=/opt/bin/cryfs
+chmod 777 "$SVC_PATH"
+if [ ! -s "$SVC_PATH" ] ; then
+	logger -t "【cryfs】" "找不到 $SVC_PATH，安装 opt 程序"
+	/tmp/script/_mountopt optwget
+fi
+if [ ! -s "$SVC_PATH" ] ; then
+	logger -t "【cryfs】" "找不到 $SVC_PATH，opkg install cryfs 安装程序"
+	opkg update
+	opkg install cryfs
+	if [ ! -s "$SVC_PATH" ] ; then
+		logger -t "【cryfs】" "找不到 $SVC_PATH ，需要手动安装 opkg install cryfs"
+		logger -t "【cryfs】" "启动失败, 30 秒后自动尝试重新启动" && sleep 30 && cryfs_restart x
+	else
+		logger -t "【cryfs】" "找到 $SVC_PATH"
+		logger -t "【cryfs】" "由于 opt 文件有更新，需进行 libmd5_备份（耗时15分钟）"
+		/tmp/script/_mountop libmd5_backup
+	fi
+else
+	logger -t "【cryfs】" "找到 $SVC_PATH"
+	chmod 755 $SVC_PATH
+fi
+if [ "$cryfs_key_enable" = "2" ] && [ -z "$cryfs_pass" ] ; then
+	logger -t "【cryfs】" "使用 tgbot 获取密码"
+	tgbot_sckey=`nvram get app_48`
+	tgbot_id=`nvram get app_47`
+	# 获取上次输入命令 update_id
+	getUpdates="$(curl -L -s https://api.telegram.org/bot$tgbot_sckey/getUpdates)"
+	if [ ! -z "$getUpdates" ] ; then
+	update_id="$(echo $getUpdates| sed -e "s/update_id/"' \n '"update_id/g" | grep \"id\":$tgbot_id.*\"text\":\".*\" | grep -Eo update_id\":[0-9]* | grep -Eo [0-9]* | tail -n1)"
+	update_id=`expr $update_id + 1`
+	# 发送信息
+	logger -t "【cryfs】" "请在打开 Telegram 在 bot 回复输入密码：仅支持[a-zA-B0-9]范围的字符"
+	curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【cryfs】输入密码：仅支持[a-zA-B0-9]范围的字符""`echo -e " \n "`""Password:"
+	reup=1
+	upPassword=""
+	while [ "$upPassword" = "" ] && [ "$reup" -lt "9" ];
+	do
+	# 等待密码返回
+	sleep 20 ; reup=`expr $reup + 1`
+	getUpdates="$(curl -L -s https://api.telegram.org/bot$tgbot_sckey/getUpdates?offset=$update_id)"
+	upPassword="$(echo $getUpdates| sed -e "s/message_id/"' \n '"/g" | grep -Eo \"id\":$tgbot_id.*\"text\":\".*\" | grep -Eo \"text\":\"[a-zbA-Z0-9]*\" | cut -d':' -f2 | tr -d '"'| tail -n1)"
+	done
+	if [ ! -z "$upPassword" ] ; then
+		logger -t "【cryfs】" "使用 tgbot 获取密码成功！"
+		cryfs_pass="$upPassword"
+		# 删除 bot 的密码记录
+		message_id="$(echo $getUpdates| sed -e "s/update_id/"' \n '"update_id/g" | grep \"id\":$tgbot_id.*\"text\":\".*\" | grep $upPassword | grep -Eo \"message_id\":[0-9]* | grep -Eo [0-9]*)" #| tail -n1
+		for message_id_i in $message_id
+		do
+			curl -L -s "https://api.telegram.org/bot$tgbot_sckey/deleteMessage?chat_id=$tgbot_id" --data-binary "&message_id=$message_id_i"
+		done
+		# 发送信息
+		curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【cryfs】获取密码成功！"
+	else
+		logger -t "【cryfs】" "使用 tgbot 获取密码失败！"
+		
+	fi
+	fi
+fi
+if [ "$cryfs_key_enable" = "1" ] ; then
+	logger -t "【cryfs】" "使用本地保存密码，有信息泄露的风险！"
+fi
+if [ "$cryfs_key_enable" != "1" ] ; then
+	logger -t "【cryfs】" "使用手动输入密码，删除本地密码记录！"
+	nvram set app_63=""
+fi
+if [ -z "$cryfs_pass" ] ; then
+	logger -t "【cryfs】" "找不到密码 ，需要手动输入密码"
+	logger -t "【cryfs】" "启动失败, 60 秒后自动尝试重新启动" && sleep 60 && cryfs_restart x
+fi
+logger -t "【cryfs】" "运行 /etc/storage/app_18.sh"
+eval "/etc/storage/app_18.sh $cryfs_pass $cmd_log"
+sleep 4
+[ -z "`pidof cryfs`" ] && logger -t "【cryfs】" "启动失败, 注意检查密码是否有错误,程序是否下载完整,30 秒后自动尝试重新启动" && sleep 30 && cryfs_restart x
+set_app_list_on
+[ ! -z "`pidof cryfs`" ] && logger -t "【cryfs】" "启动成功" && cryfs_restart o
+[ "$cryfs_key_enable" != "1" ] && cryfs_get_status
+eval "$scriptfilepath keep &"
+exit 0
+
+}
+
+initopt () {
+optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
+[ ! -z "$optPath" ] && return
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+fi
+
+}
+
+initconfig () {
+
+app_17="/etc/storage/app_17.sh"
+if [ ! -f "$app_17" ] || [ ! -s "$app_17" ] ; then
+	cat > "$app_17" <<-\EEE
+# 待 cryfs 正常启动后开始运行的脚本；可选项：删除前面的#可生效
+/etc/storage/script/Sh52_sync_thing.sh
+#/etc/storage/script/Sh54_file_manager.sh
+/etc/storage/script/Sh55_very_sync.sh
+#/etc/storage/script/Sh61_lnmp.sh
+EEE
+	chmod 755 "$app_17"
+fi
+
+app_18="/etc/storage/app_18.sh"
+if [ ! -f "$app_18" ] || [ ! -s "$app_18" ] ; then
+	cat > "$app_18" <<-\EEE
+#!/bin/sh
+export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
+export LD_LIBRARY_PATH=/lib:/opt/lib
+# 加密数据存储在 /tmp/AiDisk_00/lockdir_cryfsdata 路径中
+# 启动 cryfs 后可以使用 /tmp/AiDisk_00/lockdir 路径防止硬盘盗窃导致的数据泄露
+# 注意事项: 启动前需加密使用的文件夹要为空；启动前需手动在ssh终端运行命令初始化配置。
+if [ ! -f "/tmp/AiDisk_00/lockdir_cryfsdata/cryfs.config" ] ; then
+    logger -t "【cryfs】" "启动前需手动在ssh终端运行命令初始化配置 cryfs /tmp/AiDisk_00/lockdir_cryfsdata /tmp/AiDisk_00/lockdir" ; sleep 120 ;
+fi
+killall cryfs
+modprobe fuse
+CRYFS_NO_UPDATE_CHECK=true
+CRYFS_LOCAL_STATE_DIR=/opt/bin/cryfs
+CRYFS_FRONTEND=noninteractive
+cryfs_pass=$1
+fusermount -u /tmp/AiDisk_00/lockdir
+echo $cryfs_pass | cryfs /tmp/AiDisk_00/lockdir_cryfsdata /tmp/AiDisk_00/lockdir
+
+
+EEE
+
+fi
+
+grep -v '^#' /etc/storage/app_17.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/cryfs_app_list.txt
+
+}
+
+initconfig
+
+set_app_list_off () {
+
+# 待 cryfs 正常启动后开始运行的脚本
+while read line
+do
+logger -t "【cryfs】" "停止启动：$line"
+[ -f "$line" ] && sed -e 's/^#copyright by hiboy/exit #copyright by hiboy/g' -i $line # 停止启动
+done < /tmp/cryfs_app_list.txt
+
+}
+
+set_app_list_on () {
+
+# 待 cryfs 正常启动后开始运行的脚本
+cryfs_renum=`nvram get cryfs_renum`
+while read line
+do
+logger -t "【cryfs】" "恢复启动：$line"
+[ -f "$line" ] && sed -e 's/^exit #copyright by hiboy/#copyright by hiboy/g' -i $line # 恢复启动
+[ -f "$line" ] && [ "$cryfs_renum" -gt "0" ] && { logger -t "【cryfs】" "启动脚本：$line" ; eval $line ; }
+done < /tmp/cryfs_app_list.txt
+
+}
+
+update_app () {
+
+mkdir -p /opt/app/cryfs
+if [ "$1" = "del" ] ; then
+	rm -rf /opt/app/cryfs/Advanced_Extensions_cryfs.asp
+	opkg update
+	opkg install cryfs
+	logger -t "【cryfs】" "由于 opt 文件有更新，需进行 libmd5_备份（耗时15分钟）"
+	/tmp/script/_mountop libmd5_backup
+fi
+
+initconfig
+
+# 加载程序配置页面
+if [ ! -f "/opt/app/cryfs/Advanced_Extensions_cryfs.asp" ] || [ ! -s "/opt/app/cryfs/Advanced_Extensions_cryfs.asp" ] ; then
+	wgetcurl.sh /opt/app/cryfs/Advanced_Extensions_cryfs.asp "$hiboyfile/Advanced_Extensions_cryfsasp" "$hiboyfile2/Advanced_Extensions_cryfsasp"
+fi
+umount /www/Advanced_Extensions_app15.asp
+mount --bind /opt/app/cryfs/Advanced_Extensions_cryfs.asp /www/Advanced_Extensions_app15.asp
+# 更新程序启动脚本
+
+[ "$1" = "del" ] && /etc/storage/www_sh/cryfs del &
+}
+
+case $ACTION in
+start)
+	cryfs_close
+	cryfs_check
+	;;
+check)
+	cryfs_check
+	;;
+stop)
+	cryfs_close
+	;;
+updateapp15)
+	cryfs_restart o
+	[ "$cryfs_enable" = "1" ] && nvram set cryfs_status="updatecryfs" && logger -t "【cryfs】" "重启" && cryfs_restart
+	[ "$cryfs_enable" != "1" ] && nvram set cryfs_v="" && logger -t "【cryfs】" "更新" && update_app del
+	;;
+update_app)
+	update_app
+	;;
+keep)
+	#cryfs_check
+	cryfs_keep
+	;;
+*)
+	cryfs_check
+	;;
+esac
+
