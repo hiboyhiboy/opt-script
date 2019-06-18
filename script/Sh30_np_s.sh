@@ -154,7 +154,8 @@ if [ -z "$nps_version" ] ; then
 	nps_tag="$( wget --max-redirect=0  https://github.com/cnlh/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
 	[ -z "$nps_tag" ] && nps_tag="$( wget --no-check-certificate --quiet --output-document=-  https://github.com/cnlh/nps/releases/latest  2>&1 | grep '<a href="/cnlh/nps/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
 	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.23.1]" && nps_restart x
-	logger -t "【nps】" "自动下载最新版本 $nps_tag"
+	[ ! -z "$nps_tag" ] && logger -t "【nps】" "自动下载最新版本 $nps_tag"
+	[ -z "$nps_tag" ] && nps_tag="v0.23.1"
 	nps_version=$nps_tag && nvram set app_57=$nps_tag
 	nps_restart o
 	logger -t "【nps】" "重启" && nps_restart
@@ -168,9 +169,13 @@ if [ ! -z "$action_nps" ] && [ -s "/opt/bin/nps/$action_nps" ] ; then
 	sleep 2
 	killall $action_nps
 	nps_ver="$(cat /tmp/nps_v.txt | grep version | awk -F ',' '{print $1}'  | awk -F ' ' '{print $NF}')"
+	if [ "$nps_ver" = "" ] ; then
+		logger -t "【nps】" "$action_nps 当前版本 $nps_ver ,获取失败，请手动检查版本是否和服务器匹配!"
+	else
 	if [ v"$nps_ver" != "$nps_version" ] ; then
 		logger -t "【nps】" "$action_nps 当前版本 $nps_ver ,需要安装 $nps_version ,自动重新下载"
 		[ -s "/opt/bin/nps/$action_nps" ] && rm -f /opt/bin/nps/$action_nps
+	fi
 	fi
 fi
 done
@@ -339,10 +344,11 @@ update_app () {
 
 mkdir -p /opt/app/nps
 if [ "$1" = "del" ] ; then
+	nvram set app_57=""
 	rm -rf /opt/app/nps/Advanced_Extensions_nps.asp
-	rm -rf /opt/bin/nps/nps /opt/bin/nps/npc /opt/bin/nps/web
-	rm -f /opt/bin/nps/npc.conf /opt/bin/nps/linux_mipsle_client.tar.gz
-	rm -f /opt/bin/nps/conf /opt/bin/nps/linux_mipsle_server.tar.gz
+	rm -rf /opt/bin/nps/web /opt/bin/nps/conf
+	rm -f /opt/bin/nps/linux_mipsle_client.tar.gz /opt/bin/nps/linux_mipsle_server.tar.gz
+	rm -f /opt/bin/nps/npc.conf /opt/bin/nps/npc /opt/bin/nps/nps
 fi
 
 initconfig

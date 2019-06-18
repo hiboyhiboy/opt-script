@@ -1,5 +1,5 @@
 #!/bin/bash
-
+NEW_VER_version="v0.23.1"
 # This file is accessible as https://install.direct/go.sh
 # Original source is located at github.com/nps/nps-core/release/install-release.sh
 # https://github.com/nps/nps-core/blob/master/release/install-release.sh
@@ -281,6 +281,9 @@ getVersion(){
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep releases/tag | awk -F 'tag/' '{print $NF}' | awk -F '"' '{print $1}'`
         if [[ $NEW_VER == "" ]];then
             NEW_VER="$(wget --max-redirect=0 https://github.com/cnlh/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}')"
+        fi
+        if [[ $NEW_VER == "" ]];then
+            NEW_VER="$NEW_VER_version"
         fi
         if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
             colorEcho ${RED} "Failed to fetch release information. Please check your network or try again."

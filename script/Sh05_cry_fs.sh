@@ -120,6 +120,7 @@ done
 
 cryfs_close () {
 sed -Ei '/【cryfs】|^$/d' /tmp/script/_opt_script_check
+set_app_list_stop
 killall cryfs app_18.sh
 killall -9 cryfs app_18.sh
 kill_ps "/tmp/script/_app15"
@@ -323,6 +324,18 @@ done < /tmp/cryfs_app_list.txt
 
 }
 
+set_app_list_stop () {
+
+# 在 cryfs 正常停止前需要停止的脚本
+cryfs_renum=`nvram get cryfs_renum`
+while read line
+do
+logger -t "【cryfs】" "停止脚本：$line"
+[ -f "$line" ] && eval $line stop
+[ -f "$line" ] && [ "$cryfs_renum" -gt "0" ] && { logger -t "【cryfs】" "停止脚本：$line" ; eval $line ; }
+done < /tmp/cryfs_app_list.txt
+
+}
 update_app () {
 
 mkdir -p /opt/app/cryfs
