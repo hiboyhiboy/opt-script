@@ -194,7 +194,7 @@ if [ ! -z "$action_nps" ] ; then
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "npc" ] ; then
 		logger -t "【nps】" "找不到 $SVC_PATH 下载程序"
 		nps_ver_wget="https://github.com/cnlh/nps/releases/download/$nps_version/linux_mipsle_client.tar.gz"
-		/opt/wgetcurl.sh /opt/bin/nps/linux_mipsle_client.tar.gz "$nps_ver_wget"
+		wgetcurl.sh /opt/bin/nps/linux_mipsle_client.tar.gz "$nps_ver_wget"
 		tar -xz -C /opt/bin/nps -f /opt/bin/nps/linux_mipsle_client.tar.gz
 		rm -f /opt/bin/nps/npc.conf /opt/bin/nps/linux_mipsle_client.tar.gz
 	fi
@@ -202,7 +202,7 @@ if [ ! -z "$action_nps" ] ; then
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "nps" ] ; then
 		logger -t "【nps】" "找不到 $SVC_PATH 下载程序"
 		nps_ver_wget="https://github.com/cnlh/nps/releases/download/$nps_version/linux_mipsle_server.tar.gz"
-		/opt/wgetcurl.sh /opt/bin/nps/linux_mipsle_server.tar.gz "$nps_ver_wget"
+		wgetcurl.sh /opt/bin/nps/linux_mipsle_server.tar.gz "$nps_ver_wget"
 		rm -f /opt/bin/nps/conf/nps.conf
 		tar -xz -C /opt/bin -f /opt/bin/nps/linux_mipsle_server.tar.gz
 		rm -f /opt/bin/nps/conf/nps.conf /opt/bin/nps/linux_mipsle_server.tar.gz
