@@ -141,6 +141,7 @@ kill_ps "$scriptname"
 }
 
 cow_start () {
+check_webui_yes
 SVC_PATH="$cow_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/cow"

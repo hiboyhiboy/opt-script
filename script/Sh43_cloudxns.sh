@@ -139,6 +139,7 @@ kill_ps "$scriptname"
 }
 
 cloudxns_start () {
+check_webui_yes
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	logger -t "【CloudXNS动态域名】" "找不到 curl ，安装 opt 程序"

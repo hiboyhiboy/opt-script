@@ -144,6 +144,7 @@ kill_ps "$scriptname"
 }
 
 nps_start () {
+check_webui_yes
 mkdir -p /opt/bin/nps
 nps_ver_wget=""
 action_for=""
@@ -346,9 +347,9 @@ mkdir -p /opt/app/nps
 if [ "$1" = "del" ] ; then
 	nvram set app_57=""
 	rm -rf /opt/app/nps/Advanced_Extensions_nps.asp
-	rm -rf /opt/bin/nps/web /opt/bin/nps/conf
-	rm -f /opt/bin/nps/linux_mipsle_client.tar.gz /opt/bin/nps/linux_mipsle_server.tar.gz
-	rm -f /opt/bin/nps/npc.conf /opt/bin/nps/npc /opt/bin/nps/nps
+	rm -rf /opt/bin/nps/web /opt/bin/nps/conf /opt/opt_backup/bin/nps/web /opt/opt_backup/bin/nps/conf
+	rm -f /opt/bin/nps/linux_mipsle_client.tar.gz /opt/bin/nps/linux_mipsle_server.tar.gz /opt/opt_backup/bin/nps/linux_mipsle_client.tar.gz /opt/opt_backup/bin/nps/linux_mipsle_server.tar.gz
+	rm -f /opt/bin/nps/npc.conf /opt/bin/nps/npc /opt/bin/nps/nps /opt/opt_backup/bin/nps/npc /opt/opt_backup/bin/nps/nps
 fi
 
 initconfig

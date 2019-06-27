@@ -134,6 +134,7 @@ kill_ps "$scriptname"
 }
 
 softether_start () {
+check_webui_yes
 SVC_PATH="$softether_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/softether/vpnserver"

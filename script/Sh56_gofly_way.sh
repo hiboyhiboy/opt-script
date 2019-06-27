@@ -123,6 +123,7 @@ kill_ps "$scriptname"
 
 goflyway_start () {
 
+check_webui_yes
 SVC_PATH="/opt/bin/goflyway"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【goflyway】" "找不到 $SVC_PATH，安装 opt 程序"
@@ -228,6 +229,7 @@ if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/goflyway/Advanced_Extensions_goflyway.asp
 	[ -f /opt/bin/goflyway ] && rm -f /opt/bin/goflyway /opt/bin/chinalist.txt /etc/storage/app_7.sh
 	[ -f "$capem_s_path" ] && rm -f  "$keypem_s_path" "$capem_s_path" "$keypem_path" "$capem_path"
+	rm -f /opt/opt_backup/bin/goflyway /opt/opt_backup/bin/key.pem /opt/opt_backup/bin/ca.pem
 
 fi
 

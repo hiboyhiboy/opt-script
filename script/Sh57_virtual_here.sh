@@ -122,6 +122,7 @@ kill_ps "$scriptname"
 
 virtualhere_start () {
 
+check_webui_yes
 SVC_PATH="/opt/bin/virtualhere"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【virtualhere】" "找不到 $SVC_PATH，安装 opt 程序"
@@ -200,7 +201,7 @@ update_app () {
 mkdir -p /opt/app/virtualhere
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp
-	[ -f /opt/bin/virtualhere ] && rm -f /opt/bin/virtualhere
+	[ -f /opt/bin/virtualhere ] && rm -f /opt/bin/virtualhere /opt/opt_backup/bin/virtualhere
 fi
 
 initconfig

@@ -136,6 +136,7 @@ kill_ps "$scriptname"
 }
 
 ngrok_start () {
+check_webui_yes
 SVC_PATH="/usr/bin/ngrokc"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/ngrokc"

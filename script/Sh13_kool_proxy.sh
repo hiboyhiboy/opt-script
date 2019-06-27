@@ -141,7 +141,7 @@ fi
 export PATH='/tmp/7620koolproxy:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 chmod 777 /tmp/7620koolproxy/koolproxy
 mkdir -p /tmp/7620koolproxy/data/
-[[ "$(/tmp/7620koolproxy/koolproxy -h | wc -l)" -lt 2 ]] && rm -rf /tmp/7620koolproxy/*
+[[ "$(/tmp/7620koolproxy/koolproxy -h | wc -l)" -lt 2 ]] && rm -rf /tmp/7620koolproxy/koolproxy
 }
 
 koolproxy_restart () {
@@ -400,6 +400,7 @@ kill_ps "$scriptname"
 }
 
 koolproxy_start () {
+check_webui_yes
 nvram set button_script_1_s="KP"
 /etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
 if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
@@ -1080,7 +1081,7 @@ C)
 	;;
 update_ad)
 	koolproxy_mount
-	rm -rf /tmp/7620koolproxy/*
+	rm -rf /tmp/7620koolproxy/koolproxy
 	koolproxy_restart o
 	koolproxy_restart
 	;;

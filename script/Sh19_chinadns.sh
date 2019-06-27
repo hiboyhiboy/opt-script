@@ -168,6 +168,7 @@ kill_ps "$scriptname"
 }
 
 chinadns_start () {
+check_webui_yes
 SVC_PATH="$chinadns_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/chinadns"
@@ -254,7 +255,7 @@ fi
 
 update_app () {
 if [ "$1" = "del" ] ; then
-	rm -rf $chinadns_path /opt/app/chinadns/Advanced_Extensions_chinadns.asp /opt/app/chinadns/chinadns_iplist.txt
+	rm -rf $chinadns_path /opt/opt_backup/bin/chinadns /opt/app/chinadns/Advanced_Extensions_chinadns.asp /opt/app/chinadns/chinadns_iplist.txt
 fi
 # 加载程序配置页面
 mkdir -p /opt/app/chinadns

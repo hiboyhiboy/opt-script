@@ -54,6 +54,7 @@ kill_ps "$scriptname"
 
 jbls_start () {
 
+check_webui_yes
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="jbls"
 cmd_log=""

@@ -187,6 +187,7 @@ kill_ps "$scriptname"
 
 upd2pro_start () {
 
+check_webui_yes
 optupd2pro="0"
 [ "$upd2pro_enable" = "1" ] && { hash udp2raw 2>/dev/null || optupd2pro="1" ; }
 [ "$upd2pro2_enable" = "1" ] && { hash speeder 2>/dev/null || optupd2pro="2" ; }
@@ -327,13 +328,13 @@ initconfig
 
 update_app () {
 if [ "$1" = "del1" ] ; then
-	rm -rf /etc/storage/app_3.sh /opt/bin/udp2raw /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
+	rm -rf /etc/storage/app_3.sh /opt/bin/udp2raw /opt/opt_backup/bin/udp2raw /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
 fi
 if [ "$1" = "del2" ] ; then
-	rm -rf /etc/storage/app_4.sh /opt/bin/speeder /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
+	rm -rf /etc/storage/app_4.sh /opt/bin/speeder /opt/opt_backup/bin/speeder /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
 fi
 if [ "$1" = "del3" ] ; then
-	rm -rf /etc/storage/app_6.sh /opt/bin/speederv2 /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
+	rm -rf /etc/storage/app_6.sh /opt/bin/speederv2 /opt/opt_backup/bin/speederv2 /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
 fi
 
 initconfig

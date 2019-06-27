@@ -121,6 +121,7 @@ kill_ps "$scriptname"
 }
 
 mproxy_start () {
+check_webui_yes
 SVC_PATH="/usr/sbin/mproxy"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/etc/storage/bin/mproxy"

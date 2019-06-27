@@ -138,6 +138,7 @@ kill_ps "$scriptname"
 
 speedup_start () {
 
+check_webui_yes
 [ -z "$check_Qos" ] && logger -t "【speedup】" "错误！！！【Check代码】未填写" && sleep 10 && exit
 [ -z "$Start_Qos" ] && logger -t "【speedup】" "错误！！！【Start代码】未填写" && sleep 10 && exit
 

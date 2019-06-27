@@ -54,6 +54,7 @@ kill_ps "$scriptname"
 
 kms_start () {
 
+check_webui_yes
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_log=' -l /tmp/vlmcsd.log '
 [ "$cmd_log_enable" = "1" ] && cmd_log=' -v -l syslog '

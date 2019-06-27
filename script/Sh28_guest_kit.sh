@@ -120,6 +120,7 @@ kill_ps "$scriptname"
 
 guestkit_start () {
 
+check_webui_yes
 SVC_PATH="/opt/bin/guestkit"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【guestkit】" "找不到 $SVC_PATH，安装 opt 程序"
@@ -175,7 +176,7 @@ update_app () {
 mkdir -p /opt/app/guestkit
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/guestkit/Advanced_Extensions_guestkit.asp
-	[ -f /opt/bin/guestkit ] && rm -f /opt/bin/guestkit
+	[ -f /opt/bin/guestkit ] && rm -f /opt/bin/guestkit /opt/opt_backup/bin/guestkit
 	rm -f /etc/storage/guestkit_db/*
 fi
 

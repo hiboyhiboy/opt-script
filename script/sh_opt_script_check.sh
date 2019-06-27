@@ -53,5 +53,6 @@ if [ ! -z "$EMI_tmp" ] ; then
 fi
 
 ps -w > /tmp/ps
+[ ! -f /tmp/webui_yes ] &&   exit 0
 
 

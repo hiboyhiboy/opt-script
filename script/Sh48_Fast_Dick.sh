@@ -118,6 +118,7 @@ kill_ps "$scriptname"
 
 
 FastDick_start () {
+check_webui_yes
 logger -t "【迅雷快鸟】" "迅雷快鸟(diǎo)路由器版:https://github.com/fffonion/Xunlei-FastDick"
 if [ "$FastDicks" = "2" ] ; then
 	logger -t "【迅雷快鸟】" "稍等几分钟，ssh 到路由，控制台输入【ps】命令查看[/etc/storage/FastDick_script.sh]进程是否存在，是否正常启动，提速是否成功。"

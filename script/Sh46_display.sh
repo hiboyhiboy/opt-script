@@ -74,6 +74,7 @@ exit 0
 
 display_get_status () {
 
+[ ! -f /etc/storage/display_lcd4linux_script.sh ] && touch /etc/storage/display_lcd4linux_script.sh
 A_restart=`nvram get display_status`
 B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -151,6 +152,7 @@ kill_ps "$scriptname"
 }
 
 display_start () {
+check_webui_yes
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
 [ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"

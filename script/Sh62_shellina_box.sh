@@ -153,6 +153,7 @@ kill_ps "$scriptname"
 }
 
 shellinabox_start () {
+check_webui_yes
 if [ "$shellinabox_enable" = "2" ] ; then
 hash ttyd 2>/dev/null || { logger -t "$shell_log" "找不到 ttyd，尝试启动shellinaboxd"; nvram set shellinabox_enable=1; shellinabox_restart ; }
 eval "ttyd --port $shellinabox_port $shellinabox_options_ttyd $cmd_log" &

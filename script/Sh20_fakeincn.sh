@@ -151,6 +151,7 @@ kill_ps "$scriptname"
 
 fakeincn_start () {
 
+check_webui_yes
 optssredir="0"
 # SS
 chmod 777 "/usr/sbin/ss-redir"

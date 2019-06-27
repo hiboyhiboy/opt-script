@@ -167,6 +167,7 @@ kill_ps "$scriptname"
 }
 
 wifidog_start () {
+check_webui_yes
 SVC_PATH=$WD_DIR/wifidog
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/usr/bin/wifidog"

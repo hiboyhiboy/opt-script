@@ -140,6 +140,7 @@ kill_ps "$scriptname"
 }
 
 meow_start () {
+check_webui_yes
 SVC_PATH="$meow_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/meow"

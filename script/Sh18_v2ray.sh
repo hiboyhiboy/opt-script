@@ -246,6 +246,7 @@ fi
 
 v2ray_start () {
 
+check_webui_yes
 if [ "$v2ray_http_enable" = "1" ] && [ -z "$v2ray_http_config" ] ; then
 logger -t "【v2ray】" "错误！配置远程地址 内容为空"
 logger -t "【v2ray】" "请填写配置远程地址！"
@@ -615,7 +616,7 @@ keep)
 updatev2ray)
 	v2ray_restart o
 	[ "$v2ray_enable" = "1" ] && nvram set v2ray_status="updatev2ray" && logger -t "【v2ray】" "重启" && v2ray_restart
-	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path ; rm -f /opt/bin/v2ctl ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat ; rm -f /opt/bin/geosite.dat ; }
+	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ctl /opt/opt_backup/bin/v2ctl ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
 	;;
 initconfig)
 	initconfig

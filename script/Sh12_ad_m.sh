@@ -380,6 +380,7 @@ kill_ps "$scriptname"
 }
 
 adm_start () {
+check_webui_yes
 nvram set button_script_1_s="ADM"
 /etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
 if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then

@@ -144,6 +144,7 @@ kill_ps "$scriptname"
 }
 
 tgbot_start () {
+check_webui_yes
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	logger -t "【tgbot推送】" "找不到 curl ，安装 opt 程序"

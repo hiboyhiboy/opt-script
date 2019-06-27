@@ -113,6 +113,7 @@ kill_ps "$scriptname"
 }
 
 tmall_start () {
+check_webui_yes
 SVC_PATH="/opt/tmall/caddy_tmall"
 mkdir -p "/opt/tmall"
 mkdir -p "/tmp/tmall"

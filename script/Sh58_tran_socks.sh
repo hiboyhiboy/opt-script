@@ -195,6 +195,7 @@ kill_ps "$scriptname"
 
 transocks_start () {
 
+check_webui_yes
 SVC_PATH="/opt/bin/transocks"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【transocks】" "找不到 $SVC_PATH，安装 opt 程序"
@@ -284,7 +285,7 @@ update_app () {
 mkdir -p /opt/app/transocks
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/transocks/Advanced_Extensions_transocks.asp
-	[ -f /opt/bin/transocks ] && rm -f /opt/bin/transocks
+	[ -f /opt/bin/transocks ] && rm -f /opt/bin/transocks /opt/opt_backup/bin/transocks
 fi
 
 initconfig

@@ -158,7 +158,7 @@ kill_ps "$scriptname"
 }
 
 phddns_start () {
-
+check_webui_yes
 SVC_PATH="/usr/bin/oraysl"
 SVC_PATH2="/usr/bin/oraynewph"
 if [ ! -s "$SVC_PATH" ] || [ ! -s "$SVC_PATH2" ] ; then

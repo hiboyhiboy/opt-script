@@ -2242,6 +2242,7 @@ restart_dhcpd
 
 start_SS()
 {
+check_webui_yes
 	logger -t "【SS】" "启动 SS"
 	nvram set ss_internet="2"
 	optssredir="0"
@@ -3229,6 +3230,7 @@ if [ ! -f "$shadowsocks_ss_spec_wan" ] || [ ! -s "$shadowsocks_ss_spec_wan" ] ; 
 WAN@raw.githubusercontent.com
 #WAN+8.8.8.8
 #WAN@www.google.com
+WAN@api.telegram.org
 #WAN!www.baidu.com
 #WAN-223.5.5.5
 #WAN-114.114.114.114
@@ -3381,6 +3383,8 @@ help)
 update_optss)
 	rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local /opt/bin/gq-client
 	rm -f /opt/bin/ss0-redir /opt/bin/ssr0-redir /opt/bin/ss0-local /opt/bin/ssr0-local
+	rm -f /opt/opt_backup/bin/ss-redir /opt/opt_backup/bin/ssr-redir /opt/opt_backup/bin/ss-local /opt/opt_backup/bin/ssr-local /opt/opt_backup/bin/obfs-local /opt/opt_backup/bin/gq-client
+	rm -f /opt/opt_backup/bin/ss0-redir /opt/opt_backup/bin/ssr0-redir /opt/opt_backup/bin/ss0-local /opt/opt_backup/bin/ssr0-local
 	ss_restart o
 	clean_SS
 	exit 0

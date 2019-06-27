@@ -160,6 +160,7 @@ kill_ps "$scriptname"
 }
 
 frp_start () {
+check_webui_yes
 action_for=""
 frp_ver_wget=""
 [ "$frp_version" = "2" ] && frp_ver_wget="0.25.0" && frp_version_txt=$frp_version_2
@@ -331,7 +332,7 @@ initconfig
 update_app () {
 
 if [ "$1" = "del" ] ; then
-	rm -rf /opt/bin/frpc /opt/bin/frps
+	rm -rf /opt/bin/frpc /opt/bin/frps /opt/opt_backup/bin/frpc /opt/opt_backup/bin/frps
 fi
 
 initconfig

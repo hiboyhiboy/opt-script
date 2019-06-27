@@ -159,6 +159,7 @@ kill_ps "$scriptname"
 
 translate_start () {
 
+check_webui_yes
 dir_name="/opt/app/translate/"
 base_name="translate_app_EN.txt"
 if [ ! -s "$dir_name$base_name" ] ; then

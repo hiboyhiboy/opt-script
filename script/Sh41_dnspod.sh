@@ -98,6 +98,7 @@ kill_ps "$scriptname"
 }
 
 dnspod_start () {
+check_webui_yes
 IPv6=0
 if [ "$dnspod_domian"x != "x" ] && [ "$dnspod_host"x != "x" ] ; then
 	DOMAIN="$dnspod_domian"

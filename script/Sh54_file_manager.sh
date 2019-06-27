@@ -195,6 +195,7 @@ exit 0
 
 filebrowser_start () {
 
+check_webui_yes
 filemanager_v=$($SVC_PATH -v | grep version | awk -F 'version' '{print $2;}')
 nvram set filemanager_v="$filemanager_v"
 logger -t "【filemanager】" "运行 filemanager"

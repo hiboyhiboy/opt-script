@@ -129,6 +129,7 @@ kill_ps "$scriptname"
 }
 
 tinyproxy_start () {
+check_webui_yes
 SVC_PATH="$tinyproxy_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/etc/storage/bin/tinyproxy"

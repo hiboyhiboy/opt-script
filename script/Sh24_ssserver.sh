@@ -135,6 +135,7 @@ kill_ps "$scriptname"
 
 ssserver_start () {
 
+check_webui_yes
 SVC_PATH=/usr/sbin/ss-server
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/ss-server"

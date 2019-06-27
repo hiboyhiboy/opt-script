@@ -150,6 +150,7 @@ kill_ps "$scriptname"
 }
 
 xunlei_start () {
+check_webui_yes
 SVC_PATH="$xunleis_dir/xunlei/portal"
 if [ ! -s "$SVC_PATH" ] ; then
 	ss_opt_x=`nvram get ss_opt_x`

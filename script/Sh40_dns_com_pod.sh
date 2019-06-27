@@ -123,6 +123,7 @@ kill_ps "$scriptname"
 }
 
 dns_com_pod_start () {
+check_webui_yes
 IPv6=0
 if [ "$dns_com_pod_domian"x != "x" ] && [ "$dns_com_pod_host"x != "x" ] ; then
 	DOMAIN="$dns_com_pod_domian"

@@ -160,6 +160,7 @@ kill_ps "$scriptname"
 
 kcptun_start () {
 
+check_webui_yes
 SVC_PATH="$kcptun_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/client_linux_mipsle"
@@ -365,7 +366,7 @@ keep)
 updatekcptun)
 	kcptun_restart o
 	[ "$kcptun_enable" = "1" ] && nvram set kcptun_status="updatekcptun" && logger -t "【kcptun】" "重启" && kcptun_restart
-	[ "$kcptun_enable" != "1" ] && [ -f "$kcptun_path" ] && nvram set kcptun_v="" && logger -t "【kcptun】" "更新" && rm -rf $kcptun_path
+	[ "$kcptun_enable" != "1" ] && [ -f "$kcptun_path" ] && nvram set kcptun_v="" && logger -t "【kcptun】" "更新" && rm -rf $kcptun_path /opt/opt_backup/bin/client_linux_mipsle
 	;;
 *)
 	kcptun_check

@@ -57,3 +57,11 @@ if [ -s "$output" ] ; then
 fi
 }
 
+check_webui_yes () {
+
+if [ ! -f /tmp/webui_yes ] ; then
+	logger -t "【webui】" "由于没找到【/tmp/webui_yes】文件，稍等后启动相关设置，如等候时间过长可尝试【重启】或【双清路由】"
+	exit 0
+fi
+}
+
