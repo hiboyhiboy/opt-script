@@ -149,6 +149,9 @@ else
 	logger -t "【ddnsto】" "找到 $SVC_PATH"
 fi
 chmod 755 "$SVC_PATH"
+ddnsto_route_id=$(ddnsto -w | awk '{print $2}')
+nvram set ddnsto_route_id="$ddnsto_route_id"
+[ ! -z $ddnsto_route_id ] && logger -t "【ddnsto】" "路由器ID：【$ddnsto_route_id】；管理控制台 https://www.ddnsto.com/"
 ddnsto_version=$(ddnsto -v)
 nvram set ddnsto_version="$ddnsto_version"
 [ -z $ddnsto_token ] && logger -t "【ddnsto】" "【ddnsto_token】不能为空,启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ddnsto_restart x

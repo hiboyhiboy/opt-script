@@ -610,6 +610,7 @@ logger -t "【libmd5_恢复】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
 /usr/bin/find /opt/opt_backup/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
 /usr/bin/find /opt/opt_backup/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | sort -r  >> /tmp/md5/libmd5f
+/usr/bin/find /opt/opt_backup/etc/init.d/ -perm '-u+x' -name '*' | grep -v "S10iptables" | sort -r  >> /tmp/md5/libmd5f
 while read line
 do
 if [ -f "$line" ] ; then
@@ -642,6 +643,7 @@ logger -t "【libmd5_备份】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
 /usr/bin/find /opt/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
 /usr/bin/find /opt/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | sort -r  >> /tmp/md5/libmd5f
+#/usr/bin/find /opt/etc/init.d/ -perm '-u+x' -name '*' | grep -v "S10iptables" | sort -r  >> /tmp/md5/libmd5f
 while read line
 do
 if [ -f "$line" ] ; then
