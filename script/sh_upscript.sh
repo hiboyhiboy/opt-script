@@ -48,7 +48,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2019-6-28"
+	nvram set scripto="2019-6-29"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -144,9 +144,42 @@ done
 
 }
 
+all_stop () {
+logger -t "【WebUI】" "UI 开关遍历 all_stop"
+rm -f /tmp/webui_yes
+chmod 777 /etc/storage/script -R
+killall menu_title.sh 
+# start all services Sh??_* in /etc/storage/script
+for i in `ls /etc/storage/script/Sh??_* 2>/dev/null` ; do
+	[ ! -x "${i}" ] && continue
+	[ -f /tmp/webui_yes ] && continue
+	eval ${i} stop
+done
+sync;echo 3 > /proc/sys/vm/drop_caches
+}
+
+all_check () {
+logger -t "【WebUI】" "UI 开关遍历 all_check"
+touch /tmp/webui_yes
+sync;echo 3 > /proc/sys/vm/drop_caches;sleep 3;
+/etc/storage/crontabs_script.sh 
+}
+
 case $ACTION in
 check_opt)
 	check_opt
+	;;
+all_check)
+	all_check
+	;;
+all_stop)
+	all_stop
+	;;
+stop)
+	echo "stop"
+	kill_ps "/etc/storage/script/sh_upscript.sh"
+	kill_ps "sh_upscript.sh"
+	kill_ps "$scriptname"
 	;;
 start)
 	#hash daydayup 2>/dev/null && start_upscript_daydayup

@@ -133,16 +133,16 @@ rm -rf /tmp/ss/link
 
 do_link () {
 mkdir -p /tmp/ss/link
-#logger -t "【SS】" "订阅文件下载: $ssr_link_i"
+logger -t "【SS】" "订阅文件下载: $ssr_link_i"
 rm -f /tmp/ss/link/0_link.txt
 wgetcurl.sh /tmp/ss/link/0_link.txt "$ssr_link_i" "$ssr_link_i" N
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	rm -f /tmp/ss/link/0_link.txt
-	wget --no-check-certificate --user-agent "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36" -O /tmp/ss/link/0_link.txt "$ssr_link_i"
+	wget --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -O /tmp/ss/link/0_link.txt "$ssr_link_i"
 fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	rm -f /tmp/ss/link/0_link.txt
-	curl -L -k --user-agent 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.78 Safari/537.36' -o /tmp/ss/link/0_link.txt "$ssr_link_i"
+	curl -L -k --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -o /tmp/ss/link/0_link.txt "$ssr_link_i"
 fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	logger -t "【SS】" "$ssr_link_i"

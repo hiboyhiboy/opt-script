@@ -1,4 +1,4 @@
 #!/bin/sh
 #copyright by hiboy
 # 失效清理
-exit 0
+echo "Sh53_you_ku"

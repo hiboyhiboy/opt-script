@@ -10,6 +10,7 @@ opt_cifs_dir=`nvram get opt_cifs_dir`
 opt_cifs_2_dir=`nvram get opt_cifs_2_dir`
 [ -z $opt_cifs_2_dir ] && opt_cifs_2_dir="/media/cifs" && nvram set opt_cifs_2_dir="$opt_cifs_2_dir"
 opt_cifs_block=`nvram get opt_cifs_block`
+[ "$opt_cifs_block" = "0" ] && opt_cifs_block="1999" && nvram set opt_cifs_block="$opt_cifs_block"
 [ -z $opt_cifs_block ] && opt_cifs_block="1999" && nvram set opt_cifs_block="$opt_cifs_block"
 size_tmpfs=`nvram get size_tmpfs`
 [ -z $size_tmpfs ] && size_tmpfs="0" && nvram set size_tmpfs="$size_tmpfs"
@@ -382,8 +383,9 @@ if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
 	[ -d "$upanPath/opt" ] && mv -f "$upanPath/opt" "$upanPath/opt_old_"$(date "+%Y-%m-%d_%H-%M-%S")
 	[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
 	block="$(check_network 5 $upanPath)"
-	logger -t "【opt】" "路径$upanPath剩余空间：$block M"
-	[ ! -z $block ] && [ "$block" -lt "$opt_cifs_block" ] && opt_cifs_block=$block
+	[ "$block" != "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：$block M"
+	[ "$block" = "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：获取失败"
+	[ "$block" != "0" ] && [ ! -z "$block" ] && [ "$block" -lt "$opt_cifs_block" ] && opt_cifs_block=$block
 	logger -t "【opt】" "创建$upanPath/opt/o_p_t.img镜像(ext4)文件，$opt_cifs_block M"
 	dd if=/dev/zero of=$upanPath/opt/o_p_t.img bs=1M seek=$opt_cifs_block count=0
 	losetup `losetup -f` $upanPath/opt/o_p_t.img
@@ -695,6 +697,12 @@ mount_check_lock
 }
 
 case $ACTION in
+stop)
+	echo "stop"
+	kill_ps "/tmp/script/_mountopt"
+	kill_ps "_mountopt.sh"
+	kill_ps "$scriptname"
+	;;
 start)
 	mount_check
 	[ "$optinstall" = "1" ] && opt_wget
