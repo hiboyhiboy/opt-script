@@ -200,8 +200,8 @@ if [[ $ifhttpheader == 'y' ]];then
             "headers": {
               "Host": ["www.163.com", "www.sogou.com"],
               "User-Agent": [
-                "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36",
-                        "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46"
+                "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36",
+                        "Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/69.0.3497.91 Mobile/15E148 Safari/605.1"
               ],
               "Accept-Encoding": ["gzip, deflate"],
               "Connection": ["keep-alive"],
@@ -237,9 +237,8 @@ else
     "streamSettings": {
       "sockopt": {
         "mark": 255
-      }
-    },
-    "network": "kcp"
+      },
+      "network": "kcp"
     }'
 	else
 		mkcp=''
@@ -272,22 +271,24 @@ if [[ $ifdynamicport == 'y' ]];then
 	#5
 	read -p "输入端口变更时间（单位：分钟）（默认：$porttime_x ）:" porttime
 	[ -z "$porttime" ] && porttime=$porttime_x
-	dynamicport="
-  \"inboundDetour\": [
-    {
-      \"protocol\": \"vmess\",
-      \"port\": \"$subport1-$subport2\",
-      \"tag\": \"detour\",
-      \"settings\": {},
-        \"allocate\": {
-            \"strategy\": \"random\",
-            \"concurrency\": $portnum,
-            \"refresh\": $porttime
-        }${mkcp}${httpheader}
-            }
-  ],
-    "
+	detour=",
+    \"detour\": {
+      \"to\": \"detour\"
+    }"
+	dynamicport=",{
+    //inboundDetour
+    \"protocol\": \"vmess\",
+    \"port\": \"$subport1-$subport2\",
+    \"tag\": \"detour\",
+    \"settings\": {},
+    \"allocate\": {
+      \"strategy\": \"random\",
+      \"concurrency\": $portnum,
+      \"refresh\": $porttime
+    }${mkcp}${httpheader}
+  }"
 else
+	detour=''
 	dynamicport=''
 fi
 
@@ -299,8 +300,7 @@ if [[ $ifmux == 'y' ]];then
 	mux=',
     "mux": {
       "enabled": true
-    }
-    '
+    }'
 else
 	mux=""
 fi
@@ -383,7 +383,8 @@ cat << EOF > config
     "error": "/var/log/v2ray/error.log",
     "loglevel": "warning"
   },
-  "inbound": {
+  "inbounds":[
+  {
     "port": $mainport,
     "protocol": "vmess",
     "settings": {
@@ -394,46 +395,30 @@ cat << EOF > config
                 "alterId": 32
             }
         ]
-    }${mkcp}${httpheader}
-  },
-  "outbound": {
+    }${mkcp}${httpheader}${detour}
+  }${dynamicport}
+  ],
+  "outbounds":[
+  {
     "protocol": "freedom",
     "settings": {}
-  },
-
-      ${dynamicport}
-
-  "outboundDetour": [
-    {
+  },{
+  //outboundDetour
       "protocol": "blackhole",
       "settings": {},
       "tag": "blocked"
-    }
+  }
   ],
   "routing": {
     "strategy": "rules",
     "settings": {
       "rules": [
         {
+          "outboundTag": "blocked",
           "type": "field",
           "ip": [
-            "0.0.0.0/8",
-            "10.0.0.0/8",
-            "100.64.0.0/10",
-            "127.0.0.0/8",
-            "169.254.0.0/16",
-            "172.16.0.0/12",
-            "192.0.0.0/24",
-            "192.0.2.0/24",
-            "192.168.0.0/16",
-            "198.18.0.0/15",
-            "198.51.100.0/24",
-            "203.0.113.0/24",
-            "::1/128",
-            "fc00::/7",
-            "fe80::/10"
-          ],
-          "outboundTag": "blocked"
+            "geoip:private"
+          ]
         }
       ]
     }
@@ -462,23 +447,23 @@ cat << EOF > /root/config.json
     "error": "/tmp/syslog.log",
     "loglevel": "warning"
   },
-  "inbound": {
-    "port": $ip_port,
-    "listen": "$ipip",
-    "protocol": "$proxytype",
-    "settings": {
-      "auth": "noauth",
-      "udp": true,
-      "ip": "$ipip"
-    },
-    "streamSettings": {
-      "sockopt": {
-        "mark": 255
-      }
-    }
-  },
-  "inboundDetour": [
+  "inbounds":[
     {
+      "port": $ip_port,
+      "listen": "$ipip",
+      "protocol": "$proxytype",
+      "settings": {
+        "auth": "noauth",
+        "udp": true,
+        "ip": "$ipip"
+      },
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255
+        }
+      }
+    },{
+    //inboundDetour
       "port": "$ip_door",
       "listen": "0.0.0.0",
       "protocol": "dokodemo-door",
@@ -489,34 +474,39 @@ cat << EOF > /root/config.json
       }
     }
   ],
-  "outbound": {
+  "outbounds":[
+  {
     "protocol": "vmess",
     "settings": {
-        "vnext": [
+      "vnext": [
+        {
+          "address": "$ipc",
+          "port": $mainport,
+          "users": [
             {
-                "address": "$ipc",
-                "port": $mainport,
-                "users": [
-                    {
-                        "id": "$uuid",
-                        "alterId": 32
-                    }
-                ]
+              "id": "$uuid",
+              "alterId": 32
             }
-        ]
-    }${mkcp}${httpheader}${mux}
-  },
-  "outboundDetour": [
-    {
-      "protocol": "freedom",
-      "settings": {},
-      "tag": "direct",
-      "streamSettings": {
-        "sockopt": {
-          "mark": 255
+          ]
         }
+      ]
+    }${mkcp}${httpheader}${mux}
+  },{
+  //outboundDetour
+    "protocol": "freedom",
+    "settings": {},
+    "tag": "direct",
+    "streamSettings": {
+      "sockopt": {
+        "mark": 255
       }
     }
+  },{
+  //outboundDetour
+    "protocol": "blackhole",
+    "settings": {},
+    "tag": "blocked"
+ }
   ],
   "dns": {
     "servers": [
@@ -530,34 +520,31 @@ cat << EOF > /root/config.json
     "settings": {
       "rules": [
         {
-          "type": "chinasites",
+          "type": "field",
+          "ip": [
+            "127.0.0.0/8",
+            "::1/128"
+          ],
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "domain": [
+            "baidu.com",
+            "qq.com",
+            "geosite:cn"
+          ],
           "outboundTag": "direct"
         },
         {
           "type": "field",
           "ip": [
-            "0.0.0.0/8",
-            "10.0.0.0/8",
-            "100.64.0.0/10",
-            "169.254.0.0/16",
-            "172.16.0.0/12",
-            "192.0.0.0/24",
-            "192.0.2.0/24",
-            "192.168.0.0/16",
-            "198.18.0.0/15",
-            "198.51.100.0/24",
-            "203.0.113.0/24",
+            "geoip:private",
+            "geoip:cn",
             "100.100.100.100/32",
             "188.188.188.188/32",
-            "110.110.110.110/32",
-            "::1/128",
-            "fc00::/7",
-            "fe80::/10"
+            "110.110.110.110/32"
           ],
-          "outboundTag": "direct"
-        },
-        {
-          "type": "chinaip",
           "outboundTag": "direct"
         }
       ]
