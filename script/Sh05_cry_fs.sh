@@ -6,6 +6,8 @@ cryfs_enable=`nvram get app_61`
 cryfs_key_enable=`nvram get app_62`
 [ -z $cryfs_key_enable ] && cryfs_key_enable=0 && nvram set app_62=0
 cryfs_pass=`nvram get app_63`
+cryfs_update_id=`nvram get cryfs_update_id`
+update_id=$cryfs_update_id
 if [ "$cryfs_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep cryfs | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
@@ -55,6 +57,8 @@ if [ "$1" = "x" ] ; then
 			sleep 60
 			[ "$(nvram get cryfs_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
+			get_tg_pass
+			[ "$cryfs_key_enable" = "2" ] && [ ! -z "$cryfs_pass" ] && break
 		done
 		nvram set cryfs_renum="0"
 	fi
@@ -185,44 +189,7 @@ else
 	logger -t "【cryfs】" "找到 $SVC_PATH"
 	chmod 755 $SVC_PATH
 fi
-if [ "$cryfs_key_enable" = "2" ] && [ -z "$cryfs_pass" ] ; then
-	logger -t "【cryfs】" "使用 tgbot 获取密码"
-	tgbot_sckey=`nvram get app_48`
-	tgbot_id=`nvram get app_47`
-	# 获取上次输入命令 update_id
-	getUpdates="$(curl -L -s https://api.telegram.org/bot$tgbot_sckey/getUpdates)"
-	if [ ! -z "$getUpdates" ] ; then
-	update_id="$(echo $getUpdates| sed -e "s/update_id/"' \n '"update_id/g" | grep \"id\":$tgbot_id.*\"text\":\".*\" | grep -Eo update_id\":[0-9]* | grep -Eo [0-9]* | tail -n1)"
-	update_id=`expr $update_id + 1`
-	# 发送信息
-	logger -t "【cryfs】" "请在打开 Telegram 在 bot 回复输入密码：仅支持[a-zA-B0-9]范围的字符"
-	curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【cryfs】输入密码：仅支持[a-zA-B0-9]范围的字符""`echo -e " \n "`""Password:"
-	reup=1
-	upPassword=""
-	while [ "$upPassword" = "" ] && [ "$reup" -lt "9" ];
-	do
-	# 等待密码返回
-	sleep 20 ; reup=`expr $reup + 1`
-	getUpdates="$(curl -L -s https://api.telegram.org/bot$tgbot_sckey/getUpdates?offset=$update_id)"
-	upPassword="$(echo $getUpdates| sed -e "s/message_id/"' \n '"/g" | grep -Eo \"id\":$tgbot_id.*\"text\":\".*\" | grep -Eo \"text\":\"[a-zbA-Z0-9]*\" | cut -d':' -f2 | tr -d '"'| tail -n1)"
-	done
-	if [ ! -z "$upPassword" ] ; then
-		logger -t "【cryfs】" "使用 tgbot 获取密码成功！"
-		cryfs_pass="$upPassword"
-		# 删除 bot 的密码记录
-		message_id="$(echo $getUpdates| sed -e "s/update_id/"' \n '"update_id/g" | grep \"id\":$tgbot_id.*\"text\":\".*\" | grep $upPassword | grep -Eo \"message_id\":[0-9]* | grep -Eo [0-9]*)" #| tail -n1
-		for message_id_i in $message_id
-		do
-			curl -L -s "https://api.telegram.org/bot$tgbot_sckey/deleteMessage?chat_id=$tgbot_id" --data-binary "&message_id=$message_id_i"
-		done
-		# 发送信息
-		curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【cryfs】获取密码成功！"
-	else
-		logger -t "【cryfs】" "使用 tgbot 获取密码失败！"
-		
-	fi
-	fi
-fi
+get_tg_pass
 if [ "$cryfs_key_enable" = "1" ] ; then
 	logger -t "【cryfs】" "使用本地保存密码，有信息泄露的风险！"
 fi
@@ -233,6 +200,8 @@ fi
 if [ -z "$cryfs_pass" ] ; then
 	logger -t "【cryfs】" "找不到密码 ，需要手动输入密码"
 	logger -t "【cryfs】" "启动失败, 60 秒后自动尝试重新启动" && sleep 60 && cryfs_restart x
+else
+	nvram set cryfs_update_id=""
 fi
 logger -t "【cryfs】" "运行 /etc/storage/app_18.sh"
 eval "/etc/storage/app_18.sh $cryfs_pass $cmd_log"
@@ -337,6 +306,60 @@ logger -t "【cryfs】" "停止脚本：$line"
 done < /tmp/cryfs_app_list.txt
 
 }
+
+get_tg_pass () {
+
+if [ "$cryfs_key_enable" = "2" ] && [ -z "$cryfs_pass" ] ; then
+	logger -t "【cryfs】" "使用 tgbot 获取密码"
+	tgbot_sckey=`nvram get app_48`
+	tgbot_id=`nvram get app_47`
+	# 获取上次输入命令 update_id
+	getUpdates="$(curl -L -s https://api.telegram.org/bot$tgbot_sckey/getUpdates)"
+	if [ ! -z "$getUpdates" ] ; then
+	LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
+	if [ -z "$cryfs_update_id" ] ; then
+		update_id="$(echo $getUpdates| sed -e "s/update_id/"' \n '"update_id/g" | grep \"id\":$tgbot_id.*\"text\":\".*\" | grep -Eo update_id\":[0-9]* | grep -Eo [0-9]* | tail -n1)"
+		if [ ! -z "$update_id" ] ; then
+			update_id=`expr $update_id + 1`
+			nvram set cryfs_update_id=$update_id
+		fi
+		# 发送信息
+		logger -t "【cryfs】" "请在打开 Telegram 在 bot 回复输入密码：仅支持[a-zA-B0-9]范围的字符"
+		curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=$LOGTIME【cryfs】输入密码：仅支持[a-zA-B0-9]范围的字符""`echo -e " \n "`""Password:"
+	else
+		update_id=$cryfs_update_id
+	fi
+	reup=1
+	upPassword=""
+	while [ "$upPassword" = "" ] && [ "$reup" -lt "10" ];
+	do
+	logger -t "【cryfs】" "等待 tgbot 密码返回"
+	sleep 20 ; reup=`expr $reup + 1`
+	getUpdates="$(curl -L -s https://api.telegram.org/bot$tgbot_sckey/getUpdates?offset=$update_id)"
+	upPassword="$(echo $getUpdates| sed -e "s/message_id/"' \n '"/g" | grep -Eo \"id\":$tgbot_id.*\"text\":\".*\" | grep -Eo \"text\":\"[a-zbA-Z0-9]*\" | cut -d':' -f2 | tr -d '"'| tail -n1)"
+	done
+	if [ ! -z "$upPassword" ] ; then
+		logger -t "【cryfs】" "使用 tgbot 获取密码成功！"
+		cryfs_pass="$upPassword"
+		nvram set app_63=$cryfs_pass
+		# 删除 bot 的密码记录
+		getUpdates="$(curl -L -s https://api.telegram.org/bot$tgbot_sckey/getUpdates)"
+		message_id="$(echo $getUpdates| sed -e "s/update_id/"' \n '"update_id/g" | grep \"id\":$tgbot_id.*\"text\":\".*\" | grep $upPassword | grep -Eo \"message_id\":[0-9]* | grep -Eo [0-9]*)" #| tail -n1
+		for message_id_i in $message_id
+		do
+			curl -L -s "https://api.telegram.org/bot$tgbot_sckey/deleteMessage?chat_id=$tgbot_id" --data-binary "&message_id=$message_id_i"
+		done
+		# 发送信息
+		curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【cryfs】获取密码成功！"
+	else
+		logger -t "【cryfs】" "使用 tgbot 获取密码失败！"
+	fi
+		
+	fi
+fi
+
+}
+
 update_app () {
 
 mkdir -p /opt/app/cryfs
