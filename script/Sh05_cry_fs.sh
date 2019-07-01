@@ -8,6 +8,10 @@ cryfs_key_enable=`nvram get app_62`
 cryfs_pass=`nvram get app_63`
 cryfs_update_id=`nvram get cryfs_update_id`
 update_id=$cryfs_update_id
+if [ "$cryfs_key_enable" != "1" ] && [ ! -z "$cryfs_pass" ] ; then
+	logger -t "【cryfs】" "使用手动输入密码，删除本地密码记录！"
+	nvram set app_63=""
+fi
 if [ "$cryfs_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep cryfs | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
@@ -86,6 +90,7 @@ cryfs_check () {
 
 cryfs_get_status
 if [ "$cryfs_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
+	nvram set cryfs_update_id=""
 	[ ! -z "$(ps -w | grep "cryfs" | grep -v grep )" ] && logger -t "【cryfs】" "停止 cryfs" && cryfs_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
@@ -193,13 +198,13 @@ get_tg_pass
 if [ "$cryfs_key_enable" = "1" ] ; then
 	logger -t "【cryfs】" "使用本地保存密码，有信息泄露的风险！"
 fi
-if [ "$cryfs_key_enable" != "1" ] ; then
+if [ "$cryfs_key_enable" != "1" ] && [ ! -z "$cryfs_pass" ] ; then
 	logger -t "【cryfs】" "使用手动输入密码，删除本地密码记录！"
 	nvram set app_63=""
 fi
 if [ -z "$cryfs_pass" ] ; then
 	logger -t "【cryfs】" "找不到密码 ，需要手动输入密码"
-	logger -t "【cryfs】" "启动失败, 60 秒后自动尝试重新启动" && sleep 60 && cryfs_restart x
+	logger -t "【cryfs】" "启动失败, 30 秒后自动尝试重新启动" && sleep 30 && cryfs_restart x
 else
 	nvram set cryfs_update_id=""
 fi
@@ -322,6 +327,8 @@ if [ "$cryfs_key_enable" = "2" ] && [ -z "$cryfs_pass" ] ; then
 		if [ ! -z "$update_id" ] ; then
 			update_id=`expr $update_id + 1`
 			nvram set cryfs_update_id=$update_id
+		else
+			nvram set cryfs_update_id=0
 		fi
 		# 发送信息
 		logger -t "【cryfs】" "请在打开 Telegram 在 bot 回复输入密码：仅支持[a-zA-B0-9]范围的字符"
@@ -331,10 +338,10 @@ if [ "$cryfs_key_enable" = "2" ] && [ -z "$cryfs_pass" ] ; then
 	fi
 	reup=1
 	upPassword=""
-	while [ "$upPassword" = "" ] && [ "$reup" -lt "10" ];
+	while [ "$upPassword" = "" ] && [ "$reup" -lt "7" ];
 	do
 	logger -t "【cryfs】" "等待 tgbot 密码返回"
-	sleep 20 ; reup=`expr $reup + 1`
+	sleep 30 ; reup=`expr $reup + 1`
 	getUpdates="$(curl -L -s https://api.telegram.org/bot$tgbot_sckey/getUpdates?offset=$update_id)"
 	upPassword="$(echo $getUpdates| sed -e "s/message_id/"' \n '"/g" | grep -Eo \"id\":$tgbot_id.*\"text\":\".*\" | grep -Eo \"text\":\"[a-zbA-Z0-9]*\" | cut -d':' -f2 | tr -d '"'| tail -n1)"
 	done
@@ -397,7 +404,7 @@ stop)
 	;;
 updateapp15)
 	cryfs_restart o
-	[ "$cryfs_enable" = "1" ] && nvram set cryfs_status="updatecryfs" && logger -t "【cryfs】" "重启" && cryfs_restart
+	[ "$cryfs_enable" = "1" ] && nvram set cryfs_status="updatecryfs" && nvram set cryfs_update_id="" && logger -t "【cryfs】" "重启" && cryfs_restart
 	[ "$cryfs_enable" != "1" ] && nvram set cryfs_v="" && logger -t "【cryfs】" "更新" && update_app del
 	;;
 update_app)

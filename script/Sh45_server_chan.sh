@@ -301,7 +301,7 @@ if [ "$serverchan_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     [ ! -f /tmp/var/osub ] && echo -n `nvram get firmver_sub` > /tmp/var/osub
     rm -f /tmp/var/nsub
     wgetcurl.sh "/tmp/var/nsub" "$hiboyfile/osub" "$hiboyfile2/osub"
-    if [ $(cat /tmp/var/osub) != $(cat /tmp/var/nsub) ] && [ -f /tmp/var/nsub ] ; then
+    if [ "$(cat /tmp/var/osub |head -n1)"x != "$(cat /tmp/var/nsub |head -n1)"x ] && [ -f /tmp/var/nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/osub
         content="新的固件： `cat /tmp/var/nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/osub | grep -v "^$"` "
         logger -t "【微信推送】" "固件 新的更新：${content}"

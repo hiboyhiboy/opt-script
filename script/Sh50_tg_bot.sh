@@ -323,7 +323,7 @@ if [ "$tgbot_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     [ ! -f /tmp/var/tgbot_osub ] && echo -n `nvram get firmver_sub` > /tmp/var/tgbot_osub
     rm -f /tmp/var/tgbot_nsub
     wgetcurl.sh "/tmp/var/tgbot_nsub" "$hiboyfile/osub" "$hiboyfile2/osub"
-    if [ $(cat /tmp/var/tgbot_osub) != $(cat /tmp/var/tgbot_nsub) ] && [ -f /tmp/var/tgbot_nsub ] ; then
+    if [ "$(cat /tmp/var/tgbot_osub |head -n1)"x != "$(cat /tmp/var/tgbot_nsub |head -n1)"x ] && [ -f /tmp/var/tgbot_nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/tgbot_osub
         content="新的固件： `cat /tmp/var/tgbot_nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/tgbot_osub | grep -v "^$"` "
         logger -t "【tgbot推送】" "固件 新的更新：${content}"
