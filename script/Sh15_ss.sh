@@ -1167,7 +1167,7 @@ flush_r() {
 
 start_ss_rules()
 {
-
+check_webui_yes
 #载入iptables模块
 for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
 do
@@ -2671,6 +2671,7 @@ fi
 
 check_setting()
 {
+check_webui_yes
 needed_restart=0
 ss_get_status
 if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
@@ -3328,6 +3329,7 @@ start)
 	;;
 keep)
 	#check_setting
+	check_webui_yes
 	SS_keep
 	;;
 rules)
@@ -3337,6 +3339,7 @@ flush)
 	clean_ss_rules
 	;;
 update)
+	check_webui_yes
 	[ "$ss_mode_x" = "3" ] && return #3为ss-local 建立本地 SOCKS 代理
 	#check_setting
 	[ ${ss_enable:=0} ] && [ "$ss_enable" -eq "0" ] && exit 0
@@ -3362,6 +3365,7 @@ update)
 	[ -s /tmp/sh_sskeey_k.sh ] && /tmp/sh_sskeey_k.sh &
 	;;
 updatess)
+	check_webui_yes
 	logger -t "【SS】" "手动更新 SS 规则文件 5 秒后进入处理状态, 请稍候"
 	sleep 5
 	nvram set ss_updatess2=1
