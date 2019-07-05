@@ -2,12 +2,43 @@
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
+
+get_emoji () {
+
+echo "$1" \
+ | sed -e 's@#@♯@g' \
+ | sed -e 's@|@丨@g' \
+ | sed -e "s@%@💯@g" \
+ | sed -e "s@\^@🔄@g" \
+ | sed -e 's@/@↗️@g' \
+ | sed -e 's@\\@↘️@g' \
+ | sed -e "s@<@《@g" \
+ | sed -e "s@>@》@g" \
+ | sed -e 's@;@🔚@g' \
+ | sed -e 's@`@▪️@g' \
+ | sed -e 's@:@📎@g' \
+ | sed -e 's@!@❗️@g' \
+ | sed -e 's@*@✳️@g' \
+ | sed -e 's@?@❓@g' \
+ | sed -e 's@\$@💲@g' \
+ | sed -e 's@(@（@g' \
+ | sed -e 's@)@）@g' \
+ | sed -e 's@{@『@g' \
+ | sed -e 's@}@』@g' \
+ | sed -e 's@\[@【@g' \
+ | sed -e 's@\]@】@g' \
+ | sed -e 's@&@🖇@g' \
+ | sed -e "s@'@▫️@g" \
+ | sed -e 's@"@”@g'
+ 
+}
+
 add_ss_link () {
 link="$1"
 ss_link_methodpassword=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d  | awk -F '@' '{print $1}')
 ss_link_usage=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d  | awk -F '@' '{print $2}')
 
-ss_link_name="#"$(echo -n "$ss_link_usage" | cut -d ':' -f1)
+ss_link_name="♯"$(echo -n "$ss_link_usage" | cut -d ':' -f1)
 ss_link_server=$(echo -n "$ss_link_usage" | cut -d ':' -f1)
 ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
 ss_link_password=$(echo -n "$ss_link_methodpassword"  | cut -d ':' -f2 )
@@ -21,11 +52,11 @@ ex_params="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}')"
 ex_obfsparam="$(echo "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
 ex_protoparam="$(echo "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
 ex_remarks="$(echo "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
-ex_group="$(echo "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+#ex_group="$(echo "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
 
-[ ! -z "$ex_remarks" ] && ss_link_name="$(echo "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )"
+[ ! -z "$ex_remarks" ] && ss_link_name="$(get_emoji "$(echo "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )")"
 ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')"
-[ -z "$ex_remarks" ] && ss_link_name="#""`echo -n "$ss_link_usage" | cut -d ':' -f1 `"
+[ -z "$ex_remarks" ] && ss_link_name="♯""`echo -n "$ss_link_usage" | cut -d ':' -f1 `"
 
 ss_link_server=`echo -n "$ss_link_usage" | cut -d ':' -f1 `
 ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
@@ -35,7 +66,7 @@ ss_link_obfs=`echo -n "$ss_link_usage" | cut -d ':' -f5 ` # -o
 if [ "$ss_link_obfs"x = "tls1.2_ticket_fastauth"x ] ; then
 	ss_link_obfs="tls1.2_ticket_auth"
 fi
-ss_link_protocol=`echo -n "$ss_link_usage" | cut -d ':' -f3 ` # -O
+ss_link_protocol="$(echo -n "$ss_link_usage" | cut -d ':' -f3)" # -O
 [ ! -z "$ex_obfsparam" ] && ss_link_obfsparam=" -g $ex_obfsparam" # -g
 [ ! -z "$ex_protoparam" ] && ss_link_protoparam=" -G $ex_protoparam" # -G
 
