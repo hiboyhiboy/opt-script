@@ -129,17 +129,18 @@ ddnsto_start () {
 
 check_webui_yes
 SVC_PATH=/opt/bin/ddnsto
-chmod 777 "$SVC_PATH"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ddnsto】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
+fi
+if [ -f /etc_ro/ddnsto ] && [ ! -s "$SVC_PATH" ] && [ ! -f /tmp/ddnsto_ro ] ; then
+	cp -f /etc_ro/ddnsto /opt/bin/ddnsto
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ddnsto】" "找不到 $SVC_PATH ，安装 ddnsto 程序"
 	logger -t "【ddnsto】" "开始下载 ddnsto"
 	wgetcurl.sh "/opt/bin/ddnsto" "$hiboyfile/ddnsto" "$hiboyfile2/ddnsto"
 fi
-chmod 755 "$SVC_PATH"
 
 #[[ "$(ddnsto -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ddnsto
 if [ ! -s "$SVC_PATH" ] ; then
@@ -147,8 +148,8 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ddnsto】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ddnsto_restart x
 else
 	logger -t "【ddnsto】" "找到 $SVC_PATH"
+	chmod 755 "$SVC_PATH"
 fi
-chmod 755 "$SVC_PATH"
 ddnsto_route_id=$(ddnsto -w | awk '{print $2}')
 nvram set ddnsto_route_id="$ddnsto_route_id"
 [ ! -z $ddnsto_route_id ] && logger -t "【ddnsto】" "路由器ID：【$ddnsto_route_id】；管理控制台 https://www.ddnsto.com/"
@@ -192,6 +193,7 @@ mkdir -p /opt/app/ddnsto
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/ddnsto/Advanced_Extensions_ddnsto.asp
 	[ -f /opt/bin/ddnsto ] && rm -f /opt/bin/ddnsto /opt/opt_backup/bin/ddnsto
+	[ -f /etc_ro/ddnsto ] && touch /tmp/ddnsto_ro
 fi
 
 initconfig

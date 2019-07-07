@@ -256,6 +256,8 @@ if [ "$ss_type" != "1" ] ; then
 	[ ! -z "$(echo "$ss_s2_usage" | grep gq-client)" ] && ss2_plugin_name="gq-client" && nvram set ss2_plugin_name="gq-client"
 	[ ! -z "$(echo "$ss_usage" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
 	[ ! -z "$(echo "$ss_s2_usage" | grep obfs-host)" ] && ss2_plugin_name="obfs-local" && nvram set ss2_plugin_name="obfs-local"
+	[ ! -z "$(echo "$ss_usage" | grep ck-client)" ] && ss_plugin_name="ck-client" && nvram set ss_plugin_name="ck-client"
+	[ ! -z "$(echo "$ss_s2_usage" | grep ck-client)" ] && ss2_plugin_name="ck-client" && nvram set ss2_plugin_name="ck-client"
 	[ -z "$ss_plugin_config" ] && ss_plugin_name="" && nvram set ss_plugin_name=""
 	[ -z "$ss2_plugin_config" ] && ss2_plugin_name="" && nvram set ss2_plugin_name=""
 else

@@ -5,8 +5,14 @@ source /etc/storage/script/init.sh
 
 get_emoji () {
 
-echo "$1" \
+echo -n "$1" \
  | sed -e 's@#@♯@g' \
+ | sed -e 's@\r@_@g' \
+ | sed -e 's@\n@_@g' \
+ | sed -e 's@ @_@g' \
+ | sed -e 's@,@，@g' \
+ | sed -e 's@+@➕@g' \
+ | sed -e 's@=@↔️@g' \
  | sed -e 's@|@丨@g' \
  | sed -e "s@%@💯@g" \
  | sed -e "s@\^@🔄@g" \
@@ -35,10 +41,39 @@ echo "$1" \
 
 add_ss_link () {
 link="$1"
-ss_link_methodpassword=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d  | awk -F '@' '{print $1}')
-ss_link_usage=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d  | awk -F '@' '{print $2}')
+if [ ! -z "$(echo -n "$link" | grep '#')" ] ; then
+ss_link_name_url=$(echo -n $link | awk -F '#' '{print $2}')
+ss_link_name="$(get_emoji "$(printf $(echo -n $ss_link_name_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"| sed -n '1p')"
+link=$(echo -n $link | awk -F '#' '{print $1}')
+fi
+if [ ! -z "$(echo -n "$link" | grep '@')" ] ; then
+	#不将主机名和端口号解析为Base64URL
+	#ss://cmM0LW1kNTpwYXNzd2Q=@192.168.100.1:8888/?plugin=obfs-local%3Bobfs%3Dhttp#Example2
+	link3=$(echo -n $link | sed -n '1p' | awk -F '@' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d )
+	link4=$(echo -n $link | sed -n '1p' | awk -F '@' '{print $2}')
+	link2="$link3""@""$link4"
+else
+	#部分信息解析为Base64URL
+	#ss://cmM0LW1kNTpwYXNzd2RAMTkyLjE2OC4xMDAuMTo4ODg4Lz9wbHVnaW49b2Jmcy1sb2NhbCUzQm9iZnMlM0RodHRw==#Example2
+	link2=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d)
+	
+fi
+ex_params="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $2}')"
+if [ ! -z "$ex_params" ] ; then
+	#存在插件
+	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&]*"  | cut -d '=' -f2)";
+	ex_obfsparam=$(printf $(echo -n $ex_obfsparam | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))
+	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts @')";
+	link2="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $1}')"
+else
+	ss_link_plugin_opts=" -O origin -o plain "
+fi
 
-ss_link_name="♯"$(echo -n "$ss_link_usage" | cut -d ':' -f1)
+ss_link_methodpassword=$(echo -n $link2 | sed -n '1p' | awk -F '@' '{print $1}')
+ss_link_usage=$(echo -n $link2 | sed -n '1p' | awk -F '@' '{print $2}')
+
+[ -z "$ss_link_name" ] && ss_link_name="♯"$(echo -n "$ss_link_usage" | cut -d ':' -f1)
+ss_link_name="$(echo "$ss_link_name"| sed -n '1p')"
 ss_link_server=$(echo -n "$ss_link_usage" | cut -d ':' -f1)
 ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
 ss_link_password=$(echo -n "$ss_link_methodpassword"  | cut -d ':' -f2 )
@@ -49,14 +84,15 @@ ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
 add_ssr_link () {
 link="$1"
 ex_params="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}')"
-ex_obfsparam="$(echo "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
-ex_protoparam="$(echo "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
-ex_remarks="$(echo "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
-#ex_group="$(echo "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+ex_protoparam="$(echo -n "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+ex_remarks="$(echo -n "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+#ex_group="$(echo -n "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
 
-[ ! -z "$ex_remarks" ] && ss_link_name="$(get_emoji "$(echo "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )")"
+[ ! -z "$ex_remarks" ] && ss_link_name="$(get_emoji "$(echo -n "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )")"
 ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')"
 [ -z "$ex_remarks" ] && ss_link_name="♯""`echo -n "$ss_link_usage" | cut -d ':' -f1 `"
+ss_link_name="$(echo "$ss_link_name"| sed -n '1p')"
 
 ss_link_server=`echo -n "$ss_link_usage" | cut -d ':' -f1 `
 ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
@@ -82,6 +118,7 @@ ss_link_obfs=""
 ss_link_protocol=""
 ss_link_obfsparam=""
 ss_link_protoparam=""
+ss_link_plugin_opts=""
 }
 
 clear_link () {
@@ -194,7 +231,6 @@ fi
 cat /tmp/ss/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/ss/link/1_link.txt
 base64 -d /tmp/ss/link/1_link.txt > /tmp/ss/link/2_link.txt
 sed -e '/^$/d' -i /tmp/ss/link/2_link.txt
-sed -e 's/$/&==/g' -i /tmp/ss/link/2_link.txt
 sed -e "s/_/\//g" -i /tmp/ss/link/2_link.txt
 sed -e "s/\-/\+/g" -i /tmp/ss/link/2_link.txt
 echo >> /tmp/ss/link/2_link.txt
@@ -220,7 +256,7 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 	do
 	if [ ! -z "$line" ] && [ ! -z /tmp/ss/link/ssr_link2.txt ] ; then
 		add_0
-		add_ssr_link "$line"
+		add_ssr_link "$line""=="
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
 		eval "nvram set rt_ss_name_x$i=\"🔗$ss_link_name\""
 		eval "nvram set rt_ss_port_x$i=$ss_link_port"
@@ -234,7 +270,8 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 fi
 
 if [ -f /tmp/ss/link/ss_link.txt ] ; then
-	awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ss_link.txt > /tmp/ss/link/ss_link2.txt
+	#awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ss_link.txt > /tmp/ss/link/ss_link2.txt
+	cp -f /tmp/ss/link/ss_link.txt /tmp/ss/link/ss_link2.txt
 	while read line
 	do
 	if [ ! -z "$line" ] && [ ! -z /tmp/ss/link/ss_link2.txt ] ; then
@@ -246,6 +283,7 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 		eval "nvram set rt_ss_password_x$i=\"$ss_link_password\""
 		eval "nvram set rt_ss_server_x$i=$ss_link_server"
 		eval "nvram set rt_ss_method_x$i=$ss_link_method"
+		eval "nvram set rt_ss_usage_x$i=\"$ss_link_plugin_opts\""
 		i=$(( i + 1 ))
 	fi
 	done < /tmp/ss/link/ss_link2.txt
