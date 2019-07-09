@@ -244,6 +244,7 @@ if [ ! -z "$ss_line" ] ; then
 	echo  "$ss_line" | awk -F 'ss://' '{print $2}' >> /tmp/ss/link/ss_link.txt
 fi
 done < /tmp/ss/link/2_link.txt
+sed -e 's/$/&==/g' -i /tmp/ss/link/ssr_link.txt
 sed -e "s/_/\//g" -i /tmp/ss/link/ssr_link.txt
 sed -e "s/\-/\+/g" -i /tmp/ss/link/ssr_link.txt
 
@@ -253,9 +254,9 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 	awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ssr_link.txt > /tmp/ss/link/ssr_link2.txt
 	while read line
 	do
-	if [ ! -z "$line" ] && [ ! -z /tmp/ss/link/ssr_link2.txt ] ; then
+	if [ ! -z "$line" ] ; then
 		add_0
-		add_ssr_link "$line""=="
+		add_ssr_link "$line"
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
 		eval "nvram set rt_ss_name_x$i=\"🔗$ss_link_name\""
 		eval "nvram set rt_ss_port_x$i=$ss_link_port"
@@ -273,7 +274,7 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 	cp -f /tmp/ss/link/ss_link.txt /tmp/ss/link/ss_link2.txt
 	while read line
 	do
-	if [ ! -z "$line" ] && [ ! -z /tmp/ss/link/ss_link2.txt ] ; then
+	if [ ! -z "$line" ] ; then
 		add_0
 		add_ss_link "$line"
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
