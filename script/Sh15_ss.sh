@@ -409,6 +409,40 @@ fi
 ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
 ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
 
+# 混淆插件方式
+ss_usage_custom="$(echo $ss_usage | grep -Eo '\-o[ ]+[^ ]+[^-]+')"
+if [ ! -z "$ss_usage_custom" ] ; then
+	ssr_obfs="${ss_usage##* -o }"
+	ssr_obfs="${ssr_obfs%% -*}"
+	ssr_obfs="`echo -n "$ssr_obfs" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr混淆插件方式: $ssr_obfs"
+fi
+ss_usage_custom=""
+ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-o[ ]+[^ ]+[^-]+')"
+if [ ! -z "$ss_s2_usage_custom" ] ; then
+	ssr2_obfs="${ss_s2_usage##* -o }"
+	ssr2_obfs="${ssr2_obfs%% -*}"
+	ssr2_obfs="`echo -n "$ssr2_obfs" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr2混淆插件方式: $ssr2_obfs"
+fi
+ss_s2_usage_custom=""
+ss_usage_custom="$(echo $ss_usage | grep -Eo '\-O[ ]+[^ ]+[^-]+')"
+if [ ! -z "$ss_usage_custom" ] ; then
+	ssr_protocol="${ss_usage##* -O }"
+	ssr_protocol="${ssr_protocol%% -*}"
+	ssr_protocol="`echo -n "$ssr_protocol" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr协议插件方式: $ssr_protocol"
+fi
+ss_usage_custom=""
+ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-O[ ]+[^ ]+[^-]+')"
+if [ ! -z "$ss_s2_usage_custom" ] ; then
+	ssr2_protocol="${ss_s2_usage##* -O }"
+	ssr2_protocol="${ssr2_protocol%% -*}"
+	ssr2_protocol="`echo -n "$ssr2_protocol" | sed -e "s@ @@g" `"
+	logger -t "【SS】" "ssr2协议插件方式: $ssr2_protocol"
+fi
+ss_s2_usage_custom=""
+
 if [ "$ss_type" = "1" ] ; then 
 # 混淆参数
 ssr_type_obfs_custom="`nvram get ssr_type_obfs_custom`"
@@ -422,8 +456,9 @@ if [ ! -z "$ss_usage_obfs_custom" ] ; then
 	ss_usage_obfs_custom_tmp="`echo -n "$ss_usage_obfs_custom_tmp" | sed -e "s@ @@g" `"
 	nvram set ss_usage_obfs_custom_tmp="$ss_usage_obfs_custom_tmp"
 	ss_usage_json=" -a 1 -g ss_usage_obfs_custom_tmp"
-	[ ! -z "$ss_usage_obfs_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_obfs_custom_tmp@@g" `"
-	ss_usage="`echo "$ss_usage" | sed -e "s/ -g //g" `"
+	#[ ! -z "$ss_usage_obfs_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_obfs_custom_tmp@@g" `"
+	#ss_usage="`echo "$ss_usage" | sed -e "s/ -g//g" `"
+	ss_usage="`echo "$ss_usage" | sed -r 's/\-g[ ]+[^ ]+[^-]+//g'`"
 	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
 	ssr_type_obfs_custom="$ss_usage_obfs_custom_tmp"
 else
@@ -437,8 +472,9 @@ if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then
 	ss_s2_usage_obfs_custom_tmp="`echo -n "$ss_s2_usage_obfs_custom_tmp" | sed -e "s@ @@g" `"
 	nvram set ss_s2_usage_obfs_custom_tmp="$ss_s2_usage_obfs_custom_tmp"
 	ss_s2_usage_json=" -a 1 -g ss_s2_usage_obfs_custom_tmp"
-	[ ! -z "$ss_s2_usage_obfs_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_obfs_custom_tmp@@g" `"
-	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g //g" `"
+	#[ ! -z "$ss_s2_usage_obfs_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_obfs_custom_tmp@@g" `"
+	#ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g//g" `"
+	ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\-g[ ]+[^ ]+[^-]+//g'`"
 	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_s2_usage_obfs_custom_tmp ，服务2优先使用此 混淆参数"
 	ssr2_type_obfs_custom="$ss_s2_usage_obfs_custom_tmp"
 else
@@ -456,8 +492,9 @@ if [ ! -z "$ss_usage_protocol_custom" ] ; then
 	ss_usage_protocol_custom_tmp="`echo -n "$ss_usage_protocol_custom_tmp" | sed -e "s@ @@g" `"
 	nvram set ss_usage_protocol_custom_tmp="$ss_usage_protocol_custom_tmp"
 	ss_usage_json="$ss_usage_json -a 2 -G ss_usage_protocol_custom_tmp"
-	[ ! -z "$ss_usage_protocol_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_protocol_custom_tmp@@g" `"
-	ss_usage="`echo "$ss_usage" | sed -e "s/ -G //g" `"
+	#[ ! -z "$ss_usage_protocol_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_protocol_custom_tmp@@g" `"
+	#ss_usage="`echo "$ss_usage" | sed -e "s/ -G//g" `"
+	ss_usage="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^ ]+[^-]+//g'`"
 	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_usage_protocol_custom_tmp ，服务1优先使用此 协议参数"
 	ssr_type_protocol_custom="$ss_usage_protocol_custom_tmp"
 else
@@ -471,47 +508,15 @@ if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then
 	ss_s2_usage_protocol_custom_tmp="`echo -n "$ss_s2_usage_protocol_custom_tmp" | sed -e "s@ @@g" `"
 	nvram set ss_s2_usage_protocol_custom_tmp="$ss_s2_usage_protocol_custom_tmp"
 	ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ss_s2_usage_protocol_custom_tmp"
-	[ ! -z "$ss_s2_usage_protocol_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_protocol_custom_tmp@@g" `"
-	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G //g" `"
+	#[ ! -z "$ss_s2_usage_protocol_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_protocol_custom_tmp@@g" `"
+	#ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G//g" `"
+	ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^ ]+[^-]+//g'`"
 	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_s2_usage_protocol_custom_tmp ，服务2优先使用此 协议参数"
 	ssr2_type_protocol_custom="$ss_s2_usage_protocol_custom_tmp"
 else
 	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G//g" `" # 删除空的协议参数
 	[ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ssr2_type_protocol_custom"
 fi
-
-ss_usage_custom="$(echo $ss_usage | grep -Eo '\-o[ ]+[^-]+')"
-if [ ! -z "$ss_usage_custom" ] ; then
-	ssr_obfs="${ss_usage##* -o }"
-	ssr_obfs="${ssr_obfs%% -*}"
-	ssr_obfs="`echo -n "$ssr_obfs" | sed -e "s@ @@g" `"
-	logger -t "【SS】" "ssr混淆插件方式: $ssr_obfs"
-fi
-ss_usage_custom=""
-ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-o[ ]+[^-]+')"
-if [ ! -z "$ss_s2_usage_custom" ] ; then
-	ssr2_obfs="${ss_s2_usage##* -o }"
-	ssr2_obfs="${ssr2_obfs%% -*}"
-	ssr2_obfs="`echo -n "$ssr2_obfs" | sed -e "s@ @@g" `"
-	logger -t "【SS】" "ssr2混淆插件方式: $ssr2_obfs"
-fi
-ss_s2_usage_custom=""
-ss_usage_custom="$(echo $ss_usage | grep -Eo '\-O[ ]+[^-]+')"
-if [ ! -z "$ss_usage_custom" ] ; then
-	ssr_protocol="${ss_usage##* -O }"
-	ssr_protocol="${ssr_protocol%% -*}"
-	ssr_protocol="`echo -n "$ssr_protocol" | sed -e "s@ @@g" `"
-	logger -t "【SS】" "ssr协议插件方式: $ssr_protocol"
-fi
-ss_usage_custom=""
-ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-O[ ]+[^-]+')"
-if [ ! -z "$ss_s2_usage_custom" ] ; then
-	ssr2_protocol="${ss_s2_usage##* -O }"
-	ssr2_protocol="${ssr2_protocol%% -*}"
-	ssr2_protocol="`echo -n "$ssr2_protocol" | sed -e "s@ @@g" `"
-	logger -t "【SS】" "ssr2协议插件方式: $ssr2_protocol"
-fi
-ss_s2_usage_custom=""
 
 else
 ssr_type_obfs_custom=""
@@ -527,11 +532,11 @@ fi
 ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
 ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
 
-options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
-options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
+options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
+options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
 
-ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g'`"
-ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^-]+//g'`"
+ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^ ]+[^-]+//g'`"
+ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^ ]+[^-]+//g'`"
 
 ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
 ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
