@@ -196,7 +196,8 @@ fi
 sleep 4
 [ ! -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动成功" && ssserver_restart o
 [ -z "`pidof ss-server`" ] && logger -t "【SS_server】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
-logger -t "【SS_server】" "`ps -w | grep ss-server | grep -v grep`"
+logger -t "【SS_server】" "PID: `ps -w | grep ss-server | grep -v grep`"
+logger -t "【SS_server】" "如果连接失败，请关闭UDP转发再测试"
 ssserver_port_dpt
 #ssserver_get_status
 eval "$scriptfilepath keep &"
@@ -211,42 +212,6 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/et
 fi
 
 }
-
-initconfig () {
-
-SSRconfig_script="/etc/storage/SSRconfig_script.sh"
-if [ ! -f "$SSRconfig_script" ] || [ ! -s "$SSRconfig_script" ] ; then
-	cat > "$SSRconfig_script" <<-\EEE
-{
-    "server": "0.0.0.0",
-    "server_ipv6": "::",
-    "server_port": 8388,
-    "local_address": "127.0.0.1",
-    "local_port": 1080,
-
-    "password": "m",
-    "timeout": 120,
-    "udp_timeout": 60,
-    "method": "aes-128-ctr",
-    "protocol": "auth_aes128_md5",
-    "protocol_param": "",
-    "obfs": "tls1.2_ticket_auth_compatible",
-    "obfs_param": "",
-    "speed_limit_per_con": 0,
-    "speed_limit_per_user": 0,
-
-    "dns_ipv6": false,
-    "connect_verbose_info": 0,
-    "redirect": "",
-    "fast_open": false
-}
-EEE
-	chmod 755 "$SSRconfig_script"
-fi
-
-}
-
-initconfig
 
 ssserver_port_dpt () {
 

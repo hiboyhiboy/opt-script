@@ -116,8 +116,6 @@ done
 
 ssrserver_close () {
 sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check
-iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
-iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
 kill_ps "manyuser/shadowsocks/server"
 kill_ps "/tmp/script/_ssrserver"
 kill_ps "_ssrserver.sh"
@@ -278,6 +276,41 @@ fi
 
 }
 
+initconfig () {
+
+SSRconfig_script="/etc/storage/SSRconfig_script.sh"
+if [ ! -f "$SSRconfig_script" ] || [ ! -s "$SSRconfig_script" ] ; then
+	cat > "$SSRconfig_script" <<-\EEE
+{
+    "server": "0.0.0.0",
+    "server_ipv6": "::",
+    "server_port": 8388,
+    "local_address": "127.0.0.1",
+    "local_port": 1080,
+
+    "password": "m",
+    "timeout": 120,
+    "udp_timeout": 60,
+    "method": "aes-128-ctr",
+    "protocol": "auth_aes128_md5",
+    "protocol_param": "",
+    "obfs": "tls1.2_ticket_auth_compatible",
+    "obfs_param": "",
+    "speed_limit_per_con": 0,
+    "speed_limit_per_user": 0,
+
+    "dns_ipv6": false,
+    "connect_verbose_info": 0,
+    "redirect": "",
+    "fast_open": false
+}
+EEE
+	chmod 755 "$SSRconfig_script"
+fi
+
+}
+
+initconfig
 
 case $ACTION in
 start)

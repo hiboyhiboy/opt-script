@@ -164,6 +164,7 @@ else
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【迅雷快鸟】" "找不到 $SVC_PATH，安装 opt 程序"
 		/tmp/script/_mountopt optwget
+		initopt
 	fi
 	if [ -s "$SVC_PATH" ] ; then
 		logger -t "【迅雷快鸟】" "找到 $SVC_PATH"
@@ -236,6 +237,15 @@ fi
 }
 
 initconfig
+
+initopt () {
+optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
+[ ! -z "$optPath" ] && return
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+fi
+
+}
 
 case $ACTION in
 start)

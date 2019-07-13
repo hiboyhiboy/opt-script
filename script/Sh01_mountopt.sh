@@ -298,7 +298,8 @@ opt_download () {
 if [ "$opt_download_enable" != "0" ] ; then
 # 目录检测
 if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] || [ ! -d /tmp/AiDisk_00/cn2qq/opt-file ] ; then
-logger -t "【opt】" "部署离线 opt 环境到 USB/cn2qq/opt-script 和 USB/cn2qq/opt-file"
+[ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] && logger -t "【opt】" "部署离线 opt-script 环境到 USB/cn2qq/opt-script"
+[ ! -d /tmp/AiDisk_00/cn2qq/opt-file ] && logger -t "【opt】" "部署离线 opt-file 环境到 USB/cn2qq/opt-file"
 mkdir -p /tmp/AiDisk_00/cn2qq
 if [[ "$(unzip -h 2>&1 | wc -l)" -gt 2 ]] ; then
 	opt_download_script="https://github.com/hiboyhiboy/opt-script/archive/master.zip"
@@ -334,6 +335,13 @@ if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] ; then
 	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && { rm -rf /tmp/AiDisk_00/cn2qq/opt-script; ln -sf /tmp/AiDisk_00/cn2qq/opt-script-master /tmp/AiDisk_00/cn2qq/opt-script; }
 fi
 logger -t "【opt】" "$upanPath/cn2qq/opt-script.tgz 解压完成！"
+if [ -f /tmp/AiDisk_00/cn2qq/opt-file/osub ] ; then
+wgetcurl.sh '/tmp/osub_tmp' "https://raw.githubusercontent.com/hiboyhiboy/opt-file/master/osub" "https://opt.cn2qq.com/opt-file/osub"
+if [ -s /tmp/osub_tmp ] ; then
+	cp -f /tmp/osub_tmp /tmp/AiDisk_00/cn2qq/opt-file/osub
+	rm -f /tmp/osub_tmp
+fi
+fi
 # flush buffers
 sync
 fi
@@ -740,9 +748,25 @@ libmd5_backup)
 	libmd5_backup &
 	;;
 opt_download)
-	[ -d /tmp/AiDisk_00/cn2qq/opt-script ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script /tmp/AiDisk_00/cn2qq/opt-script-master
-	[ -d /tmp/AiDisk_00/cn2qq/opt-file ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-file /tmp/AiDisk_00/cn2qq/opt-file-master
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script
+	[ -d /tmp/AiDisk_00/cn2qq/opt-file ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-file
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script-master
+	[ -d /tmp/AiDisk_00/cn2qq/opt-file-master ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-file-master
 	[ -f /tmp/AiDisk_00/cn2qq/opt-script.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
+	[ -f /tmp/AiDisk_00/cn2qq/opt-file.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
+	opt_download_enable=1
+	opt_download &
+	;;
+opt_download_script)
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script
+	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script-master
+	[ -f /tmp/AiDisk_00/cn2qq/opt-script.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
+	opt_download_enable=1
+	opt_download &
+	;;
+opt_download_file)
+	[ -d /tmp/AiDisk_00/cn2qq/opt-file ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-file
+	[ -d /tmp/AiDisk_00/cn2qq/opt-file-master ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-file-master
 	[ -f /tmp/AiDisk_00/cn2qq/opt-file.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
 	opt_download_enable=1
 	opt_download &

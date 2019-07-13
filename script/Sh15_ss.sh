@@ -370,6 +370,44 @@ SSJSON
 
 }
 
+usage_switch()
+{
+
+# 高级启动参数分割
+echo -n "$1" \
+ | sed -e 's@ -s @ 丨 -s @g' \
+ | sed -e 's@ -p @ 丨 -p @g' \
+ | sed -e 's@ -l @ 丨 -l @g' \
+ | sed -e 's@ -k @ 丨 -k @g' \
+ | sed -e 's@ -m @ 丨 -m @g' \
+ | sed -e 's@ -a @ 丨 -a @g' \
+ | sed -e 's@ -f @ 丨 -f @g' \
+ | sed -e 's@ -t @ 丨 -t @g' \
+ | sed -e 's@ -c @ 丨 -c @g' \
+ | sed -e 's@ -n @ 丨 -n @g' \
+ | sed -e 's@ -i @ 丨 -i @g' \
+ | sed -e 's@ -b @ 丨 -b @g' \
+ | sed -e 's@ -u @ 丨 -u @g' \
+ | sed -e 's@ -U @ 丨 -U @g' \
+ | sed -e 's@ --reuse-port @ 丨 --reuse-port @g' \
+ | sed -e 's@ --fast-open @ 丨 --fast-open @g' \
+ | sed -e 's@ --acl @ 丨 --acl @g' \
+ | sed -e 's@ --mtu @ 丨 --mtu @g' \
+ | sed -e 's@ --mptcp @ 丨 --mptcp @g' \
+ | sed -e 's@ --no-delay @ 丨 --no-delay @g' \
+ | sed -e 's@ --key @ 丨 --key @g' \
+ | sed -e 's@ --plugin @ 丨 --plugin @g' \
+ | sed -e 's@ --plugin-opts @ 丨 --plugin-opts @g' \
+ | sed -e 's@ -v @@g' \
+ | sed -e 's@ -h @@g' \
+ | sed -e 's@ --help @@g' \
+ | sed -e 's@ -o @ 丨 -o @g' \
+ | sed -e 's@ -O @ 丨 -O @g' \
+ | sed -e 's@ -g @ 丨 -g @g' \
+ | sed -e 's@ -G @ 丨 -G @g'
+ 
+}
+
 #检查  libsodium.so.23
 [ -f /lib/libsodium.so.23 ] && libsodium_so=libsodium.so.23
 [ -f /lib/libsodium.so.18 ] && libsodium_so=libsodium.so.18
@@ -406,118 +444,58 @@ ss_usage="$ss_usage -u "
 ss_s2_usage="$ss_s2_usage -u "
 fi
 
-ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
-ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
-
+# 高级启动参数分割
+ss_usage="$(usage_switch "$ss_usage")"
+ss_s2_usage="$(usage_switch "$ss_s2_usage")"
+if [ "$ss_type" = "1" ] ; then 
 # 混淆插件方式
-ss_usage_custom="$(echo $ss_usage | grep -Eo '\-o[ ]+[^ ]+[^-]+')"
+ss_usage_custom="$(echo $ss_usage | grep -Eo '\-o[ ]+[^丨]+')"
 if [ ! -z "$ss_usage_custom" ] ; then
-	ssr_obfs="${ss_usage##* -o }"
-	ssr_obfs="${ssr_obfs%% -*}"
-	ssr_obfs="`echo -n "$ssr_obfs" | sed -e "s@ @@g" `"
+	ssr_obfs="$(echo $ss_usage_custom | sed -e "s@-o@@g" | sed -e "s@ @@g")"
 	logger -t "【SS】" "ssr混淆插件方式: $ssr_obfs"
 fi
-ss_usage_custom=""
-ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-o[ ]+[^ ]+[^-]+')"
-if [ ! -z "$ss_s2_usage_custom" ] ; then
-	ssr2_obfs="${ss_s2_usage##* -o }"
-	ssr2_obfs="${ssr2_obfs%% -*}"
-	ssr2_obfs="`echo -n "$ssr2_obfs" | sed -e "s@ @@g" `"
+ss_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-o[ ]+[^丨]+')"
+if [ ! -z "$ss_usage_custom" ] ; then
+	ssr2_obfs="$(echo $ss_usage_custom | sed -e "s@-o@@g" | sed -e "s@ @@g")"
 	logger -t "【SS】" "ssr2混淆插件方式: $ssr2_obfs"
 fi
-ss_s2_usage_custom=""
-ss_usage_custom="$(echo $ss_usage | grep -Eo '\-O[ ]+[^ ]+[^-]+')"
+# 协议插件方式
+ss_usage_custom="$(echo $ss_usage | grep -Eo '\-O[ ]+[^丨]+')"
 if [ ! -z "$ss_usage_custom" ] ; then
-	ssr_protocol="${ss_usage##* -O }"
-	ssr_protocol="${ssr_protocol%% -*}"
-	ssr_protocol="`echo -n "$ssr_protocol" | sed -e "s@ @@g" `"
+	ssr_protocol="$(echo $ss_usage_custom | sed -e "s@-O@@g" | sed -e "s@ @@g")"
 	logger -t "【SS】" "ssr协议插件方式: $ssr_protocol"
 fi
-ss_usage_custom=""
-ss_s2_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-O[ ]+[^ ]+[^-]+')"
-if [ ! -z "$ss_s2_usage_custom" ] ; then
-	ssr2_protocol="${ss_s2_usage##* -O }"
-	ssr2_protocol="${ssr2_protocol%% -*}"
-	ssr2_protocol="`echo -n "$ssr2_protocol" | sed -e "s@ @@g" `"
+ss_usage_custom="$(echo $ss_s2_usage | grep -Eo '\-O[ ]+[^丨]+')"
+if [ ! -z "$ss_usage_custom" ] ; then
+	ssr2_protocol="$(echo $ss_usage_custom | sed -e "s@-O@@g" | sed -e "s@ @@g")"
 	logger -t "【SS】" "ssr2协议插件方式: $ssr2_protocol"
 fi
-ss_s2_usage_custom=""
-
-if [ "$ss_type" = "1" ] ; then 
 # 混淆参数
 ssr_type_obfs_custom="`nvram get ssr_type_obfs_custom`"
 ssr2_type_obfs_custom="`nvram get ssr2_type_obfs_custom`"
-ss_usage_json=""
-ss_s2_usage_json=""
-ss_usage_obfs_custom="$(echo $ss_usage | grep -Eo '\-g[ ]+[^-]+')"
+ss_usage_obfs_custom="$(echo $ss_usage | grep -Eo '\-g[ ]+[^丨]+')"
 if [ ! -z "$ss_usage_obfs_custom" ] ; then 
-	ss_usage_obfs_custom_tmp="${ss_usage##* -g }"
-	ss_usage_obfs_custom_tmp="${ss_usage_obfs_custom_tmp%% -*}"
-	ss_usage_obfs_custom_tmp="`echo -n "$ss_usage_obfs_custom_tmp" | sed -e "s@ @@g" `"
-	nvram set ss_usage_obfs_custom_tmp="$ss_usage_obfs_custom_tmp"
-	ss_usage_json=" -a 1 -g ss_usage_obfs_custom_tmp"
-	#[ ! -z "$ss_usage_obfs_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_obfs_custom_tmp@@g" `"
-	#ss_usage="`echo "$ss_usage" | sed -e "s/ -g//g" `"
-	ss_usage="`echo "$ss_usage" | sed -r 's/\-g[ ]+[^ ]+[^-]+//g'`"
-	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_usage_obfs_custom_tmp ，服务1优先使用此 混淆参数"
-	ssr_type_obfs_custom="$ss_usage_obfs_custom_tmp"
-else
-	ss_usage="`echo "$ss_usage" | sed -e "s/ -g//g" `" # 删除空的混淆参数
-	[ ! -z "$ssr_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="-a 1 -g ssr_type_obfs_custom"
+	ssr_type_obfs_custom="$(echo $ss_usage_obfs_custom | sed -e "s@-g@@g" | sed -e "s@^ @@g")"
+	logger -t "【SS】" "高级启动参数选项内容含有 -g $ssr_type_obfs_custom ，服务1优先使用此 混淆参数"
 fi
-ss_s2_usage_obfs_custom="$(echo $ss_s2_usage | grep -Eo '\-g[ ]+[^-]+')"
+ss_s2_usage_obfs_custom="$(echo $ss_s2_usage | grep -Eo '\-g[ ]+[^丨]+')"
 if [ ! -z "$ss_s2_usage_obfs_custom" ] ; then 
-	ss_s2_usage_obfs_custom_tmp="${ss_s2_usage##* -g }"
-	ss_s2_usage_obfs_custom_tmp="${ss_s2_usage_obfs_custom_tmp%% -*}"
-	ss_s2_usage_obfs_custom_tmp="`echo -n "$ss_s2_usage_obfs_custom_tmp" | sed -e "s@ @@g" `"
-	nvram set ss_s2_usage_obfs_custom_tmp="$ss_s2_usage_obfs_custom_tmp"
-	ss_s2_usage_json=" -a 1 -g ss_s2_usage_obfs_custom_tmp"
-	#[ ! -z "$ss_s2_usage_obfs_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_obfs_custom_tmp@@g" `"
-	#ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g//g" `"
-	ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\-g[ ]+[^ ]+[^-]+//g'`"
-	logger -t "【SS】" "高级启动参数选项内容含有 -g $ss_s2_usage_obfs_custom_tmp ，服务2优先使用此 混淆参数"
-	ssr2_type_obfs_custom="$ss_s2_usage_obfs_custom_tmp"
-else
-	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -g//g" `" # 删除空的混淆参数
-	[ ! -z "$ssr2_type_obfs_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="-a 1 -g ssr2_type_obfs_custom"
+	ssr2_type_obfs_custom="$(echo $ss_s2_usage_obfs_custom | sed -e "s@-g@@g" | sed -e "s@^ @@g")"
+	logger -t "【SS】" "高级启动参数选项内容含有 -g $ssr2_type_obfs_custom ，服务2优先使用此 混淆参数"
 fi
-
 # 协议参数
 ssr_type_protocol_custom="`nvram get ssr_type_protocol_custom`"
 ssr2_type_protocol_custom="`nvram get ssr2_type_protocol_custom`"
-ss_usage_protocol_custom="$(echo $ss_usage | grep -Eo '\-G[ ]+[^-]+')"
+ss_usage_protocol_custom="$(echo $ss_usage | grep -Eo '\-G[ ]+[^丨]+')"
 if [ ! -z "$ss_usage_protocol_custom" ] ; then 
-	ss_usage_protocol_custom_tmp="${ss_usage##* -G }"
-	ss_usage_protocol_custom_tmp="${ss_usage_protocol_custom_tmp%% -*}"
-	ss_usage_protocol_custom_tmp="`echo -n "$ss_usage_protocol_custom_tmp" | sed -e "s@ @@g" `"
-	nvram set ss_usage_protocol_custom_tmp="$ss_usage_protocol_custom_tmp"
-	ss_usage_json="$ss_usage_json -a 2 -G ss_usage_protocol_custom_tmp"
-	#[ ! -z "$ss_usage_protocol_custom_tmp" ] && ss_usage="`echo "$ss_usage" | sed -e "s@$ss_usage_protocol_custom_tmp@@g" `"
-	#ss_usage="`echo "$ss_usage" | sed -e "s/ -G//g" `"
-	ss_usage="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^ ]+[^-]+//g'`"
-	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_usage_protocol_custom_tmp ，服务1优先使用此 协议参数"
-	ssr_type_protocol_custom="$ss_usage_protocol_custom_tmp"
-else
-	ss_usage="`echo "$ss_usage" | sed -e "s/ -G//g" `" # 删除空的协议参数
-	[ ! -z "$ssr_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_usage_json="$ss_usage_json -a 2 -G ssr_type_protocol_custom"
+	ssr_type_protocol_custom="$(echo $ss_usage_protocol_custom | sed -e "s@-G@@g" | sed -e "s@ @@g")"
+	logger -t "【SS】" "高级启动参数选项内容含有 -G $ssr_type_protocol_custom ，服务1优先使用此 协议参数"
 fi
-ss_s2_usage_protocol_custom="$(echo $ss_s2_usage | grep -Eo '\-G[ ]+[^-]+')"
+ss_s2_usage_protocol_custom="$(echo $ss_s2_usage | grep -Eo '\-G[ ]+[^丨]+')"
 if [ ! -z "$ss_s2_usage_protocol_custom" ] ; then 
-	ss_s2_usage_protocol_custom_tmp="${ss_s2_usage##* -G }"
-	ss_s2_usage_protocol_custom_tmp="${ss_s2_usage_protocol_custom_tmp%% -*}"
-	ss_s2_usage_protocol_custom_tmp="`echo -n "$ss_s2_usage_protocol_custom_tmp" | sed -e "s@ @@g" `"
-	nvram set ss_s2_usage_protocol_custom_tmp="$ss_s2_usage_protocol_custom_tmp"
-	ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ss_s2_usage_protocol_custom_tmp"
-	#[ ! -z "$ss_s2_usage_protocol_custom_tmp" ] && ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s@$ss_s2_usage_protocol_custom_tmp@@g" `"
-	#ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G//g" `"
-	ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^ ]+[^-]+//g'`"
-	logger -t "【SS】" "高级启动参数选项内容含有 -G $ss_s2_usage_protocol_custom_tmp ，服务2优先使用此 协议参数"
-	ssr2_type_protocol_custom="$ss_s2_usage_protocol_custom_tmp"
-else
-	ss_s2_usage="`echo "$ss_s2_usage" | sed -e "s/ -G//g" `" # 删除空的协议参数
-	[ ! -z "$ssr2_type_protocol_custom" ] && [ "$ss_type" = "1" ] && ss_s2_usage_json="$ss_s2_usage_json -a 2 -G ssr2_type_protocol_custom"
+	ssr2_type_protocol_custom="$(echo $ss_s2_usage_protocol_custom | sed -e "s@-G@@g" | sed -e "s@ @@g")"
+	logger -t "【SS】" "高级启动参数选项内容含有 -G $ssr2_type_protocol_custom ，服务2优先使用此 协议参数"
 fi
-
 else
 ssr_type_obfs_custom=""
 ssr2_type_obfs_custom=""
@@ -528,18 +506,10 @@ ssr2_protocol=""
 ssr_obfs=""
 ssr2_obfs=""
 fi
-
-ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
-ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
-
-options1="`echo "$ss_usage" | sed -r 's/\-G[ ]+[^ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
-options2="`echo "$ss_s2_usage" | sed -r 's/\-G[ ]+[^ ]+[^-]+//g' | sed -r 's/\-g[ ]+[^ ]+[^-]+//g' | sed -r 's/\-O[ ]+[^ ]+[^-]+//g' | sed -r 's/\-o[ ]+[^ ]+[^-]+//g' | sed -e "s/ -g//g" | sed -e "s/ -G//g" | sed -e "s/ -o//g" | sed -e "s/ -O//g" `"
-
-ss_usage="`echo "$ss_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^ ]+[^-]+//g'`"
-ss_s2_usage="`echo "$ss_s2_usage" | sed -r 's/\--[^ ]+[^-]+[-]+[^-]+//g' | sed -r 's/\--[^ ]+[^ ]+[^-]+//g'`"
-
-ss_usage="`echo -n "$ss_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
-ss_s2_usage="`echo -n "$ss_s2_usage" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g" | sed -e "s@  @ @g"`"
+# 删除混淆、协议、分割符号
+options1="$(echo "$ss_usage" | sed -r 's/\ -g[ ]+[^丨]+//g' | sed -r 's/\ -G[ ]+[^丨]+//g' | sed -r 's/\ -o[ ]+[^丨]+//g' | sed -r 's/\ -O[ ]+[^丨]+//g' | sed -e "s@丨@@g" | sed -e "s@  @ @g")"
+options2="$(echo "$ss_s2_usage" | sed -r 's/\ -g[ ]+[^丨]+//g' | sed -r 's/\ -G[ ]+[^丨]+//g' | sed -r 's/\ -o[ ]+[^丨]+//g' | sed -r 's/\ -O[ ]+[^丨]+//g' | sed -e "s@丨@@g" | sed -e "s@  @ @g")"
+# 高级启动参数分割完成
 
 # 启动程序
 ss_s1_redir_port=1090
@@ -2645,7 +2615,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_threads$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_usage_json$ss_s2_usage_json$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_threads$ss_dnsproxy_x$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s2_local_address$ss_s1_local_port$ss_s2_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_plugin_name$ss2_plugin_name$ss_plugin_config$ss2_plugin_config$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart

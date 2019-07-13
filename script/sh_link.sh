@@ -337,7 +337,7 @@ fi
 
 ping_link () {
 
-ping_text=`ping -4 $ss_link_server -c 1 -w 2 -q`
+ping_text=`ping -4 $ss_link_server -c 1 -w 1 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 if [ ! -z "$ping_time" ] ; then
@@ -349,9 +349,9 @@ if [ ! -z "$ping_time" ] ; then
 	echo -n '"'"$ping_time ms"'", ' >> /www/link/link.js
  else
 	echo -n '"btn-danger", ' >> /www/link/link.js
-	echo "🔗$ss_link_name：失效1"
-	logger -t "【🔗$ss_link_name】" "失效"
-	echo -n '"失效", ' >> /www/link/link.js
+	echo "🔗$ss_link_name：>1000 ms"
+	#logger -t "【🔗$ss_link_name】" ">1000 ms"
+	echo -n '">1000 ms", ' >> /www/link/link.js
 fi
 }
 
@@ -364,8 +364,7 @@ rt_ssnum_x=$(nvram get rt_ssnum_x)
 nvram set rt_ssnum_x=$rt_ssnum_x
 
 rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
-[ -z "$rt_ssnum_x_tmp" ] && rt_ssnum_x_tmp="" && nvram set rt_ssnum_x_tmp=""
-if [ "$rt_ssnum_x_tmp"x = "del"x ] ; then
+if [ "$rt_ssnum_x_tmp" = "del" ] ; then
 	shlinksh=$$
 	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
 	echo -n '' > /www/link/link.js
@@ -377,8 +376,8 @@ fi
 
 
 ssr_link="`nvram get ssr_link`"
-[ -z "$ssr_link" ] && ssr_link="" && nvram set ssr_link=""
 A_restart=`nvram get ss_link_status`
+if [ "$A_restart" != "up_link" ] ; then
 #B_restart="$ssr_link"
 B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -391,6 +390,7 @@ if [ "$A_restart" != "$B_restart" ] ; then
 		cru.sh a ss_link_update "12 */3 * * * $scriptfilepath uplink &" &
 		logger -t "【SS】" "启动 SS 服务器订阅，添加计划任务 (Crontab)，每三小时更新"
 	fi
+fi
 fi
 if [ -z "$ssr_link" ] ; then
 	return

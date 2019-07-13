@@ -146,7 +146,7 @@ curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	logger -t "【AliDDNS动态域名】" "找不到 curl ，安装 opt 程序"
 	/tmp/script/_mountopt optwget
-	#initopt
+	initopt
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		logger -t "【AliDDNS动态域名】" "找不到 curl ，需要手动安装 opt 后输入[opkg install curl]安装"

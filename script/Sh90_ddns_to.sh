@@ -132,6 +132,7 @@ SVC_PATH=/opt/bin/ddnsto
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ddnsto】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
+	initopt
 fi
 if [ -f /etc_ro/ddnsto ] && [ ! -s "$SVC_PATH" ] && [ ! -f /tmp/ddnsto_ro ] ; then
 	cp -f /etc_ro/ddnsto /opt/bin/ddnsto
