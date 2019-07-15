@@ -376,21 +376,24 @@ fi
 
 
 ssr_link="`nvram get ssr_link`"
+ss_link_up=`nvram get ss_link_up`
 A_restart=`nvram get ss_link_status`
-if [ "$A_restart" != "up_link" ] ; then
 #B_restart="$ssr_link"
 B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set ss_link_status=$B_restart
+nvram set ss_link_status=$B_restart
 	if [ -z "$ssr_link" ] ; then
 		cru.sh d ss_link_update
 		logger -t "【SS】" "停止 SS 服务器订阅"
 		return
 	else
-		cru.sh a ss_link_update "12 */3 * * * $scriptfilepath uplink &" &
-		logger -t "【SS】" "启动 SS 服务器订阅，添加计划任务 (Crontab)，每三小时更新"
+		if [ "$ss_link_up" != 1 ] ; then
+			cru.sh a ss_link_update "12 */3 * * * $scriptfilepath uplink &" &
+			logger -t "【SS】" "启动 SS 服务器订阅，添加计划任务 (Crontab)，每三小时更新"
+		else
+			cru.sh d ss_link_update
+		fi
 	fi
-fi
 fi
 if [ -z "$ssr_link" ] ; then
 	return
