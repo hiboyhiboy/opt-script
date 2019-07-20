@@ -181,7 +181,7 @@ events {
 
 http {
     charset utf-8;
-    include mime.types;
+    include /opt/etc/nginx/mime.types;
     default_type application/octet-stream;
     
     sendfile on;
@@ -190,6 +190,7 @@ http {
     keepalive_timeout 60;
     
     client_max_body_size 2000m;
+    types_hash_max_size 2048;
     client_body_temp_path /opt/tmp/;
     
     gzip on; 
