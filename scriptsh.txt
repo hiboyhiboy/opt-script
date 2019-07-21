@@ -1,5 +1,5 @@
 sh_opt_script_check=40e14f9e123fdef4889010e8c737c554
-sh_link=28ebf2e1cf1d005fea3d3a62abc96680
+sh_link=479a43a59ddd840e4d3381156ef99f36
 sh_emi=aed2c686ce8a06c38027383c5c7ae42a
 init=612f00fad568c2220eee486839cb9510
 Sh90_ddns_to=67dcfd842fe686aa5b0b73dff267f3c8
@@ -55,5 +55,5 @@ Sh04_mento_hust=637d09b45a29e4aca6e9c57f5b4a2f98
 Sh03_jbls=4a5c2af8cbcf5a4db8527a8140d427b6
 Sh02_kms=78e465b899e13b234683ed807cac13e8
 Sh01_mountopt=f08bf1319de2cf6d4a56dc882155ae47
-sh_upscript=fb952811264723acfb2b3ef6a889f159
-scriptt=2019-7-16
+sh_upscript=e36ba1d834f7e8fba5e3a4e46b5e289b
+scriptt=2019-7-20

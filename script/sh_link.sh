@@ -256,8 +256,7 @@ sed -e "s/_/\//g" -i /tmp/ss/link/ssr_link.txt
 sed -e "s/\-/\+/g" -i /tmp/ss/link/ssr_link.txt
 
 #echo > /tmp/ss/link/c_link.txt
-[ -f /www/link/link.js ] && echo -n "var ACL2List = [" > /www/link/link.js
-i_s=0
+
 i=`nvram get rt_ssnum_x`
 if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 	awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ssr_link.txt > /tmp/ss/link/ssr_link2.txt
@@ -276,15 +275,20 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			eval "nvram set rt_ss_method_x$i=$ss_link_method"
 			i=$(( i + 1 ))
 		else
-			[ $i_s -gt 0 ] && echo -n ', ' >> /www/link/link.js
-			echo -n '["🔗'"$ss_link_name"'", ' >> /www/link/link.js
-			echo -n '"'"$ss_link_server"'", ' >> /www/link/link.js
-			echo -n '"'"$ss_link_port"'", ' >> /www/link/link.js
-			echo -n '"'"$ss_link_password"'", ' >> /www/link/link.js
-			echo -n '"'"$ss_link_method"'", ' >> /www/link/link.js
+			link_echo=""
+			[ $i_s -gt 0 ] && link_echo="$link_echo"', '
+			
+			link_echo="$link_echo"'["🔗'"$ss_link_name"'", '
+			link_echo="$link_echo"'"'"$ss_link_server"'", '
+			link_echo="$link_echo"'"'"$ss_link_port"'", '
+			link_echo="$link_echo"'"'"$ss_link_password"'", '
+			link_echo="$link_echo"'"'"$ss_link_method"'", '
 			ping_link
-			echo -n '"'"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", ' >> /www/link/link.js
-			echo -n '""]' >> /www/link/link.js
+			link_echo="$link_echo"'"'"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
+			link_echo="$link_echo"'""]'
+			link_echo="$link_echo"']'
+			sed -Ei "s@]]@]@g" /www/link/link.js
+			echo -n "$link_echo" >> /www/link/link.js
 			i_s=$(( i_s + 1 ))
 		fi
 	fi
@@ -309,49 +313,58 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 			eval "nvram set rt_ss_usage_x$i=\"$ss_link_plugin_opts\""
 			i=$(( i + 1 ))
 		else
-			[ $i_s -gt 0 ] && echo -n ', ' >> /www/link/link.js
-			echo -n '["🔗'"$ss_link_name"'", ' >> /www/link/link.js
-			echo -n '"'"$ss_link_server"'", ' >> /www/link/link.js
-			echo -n '"'"$ss_link_port"'", ' >> /www/link/link.js
-			echo -n '"'"$ss_link_password"'", ' >> /www/link/link.js
-			echo -n '"'"$ss_link_method"'", ' >> /www/link/link.js
+			link_echo=""
+			[ $i_s -gt 0 ] && link_echo="$link_echo"', '
+			link_echo="$link_echo"'["🔗'"$ss_link_name"'", '
+			link_echo="$link_echo"'"'"$ss_link_server"'", '
+			link_echo="$link_echo"'"'"$ss_link_port"'", '
+			link_echo="$link_echo"'"'"$ss_link_password"'", '
+			link_echo="$link_echo"'"'"$ss_link_method"'", '
 			ping_link
-			echo -n '"'"$ss_link_plugin_opts"'", ' >> /www/link/link.js
-			echo -n '""]' >> /www/link/link.js
+			link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
+			link_echo="$link_echo"'""]]'
+			sed -Ei "s@]]@]@g" /www/link/link.js
+			echo -n "$link_echo" >> /www/link/link.js
 			i_s=$(( i_s + 1 ))
 		fi
 	fi
 	done < /tmp/ss/link/ss_link2.txt
 fi
-[ -f /www/link/link.js ] && echo -n ']' >> /www/link/link.js
+[ -f /www/link/link.js ] && { sed -Ei "s@]]@]@g" /www/link/link.js; echo -n ']' >> /www/link/link.js; }
 if [ ! -f /www/link/link.js ] ; then
 # 保存有效节点数量
 rt_ssnum_x=`nvram get rt_ssnum_x`
 [ -z $rt_ssnum_x ] && rt_ssnum_x=0 && nvram set rt_ssnum_x=0
 [ $rt_ssnum_x -lt $i ] && nvram set rt_ssnum_x=$i
-rm -rf /tmp/ss/link
 nvram commit
 fi
+rm -rf /tmp/ss/link
 }
 
 
 ping_link () {
-
+if [ "$ss_link_ping" != 1 ] ; then
 ping_text=`ping -4 $ss_link_server -c 1 -w 1 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 if [ ! -z "$ping_time" ] ; then
-	[ $ping_time -le 250 ] && echo -n '"btn-success", ' >> /www/link/link.js
-	[ $ping_time -gt 250 ] && echo -n '"btn-warning", ' >> /www/link/link.js
-	[ $ping_time -gt 500 ] && echo -n '"btn-danger", ' >> /www/link/link.js
+	[ $ping_time -le 250 ] && link_echo="$link_echo"'"btn-success", '
+	[ $ping_time -gt 250 ] && link_echo="$link_echo"'"btn-warning", '
+	[ $ping_time -gt 500 ] && link_echo="$link_echo"'"btn-danger", '
 	echo "🔗$ss_link_name：$ping_time ms 丢包率：$ping_loss"
 	#logger -t "【🔗$ss_link_name】" "$ping_time ms"
-	echo -n '"'"$ping_time ms"'", ' >> /www/link/link.js
- else
-	echo -n '"btn-danger", ' >> /www/link/link.js
+	link_echo="$link_echo"'"'"$ping_time ms"'", '
+else
+	link_echo="$link_echo"'"btn-danger", '
 	echo "🔗$ss_link_name：>1000 ms"
 	#logger -t "【🔗$ss_link_name】" ">1000 ms"
-	echo -n '">1000 ms", ' >> /www/link/link.js
+	link_echo="$link_echo"'">1000 ms", '
+fi
+else
+# 停止ping订阅节点
+	link_echo="$link_echo"'"", '
+	echo "🔗$ss_link_name：停止ping订阅节点"
+	link_echo="$link_echo"'"", '
 fi
 }
 
@@ -377,6 +390,7 @@ fi
 
 ssr_link="`nvram get ssr_link`"
 ss_link_up=`nvram get ss_link_up`
+ss_link_ping=`nvram get ss_link_ping`
 A_restart=`nvram get ss_link_status`
 #B_restart="$ssr_link"
 B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -409,6 +423,8 @@ else
 fi
 ssr_link="$(echo "$ssr_link" | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 ssr_link_i=""
+[ -f /www/link/link.js ] && echo -n "var ACL2List = [" > /www/link/link.js
+i_s=0
 if [ ! -z "$(echo "$ssr_link" | awk -F ' ' '{print $2}')" ] ; then
 	for ssr_link_ii in $ssr_link
 	do
