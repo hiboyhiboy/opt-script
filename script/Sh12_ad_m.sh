@@ -234,7 +234,7 @@ killall -9 sh_ad_m_keey_k.sh
 rm -f /tmp/cron_adb.lock
 reb="1"
 [ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
-[ -z $ss_link_1 ] && ss_link_1="www.zol.com.cn" && nvram set ss_link_1="www.zol.com.cn"
+[ -z $ss_link_1 ] && ss_link_1="www.miui.com" && nvram set ss_link_1="www.miui.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 while true; do
 adm_enable=`nvram get adm_enable`

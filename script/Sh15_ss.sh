@@ -186,7 +186,7 @@ ss_check=`nvram get ss_check`
 ss_updatess=`nvram get ss_updatess`
 [ -z $ss_updatess ] && ss_updatess=0 && nvram set ss_updatess=$ss_updatess
 [ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
-[ -z $ss_link_1 ] && ss_link_1="www.zol.com.cn" && nvram set ss_link_1="www.zol.com.cn"
+[ -z $ss_link_1 ] && ss_link_1="www.miui.com" && nvram set ss_link_1="www.miui.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0

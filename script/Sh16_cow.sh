@@ -371,7 +371,7 @@ loadBalance = backup
 #core = 2
 #
 # 检测超时时间使用的网站，最好使用能快速访问的站点
-estimateTarget = www.zol.com.cn
+estimateTarget = www.miui.com
 #
 # 允许建立隧道连接的端口，多个端口用逗号分隔，可重复多次
 # 默认总是允许下列服务的端口: ssh, http, https, rsync, imap, pop, jabber, cvs, git, svn
