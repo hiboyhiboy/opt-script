@@ -240,9 +240,9 @@ killall -9 sh_ad_byby_keey_k.sh
 
 rm -f /tmp/cron_adb.lock
 reb="1"
-[ -z $ss_link_1 ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
+[ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
+[ -z $ss_link_1 ] && ss_link_1="www.zol.com.cn" && nvram set ss_link_1="www.zol.com.cn"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
-[ $ss_link_1 == "email.163.com" ] && ss_link_1="www.163.com" && nvram set ss_link_1="www.163.com"
 while true; do
 adbyby_enable=`nvram get adbyby_enable`
 [ "$adbyby_enable" != "1" ] && exit
