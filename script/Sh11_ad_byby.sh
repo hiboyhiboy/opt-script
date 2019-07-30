@@ -335,7 +335,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		fi
 		reb=`expr $reb + 1`
 	fi
-	/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	sleep 211
 fi
 sleep 21
@@ -351,7 +351,7 @@ if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ $((CPULoad)) -ge "$processor" ] ; then
 		logger -t "【Adbyby】" "CPU 负载拥堵, 关闭 adbyby"
 		adbyby_flush_rules
-		/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+		/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 		killall -15 adbyby
 		killall -9 adbyby
 		touch /tmp/cron_adb.lock
@@ -383,6 +383,7 @@ killall -9 adbyby sh_ad_byby_keey_k.sh
 [ "$adm_enable" != "1" ] && killall -9 adm sh_ad_m_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -15 koolproxy sh_ad_kp_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -9 koolproxy sh_ad_kp_keey_k.sh
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock /tmp/adbyby_host_backup.conf /tmp/sh_ad_byby_keey_k.sh
 kill_ps "/tmp/script/_ad_byby"
 kill_ps "_ad_byby.sh"
@@ -416,7 +417,7 @@ nvram set adbybyvideo="【adbyby未启动】video更新："
 nvram set adbybyuser3="第三方规则行数：行"
 nvram set adbybyuser="自定义规则行数：行"
 nvram set button_script_1_s="Adbyby"
-/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 	touch /tmp/cron_adb.lock
 	for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
@@ -549,7 +550,7 @@ nvram set adbybylazy="$ipsetstxt lazy规则更新时间 $adbybylazytime / 【 $a
 nvram set adbybyvideo="$ipsetstxt video规则更新时间 $adbybyvideotime / 【 $adbybyvideo_nu 】条"
 nvram set adbybyuser3="第三方规则行数:  `sed -n '$=' /tmp/bin/data/user3adblocks.txt | sed s/[[:space:]]//g ` 行"
 nvram set adbybyuser="自定义规则行数:  `sed -n '$=' /tmp/bin/data/user_rules.txt | sed s/[[:space:]]//g ` 行"
-/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 logger -t "【Adbyby】" "守护进程启动"
 adbyby_cron_job
 #adbyby_get_status

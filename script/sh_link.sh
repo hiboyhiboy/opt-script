@@ -251,14 +251,14 @@ if [ ! -z "$ss_line" ] ; then
 	echo  "$ss_line" | awk -F 'ss://' '{print $2}' >> /tmp/ss/link/ss_link.txt
 fi
 done < /tmp/ss/link/2_link.txt
-sed -e 's/$/&==/g' -i /tmp/ss/link/ssr_link.txt
-sed -e "s/_/\//g" -i /tmp/ss/link/ssr_link.txt
-sed -e "s/\-/\+/g" -i /tmp/ss/link/ssr_link.txt
 
 #echo > /tmp/ss/link/c_link.txt
 
 i=`nvram get rt_ssnum_x`
 if [ -f /tmp/ss/link/ssr_link.txt ] ; then
+	sed -e 's/$/&==/g' -i /tmp/ss/link/ssr_link.txt
+	sed -e "s/_/\//g" -i /tmp/ss/link/ssr_link.txt
+	sed -e "s/\-/\+/g" -i /tmp/ss/link/ssr_link.txt
 	awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ssr_link.txt > /tmp/ss/link/ssr_link2.txt
 	while read line
 	do
@@ -285,8 +285,7 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			link_echo="$link_echo"'"'"$ss_link_method"'", '
 			ping_link
 			link_echo="$link_echo"'"'"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
-			link_echo="$link_echo"'""]'
-			link_echo="$link_echo"']'
+			link_echo="$link_echo"'"ssr"]]'
 			sed -Ei "s@]]@]@g" /www/link/link.js
 			echo -n "$link_echo" >> /www/link/link.js
 			i_s=$(( i_s + 1 ))
@@ -297,7 +296,6 @@ fi
 
 if [ -f /tmp/ss/link/ss_link.txt ] ; then
 	#awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ss_link.txt > /tmp/ss/link/ss_link2.txt
-	cp -f /tmp/ss/link/ss_link.txt /tmp/ss/link/ss_link2.txt
 	while read line
 	do
 	if [ ! -z "$line" ] ; then
@@ -322,13 +320,13 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 			link_echo="$link_echo"'"'"$ss_link_method"'", '
 			ping_link
 			link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
-			link_echo="$link_echo"'""]]'
+			link_echo="$link_echo"'"ss"]]'
 			sed -Ei "s@]]@]@g" /www/link/link.js
 			echo -n "$link_echo" >> /www/link/link.js
 			i_s=$(( i_s + 1 ))
 		fi
 	fi
-	done < /tmp/ss/link/ss_link2.txt
+	done < /tmp/ss/link/ss_link.txt
 fi
 [ -f /www/link/link.js ] && { sed -Ei "s@]]@]@g" /www/link/link.js; echo -n ']' >> /www/link/link.js; }
 if [ ! -f /www/link/link.js ] ; then
@@ -435,6 +433,8 @@ else
 	ssr_link_i="$ssr_link"
 	do_link
 fi
+sed -Ei "s@]]@]@g" /www/link/link.js
+echo -n ']' >> /www/link/link.js
 logger -t "【SS】" "服务器订阅：更新完成"
 }
 

@@ -11,6 +11,7 @@ transocks_enable=`nvram get app_27`
 v2ray_follow=`nvram get v2ray_follow`
 [ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
 if [ "$transocks_enable" != "0" ]  ; then
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	if [ "$ss_enable" != "0" ]  ; then
 		ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
 		[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
@@ -85,7 +86,7 @@ kcptun2_enable2=`nvram get kcptun2_enable2`
 [ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":"[0-9\.]*"' | cut -d':' -f2 | tr -d '"')
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | sed -n '1p' | cut -d':' -f2 | tr -d '"' | tr -d ',')
 
 nvram set ss_server1=`nvram get ss_server`
 nvram set ss_s1_port=`nvram get ss_server_port`
@@ -1364,10 +1365,8 @@ else
 fi
 
 nvram set ss_internet="1"
-
-[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
-[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
-nvram set button_script_2_s="$ss_info"
+ss_working_port=`nvram get ss_working_port`
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 
 # 外网(WAN)访问控制
 	logger -t "【SS】" "外网(WAN)访问控制，设置 WAN IP 转发或忽略代理中转"
@@ -1686,7 +1685,7 @@ lan_ipaddr=`nvram get lan_ipaddr`
 kcptun_enable=`nvram get kcptun_enable`
 [ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
 kcptun_server=`nvram get kcptun_server`
-if [ "$kcptun_enable" != "0" ] && [ -z "$kcptun_server" ] ; then
+if [ "$kcptun_enable" != "0" ] ; then
 if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
 resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $kcptun_server | grep : | sed -n '1p'`
@@ -1936,7 +1935,7 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 			cat /tmp/ss/gfwlist.txt | sort -u |
 					sed '/^$\|@@/d'|
 					sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
-					sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /qq\.com/d' |
+					sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d' |
 					sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
 					grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##'  | sort -u > /tmp/ss/gfwlist_domain.txt
 		fi
@@ -1951,7 +1950,7 @@ if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 	rm -f /tmp/ss/gfwdomain_tmp.txt
 	#合并多个域名列表（自定义域名，GFWLIST，自带的三个列表）
 	logger -t "【SS】" "根据选项不同，分别会合并固件自带、gfwlist官方、订阅下载地址自定义域名 ...."
-	touch /etc/storage/shadowsocks_mydomain_script.sh
+	touch /etc/storage/shadowsocks_mydomain_script.sh /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwlist_domain.txt /tmp/ss/gfwdomain_5.txt
 	cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u > /tmp/ss/gfwdomain_0.txt
 	cat /etc/storage/basedomain.txt /tmp/ss/gfwdomain_0.txt /tmp/ss/gfwdomain_1.txt /tmp/ss/gfwlist_domain.txt /tmp/ss/gfwdomain_5.txt | 
 		sort -u > /tmp/ss/gfwall_domain.txt
@@ -2221,6 +2220,7 @@ start_SS()
 {
 check_webui_yes
 	logger -t "【SS】" "启动 SS"
+	nvram set gfwlist3="正在启动 SS 请稍后！"
 	nvram set ss_internet="2"
 	optssredir="0"
 if [ "$ss_type" != "1" ] ; then
@@ -2486,7 +2486,7 @@ if [ "$check" != "200" ] ; then
 	logger -t "【SS】" "SS 网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
 	clean_SS
 fi
-	/etc/storage/ez_buttons_script.sh 3 &
+	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	logger -t "【SS】" "SS 启动成功"
 	logger -t "【SS】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
 	logger -t "【SS】" "①路由 SS 设置选择其他 DNS 服务模式；"
@@ -2503,9 +2503,7 @@ if [ "$ss_dnsproxy_x" = "2" ] ; then
 	fi
 fi
 
-[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
-[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
-nvram set button_script_2_s="$ss_info"
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 eval "$scriptfilepath keep &"
 exit 0
 }
@@ -2545,10 +2543,7 @@ cru.sh d ss_update &
 ss-rules -f
 nvram set ss_internet="0"
 nvram set ss_working_port="1090" #恢复主服务器端口
-ss_working_port=`nvram get ss_working_port`
-[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
-[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
-nvram set button_script_2_s="$ss_info"
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 rm -f $confdir/r.wantoss.conf
 sed -Ei '/github|ipip.net|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
@@ -2567,7 +2562,7 @@ rm -f $confdir/r.adhost.conf
 [ -f /opt/etc/init.d/S26pdnsd ] && { rm -f /var/log/pdnsd.lock; /opt/etc/init.d/S26pdnsd stop& }
 [ -f /opt/etc/init.d/S27pcap-dnsproxy ] && { rm -f /var/log/pcap-dnsproxy.lock; /opt/etc/init.d/S27pcap-dnsproxy stop& }
 nvram set gfwlist3="ss-redir stop."
-/etc/storage/ez_buttons_script.sh 3 &
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
 kill_ps "/tmp/script/_ss"
@@ -2621,7 +2616,6 @@ if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
 	needed_restart=1
 	ss_get_status2
-	#/etc/storage/ez_buttons_script.sh ping &
 else
 	needed_restart=0
 	ss_get_status2
@@ -2731,8 +2725,9 @@ ss_mode_x=`nvram get ss_mode_x`
 [ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 rm -f /tmp/cron_ss.lock
-ss_enable=`nvram get ss_enable`
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 sleep 15
+ss_enable=`nvram get ss_enable`
 while [ "$ss_enable" = "1" ];
 do
 ss_rebss_n=`nvram get ss_rebss_n`
@@ -2775,7 +2770,7 @@ if [ "$ss_internet" = "1" ] ; then
 	RND_NUM=`echo $SEED 60 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 	sleep $RND_NUM
 fi
-/etc/storage/ez_buttons_script.sh 3 &
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 ss_enable=`nvram get ss_enable`
 if [ -f /tmp/cron_ss.lock ] || [ "$ss_enable" != "1" ] ; then
 	#跳出当前循环
@@ -3019,11 +3014,9 @@ if [ ! -z "$ss_rdd_server" ] ; then
 		iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $Server
 	fi
 	#加上切换标记
-	nvram set ss_working_port=$Server
-	ss_working_port=`nvram get ss_working_port`
-	[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
-	[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
-	nvram set button_script_2_s="$ss_info"
+	ss_working_port=$Server
+	nvram set ss_working_port=$ss_working_port
+	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	#检查切换后的状态
 	TAG="SS_SPEC"		  # iptables tag
 	FWI="/tmp/firewall.shadowsocks.pdcn" # firewall include file
@@ -3135,11 +3128,9 @@ if [ ! -z "$ss_rdd_server" ] && [ "$ss_internet" = "1" ] ; then
 		iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $Server
 	fi
 	#加上切换标记
-	nvram set ss_working_port=$Server
-	ss_working_port=`nvram get ss_working_port`
-	[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
-	[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
-	nvram set button_script_2_s="$ss_info"
+	ss_working_port=$Server
+	nvram set ss_working_port=$ss_working_port
+	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	nvram set ss_internet="1"
 	logger -t "【SS】" "当前使用 $ss_info 服务器 $Server_ip 【$Server】"
 	#检查切换后的状态

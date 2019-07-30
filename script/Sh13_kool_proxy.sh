@@ -348,7 +348,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		fi
 		reb=`expr $reb + 1`
 	fi
-	/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	sleep 213
 fi
 sleep 23
@@ -364,7 +364,7 @@ if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ $((CPULoad)) -ge "$processor" ] ; then
 		logger -t "【koolproxy】" "CPU 负载拥堵, 关闭 koolproxy"
 		koolproxy_flush_rules
-		/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+		/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 		killall -15 koolproxy
 		killall -9 koolproxy
 		touch /tmp/cron_adb.lock
@@ -392,6 +392,7 @@ port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
 [ "$adm_enable" != "1" ] && killall -9 adm sh_ad_m_keey_k.sh
 killall -15 koolproxy sh_ad_kp_keey_k.sh
 killall -9 koolproxy sh_ad_kp_keey_k.sh
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 rm -f /tmp/adbyby_host.conf
 rm -f /tmp/7620koolproxy.tgz /tmp/cron_adb.lock /tmp/sh_ad_kp_keey_k.sh /tmp/cp_rules.lock
 kill_ps "/tmp/script/_kool_proxy"
@@ -402,7 +403,7 @@ kill_ps "$scriptname"
 koolproxy_start () {
 check_webui_yes
 nvram set button_script_1_s="KP"
-/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 	touch /tmp/cron_adb.lock
 	for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
@@ -515,7 +516,7 @@ nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/ru
 fi
 #koolproxy_add_rules
 rm -f /tmp/7620koolproxy.tgz /tmp/cron_adb.lock
-/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 logger -t "【koolproxy】" "守护进程启动"
 #koolproxy_get_status
 eval "$scriptfilepath keep &"

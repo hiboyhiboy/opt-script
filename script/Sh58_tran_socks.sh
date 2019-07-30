@@ -20,6 +20,7 @@ v2ray_enable=`nvram get v2ray_enable`
 v2ray_follow=`nvram get v2ray_follow`
 [ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
 if [ "$transocks_enable" != "0" ]  ; then
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	if [ "$ss_enable" != "0" ]  ; then
 		ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
 		[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
@@ -142,6 +143,7 @@ fi
 
 transocks_keep () {
 logger -t "【transocks】" "守护进程启动"
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【transocks】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
@@ -188,6 +190,7 @@ transocks_close () {
 sed -Ei '/【transocks】|^$/d' /tmp/script/_opt_script_check
 killall transocks
 killall -9 transocks
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app10"
 kill_ps "_tran_socks.sh"
 kill_ps "$scriptname"

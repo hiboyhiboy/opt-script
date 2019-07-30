@@ -328,7 +328,7 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		fi
 		reb=`expr $reb + 1`
 	fi
-	/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	sleep 212
 fi
 sleep 22
@@ -344,7 +344,7 @@ if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ $((CPULoad)) -ge "$processor" ] ; then
 		logger -t "【ADM】" "CPU 负载拥堵, 关闭 adm"
 		adm_flush_rules
-		/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+		/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 		killall -15 adm
 		killall -9 adm
 		touch /tmp/cron_adb.lock
@@ -372,6 +372,7 @@ killall -15 adm sh_ad_m_keey_k.sh
 killall -9 adm sh_ad_m_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -15 koolproxy sh_ad_kp_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -9 koolproxy sh_ad_kp_keey_k.sh
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 rm -f /tmp/adbyby_host.conf
 rm -f /tmp/7620adm.tgz /tmp/cron_adb.lock /tmp/sh_ad_m_keey_k.sh /tmp/cp_rules.lock
 kill_ps "/tmp/script/_ad_m"
@@ -382,7 +383,7 @@ kill_ps "$scriptname"
 adm_start () {
 check_webui_yes
 nvram set button_script_1_s="ADM"
-/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 	touch /tmp/cron_adb.lock
 	for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
@@ -447,7 +448,7 @@ fi
 [ -z "`pidof adm`" ] && logger -t "【ADM】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && adm_restart x
 adm_add_rules
 rm -f /tmp/7620adm.tgz /tmp/cron_adb.lock
-/etc/storage/ez_buttons_script.sh 3 & #更新按钮状态
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 logger -t "【ADM】" "守护进程启动"
 adm_cron_job
 #adm_get_status

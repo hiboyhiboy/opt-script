@@ -540,7 +540,7 @@ opt_wget () {
 upopt
 if [ "$(cat /tmp/opti.txt)"x != "$(cat /opt/opti.txt)"x ] && [ "$upopt_enable" = "1" ] && [ -f /tmp/opti.txt ] ; then
 	logger -t "【opt】" "opt 需要更新, 自动启动更新"
-	rm -rf /opt/opti.txt
+	rm -rf /opt/opti.txt /opt/opt_backup/opti.txt
 	rm -rf /opt/lnmp.txt
 	rm -rf /opt/opt.tgz
 fi
@@ -736,7 +736,7 @@ upopt)
 	;;
 reopt)
 	mount_check
-	rm -rf /opt/opti.txt
+	rm -rf /opt/opti.txt /opt/opt_backup/opti.txt
 	rm -rf /opt/lnmp.txt
 	opt_wget
 	[ -f /opt/lcd.tgz ] && untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
