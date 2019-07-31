@@ -381,6 +381,7 @@ flush_r
 
 # 透明代理
 logger -t "【v2ray】" "启动 透明代理"
+logger -t "【v2ray】" "备注：默认配置的透明代理会导致广告过滤失效，需要手动改造配置前置代理过滤软件"
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 logger -t "【v2ray】" "chinadns 已经启动 防止域名污染"
 else
@@ -404,6 +405,7 @@ fi
 
 restart_dhcpd
 
+logger -t "【v2ray】" "载入 透明代理 转发规则设置"
 #载入iptables模块
 for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
 do
@@ -840,6 +842,7 @@ fi
 if [ "$mk_mode_x" = "3" ] ; then
 logger -t "【vmess】" "方案四回国模式，国内IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"outboundTag"];"outbound_1")')
@@ -851,6 +854,7 @@ fi
 if [ "$mk_mode_x" = "2" ] ; then
 logger -t "【vmess】" "方案三全局代理，全部IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
@@ -1237,6 +1241,31 @@ echo '{
           "geoip:cn"
         ],
         "outboundTag": "outbound_1"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "149.154.160.1/32",
+          "149.154.160.2/31",
+          "149.154.160.4/30",
+          "149.154.160.8/29",
+          "149.154.160.16/28",
+          "149.154.160.32/27",
+          "149.154.160.64/26",
+          "149.154.160.128/25",
+          "149.154.161.0/24",
+          "149.154.162.0/23",
+          "149.154.164.0/22",
+          "149.154.168.0/21",
+          "91.108.4.0/22",
+          "91.108.56.0/24",
+          "109.239.140.0/24",
+          "67.198.55.0/24",
+          "91.108.56.172",
+          "149.154.175.50",
+          "149.154.160.0/20"
+        ],
+        "outboundTag": "outbound_1"
       }
     ]
   }
@@ -1252,9 +1281,9 @@ mkdir -p /etc/storage/link
 touch /etc/storage/link/vmess.js
 touch /etc/storage/link/ss.js
 if [ -f /www/link/vmess.js ]  ; then
-vmess_x_tmp="`nvram get app_65`"
+vmess_x_tmp="`nvram get app_83`"
 if [ ! -z "$vmess_x_tmp" ] ; then
-nvram set app_65=""
+nvram set app_83=""
 fi
 if [ "$vmess_x_tmp" = "del_link" ] ; then
 	# 清空上次订阅节点配置

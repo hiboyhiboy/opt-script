@@ -1,16 +1,15 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2018-10-28"
+Builds="/etc/storage/Builds-2019-8-1"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
-mtd_part_size=200000
+mtd_part_size=720896
 dir_storage="/etc/storage"
 slk="/tmp/.storage_locked"
 tmp="/tmp/storage.tar"
 tbz="${tmp}.bz2"
 hsh="/tmp/hashes/storage_md5"
-config_qos="/etc/storage/qos.conf"
 config_tinyproxy="/etc/storage/tinyproxy_script.sh"
 config_mproxy="/etc/storage/mproxy_script.sh"
 script0_script="/etc/storage/script0_script.sh"
@@ -58,7 +57,7 @@ func_get_mtd()
 	mtd_char=`echo $mtd_part | cut -d':' -f1`
 	mtd_hex=`echo $mtd_part | cut -d' ' -f2`
 	mtd_idx=`echo $mtd_char | cut -c4-5`
-	if [ -n "$mtd_idx" ] && [ $mtd_idx -ge 4 ] ; then
+	if [ -n "$mtd_idx" ] && [ $mtd_idx -ge 3 ] ; then
 		mtd_part_dev="/dev/mtdblock${mtd_idx}"
 		mtd_part_size=`echo $((0x$mtd_hex))`
 	else
@@ -245,6 +244,9 @@ func_resetsh()
 		rm -f $serverchan_script $script_start $script_started $script_postf $script_postw $script_inets $script_vpnsc $script_vpncs $script_ezbtn 
 	fi
 
+	# 删除/etc/storage/ez_buttons_script.sh转为内部更新
+	[ ! -z "$(grep button_script_2_s /etc/storage/ez_buttons_script.sh)" ] && rm -f /etc/storage/ez_buttons_script.sh
+
 	rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
 	rm -f /opt/bin/ss0-redir /opt/bin/ssr0-redir /opt/bin/ss0-local /opt/bin/ssr0-local
 	rm -f $script_script
@@ -281,7 +283,6 @@ func_fill()
 {
 [ ! -s /etc/storage/china_ip_list.txt ] && [ -s /etc_ro/china_ip_list.tgz ] && { tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp ; ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt ; }
 [ ! -s /etc/storage/basedomain.txt ] && [ -s /etc_ro/basedomain.tgz ] && { tar -xzvf /etc_ro/basedomain.tgz -C /tmp ; ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt ; }
-[ ! -s /etc/storage/qos.conf ] && [ -s /etc_ro/qos.conf ] && cp -f /etc_ro/qos.conf /etc/storage
 ln -sf /etc/storage/PhMain.ini /etc/PhMain.ini &
 ln -sf /etc/storage/init.status /etc/init.status &
 [ ! -s /etc/storage/script/init.sh ] && [ -s /etc_ro/script.tgz ] && tar -xzvf /etc_ro/script.tgz -C /etc/storage/
@@ -376,26 +377,8 @@ sleep 3
 
 ### 运行脚本1
 /etc/storage/script_script.sh
-/etc/storage/ez_buttons_script.sh 3 &
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 logger -t "【运行路由器启动后】" "脚本完成"
-
-# Office手动激活CMD命令：
-
-# cd C:\Program Files\Microsoft Office\Office15
-# cscript ospp.vbs /sethst:192.168.123.1
-# cscript ospp.vbs /act
-# cscript ospp.vbs /dstatus
-
-# windows手动激活CMD命令：
-
-# slmgr.vbs /upk
-# slmgr.vbs /skms 192.168.123.1
-# slmgr.vbs /ipk XXXXX-XXXXX-XXXXX-XXXXX-XXXXX
-# slmgr.vbs /ato
-# slmgr.vbs /xpr
-
-# key查看
-# cat /etc/storage/key
 
 
 #启动流量监控脚本
@@ -491,253 +474,9 @@ EEE
 	if [ ! -f "$script_postf" ] ; then
 		cat > "$script_postf" <<-\EEE
 #!/bin/sh
-#copyright by Emong's Qos update hiboy
 /etc/storage/crontabs_script.sh &
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
-# qos 功能 0关闭；1启动
-qoss=0
-# 当在线终端≤2台时取消限速.(路由端1+电脑端1=2台)
-qosb=2
-# 默认为20M
-DOWN=2560
-UP=256
-[ "$qoss" = "1" ] && logger -t "【QOS】" "最大下载 $DOWN KB/S,最大上传 $UP KB/S"
-# IP限速设置
-# 未设置的IP带宽减半,如启用adbyby,因7620的CPU瓶颈,宽带峰值50M
-# 注意参数之间有空格
-# 可选项：删除前面的#可生效
-# [KB/S]IP地址 最大下载 下载保证 最大上传 上传保证
-cat > "/tmp/qos_ip_limit_DOMAIN.txt" <<-\EOF
-#192.168.123.115 2560 100 200 20
-192.168.123.2-192.168.123.244 2560 100 100 15
-
-
-
-EOF
-# 连接数限制
-#如果开启该功能后,打开下载软件可能会导致QQ等聊天软件掉线.(因为连接数量会被占光)
-# IP地址 TCP连接数 UDP连接数
-cat > "/tmp/qos_connlmt_DOMAIN.txt" <<-\EOF
-#192.168.123.10 100 100
-192.168.123.20-192.168.123.25 100 100
-
-
-EOF
-# 端口优先
-# 请勿添加下载应用的端口80、8080等等.由于没有被流量控制和处理优先级,下载应用会占用大量资源导致网络卡
-# 协议 端口
-cat > "/tmp/qos_port_first_DOMAIN.txt" <<-\EOF
-UDP 53
-TCP 22
-TCP 23
-#TCP 443
-TCP 1723
-#TCP 3389
-TCP 3724,1119,1120
-TCP 28012,10008,13006,2349,7101:7103
-UDP 2349,12000:12175
-
-
-
-EOF
-
-load_var() {
-    WAN_IF="imq1"
-    LAN_IF="imq0"
-    WAN_IFT=$(nvram get wan0_ifname_t)
-    IPM="iptables -t mangle"
-    lan_ip="`nvram get lan_ipaddr`/24"
-
-}
-
-load_modules(){
-[ ! -f /tmp/qos-emong-modules ] && {
-    modprobe act_connmark    #缺,补621-sched_act_connmark.patch@597
-    for module in imq ipt_IMQ ipt_web xt_length xt_hashlimit cls_fw sch_htb sch_sfq sch_red xt_length xt_IMQ ipt_ipp2p xt_dscp xt_DSCP cls_u32 sch_hfsc sch_prio ipt_multiport ipt_CONNMARK ipt_length ipt_hashlimit xt_connlimit xt_connbytes ipt_connlimit em_u32 sch_ingress act_mirred
-    do
-        modprobe $module
-    done
-    modprobe imq numdevs=1
-    echo >/tmp/qos-emong-modules
-    }
-}
-
-qos_stop() {
-    tc qdisc del dev $WAN_IF root
-    tc qdisc del dev $LAN_IF root
-
-    $IPM -F
-    $IPM -X UP
-    $IPM -X DOWN
-    $IPM -X IP_DOWN
-    $IPM -X IP_UP
-}
-
-qos_start(){
-
-    ip link set imq0 up
-    ip link set imq1 up
-    tc qdisc add dev $WAN_IF root handle 1: htb
-    tc qdisc add dev $LAN_IF root handle 1: htb
-    tc class add dev $WAN_IF parent 1: classid 1:2 htb rate $((UP))kbps
-    tc class add dev $LAN_IF parent 1: classid 1:2 htb rate $((DOWN))kbps
-    
-    tc class add dev $WAN_IF parent 1: classid 1:1 htb rate $((UP*95/100))kbps
-    tc class add dev $WAN_IF parent 1:1 classid 1:11 htb rate $((UP*5/10))kbps prio 1
-    tc class add dev $WAN_IF parent 1:1 classid 1:12 htb rate $((UP*5/10))kbps ceil $((UP*9/10))kbps prio 2
-    tc class add dev $WAN_IF parent 1:12 classid 1:121 htb rate $((UP*4/10))kbps ceil $((UP*8/10))kbps prio 1
-    tc class add dev $WAN_IF parent 1:12 classid 1:122 htb rate $((UP*1/10))kbps ceil $((UP*4/10))kbps prio 2
-    tc class add dev $WAN_IF parent 1:12 classid 1:123 htb rate $((UP*4/10))kbps ceil $((UP*6/10))kbps prio 3
-    tc qdisc add dev $WAN_IF parent 1:11 handle 11: sfq perturb 10
-    tc qdisc add dev $WAN_IF parent 1:121 handle 121: sfq perturb 10
-    tc qdisc add dev $WAN_IF parent 1:122 handle 122: sfq perturb 10
-    tc qdisc add dev $WAN_IF parent 1:123 handle 123: sfq perturb 10
-    tc filter add dev $WAN_IF parent 1: handle 0x10/0xfff0 fw classid 1:11
-    tc filter add dev $WAN_IF parent 1: handle 0x20/0xfff0 fw classid 1:121
-    tc filter add dev $WAN_IF parent 1: handle 0x30/0xfff0 fw classid 1:122
-    tc filter add dev $WAN_IF parent 1: handle 0x40/0xfff0 fw classid 1:123
-    
-    tc class add dev $LAN_IF parent 1: classid 1:1 htb rate $((DOWN*95/100))kbps
-    tc class add dev $LAN_IF parent 1:1 classid 1:11 htb rate $((DOWN*5/10))kbps prio 1
-    tc class add dev $LAN_IF parent 1:1 classid 1:12 htb rate $((DOWN*5/10))kbps ceil $((DOWN*9/10))kbps prio 2
-    tc class add dev $LAN_IF parent 1:12 classid 1:121 htb rate $((DOWN*4/10))kbps ceil $((DOWN*8/10))kbps prio 1
-    tc class add dev $LAN_IF parent 1:12 classid 1:122 htb rate $((DOWN*1/10))kbps ceil $((DOWN*4/10))kbps prio 10
-    tc class add dev $LAN_IF parent 1:12 classid 1:123 htb rate $((DOWN*4/10))kbps ceil $((DOWN*6/10))kbps prio 3
-    tc qdisc add dev $LAN_IF parent 1:11 handle 11: sfq perturb 10
-    tc qdisc add dev $LAN_IF parent 1:121 handle 121: sfq perturb 10
-    tc qdisc add dev $LAN_IF parent 1:122 handle 122: sfq perturb 10
-    tc qdisc add dev $LAN_IF parent 1:123 handle 123: sfq perturb 10
-    tc filter add dev $LAN_IF parent 1: handle 0x10/0xfff0 fw classid 1:11
-    tc filter add dev $LAN_IF parent 1: handle 0x20/0xfff0 fw classid 1:121
-    tc filter add dev $LAN_IF parent 1: handle 0x30/0xfff0 fw classid 1:122
-    tc filter add dev $LAN_IF parent 1: handle 0x40/0xfff0 fw classid 1:123
-    
-    $IPM -N UP
-    $IPM -N DOWN
-    $IPM -N IP_UP
-    $IPM -N IP_DOWN
-    $IPM -I POSTROUTING -o br0 -j DOWN
-    $IPM -I PREROUTING -i br0 -j UP
-    $IPM -A DOWN -j IMQ --todev 0
-    $IPM -A UP -j IMQ --todev 1
-    #$IPM -I DOWN -s $lan_ip -j RETURN
-    $IPM -I DOWN -p tcp -m multiport --dports 22,53,445,139 -j RETURN
-    $IPM -I DOWN -p icmp -j RETURN
-    #$IPM -A DOWN -m length --length :100 -j RETURN
-    $IPM -A DOWN -j MARK --set-mark=0x41
-    $IPM -A DOWN -m length --length 1024:1500 -j MARK --set-mark=0x31
-    $IPM -A DOWN -p tcp -m multiport --dports 21,80,443,3389,8118 -j MARK --set-mark=0x21
-    $IPM -A DOWN -m length --length :768 -j MARK --set-mark=0x11
-    
-    $IPM -A DOWN -j IP_DOWN
-    
-    #$IPM -I UP -d $lan_ip -j RETURN
-    $IPM -I UP -p tcp -m multiport --sports 22,53,445,139 -j RETURN
-    $IPM -I UP -p icmp -j RETURN
-    #$IPM -A UP -m length --length :80 -j RETURN
-    $IPM -A UP -j MARK --set-mark=0x41
-    $IPM -A UP -m length --length 1024:1500 -j MARK --set-mark=0x31
-    $IPM -A UP -p tcp -m multiport --sports 21,80,443,3389,8118 -j MARK --set-mark=0x21
-    $IPM -A UP -m length --length :512 -j MARK --set-mark=0x11
-    
-    $IPM -A UP -j IP_UP
-
-}
-
-connlmt() {
-    $IPM -A FORWARD -p tcp -d $1 -m connlimit --connlimit-above $2 -j DROP
-    $IPM -A FORWARD -p udp -d $1 -m connlimit --connlimit-above $3 -j DROP
-
-}
-
-ip_limit() {
-conns=$6
-[ $((conns)) -lt "6" ] && logger -t "【QOS】" "限速设置[KB/S]IP:$1, 最大下载:$2, 下载保证:$3, 最大上传:$4, 上传保证:$5"
-[ $((conns)) -ge "6" ] && logger -t "【QOS】" "连接数限制IP:$1 TCP:$2, UDP:$3"
-n=$(echo $1|cut -d '-' -f1|cut -d '.' -f4)
-m=$(echo $1|cut -d '-' -f2|cut -d '.' -f4)
-NET=$(echo $1|cut -d '.' -f1-3)
-while [ $n -le $m ]
-do
-    ip=$n
-    if [ $((conns)) -lt "6" ] ; then
-        [ ${#ip} -lt 3 ] && ip=0$ip
-        [ ${#ip} -lt 3 ] && ip=0$ip
-        var=1
-        
-        tc class add dev $WAN_IF parent 1:2 classid 1:$var$ip htb rate $5kbps ceil $4kbps
-        tc qdisc add dev $WAN_IF parent 1:$var$ip handle $var$ip sfq perturb 10
-        tc filter add dev $WAN_IF parent 1: handle 0x$var$ip fw flowid 1:$var$ip
-        
-        tc class add dev $LAN_IF parent 1:2 classid 1:$var$ip htb rate $3kbps ceil $2kbps
-        tc qdisc add dev $LAN_IF parent 1:$var$ip handle $var$ip sfq perturb 10
-        tc filter add dev $LAN_IF parent 1: handle 0x$var$ip fw flowid 1:$var$ip
-        
-        $IPM -A IP_DOWN -d $NET.$n -j MARK --set-mark 0x$var$ip
-        $IPM -A IP_UP -s $NET.$n -j MARK --set-mark 0x$var$ip
-    else
-        connlmt $NET.$n $2 $3
-    fi
-n=$((n+1))
-done
-
-}
-
-port_first() {
-logger -t "【QOS】" "端口优先:$1, $2"
-$IPM -I DOWN -p $1 -m multiport --dports $2 -j RETURN
-$IPM -I UP -p $1 -m multiport --sports $2 -j RETURN
-
-}
-
-if [ "$qoss" = "1" ] && [ -f "/lib/modules/$(uname -r)/kernel/net/netfilter/xt_IMQ.ko" ] ; then
-    if [ $(cat /tmp/qos_state) -eq 1 ] ; then
-    logger -t "【QOS】" "正在运行"
-    exit
-    else
-    echo 1 >/tmp/qos_state
-    fi
-    logger -t "【QOS】" "启动 QOS 成功"
-    echo 1 >/tmp/qoss_state
-    load_var
-    load_modules
-    qos_stop
-    qos_start
-    while read line
-    do
-    c_line=`echo $line |grep -v "#"`
-    if [ ! -z "$c_line" ] ; then
-        ip_limit $line
-    fi
-    done < /tmp/qos_ip_limit_DOMAIN.txt
-    
-    while read line
-    do
-    c_line=`echo $line |grep -v "#"`
-    if [ ! -z "$c_line" ] ; then
-        line="$line 4 5 6"
-        ip_limit $line
-    fi
-    done < /tmp/qos_connlmt_DOMAIN.txt
-    
-    while read line
-    do
-    c_line=`echo $line |grep -v "#"`
-    if [ ! -z "$c_line" ] ; then
-        port_first $line
-    fi
-    done < /tmp/qos_port_first_DOMAIN.txt
-    if [ ! -f /tmp/qos_scheduler.lock ] ; then
-        /tmp/qos_scheduler.sh $qosb &
-    fi
-    echo 0 >/tmp/qos_state
-else
-    logger -t "【QOS】" "QOS 没有开启或闪存不足缺模块"
-    echo 0 >/tmp/qoss_state
-    ip link set imq0 down
-    ip link set imq1 down
-fi
 
 logger -t "【防火墙规则】" "脚本完成"
 
@@ -809,7 +548,7 @@ cat >/tmp/sh_apauto.sh <<-\EOF
             fi
             if [[ $(cat /tmp/apauto.lock) == 0 ]] ; then
             #【2】 Internet互联网断线后自动搜寻
-            ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
+            ping_text=`ping -4 114.114.114.114 -c 1 -w 4 -q`
             ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
             ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
             if [ ! -z "$ping_time" ] ; then
@@ -1036,7 +775,7 @@ if [ ! -f /tmp/apc.lock ] && [ "$1" != "1" ] && [ -s /tmp/ap2g5g ] ; then
                     ap=`iwconfig | grep 'apclii0' | grep 'ESSID:""' | wc -l`
                 fi
                 if [ "$ap" = "0" ] && [ "$apauto2" = "1" ] ; then
-                    ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
+                    ping_text=`ping -4 114.114.114.114 -c 1 -w 4 -q`
                     ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
                     ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
                     if [ ! -z "$ping_time" ] ; then
@@ -1057,7 +796,7 @@ if [ ! -f /tmp/apc.lock ] && [ "$1" != "1" ] && [ -s /tmp/ap2g5g ] ; then
                 else
                     logger -t "【连接 AP】" "$ap 已连接上 $rtwlt_sta_ssid"
                     if [ "$apblack" = "1" ] ; then
-                        ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
+                        ping_text=`ping -4 114.114.114.114 -c 1 -w 4 -q`
                         ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
                         ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
                         if [ ! -z "$ping_time" ] ; then
@@ -1302,384 +1041,15 @@ EEE
 
 
 	# create Ez-Buttons script
-	if [ ! -f "$script_ezbtn" ] ; then
+	if [ ! -f "$script_ezbtn" ] || [ ! -s "$script_ezbtn" ] ; then
 		cat > "$script_ezbtn" <<-\EEE
 #!/bin/sh
-export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
-export LD_LIBRARY_PATH=/lib:/opt/lib
 
 ### Custom user script
 ### Called on WPS or FN button pressed
 ### $1 - button param
 
 [ -x /opt/bin/on_wps.sh ] && /opt/bin/on_wps.sh $1 &
-#copyright by hiboy
-[ -f /tmp/button_script.lock ] && exit 0
-[ "$1" != 3 ] && touch /tmp/button_script.lock
-ad=`nvram get button_script_1_s`
-[ -z "$ad" ] && { ad="Adbyby" ; nvram set button_script_1_s="Adbyby" ; }
-# 按钮名称可自定义
-# [ "$ad" = "ADM" ] && nvram set button_script_1_s="ADM"
-ss_working_port=`nvram get ss_working_port`
-[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
-[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
-[ ${ss_info:=SS} ] && nvram set button_script_2_s="$ss_info"
-case "$1" in
-1)
-# 按钮①子程序 名称可自定义
-button1=`nvram get button_script_1_s`
-logger -t "【按钮①】" "$button1"
-apply=`nvram get button_script_1`
-
-# 按钮①状态0时执行以下命令
-if [ "$apply" = 0 ] ; then
-    #nvram set button_script_1="1"
-    if [ "$ad" = "ADM" ] ; then
-    port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
-    PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
-    if [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
-        logger -t "【按钮①】" "添加转发规则, 启动 $ad"
-        nvram set adm_status=0
-        nvram set adm_enable=1
-        nvram commit
-        /tmp/script/_ad_m &
-    fi
-    fi
-    if [ "$ad" = "KP" ] ; then
-    port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
-    PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
-    if [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
-        logger -t "【按钮①】" "添加转发规则, 启动 $ad"
-        nvram set koolproxy_status=0
-        nvram set koolproxy_enable=1
-        nvram commit
-        /tmp/script/_kool_proxy &
-    fi
-    fi
-    if [ "$ad" = "Adbyby" ] ; then
-    port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
-    PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
-    if [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
-        logger -t "【按钮①】" "添加转发规则, 启动 $ad"
-        nvram set adbyby_status=0
-        nvram set adbyby_enable=1
-        nvram commit
-        /tmp/script/_ad_byby &
-    fi
-    fi
-fi
-# 按钮①状态1 执行以下命令
-if [ "$apply" = 1 ] ; then
-    #nvram set button_script_1="0"
-    if [ "$ad" = "ADM" ] ; then
-    port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
-    PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
-    if [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
-        logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
-        nvram set adm_status=1
-        nvram set adm_enable=0
-        nvram commit
-        /tmp/script/_ad_m stop &
-    fi
-    fi
-    if [ "$ad" = "KP" ] ; then
-    port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
-    PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
-    if [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
-        logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
-        nvram set koolproxy_status=1
-        nvram set koolproxy_enable=0
-        nvram commit
-        /tmp/script/_kool_proxy &
-    fi
-    fi
-    if [ "$ad" = "Adbyby" ] ; then
-    port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
-    PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
-    if [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
-        logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
-        nvram set adbyby_status=1
-        nvram set adbyby_enable=0
-        nvram commit
-        /tmp/script/_ad_byby  &
-    fi
-    fi
-fi
-
-rm -f /tmp/button_script.lock
-/etc/storage/ez_buttons_script.sh 3 &
-
-  ;;
-2)
-# 按钮②子程序
-button2=`nvram get button_script_2_s`
-logger -t "【按钮②】" "$button2"
-apply=`nvram get button_script_2`
-
-# 按钮②状态0 执行以下命令
-if [ "$apply" = 0 ] ; then
-    #nvram set button_script_2="1"
-    logger -t "【按钮②】" "开启 shadowsocks 进程"
-    nvram set ss_status=0
-    nvram set ss_enable=1
-    nvram commit
-    /tmp/script/_ss &
-    nvram set button_script_2="1"
-fi
-# 按钮②状态1时执行以下命令
-if [ "$apply" = 1 ] ; then
-    #nvram set button_script_2="0"
-    
-    PROCESS=$(ps -w | grep "ss-redir" | grep -v "grep")
-    logger -t "【按钮②】" "关闭 shadowsocks 进程"
-    nvram set ss_status=1
-    nvram set ss_enable=0
-    nvram commit
-    /tmp/script/_ss &
-    nvram set button_script_2="0"
-fi
-rm -f /tmp/button_script.lock
-/etc/storage/ez_buttons_script.sh 3 &
-
-  ;;
-3)
-# 按钮状态检测子程序
-sleep 1
-if [ "$ad" = "ADM" ] ; then
-port=$(iptables -t nat -L | grep 'AD_BYBY_to' | wc -l)
-if [ "$port" -ge 1 ] ; then
-    nvram set button_script_1="1"
-else
-    nvram set button_script_1="0"
-fi
-fi
-if [ "$ad" = "KP" ] ; then
-port=$(iptables -t nat -L | grep 'AD_BYBY_to' | wc -l)
-if [ "$port" -ge 1 ] ; then
-    nvram set button_script_1="1"
-else
-    nvram set button_script_1="0"
-fi
-fi
-if [ "$ad" = "Adbyby" ] ; then
-port=$(iptables -t nat -L | grep 'AD_BYBY_to' | wc -l)
-if [ "$port" -ge 1 ] ; then
-    nvram set button_script_1="1"
-else
-    nvram set button_script_1="0"
-fi
-fi
-PROCESS=$(ps -w | grep "ss-redir" | grep -v "grep")
-if [ -z "$PROCESS" ] ; then
-    nvram set button_script_2="0"
-else
-    nvram set button_script_2="1"
-fi
-
-
-  ;;
-cleanss)
-# 重置 SS IP 规则文件并重启 SS
-logger -t "【按钮③】" "重置 SS IP 规则文件并重启 SS"
-/tmp/script/_ss stop
-rm -f /tmp/ss/dnsmasq.d/*
-restart_dhcpd
-rm -rf /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt /tmp/ss/*
-[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
-[ ! -f /etc/storage/basedomain.txt ] && tar -xzvf /etc_ro/basedomain.tgz -C /tmp && ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
-nvram set ss_status="cleanss"
-nvram set kcptun_status="cleanss"
-	rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
-	rm -f /opt/bin/ss0-redir /opt/bin/ssr0-redir /opt/bin/ss0-local /opt/bin/ssr0-local
-	rm -f /opt/bin/pdnsd /opt/bin/dnsproxy
-/tmp/script/_ss &
-  ;;
-updatess)
-/tmp/script/_ss updatess &
-  ;;
-timesystem)
-# 手动设置时间
-sleep 1
-time_system=`nvram get time_system`
-if [ ! -z "$time_system" ] ; then
-date -s "$time_system"
-nvram set time_system=""
-fi
-  ;;
-serverchan)
-# 在线发送微信推送
-serverchan_sckey=`nvram get serverchan_sckey`
-if [ ! -z "$serverchan_sckey" ] ; then
-serverchan_text=`nvram get serverchan_text`
-serverchan_desp=`nvram get serverchan_desp`
-if [ ! -z "$serverchan_text" ] ; then
-curltest=`which curl`
-    if [ -z "$curltest" ] ; then
-    /tmp/script/_mountopt optwget
-    fi
-curltest=`which curl`
-    if [ -z "$curltest" ] ; then
-        logger -t "【微信推送】" "未找到 curl 程序，停止 微信推送。请安装 opt 后输入[opkg install curl]安装"
-        nvram set serverchan_text=""
-        nvram set serverchan_desp=""
-    fi
-if [ ! -z "$serverchan_text" ] ; then
-curl -s "http://sc.ftqq.com/$serverchan_sckey.send?text=$serverchan_text" -d "&desp=$serverchan_desp" 
-logger -t "【微信推送】" "消息标题:$serverchan_text"
-logger -t "【微信推送】" "消息内容:$serverchan_desp"
-nvram set serverchan_text=""
-nvram set serverchan_desp=""
-fi
-fi
-fi
-  ;;
-serverchan_clean)
-# 清空以往接入设备名称
-touch /etc/storage/hostname.txt
-logger -t "【微信推送】" "清空以往接入设备名称：/etc/storage/hostname.txt"
-echo "接入设备名称" > /etc/storage/hostname.txt
-  ;;
-relnmp)
-logger -t "【按钮④】" "重启 LNMP 服务"
-sleep 1
-nvram set lnmp_status="relnmp"
-/etc/storage/crontabs_script.sh &
-  ;;
-mkfs)
-# mkfs.ext4快速格式化
-logger -t "【mkfs.ext4】" "快速格式化"
-logger -t "【mkfs.ext4】" "$2"
-logger -t "【mkfs.ext4】" "$3"
-{
-df | grep $3 |  awk -F' ' '{print $NF}' | while read line  
-do    
-    [ ! -z $line ] && umount $line -l 2>/dev/null
-done
-sleep 2
-echo `fdisk -l | grep $3 | grep -v swap | grep -v Disk | cut -d' ' -f1` | while read line
-do    
-    logger -t "【mkfs.ext4】" "正在格式化 $line"
-    mkfs.ext4 -T largefile $line
-done    
-logger -t "【mkfs.ext4】" "格式化完成."
-} &
-  ;;
-ping)
-rm -f /tmp/button_script.lock
-ping1(){
-ss_server1=`nvram get ss_server1`
-echo $ss_server1
-nvram set ping_1_ss=0
-#nvram set ping_1_txt="ping：--- ms 丢包率：---"
-nvram set ping_1_txt="ping：--- ms"
-if [ ! -z "$ss_server1" ] ; then
-logger -t "【ping1】" "$ss_server1"
-ping_text=`ping -4 $ss_server1 -c 1 -w 2 -q`
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-echo $ping_time
-echo $ping_loss
-if [ ! -z "$ping_time" ] ; then
-    [ $ping_time -le 250 ] && nvram set ping_1_ss=1
-    [ $ping_time -gt 250 ] && nvram set ping_1_ss=2
-    [ $ping_time -gt 500 ] && nvram set ping_1_ss=3
-    echo "ping1：$ping_time ms 丢包率：$ping_loss"
-#    logger -t "【ping1】" "$ping_time ms 丢包率：$ping_loss"
-#    nvram set ping_1_txt="ping：$ping_time ms 丢包率：$ping_loss"
-    logger -t "【ping1】" "$ping_time ms"
-    nvram set ping_1_txt="ping：$ping_time ms"
- else
-    nvram set ping_1_ss=3
-    echo "失效1"
-    logger -t "【ping1】" "失效"
-    nvram set ping_1_txt="ping：失效"
-fi
-fi
-}
-ping2(){
-ss_server2=`nvram get ss_server2`
-echo $ss_server2
-nvram set ping_2_ss=0
-#nvram set ping_2_txt="ping：--- ms 丢包率：---"
-nvram set ping_2_txt="ping：--- ms"
-if [ ! -z "$ss_server2" ] ; then
-logger -t "【ping2】" "$ss_server2"
-ping_text=`ping -4 $ss_server2 -c 1 -w 2 -q`
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-echo $ping_time
-echo $ping_loss
-if [ ! -z "$ping_time" ] ; then
-    [ $ping_time -le 250 ] && nvram set ping_2_ss=1
-    [ $ping_time -gt 250 ] && nvram set ping_2_ss=2
-    [ $ping_time -gt 500 ] && nvram set ping_2_ss=3
-    echo "ping2：$ping_time ms 丢包率：$ping_loss"
-#    logger -t "【ping2】" "$ping_time ms 丢包率：$ping_loss"
-#    nvram set ping_2_txt="ping：$ping_time ms 丢包率：$ping_loss"
-    logger -t "【ping2】" "$ping_time ms"
-    nvram set ping_2_txt="ping：$ping_time ms"
-else
-    nvram set ping_2_ss=3
-    echo "2失效"
-    logger -t "【ping2】" "失效"
-    nvram set ping_2_txt="ping：失效"
-fi
-fi
-}
-ping1 &
-ping2 &
-#sleep 1
-  ;;
-allping)
-rm -f /tmp/button_script.lock
-rt_ssnum_x=`nvram get rt_ssnum_x`
-for i in 0 $(seq `expr $rt_ssnum_x - 1`)
-do
-    echo $i;
-    nvram set ping_ss_x$i="btn-inverse"
-#    nvram set ping_txt_x$i="--- ms 丢包:--%"
-    nvram set ping_txt_x$i="--- ms"
-rt_ss_server_x=`nvram get rt_ss_server_x$i`
-echo $rt_ss_server_x;
-if [ ! -z "$rt_ss_server_x" ] ; then
-logger -t "【ping_x$i】" "$rt_ss_server_x"
-ping_text=`ping -4 $rt_ss_server_x -c 1 -w 2 -q`
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-
-if [ ! -z "$ping_time" ] ; then
-    [ $ping_time -le 250 ] && `nvram set ping_ss_x$i="btn-success"`
-    [ $ping_time -gt 250 ] && `nvram set ping_ss_x$i="btn-warning"`
-    [ $ping_time -gt 500 ] && `nvram set ping_ss_x$i="btn-danger"`
-    echo "ping_x$i：$ping_time ms 丢包率：$ping_loss"
-#    logger -t "【ping_x$i】" "$ping_time ms 丢包率：$ping_loss"
-#    nvram set ping_txt_x$i="$ping_time ms 丢包:$ping_loss"
-    logger -t "【ping_x$i】" "$ping_time ms"
-    nvram set ping_txt_x$i="$ping_time ms"
- else
-    `nvram set ping_ss_x$i="btn-danger"`
-    echo "失效1"
-    logger -t "【ping_x$i】" "失效"
-    `nvram set ping_txt_x$i="失效"`
-fi
-fi
-done
-  ;;
-reszUID)
-killall oraynewph oraysl
-killall -9 oraynewph oraysl
-rm -f /tmp/button_script.lock /tmp/oraysl.status /etc/PhMain.ini /etc/init.status /etc/storage/PhMain.ini /etc/storage/init.status
-ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
-ln -sf "/etc/storage/init.status" "/etc/init.status"
-logger -t "【花生壳内网版】" "重置花生壳绑定, 重新启动"
-nvram set phddns_sn=""
-nvram set phddns_st=""
-nvram set phddns_szUID=""
-/tmp/script/_orayd &
-  ;;
-esac
-sleep 1
-rm -f /tmp/button_script.lock
 
 EEE
 		chmod 755 "$script_ezbtn"
@@ -1717,6 +1087,9 @@ dhcp-option=252,"\n"
 
 ### Set the boot filename for netboot/PXE
 #dhcp-boot=pxelinux.0
+
+# 过滤 IPv6（AAAA）查询请求
+#filter-aaaa
 
 EOF
 		chmod 644 "$user_dnsmasq_conf"
@@ -1801,6 +1174,9 @@ EOF
 # Custom user conf file for OpenVPN server
 # Please add needed params only!
 
+### Negotiable Crypto Parameters
+ncp-disable
+
 ### Max clients limit
 max-clients 10
 
@@ -1833,8 +1209,11 @@ EOF
 # Custom user conf file for OpenVPN client
 # Please add needed params only!
 
+### Negotiable Crypto Parameters
+ncp-disable
+
 ### If your server certificates with the nsCertType field set to "server"
-ns-cert-type server
+remote-cert-tls server
 
 ### Process priority level (0..19)
 nice 0
@@ -1914,10 +1293,6 @@ fi
 
 
 
-# create qos config file
-if [ ! -f "$config_qos" ] && [ -f "/lib/modules/$(uname -r)/kernel/net/sched/sch_htb.ko" ] ; then
-		cp -f /etc_ro/qos.conf /etc/storage
-fi
 
 func_fill2
 
@@ -1990,7 +1365,7 @@ if [ $1 == "up" ] ; then
     nvram set softether_status=0
     nvram set cow_status=0
     nvram set meow_status=0
-    /etc/storage/ez_buttons_script.sh ping &
+    nvram set ddnsto_status=0
 fi
 
 if [ -f /tmp/webui_yes ] ; then
@@ -2002,6 +1377,7 @@ if [ -f /tmp/webui_yes ] ; then
     # start all services Sh??_* in /etc/storage/script
     for i in `ls /etc/storage/script/Sh??_* 2>/dev/null` ; do
         [ ! -x "${i}" ] && continue
+        [ ! -f /tmp/webui_yes ] && continue
         eval ${i}
     done
     /tmp/sh_theme.sh &
@@ -2135,7 +1511,6 @@ chmod 777 "/tmp/sh_wan_wips.sh"
 [ "$upscript_enable" = "1" ] && cru.sh a upscript_update "1 1 * * * /etc/storage/script/sh_upscript.sh &" &
 [ "$upscript_enable" != "1" ] && cru.sh d upscript_update &
 
-/etc/storage/ez_buttons_script.sh 3 &
 /etc/storage/ap_script.sh crontabs &
 rm -f /tmp/crontabs.lock
 
@@ -2213,48 +1588,6 @@ EOF
 chmod 777 "/tmp/sh_ddns.sh"
 
 
-cat >/tmp/qos_scheduler.sh <<-\EOF
-#!/bin/sh
-qosc=$1
-echo 0 >/tmp/qos_scheduler.lock
-logger -t "【QOS】" "终端在线检查启动"
-while [ "1" ];
-do
-	if [ "$(cat /tmp/qoss_state)" == "0" ] ; then
-	logger -t "【QOS】" "终端在线检查暂停"
-	rm -f /tmp/qos_scheduler.lock
-	exit
-	fi
-	#qos_t=`cat /proc/net/arp|fgrep -c 0x2`
-	qos_t=`cat /tmp/static_ip.num`
-	qos_t=`expr $qos_t + 1`
-	if [ $((qos_t)) -le $qosc ] ; then
-		if [ $(ifconfig |grep -c imq0) -gt 0 ] ; then
-		logger -t "【QOS】" "取消限速, 当在线 $qos_t台, 小于或等于 $qosc 台"
-			ip link set imq0 down
-			ip link set imq1 down
-		fi
-	else
-		if [ $(ifconfig |grep -c imq0) -eq 0 ] ; then
-			logger -t "【QOS】" "开始限速, 当在线 $qos_t台, 大于 $qosc 台"
-			ip link set imq0 up
-			ip link set imq1 up
-			sleep 6
-			port=$(iptables -t mangle -L | grep 'IMQ: todev 0' | wc -l)
-			if [ "$port" = 0 ] ; then
-				logger -t "【QOS】" "找不到 QOS 规则, 重新添加"
-				/etc/storage/post_iptables_script.sh &
-			fi
-			
-		fi
-	fi
-	sleep 69
-continue
-done
-EOF
-chmod 777 "/tmp/qos_scheduler.sh"
-
-
 
 cat > "/tmp/sh_adblock_hosts.sh" <<-\EOFH
 #!/bin/sh
@@ -2290,96 +1623,10 @@ if [ ! -f "$script_script" ] ; then
 	cat > "$script_script" <<-\EEE
 #!/bin/sh
 #copyright by hiboy
+#/etc/storage/script/sh_0_script.sh
+#/etc/storage/script_script.sh
 source /etc/storage/script/init.sh
-[ -f /tmp/script.lock ] && exit 0
-touch /tmp/script.lock
-touch /tmp/script_script_yes
-. /etc/storage/script0_script.sh
-ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
-ln -sf "/etc/storage/init.status" "/etc/init.status"
-rm -f "/opt/etc/init.d/S96sh3.sh"
-echo "" > /var/log/shadowsocks_watchdog.log
-echo "" > /var/log/Pcap_DNSProxy_watchdog.log
-echo "" > /var/log/chinadns_watchdog.log
-http_username=`nvram get http_username`
-export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
-export LD_LIBRARY_PATH=/lib:/opt/lib
-sed -Ei '/github|ipip.net|_vlmcs._tcp|txt-record=_jetbrains-license-server.lan|adbyby_host.conf|cflist.conf|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed -Ei "/\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
-rm -f /tmp/ss/dnsmasq.d/*
-killall crond
-restart_dhcpd ; sleep 1
-[ -f /tmp/menu_title_re ] && /etc/storage/www_sh/menu_title.sh re &
-mkdir -p /tmp/script
-{ echo '#!/bin/sh' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' ; } > /tmp/script/_mountopt
-chmod 777 /tmp/script/_mountopt
-nvram set ss_internet="0"
-/etc/storage/inet_state_script.sh 12 t
-/etc/storage/script/Sh??_mento_hust.sh &
-ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-if [ ! -z "$ping_time" ] ; then
-	echo "ping：$ping_time ms 丢包率：$ping_loss"
- else
-	echo "ping：失效"
-fi
-rb=1
-while [ -z "$ping_time" ];
-do
-logger -t "【自定义脚本】" "等待联网后开始脚本"
-sleep 8
-
-ping_text=`ping -4 114.114.114.114 -c 1 -w 2 -q`
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-if [ ! -z "$ping_time" ] ; then
-	echo "ping：$ping_time ms 丢包率：$ping_loss"
- else
-	echo "ping：失效"
-fi
-rb=`expr $rb + 1`
-if [ "$rb" -gt 3 ] ; then
-	logger -t "【自定义脚本】" "等待联网超时"
-	ping_time=200
-	break
-fi
-done
-if [[ $(cat /tmp/apauto.lock) == 1 ]] ; then
-	killall sh_apauto.sh
-	/tmp/sh_apauto.sh &
-fi
-[ -d /etc/storage/script ] && chmod 777 /etc/storage/script -R
-/etc/storage/script/Sh01_mountopt.sh upopt
-/etc/storage/script/sh_upscript.sh
-/etc/storage/www_sh/menu_title.sh upver &
-/etc/storage/script/Sh01_mountopt.sh libmd5_check
-/tmp/sh_theme.sh &
-run_aria
-run_transmission
-rm -f /tmp/cron_adb.lock
-[ ! -f /etc/storage/PhMain.ini ] && touch /etc/storage/PhMain.ini
-[ ! -f /etc/storage/init.status ] && touch /etc/storage/init.status
-rm -f /tmp/webui_yes
-/etc/storage/script/sh_opt_script_check.sh
-chmod 777 /tmp/script -R
-touch /tmp/webui_yes
-# extend path to /opt
-for i in `ls /opt/etc/init.d/_* 2>/dev/null` ; do
-	rm -f ${i}
-done
-for i in `ls /opt/etc/init.d/Sh??_* 2>/dev/null` ; do
-	rm -f ${i}
-done
-# start all services S* in /opt/etc/init.d
-for i in `ls /opt/etc/init.d/S??* 2>/dev/null` ; do
-	[ ! -x "${i}" ] && continue
-	[ ! -f /tmp/webui_yes ] && continue
-	${i} start
-done
-restart_firewall &
-rm -f /tmp/script.lock
-logger -t "【自定义脚本】" "脚本完成"
+source /etc/storage/script/sh_0_script.sh
 EEE
 	chmod 755 "$script_script"
 fi
@@ -2493,6 +1740,5 @@ fill)
 esac
 
 exit $result
-
 
 
