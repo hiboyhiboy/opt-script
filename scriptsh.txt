@@ -58,4 +58,4 @@ Sh03_jbls=4a5c2af8cbcf5a4db8527a8140d427b6
 Sh02_kms=78e465b899e13b234683ed807cac13e8
 Sh01_mountopt=dc9e692fe1687390e6407c7b27e06d5f
 sh_upscript=1abdf8bf50a6dc20461ffaa88ac27e29
-scriptt=2019-7-31
+scriptt=2019-8-1
