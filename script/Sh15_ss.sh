@@ -966,7 +966,7 @@ if [ "$ss_check" = "1" ] ; then
 			lan_ipaddr=`nvram get lan_ipaddr`
 			BP_IP="`echo "$ss_s1_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$ss_s2_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `"
 			[ ! -z "$kcptun_server" ] && [ "$kcptun_enable" != "0" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$ss_s2_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$kcptun_server" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `"
-			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,5353' -o -O
+			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,443' -o -O
 			sleep 1
 			check=0
 			hash check_network 2>/dev/null && check=1
