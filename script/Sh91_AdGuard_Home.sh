@@ -108,7 +108,7 @@ while true; do
 		logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 重新启动"
 		AdGuardHome_restart
 	fi
-sleep 91
+sleep 61
 done
 }
 
@@ -193,6 +193,7 @@ fi
 logger -t "【AdGuardHome】" "添加 AdGuardHome 的 dnsmasq 转发规则 server=127.0.0.1#5353"
 sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
 echo "$AdGuardHome_server #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+echo "no-resolv #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 exit 0
 }
