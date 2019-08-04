@@ -1292,12 +1292,12 @@ if [ "$vmess_x_tmp" = "del_link" ] ; then
 	return
 fi
 
-json_jq_check
-[ "$?" == "0" ] || return 1
-
 if [ "$vmess_x_tmp" != "up_link" ] ; then
 	return
 fi
+
+json_jq_check
+[ "$?" == "0" ] || return 1
 
 vmess_link="`nvram get app_66`"
 vmess_link_up=`nvram get app_67`
