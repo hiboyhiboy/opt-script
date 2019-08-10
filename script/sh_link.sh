@@ -419,7 +419,7 @@ if [ ! -f /www/link/link.js ] ; then
 else
 	logger -t "【SS】" "服务器订阅：开始更新"
 fi
-ssr_link="$(echo "$ssr_link" | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
+ssr_link="$(echo "$ssr_link" | tr , \  | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 ssr_link_i=""
 [ -f /www/link/link.js ] && echo -n "var ACL2List = [" > /www/link/link.js
 i_s=0

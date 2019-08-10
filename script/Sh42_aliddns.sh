@@ -149,7 +149,7 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	initopt
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		logger -t "【AliDDNS动态域名】" "找不到 curl ，需要手动安装 opt 后输入[opkg install curl]安装"
+		logger -t "【AliDDNS动态域名】" "找不到 curl ，需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
 		logger -t "【AliDDNS动态域名】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && aliddns_restart x
 	else
 		aliddns_restart o

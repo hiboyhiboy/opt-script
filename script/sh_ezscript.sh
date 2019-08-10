@@ -265,7 +265,7 @@ if [ -z "$curltest" ] ; then
 fi
 curltest=`which curl`
 if [ -z "$curltest" ] ; then
-	logger -t "【微信推送】" "未找到 curl 程序，停止 微信推送。请安装 opt 后输入[opkg install curl]安装"
+	logger -t "【微信推送】" "未找到 curl 程序，停止 微信推送。需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
 	nvram set serverchan_text=""
 	nvram set serverchan_desp=""
 fi

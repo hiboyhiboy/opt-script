@@ -179,11 +179,11 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt optwget
 fi
 if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【cryfs】" "找不到 $SVC_PATH，opkg install cryfs 安装程序"
+	logger -t "【cryfs】" "找不到 $SVC_PATH，opkg update; opkg install cryfs 安装程序"
 	opkg update
 	opkg install cryfs
 	if [ ! -s "$SVC_PATH" ] ; then
-		logger -t "【cryfs】" "找不到 $SVC_PATH ，需要手动安装 opkg install cryfs"
+		logger -t "【cryfs】" "找不到 $SVC_PATH ，需要手动安装 opt 后输入[opkg update; opkg install cryfs]"
 		logger -t "【cryfs】" "启动失败, 30 秒后自动尝试重新启动" && sleep 30 && cryfs_restart x
 	else
 		logger -t "【cryfs】" "找到 $SVC_PATH"

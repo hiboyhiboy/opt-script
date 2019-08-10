@@ -24,7 +24,7 @@ if [ ! -z "$tgbot_id" ] && [ ! -z "$tgbot_text" ] && [ ! -z "$tgbot_sckey" ] ; t
 	fi
 	curltest=`which curl`
 	if [ -z "$curltest" ] ; then
-		logger -t "【tgbot推送】" "未找到 curl 程序，停止 tgbot推送。请安装 opt 后输入[opkg install curl]安装"
+		logger -t "【tgbot推送】" "未找到 curl 程序，停止 tgbot推送。需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
 		nvram set app_53=""
 	else
 		curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=$tgbot_text" 
@@ -152,7 +152,7 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	initopt
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		logger -t "【tgbot推送】" "找不到 curl ，需要手动安装 opt 后输入[opkg install curl]安装"
+		logger -t "【tgbot推送】" "找不到 curl ，需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
 		logger -t "【tgbot推送】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && tgbot_restart x
 	fi
 fi

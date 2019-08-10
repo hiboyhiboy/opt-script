@@ -87,8 +87,8 @@ if [ "$AdGuardHome_enable" = "1" ] ; then
 	else
 		[ -z "$AdGuardHome_2_server" ] && [ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
 		if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-			logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 重新启动"
-			AdGuardHome_restart
+			logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 10 秒后自动尝试重新启动"
+			sleep 10 && AdGuardHome_restart
 		fi
 	fi
 fi
@@ -105,8 +105,8 @@ OSC
 fi
 while true; do
 	if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-		logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 重新启动"
-		AdGuardHome_restart
+		logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 10 秒后自动尝试重新启动"
+		sleep 10 && AdGuardHome_restart
 	fi
 sleep 61
 done
@@ -116,6 +116,7 @@ AdGuardHome_close () {
 port=$(grep "#server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 sed -Ei '/server=127.0.0.1#5353/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei 's/^#dns-forward-max/dns-forward-max/g' /etc/storage/dnsmasq/dnsmasq.conf
 if [ "$port" != 0 ] ; then
 	sed -Ei '/server=127.0.0.1#8053/d' /etc/storage/dnsmasq/dnsmasq.conf
 	echo 'server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
@@ -174,7 +175,10 @@ else
 	# 生成配置文件
 	if [ "$port" != 0 ] ; then
 		logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:8053"
-		sed -i ':a;$!{N;ba};s/upstream_dns.*\ntls:/upstream_dns:\n  - 127.0.0.1:8053\ntls:/' /etc/storage/app_19.sh
+		set_dns "127.0.0.1:8053"
+		set_dns "1.1.1.1" "del"
+	else
+		set_dns "127.0.0.1:8053" "del"
 	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	eval "/opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
@@ -194,8 +198,37 @@ logger -t "【AdGuardHome】" "添加 AdGuardHome 的 dnsmasq 转发规则 serve
 sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
 echo "$AdGuardHome_server #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 echo "no-resolv #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei 's/^dns-forward-max/#dns-forward-max/g' /etc/storage/dnsmasq/dnsmasq.conf
+echo "dns-forward-max=1000 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 exit 0
+}
+
+set_dns () {
+add_dns="$1"
+del_dns="$2"
+get_dns="$(awk '/upstream_dns:/,/tls:/'  /etc/storage/app_19.sh)"
+tmp_dns=""
+if [ "$del_dns" != "del" ] ; then
+	if [ -z "$(echo "$get_dns" | grep "  - $add_dns")" ] ; then
+		logger -t "【AdGuardHome】" "增加上游 DNS 服务器: $add_dns"
+		tmp_dns="$(echo "$get_dns" | sed '/upstream_dns:/a\  - '"$add_dns")"
+		get_dns="$tmp_dns"
+	fi
+else
+	if [ ! -z "$(echo "$get_dns" | grep "  - $add_dns")" ] ; then
+		logger -t "【AdGuardHome】" "删除上游 DNS 服务器: $add_dns"
+		tmp_dns="$(echo "$get_dns" | sed /"$add_dns"/d)"
+		get_dns="$tmp_dns"
+	fi
+fi
+if [ -z "$(echo "$get_dns" | grep "  - ")" ] ; then
+	tmp_dns="$(echo "$get_dns" | sed '/upstream_dns:/a\  - 1.1.1.1')"
+fi
+if [ ! -z "$tmp_dns" ] ; then
+tmp_dns2="$(echo "$tmp_dns" | sed -e ":a;N;s/\n/\\\n/g;ta")"
+sed -i ':a;$!{N;ba};s@  upstream_dns.*\ntls:@'"$tmp_dns2"'@' /etc/storage/app_19.sh
+fi
 }
 
 initopt () {
@@ -231,7 +264,7 @@ dns:
   refuse_any: true
   bootstrap_dns:
   - 1.1.1.1
-  all_servers: false
+  all_servers: true
   allowed_clients: []
   disallowed_clients: []
   blocked_hosts: []

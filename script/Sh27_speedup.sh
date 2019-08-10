@@ -149,7 +149,7 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	initopt
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		logger -t "【speedup】" "找不到 curl ，需要手动安装 opt 后输入[opkg install curl]安装"
+		logger -t "【speedup】" "找不到 curl ，需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
 		logger -t "【speedup】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && speedup_restart x
 	else
 		speedup_restart o

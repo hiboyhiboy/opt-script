@@ -37,7 +37,7 @@ uuid=$(cat /proc/sys/kernel/random/uuid)
 
 function Install(){
 #Install Basic Packages
-echo '安装基本软件包，请稍候！'
+echo '安装基本软件包，请稍候！​'
 if [[ ${OS} == 'CentOS' ]];then
 	yum install curl wget unzip ntp ntpdate -y
 else

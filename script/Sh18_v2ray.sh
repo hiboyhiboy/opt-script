@@ -1326,7 +1326,7 @@ fi
 
 logger -t "【vmess】" "服务器订阅：开始更新"
 
-vmess_link="$(echo "$vmess_link" | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
+vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 vmess_link_i=""
 [ -f /www/link/vmess.js ] && echo -n "var ACL3List = [" > /www/link/vmess.js
 [ -f /www/link/ss.js ] && echo -n "var ACL4List = [" > /www/link/ss.js
