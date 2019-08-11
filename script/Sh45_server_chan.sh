@@ -244,7 +244,7 @@ if [ "$serverchan_notify_1" = "1" ] ; then
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
         logger -t "【互联网 IP 变动】" "目前 IP: ${hostIP}"
         logger -t "【互联网 IP 变动】" "上次 IP: ${lastIP}"
-        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】互联网IP变动" -d "&desp=${hostIP}" &
+        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】互联网IP变动：${hostIP}" -d "&desp=${hostIP}" &
         logger -t "【微信推送】" "互联网IP变动:${hostIP}"
         echo -n $hostIP > /etc/storage/lastIPAddress
     fi

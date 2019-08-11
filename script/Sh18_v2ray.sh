@@ -775,7 +775,7 @@ else
 	return 0
 fi
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【v2ray】" "找不到 jq，需要手动安装 opt 后输入[opkg install jq]安装"
+	logger -t "【v2ray】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
 	return 1
 else
 	return 0

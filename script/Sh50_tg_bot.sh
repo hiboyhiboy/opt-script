@@ -4,6 +4,8 @@ source /etc/storage/script/init.sh
 tgbot_enable=`nvram get app_46`
 [ -z $tgbot_enable ] && tgbot_enable=0 && nvram set app_46=0
 tgbot_id=`nvram get app_47`
+tgbot_api=`nvram get app_87`
+[ -z $tgbot_api ] && tgbot_api="https://api.telegram.org" && nvram set app_87="$tgbot_api"
 if [ "$tgbot_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep tgbot | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
@@ -27,7 +29,7 @@ if [ ! -z "$tgbot_id" ] && [ ! -z "$tgbot_text" ] && [ ! -z "$tgbot_sckey" ] ; t
 		logger -t "【tgbot推送】" "未找到 curl 程序，停止 tgbot推送。需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
 		nvram set app_53=""
 	else
-		curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=$tgbot_text" 
+		curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=$tgbot_text" 
 		logger -t "【tgbot推送】" "消息内容:$tgbot_text"
 		nvram set app_53=""
 		tgbot_text=""
@@ -79,7 +81,7 @@ exit 0
 tgbot_get_status () {
 
 A_restart=`nvram get tgbot_status`
-B_restart="$tgbot_enable$tgbot_id$tgbot_sckey$tgbot_notify_1$tgbot_notify_2$tgbot_notify_3$tgbot_notify_4$(cat /etc/storage/app_10.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$tgbot_enable$tgbot_api$tgbot_id$tgbot_sckey$tgbot_notify_1$tgbot_notify_2$tgbot_notify_3$tgbot_notify_4$(cat /etc/storage/app_10.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set tgbot_status=$B_restart
@@ -195,6 +197,8 @@ tgbot_notify_1=`nvram get app_49`
 tgbot_notify_2=`nvram get app_50`
 tgbot_notify_3=`nvram get app_51`
 tgbot_notify_4=`nvram get app_52`
+tgbot_api=`nvram get app_87`
+[ -z $tgbot_api ] && tgbot_api="https://api.telegram.org" && nvram set app_87="$tgbot_api"
 mkdir -p /tmp/var
 resub=1
 # 获得外网地址
@@ -266,7 +270,7 @@ if [ "$tgbot_notify_1" = "1" ] ; then
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
         logger -t "【互联网 IP 变动】" "目前 IP: ${hostIP}"
         logger -t "【互联网 IP 变动】" "上次 IP: ${lastIP}"
-        curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】互联网IP变动""`echo -e " \n "`""${hostIP}" &
+        curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】互联网IP变动""`echo -e " \n "`""${hostIP}" &
         logger -t "【tgbot推送】" "互联网IP变动:${hostIP}"
         echo -n $hostIP > /etc/storage/tgbot_lastIPAddress
     fi
@@ -285,7 +289,7 @@ if [ "$tgbot_notify_2" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/tgbot_newhostname相同行.txt /tmp/var/tgbot_newhostname.txt > /tmp/var/tgbot_newhostname不重复.txt
     if [ -s "/tmp/var/tgbot_newhostname不重复.txt" ] ; then
         content=`cat /tmp/var/tgbot_newhostname不重复.txt | grep -v "^$"`
-        curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】新设备加入""`echo -e " \n "`""${content}" &
+        curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】新设备加入""`echo -e " \n "`""${content}" &
         logger -t "【tgbot推送】" "PDCN新设备加入:${content}"
         cat /tmp/var/tgbot_newhostname不重复.txt | grep -v "^$" >> /etc/storage/tgbot_hostname.txt
     fi
@@ -305,7 +309,7 @@ if [ "$tgbot_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/tgbot_newhostname相同行_上线.txt /tmp/var/tgbot_newhostname.txt > /tmp/var/tgbot_newhostname不重复_上线.txt
     if [ -s "/tmp/var/tgbot_newhostname不重复_上线.txt" ] ; then
         content=`cat /tmp/var/tgbot_newhostname不重复_上线.txt | grep -v "^$"`
-        curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】设备【上线】Online""`echo -e " \n "`""${content}" &
+        curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】设备【上线】Online""`echo -e " \n "`""${content}" &
         logger -t "【tgbot推送】" "PDCN设备【上线】:${content}"
         cat /tmp/var/tgbot_newhostname不重复_上线.txt | grep -v "^$" >> /etc/storage/tgbot_hostname_上线.txt
     fi
@@ -313,7 +317,7 @@ if [ "$tgbot_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/tgbot_newhostname.txt /etc/storage/tgbot_hostname_上线.txt > /tmp/var/tgbot_newhostname不重复_下线.txt
     if [ -s "/tmp/var/tgbot_newhostname不重复_下线.txt" ] ; then
         content=`cat /tmp/var/tgbot_newhostname不重复_下线.txt | grep -v "^$"`
-        curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】设备【下线】offline""`echo -e " \n "`""${content}" &
+        curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】设备【下线】offline""`echo -e " \n "`""${content}" &
         logger -t "【tgbot推送】" "PDCN设备【下线】:${content}"
         cat /tmp/var/tgbot_newhostname.txt | grep -v "^$" > /etc/storage/tgbot_hostname_上线.txt
     fi
@@ -327,7 +331,7 @@ if [ "$tgbot_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/tgbot_osub
         content="新的固件： `cat /tmp/var/tgbot_nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/tgbot_osub | grep -v "^$"` "
         logger -t "【tgbot推送】" "固件 新的更新：${content}"
-        curl -L -s "https://api.telegram.org/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】固件更新提醒""`echo -e " \n "`""${content}" &
+        curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】固件更新提醒""`echo -e " \n "`""${content}" &
         echo -n `cat /tmp/var/tgbot_nsub | grep -v "^$"` > /tmp/var/tgbot_osub
     fi
 fi
@@ -356,7 +360,7 @@ mkdir -p /opt/app/tgbot
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/tgbot/Advanced_Extensions_tgbot.asp
 fi
-
+[ -z "$(grep tgbot_api /etc/storage/app_10.sh)" ] && rm -f /etc/storage/app_10.sh
 initconfig
 
 # 加载程序配置页面
