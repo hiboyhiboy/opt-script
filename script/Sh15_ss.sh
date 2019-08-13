@@ -2682,6 +2682,10 @@ if [ "$ss_enable" = "1" ] ; then
 		if [ "$ss_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
 			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 			if [ "$port" = 0 ] ; then
+				sleep 10
+				port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+			fi
+			if [ "$port" = 0 ] ; then
 				logger -t "【SS】" "检测2:找不到 dnsmasq 转发规则, 重新添加"
 				#   #方案三
 				sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
@@ -2726,7 +2730,7 @@ ss_mode_x=`nvram get ss_mode_x`
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 rm -f /tmp/cron_ss.lock
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-sleep 15
+sleep 10
 ss_enable=`nvram get ss_enable`
 while [ "$ss_enable" = "1" ];
 do
@@ -2763,14 +2767,14 @@ if [ "$rebss" -gt 6 ] ; then
 	fi
 fi
 ss_internet=`nvram get ss_internet`
-sleep 9
+sleep 10
 #随机延时
 if [ "$ss_internet" = "1" ] ; then
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-	RND_NUM=`echo $SEED 60 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	RND_NUM=`echo $SEED 55 88|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 	sleep $RND_NUM
 fi
-/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+#/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 ss_enable=`nvram get ss_enable`
 if [ -f /tmp/cron_ss.lock ] || [ "$ss_enable" != "1" ] ; then
 	#跳出当前循环
@@ -2819,6 +2823,10 @@ fi
 fi
 if [ "$ss_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
 	port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	if [ "$port" = 0 ] ; then
+		sleep 10
+		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	fi
 	if [ "$port" = 0 ] ; then
 		logger -t "【SS】" "检测3:找不到 dnsmasq 转发规则, 重新添加"
 		#   #方案三
@@ -3313,17 +3321,13 @@ update)
 	[ ${ss_enable:=0} ] && [ "$ss_enable" -eq "0" ] && exit 0
 	# [ "$ss_mode_x" = "3" ] && exit 0
 	#随机延时
-	killall sh_sskeey_k.sh
-	killall -9 sh_sskeey_k.sh
-	if [ -z "$RANDOM" ] ; then
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-	else
-	SEED=$RANDOM
-	fi
-	RND_NUM=`echo $SEED 1 120|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	RND_NUM=`echo $SEED 1 600|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 	# echo $RND_NUM
 	logger -t "【SS】" "$RND_NUM 秒后进入处理状态, 请稍候"
 	sleep $RND_NUM
+	killall sh_sskeey_k.sh
+	killall -9 sh_sskeey_k.sh
 	# start_ss_rules
 	# [ "$ss_mode_x" != "1" ] && update_chnroutes
 	# [ "$ss_mode_x" != "2" ] && [ "$ss_pdnsd_all" != "1" ] && update_gfwlist

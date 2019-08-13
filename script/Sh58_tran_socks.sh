@@ -124,6 +124,10 @@ if [ "$transocks_enable" = "1" ] ; then
 		if [ "$transocks_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
 			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 			if [ "$port" = 0 ] ; then
+				sleep 10
+				port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+			fi
+			if [ "$port" = 0 ] ; then
 				logger -t "【transocks】" "检测2:找不到 dnsmasq 转发规则, 重新添加"
 				#   #方案三
 				sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
@@ -167,6 +171,10 @@ while true; do
 	ss_pdnsd_all=`nvram get ss_pdnsd_all`
 	if [ "$transocks_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
 		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+		if [ "$port" = 0 ] ; then
+			sleep 10
+			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+		fi
 		if [ "$port" = 0 ] ; then
 			logger -t "【transocks】" "检测2:找不到 dnsmasq 转发规则, 重新添加"
 			#   #方案三

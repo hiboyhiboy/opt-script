@@ -87,8 +87,11 @@ if [ "$AdGuardHome_enable" = "1" ] ; then
 	else
 		[ -z "$AdGuardHome_2_server" ] && [ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
 		if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-			logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 10 秒后自动尝试重新启动"
-			sleep 10 && AdGuardHome_restart
+			sleep 10 
+			if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
+				logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 自动尝试重新启动"
+				AdGuardHome_restart
+			fi
 		fi
 	fi
 fi
@@ -105,8 +108,11 @@ OSC
 fi
 while true; do
 	if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-		logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 10 秒后自动尝试重新启动"
-		sleep 10 && AdGuardHome_restart
+		sleep 10
+		if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
+			logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 自动尝试重新启动"
+			AdGuardHome_restart
+		fi
 	fi
 sleep 61
 done

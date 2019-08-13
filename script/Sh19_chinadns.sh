@@ -101,6 +101,10 @@ if [ "$chinadns_enable" = "1" ] ; then
 		[ -z "$(ps -w | grep "$chinadns_path" | grep -v grep )" ] && chinadns_restart
 		port=$(grep "server=127.0.0.1#$chinadns_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 		if [ "$port" = 0 ] ; then
+			sleep 10
+			port=$(grep "server=127.0.0.1#$chinadns_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+		fi
+		if [ "$port" = 0 ] ; then
 			logger -t "【chinadns】" "检测:找不到 dnsmasq 转发规则, 重新添加"
 			# 写入dnsmasq配置
 			sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
@@ -138,6 +142,10 @@ while [ "$chinadns_enable" = "1" ]; do
 		chinadns_restart
 	fi
 	port=$(grep "server=127.0.0.1#$chinadns_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	if [ "$port" = 0 ] ; then
+		sleep 10
+		port=$(grep "server=127.0.0.1#$chinadns_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	fi
 	if [ "$port" = 0 ] ; then
 		logger -t "【chinadns】" "检测:找不到 dnsmasq 转发规则, 重新添加"
 		# 写入dnsmasq配置

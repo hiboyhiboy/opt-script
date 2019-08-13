@@ -248,6 +248,7 @@ reb="1"
 [ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
 [ -z $ss_link_1 ] && ss_link_1="www.miui.com" && nvram set ss_link_1="www.miui.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 while true; do
 koolproxy_enable=`nvram get koolproxy_enable`
 [ "$koolproxy_enable" != "1" ] && exit
@@ -348,7 +349,6 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		fi
 		reb=`expr $reb + 1`
 	fi
-	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	sleep 213
 fi
 sleep 23
