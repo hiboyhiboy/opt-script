@@ -673,25 +673,35 @@ fi
 }
 
 sh_onmp_check () {
-if [ ! -f "/opt/bin/sh_onmp.sh" ] || [ "$onmp_enable" = "1" ] ; then
+down_sh_onmp=0
+if [ "$onmp_enable" = "1" ] ; then
+	down_sh_onmp=1
+fi
+if [ ! -f "/opt/bin/sh_onmp.sh" ] && [ "$lnmp_enable" = "1" ] ; then
+	down_sh_onmp=1
+fi
+if [ ! -f "/opt/bin/sh_onmp.sh" ] && [ "$onmp_enable" != "0" ] ; then
+	down_sh_onmp=1
+fi
+if [ "$down_sh_onmp" = "1" ] ; then
 	logger -t "【LNMP】" "更新 /opt/bin/sh_onmp.sh, 下载脚本: $hiboyscript/sh_onmp.sh"
 	wgetcurl.sh /tmp/sh_onmp.sh "$hiboyscript/sh_onmp.sh" "$hiboyscript2/sh_onmp.sh"
 	[[ "$(cat /tmp/sh_onmp.sh | wc -l)" -gt 1000 ]] && { rm -f /opt/bin/sh_onmp.sh ; mv -f /tmp/sh_onmp.sh /opt/bin/sh_onmp.sh ; }
 fi
-chmod 777 "/opt/bin/sh_onmp.sh"
+[ -f /opt/bin/sh_onmp.sh ] && chmod 777 "/opt/bin/sh_onmp.sh"
 
 # 更换【通用环境变量获取】方式
-sed -e 's/localhost=.*/localhost=`nvram get lan_ipaddr`/g' -i $(which sh_onmp.sh)
+[ -f /opt/bin/sh_onmp.sh ] && sed -e 's/localhost=.*/localhost=`nvram get lan_ipaddr`/g' -i /opt/bin/sh_onmp.sh
 [ -f /opt/bin/onmp ] && sed  -e 's/localhost=.*/localhost=`nvram get lan_ipaddr`/g' -i /opt/bin/onmp
-sed -i '/get_env()/,/##### 软件包状态检测 #####/{/get_env()/n;/##### 软件包状态检测 #####/b;d;p}' $(which sh_onmp.sh)
+[ -f /opt/bin/sh_onmp.sh ] && sed -i '/get_env()/,/##### 软件包状态检测 #####/{/get_env()/n;/##### 软件包状态检测 #####/b;d;p}' /opt/bin/sh_onmp.sh
 
-sed -i '/^get_env()/a {\
+[ -f /opt/bin/sh_onmp.sh ] && sed -i '/^get_env()/a {\
 \
 username=`nvram get http_username`\
 localhost=`nvram get lan_ipaddr`\
 \
 }\
-' $(which sh_onmp.sh)
+' /opt/bin/sh_onmp.sh
 
 [ -f /opt/bin/onmp ] && sed -e 's/^exit #exit_tmp/#exit_tmp/g' -i /opt/bin/onmp # 内部控制启动
 sh_onmp.sh check

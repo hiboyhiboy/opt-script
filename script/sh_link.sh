@@ -284,7 +284,7 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			link_echo="$link_echo"'"'"$ss_link_password"'", '
 			link_echo="$link_echo"'"'"$ss_link_method"'", '
 			ping_link
-			link_echo="$link_echo"'"'"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
+			link_echo="$link_echo"'"-o '"$ss_link_obfs"' -O '"$ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
 			link_echo="$link_echo"'"ssr"]]'
 			sed -Ei "s@]]@]@g" /www/link/link.js
 			echo -n "$link_echo" >> /www/link/link.js
