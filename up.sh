@@ -51,7 +51,7 @@ if [ -s /tmp/padavan/$Firmware ] && [ "$MD5_txt"x = "$MD5_down"x ] ; then
         logger_echo " 出错【$Firmware】，更新失败！"
     fi
 else
-    logger_echo " 下载【$Firmware】，md5与记录不同，下载失败，跳过更新！可再次尝试更新！"
+    logger_echo " 下载【$Firmware】，md5与记录不同，下载失败，跳过更新！可重启后再次尝试更新！"
     logger_echo " 下载md5: $MD5_down"
     logger_echo " 记录md5: $MD5_txt"
 fi
