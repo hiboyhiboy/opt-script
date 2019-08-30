@@ -701,7 +701,7 @@ rm -f /tmp/vmess/gfw*
 awk '{printf("\,\"%s\"", $1, $1 )}' /tmp/vmess/all_domain.txt > /tmp/vmess/r.gfwlist.conf
 rm -f /tmp/vmess/all_domain.txt
 fi
-[ -s "/tmp/vmess/r.gfwlist.conf" ] && [ -s "/tmp/vmess/mk_vmess.json" ] && sed -Ei 's@"gfwall.com",@"cn3qq.com"'"$(cat /tmp/vmess/r.gfwlist.conf)"',@g'  /tmp/vmess/mk_vmess.json
+[ -s "/tmp/vmess/r.gfwlist.conf" ] && [ -s "/tmp/vmess/mk_vmess.json" ] && sed -Ei 's@"gfwall.com",@"services.googleapis.cn","googleapis.cn"'"$(cat /tmp/vmess/r.gfwlist.conf)"',@g'  /tmp/vmess/mk_vmess.json
 fi
 }
 
@@ -839,18 +839,18 @@ mk_mode_x="`nvram get app_69`"
 if [ "$mk_mode_x" = "0" ] ; then
 logger -t "【vmess】" "方案一chnroutes，国外IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",2];"geosite:google")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"domain",2];"geosite:google")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"domain",3];"geosite:facebook")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
 fi
 if [ "$mk_mode_x" = "1" ] ; then
 logger -t "【vmess】" "方案二gfwlist（推荐），只有被墙的站点IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"AsIs")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",2];"geosite:google")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"domain",2];"geosite:google")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"domain",3];"geosite:facebook")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",5]])')
 mk_vmess_0=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",0])')
 mk_vmess_1=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",1])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0];'"$mk_vmess_1"')')
@@ -859,10 +859,10 @@ fi
 if [ "$mk_mode_x" = "3" ] ; then
 logger -t "【vmess】" "方案四回国模式，国内IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"outboundTag"];"outbound_1")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"outboundTag"];"outbound_1")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",5]])')
 mk_vmess_0=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",0])')
 mk_vmess_1=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",1])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0];'"$mk_vmess_1"')')
@@ -1164,6 +1164,13 @@ echo '{
   "dns": {
     "servers": [
       {
+        "address": "8.8.8.8",
+        "port": 53,
+        "domains": [
+          "geosite:google"
+        ]
+      },
+      {
         "address": "114.114.114.114",
         "port": 53,
         "domains": [
@@ -1230,6 +1237,14 @@ echo '{
       {
         "type": "field",
         "domain": [
+          "gfwall.com",
+          "cn2qq.com"
+        ],
+        "outboundTag": "outbound_1"
+      },
+      {
+        "type": "field",
+        "domain": [
           "domain:baidu.com",
           "domain:qq.com",
           "domain:taobao.com",
@@ -1243,14 +1258,6 @@ echo '{
           "geoip:cn"
         ],
         "outboundTag": "direct"
-      },
-      {
-        "type": "field",
-        "domain": [
-          "gfwall.com",
-          "cn2qq.com"
-        ],
-        "outboundTag": "outbound_1"
       },
       {
         "type": "field",
