@@ -12,6 +12,12 @@ transocks_enable=`nvram get app_27`
 [ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
 [ "$transocks_enable" != "0" ] && [ "$ss" != "Tsocks" ] && ss="Tsocks" && nvram set button_script_2_s="Tsocks"
 
+clash_enable=`nvram get app_88`
+[ -z $clash_enable ] && clash_enable=0 && nvram set clash_enable=0
+clash_follow=`nvram get app_92`
+[ -z $clash_follow ] && clash_follow=0 && nvram set clash_follow=0
+[ "$clash_enable" != "0" ] && [ "$clash_follow" != 0 ] && [ "$ss" != "clash" ] && ss="clash" && nvram set button_script_2_s="clash"
+
 v2ray_enable=`nvram get v2ray_enable`
 [ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
 v2ray_follow=`nvram get v2ray_follow`
@@ -120,7 +126,7 @@ apply=`nvram get button_script_2`
 
 if [ "$ss" = "SS_[1]" ] || [ "$ss" = "SS_[2]" ] ; then
 if [ ! -s /tmp/script/_ss ] ; then
-	logger -t "【按钮①】" "请稍等 SS 脚本初始化！"
+	logger -t "【按钮②】" "请稍等 SS 脚本初始化！"
 	return
 fi
 # 按钮②状态0 执行以下命令
@@ -143,7 +149,7 @@ fi
 
 if [ "$ss" = "V2Ray" ] ; then
 if [ ! -s /tmp/script/_v2ray ] ; then
-	logger -t "【按钮①】" "请稍等 v2ray 脚本初始化！"
+	logger -t "【按钮②】" "请稍等 v2ray 脚本初始化！"
 	return
 fi
 # 按钮②状态0 执行以下命令
@@ -167,7 +173,7 @@ fi
 
 if [ "$ss" = "Tsocks" ] ; then
 if [ ! -s /tmp/script/_app10 ] ; then
-	logger -t "【按钮①】" "请稍等 transocks 脚本初始化！"
+	logger -t "【按钮②】" "请稍等 transocks 脚本初始化！"
 	return
 fi
 # 按钮②状态0 执行以下命令
@@ -185,6 +191,30 @@ if [ "$apply" = 1 ] ; then
 	nvram set transocks_status=1
 	nvram set app_27=0
 	/tmp/script/_app10 &
+	nvram set button_script_2="0"
+fi
+fi
+
+if [ "$ss" = "clash" ] ; then
+if [ ! -s /tmp/script/_app10 ] ; then
+	logger -t "【按钮②】" "请稍等 clash 脚本初始化！"
+	return
+fi
+# 按钮②状态0 执行以下命令
+if [ "$apply" = 0 ] ; then
+	#nvram set button_script_2="1"
+	logger -t "【按钮②】" "开启 clash 进程"
+	nvram set clash_status=0
+	nvram set app_88=1
+	/tmp/script/_app18 &
+	nvram set button_script_2="1"
+fi
+# 按钮②状态1时执行以下命令
+if [ "$apply" = 1 ] ; then
+	logger -t "【按钮②】" "关闭 clash 进程"
+	nvram set clash_status=1
+	nvram set app_88=0
+	/tmp/script/_app18 &
 	nvram set button_script_2="0"
 fi
 fi
@@ -209,9 +239,11 @@ if [ "$ss" = "SS_[1]" ] || [ "$ss" = "SS_[2]" ] ; then
 elif [ "$ss" = "SS" ] ; then
 	PROCESS=$(ps -w | grep "ss-local" | grep -v "grep")
 elif [ "$ss" = "V2Ray" ] ; then
-	PROCESS=$(ps -w | grep "v2ray" | grep -v "grep")
+	PROCESS=$(pidof v2ray)
 elif [ "$ss" = "Tsocks" ] ; then
-	PROCESS=$(ps -w | grep "transocks" | grep -v "grep")
+	PROCESS=$(pidof transocks)
+elif [ "$ss" = "clash" ] ; then
+	PROCESS=$(pidof clash)
 fi
 if [ -z "$PROCESS" ] ; then
 	nvram set button_script_2="0"
