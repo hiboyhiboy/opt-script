@@ -29,7 +29,7 @@ ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为�
 [ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
 if [ "$transocks_enable" != "0" ]  ; then
 	if [ "$ss_enable" != "0" ] && [ "$ss_mode_x" != 3 ]  ; then
-		logger -t "【v2ray】" "错误！！！由于已启用 transocks ，停止启用 SS 透明代理！"
+		logger -t "【clash】" "错误！！！由于已启用 transocks ，停止启用 SS 透明代理！"
 		ss_enable=0 && nvram set ss_enable=0
 	fi
 	if [ "$clash_enable" != 0 ] && [ "$clash_follow" != 0 ]  ; then
@@ -250,11 +250,11 @@ logger -t "【clash】" "初始化 clash 配置"
 mkdir -p /opt/app/clash/config
 config_yml="/opt/app/clash/config/config.yml"
 cp -f /etc/storage/app_20.sh $config_yml
-sed -e '/^$/d' -i $config_yml
-sed -r 's@^[ ]+#@#@g' -i $config_yml
-sed -e '/^#/d' -i $config_yml
-sed -e 's@#@♯@g' -i $config_yml
 yq w -i $config_yml allow-lan true
+# sed -e '/^$/d' -i $config_yml
+# sed -r 's@^[ ]+#@#@g' -i $config_yml
+# sed -e '/^#/d' -i $config_yml
+sed -e 's@#@♯@g' -i $config_yml
 logger -t "【clash】" "允许局域网的连接"
 if [ "$clash_http_enable" != "0" ] ; then
 yq w -i $config_yml port 7890
@@ -276,21 +276,10 @@ yq d -i $config_yml redir-port
 fi
 yq w -i $config_yml external-controller $clash_ui
 yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
-logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置（没搞懂 Clash DNS 暂时使用外部 DNS 程序）"
+logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
 yq d -i $config_yml dns
-# 没搞懂 Clash DNS 暂时使用外部程序
-# if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
-	# logger -t "【clash】" "已经启动 chinadns  防止域名污染"
-	# yq w -i $config_yml dns.enable "false"
-# else
-	# logger -t "【clash】" "启动 clash 内置 DNS 防止域名污染"
-	# pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
-	# pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
-	# logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
-	# yq d -i $config_yml dns
-	# logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
-	# yq m -x -i $config_yml /tmp/clash/dns.yml
-# fi
+logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
+yq m -x -i $config_yml /tmp/clash/dns.yml
 
 cd "$(dirname "$SVC_PATH")"
 su_cmd="eval"
@@ -328,7 +317,7 @@ logger -t "【clash】" "备注：默认配置的透明代理会导致广告过�
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 echo "已经启动 chinadns 防止域名污染"
 else
-logger -t "【v2ray】" "启动 dnsproxy 防止域名污染"
+logger -t "【clash】" "启动 dnsproxy 防止域名污染"
 pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
 if [ -s /sbin/dnsproxy ] ; then
@@ -681,7 +670,7 @@ cat > "/tmp/clash/dns.yml" <<-\EEE
 dns:
   enable: true
   ipv6: false
-  listen: 0.0.0.0:8053
+  # listen: 0.0.0.0:8053
   enhanced-mode: redir-host
   # enhanced-mode: redir-host # 或 fake-ip
   # # fake-ip-range: 198.18.0.1/16 # 如果你不知道这个参数的作用，请勿修改
@@ -696,19 +685,22 @@ dns:
     - 119.29.29.29
     - 114.114.114.114
     - 223.5.5.5
-    #- tls://dns.rubyfish.cn:853
-    #- https://dns.rubyfish.cn/dns-query
+    # - tls://dns.rubyfish.cn:853
+    # - https://dns.rubyfish.cn/dns-query
      
   fallback:
     # 与 nameserver 内的服务器列表同时发起请求，当规则符合 GEOIP 在 CN 以外时，fallback 列表内的域名服务器生效。
-    - tls://1.1.1.1
+    - tcp://8.8.8.8:53
+    - tcp://8.8.4.4:53
+    - tcp://208.67.222.222:443
+    - tcp://208.67.220.220:443
     # - tls://1.0.0.1:853
     # - tls://dns.google:853
     # - tls://dns.google
 
-    #- https://dns.rubyfish.cn/dns-query
-    #- https://cloudflare-dns.com/dns-query
-    #- https://dns.google/dns-query
+    # - https://dns.rubyfish.cn/dns-query
+    # - https://cloudflare-dns.com/dns-query
+    # - https://dns.google/dns-query
 EEE
 
 }
