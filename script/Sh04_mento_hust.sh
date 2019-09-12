@@ -155,7 +155,7 @@ kill_ps "$scriptname"
 
 mentohust_start () {
 
-check_webui_yes
+#check_webui_yes
 SVC_PATH="$mentohust_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/usr/bin/mentohust"
