@@ -254,7 +254,7 @@ yq w -i $config_yml allow-lan true
 # sed -e '/^$/d' -i $config_yml
 # sed -r 's@^[ ]+#@#@g' -i $config_yml
 # sed -e '/^#/d' -i $config_yml
-sed -e 's@#@♯@g' -i $config_yml
+# sed -e 's@#@♯@g' -i $config_yml
 logger -t "【clash】" "允许局域网的连接"
 if [ "$clash_http_enable" != "0" ] ; then
 yq w -i $config_yml port 7890

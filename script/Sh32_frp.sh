@@ -3,7 +3,7 @@
 source /etc/storage/script/init.sh
 frp_enable=`nvram get frp_enable`
 [ -z $frp_enable ] && frp_enable=0 && nvram set frp_enable=0
-frp_version_2="0.27.0"
+frp_version_2="0.29.0"
 frp_version_0="0.24.1"
 frp_version_1="0.16.1"
 frp_version_3="使用最新版"
