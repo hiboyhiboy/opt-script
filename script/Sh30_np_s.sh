@@ -196,8 +196,12 @@ if [ ! -z "$action_nps" ] ; then
 		logger -t "【nps】" "找不到 $SVC_PATH 下载程序"
 		nps_ver_wget="https://github.com/cnlh/nps/releases/download/$nps_version/linux_mipsle_client.tar.gz"
 		wgetcurl.sh /opt/bin/nps/linux_mipsle_client.tar.gz "$nps_ver_wget"
-		tar -xz -C /opt/bin/nps -f /opt/bin/nps/linux_mipsle_client.tar.gz
-		rm -f /opt/bin/nps/npc.conf /opt/bin/nps/linux_mipsle_client.tar.gz
+		rm -rf /opt/bin/nps/tmp
+		mkdir -p /opt/bin/nps/tmp
+		tar -xz -C /opt/bin/nps/tmp -f /opt/bin/nps/linux_mipsle_client.tar.gz
+		[ -f /opt/bin/nps/tmp/npc ] && mv -f /opt/bin/nps/tmp/npc $SVC_PATH
+		[ -f /opt/bin/nps/tmp/nps/npc ] && mv -f /opt/bin/nps/tmp/nps/npc $SVC_PATH
+		rm -rf /opt/bin/nps/tmp /opt/bin/nps/linux_mipsle_client.tar.gz
 	fi
 	[ "$action_nps" = "nps" ] && [ ! -d /opt/bin/nps/conf ] && rm -rf $SVC_PATH /opt/bin/nps/conf
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "nps" ] ; then
@@ -219,9 +223,9 @@ if [ ! -z "$action_nps" ] ; then
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【nps】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 		logger -t "【nps】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && nps_restart x
-		chmod 755 $SVC_PATH
 	else
 		logger -t "【nps】" "找到 $SVC_PATH"
+		chmod 755 $SVC_PATH
 	fi
 	logger -t "【nps】" "运行 $action_nps"
 	cd /opt/bin/nps
