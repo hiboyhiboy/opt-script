@@ -249,8 +249,10 @@ fi
 logger -t "【clash】" "初始化 clash 配置"
 mkdir -p /opt/app/clash/config
 config_yml="/opt/app/clash/config/config.yml"
+rm -f /tmp/temp?????????
 cp -f /etc/storage/app_20.sh $config_yml
 yq w -i $config_yml allow-lan true
+rm -f /tmp/temp?????????
 # sed -e '/^$/d' -i $config_yml
 # sed -r 's@^[ ]+#@#@g' -i $config_yml
 # sed -e '/^#/d' -i $config_yml
@@ -258,28 +260,45 @@ yq w -i $config_yml allow-lan true
 logger -t "【clash】" "允许局域网的连接"
 if [ "$clash_http_enable" != "0" ] ; then
 yq w -i $config_yml port 7890
+rm -f /tmp/temp?????????
 logger -t "【clash】" "HTTP 代理端口：7890"
 else
 yq d -i $config_yml port
+rm -f /tmp/temp?????????
 fi
 if [ "$clash_socks_enable" != "0" ] ; then
 yq w -i $config_yml socks-port 7891
+rm -f /tmp/temp?????????
 logger -t "【clash】" "SOCKS5 代理端口：7891"
 else
 yq d -i $config_yml socks-port
+rm -f /tmp/temp?????????
 fi
 if [ "$clash_follow" != "0" ] ; then
 yq w -i $config_yml redir-port 7892
+rm -f /tmp/temp?????????
 logger -t "【clash】" "redir 代理端口：7892"
 else
 yq d -i $config_yml redir-port
+rm -f /tmp/temp?????????
 fi
 yq w -i $config_yml external-controller $clash_ui
+rm -f /tmp/temp?????????
 yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
+rm -f /tmp/temp?????????
 logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
 yq d -i $config_yml dns
+rm -f /tmp/temp?????????
 logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
 yq m -x -i $config_yml /tmp/clash/dns.yml
+rm -f /tmp/temp?????????
+if [ ! -s $config_yml ] ; then
+logger -t "【clash】" "yq 初始化 clash 配置错误！请检查配置！"
+logger -t "【clash】" "尝试直接使用原始配置启动！"
+cp -f /etc/storage/app_20.sh $config_yml
+else
+logger -t "【clash】" "初始化 clash 配置完成！"
+fi
 
 cd "$(dirname "$SVC_PATH")"
 su_cmd="eval"
@@ -529,7 +548,7 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
+		Address="`wget -T 5 -t 3 --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
@@ -636,7 +655,7 @@ yml_tmp="/tmp/clash/app_20.sh"
 wgetcurl.sh $app_20 "$clash_wget_yml" "$clash_wget_yml" N
 if [ ! -s $app_20 ] ; then
 	rm -f $app_20
-	wget --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -O $app_20 "$ssr_link_i"
+	wget -T 5 -t 3 --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -O $app_20 "$ssr_link_i"
 fi
 if [ ! -s $app_20 ] ; then
 	rm -f $app_20
@@ -648,6 +667,14 @@ else
 	nvram set clash_status=wget_yml
 	cp -f $yml_tmp /etc/storage/app_20.sh
 	yq w -i /etc/storage/app_20.sh allow-lan true
+	rm -f /tmp/temp?????????
+	if [ ! -s /etc/storage/app_20.sh ] ; then
+		logger -t "【clash】" "yq 格式化 clash 订阅文件错误！请检查订阅文件！"
+		logger -t "【clash】" "尝试直接使用原始订阅文件！"
+		cp -f $yml_tmp /etc/storage/app_20.sh
+	else
+		logger -t "【clash】" "格式化 clash 配置完成！"
+	fi
 	rm -f $yml_tmp
 fi
 logger -t "【clash】" "服务器订阅：更新完成"

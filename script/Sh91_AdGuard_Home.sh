@@ -154,8 +154,8 @@ else
 	mkdir -p "/opt/AdGuardHome"
 	if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
 		logger -t "【AdGuardHome】" "找不到 $SVC_PATH ，安装 AdGuardHome 程序"
-		tag="$( wget --max-redirect=0  https://github.com/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
-		[ -z "$tag" ] && tag="$( wget --no-check-certificate --quiet --output-document=-  https://github.com/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep '<a href="/AdguardTeam/AdGuardHome/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+		tag="$( wget -T 5 -t 3 --no-check-certificate --max-redirect=0  https://github.com/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
+		[ -z "$tag" ] && tag="$( wget -T 5 -t 3 --no-check-certificate --quiet --output-document=-  https://github.com/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep '<a href="/AdguardTeam/AdGuardHome/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
 		if [ ! -z "$tag" ] ; then
 			logger -t "【AdGuardHome】" "自动下载最新版本 $tag"
 			wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "https://github.com/AdguardTeam/AdGuardHome/releases/download/$tag/AdGuardHome_linux_mipsle.tar.gz"

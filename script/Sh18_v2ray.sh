@@ -644,7 +644,7 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
+		Address="`wget -T 5 -t 3 --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
@@ -1461,7 +1461,7 @@ rm -f /tmp/vmess/link/0_link.txt
 wgetcurl.sh /tmp/vmess/link/0_link.txt "$vmess_link_i" "$vmess_link_i" N
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	rm -f /tmp/vmess/link/0_link.txt
-	wget --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -O /tmp/vmess/link/0_link.txt "$vmess_link_i"
+	wget -T 5 -t 3 --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -O /tmp/vmess/link/0_link.txt "$vmess_link_i"
 fi
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	rm -f /tmp/vmess/link/0_link.txt
@@ -1544,13 +1544,17 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 		ss_link_obfsparam=""
 		ss_link_protoparam=""
 		ss_link_plugin_opts=""
+		vmess_link_add=""
+		vmess_link_ps=""
 		add_ss_link "$line"
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
 		[ $ii_s -gt 0 ] && link_echo="$link_echo"', '
 		link_echo="$link_echo"'["ss", '
 		link_echo="$link_echo"'"'"$ss_link_name"'", '
+		vmess_link_ps="$ss_link_name"
 		link_echo="$link_echo"'"'"$ss_link_server"'", '
+		vmess_link_add="$ss_link_server"
 		link_echo="$link_echo"'"'"$ss_link_port"'", '
 		link_echo="$link_echo"'"'"$ss_link_password"'", '
 		link_echo="$link_echo"'"'"$ss_link_method"'", '

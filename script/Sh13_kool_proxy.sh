@@ -280,10 +280,10 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ "$check" == "404" ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+			wget --no-check-certificate -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || { check=404;  sleep 1; }
 			if [ "$check" == "404" ] ; then
-				wget --no-check-certificate -q -T 10 "$ss_link_1" -O /dev/null
+				wget --no-check-certificate -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 				[ "$?" == "0" ] && check=200 || check=404
 			fi
 		else
@@ -950,7 +950,7 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
+		Address="`wget -T 5 -t 3 --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi

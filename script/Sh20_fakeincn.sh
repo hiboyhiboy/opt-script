@@ -284,7 +284,7 @@ fakeincn_enable=`nvram get app_7` #fakeincn_enable
 while [ "$fakeincn_enable" = "1" ]; do
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		country=`wget -qO- https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
+		country=`wget -T 5 -t 3 -qO- https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	else
 		country=`curl -L -k -s https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	fi
