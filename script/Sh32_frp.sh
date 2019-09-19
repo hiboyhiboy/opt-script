@@ -154,6 +154,7 @@ frp_close () {
 sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
 killall frpc frps frp_script.sh
 killall -9 frpc frps frp_script.sh
+rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
 kill_ps "/tmp/script/_frp"
 kill_ps "_frp.sh"
 kill_ps "$scriptname"
@@ -223,6 +224,7 @@ done
 
 logger -t "【frp】" "运行 frp_script"
 
+rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
 eval "/etc/storage/frp_script.sh $cmd_log" &
 restart_dhcpd
 sleep 4
@@ -263,6 +265,7 @@ if [ ! -f "$frp_script" ] || [ ! -s "$frp_script" ] ; then
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 killall frpc frps
+rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
 mkdir -p /tmp/frp
 #启动frp功能后会运行以下脚本
 #frp项目地址教程: https://github.com/fatedier/frp/blob/master/README_zh.md
