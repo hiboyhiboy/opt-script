@@ -106,6 +106,7 @@ dev_full=$(cat  /proc/mounts | awk '{print $1}' | grep -v -E "$(echo $(/usr/bin/
 if [ ! -z "$dev_mount" ] && [ ! -z "$dev_full" ] ; then
 if mountpoint -q "$dev_mount" ; then
 	logger -t "【opt】" "发现挂载异常设备，尝试移除： $dev_full   $dev_mount"
+	/tmp/re_upan_storage.sh 0
 	mountres2=`losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}'`
 	[ ! -z "$mountres2" ] && /usr/bin/opt-umount.sh $dev_full   $dev_mount
 	mountres2=`losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}'`
@@ -149,6 +150,7 @@ if [ "$mountp" = "0" ] ; then
 		logger -t "【opt】" "opt 挂载正常：$optPath"
 		# 部署离线 opt 环境下载地址
 		opt_download
+		/tmp/re_upan_storage.sh &
 	fi
 else
 	logger -t "【opt】" "opt 没挂载，重新挂载"
@@ -281,6 +283,7 @@ if [ ! -z "$upanPath" ] ; then
 	prepare_authorized_keys
 	# 部署离线 opt 环境下载地址
 	opt_download
+	/tmp/re_upan_storage.sh &
 else
 	logger -t "【opt】" "/tmp/AiDisk_00/opt文件夹模式挂载/opt"
 	rm -rf /tmp/AiDisk_00
@@ -482,6 +485,7 @@ if [ ! -z "$upanPath" ] ; then
 	sync
 	# 部署离线 opt 环境下载地址
 	opt_download
+	/tmp/re_upan_storage.sh &
 else
 	mkdir -p /tmp/AiDisk_00/opt
 fi
@@ -674,7 +678,47 @@ logger -t "【libmd5_备份】" "md5对比，完成！"
 sync;echo 3 > /proc/sys/vm/drop_caches
 
 }
+
+re_upan_storage () {
+/tmp/re_upan_storage.sh &
+}
+
 initconfig () {
+
+cat > "/tmp/re_upan_storage.sh" <<-\EEE
+#!/bin/sh
+#set -x
+upan_storage_enable=`nvram get upan_storage_enable`
+if [ "$upan_storage_enable" = "1" ] && [ "$1" != "0" ] ; then
+if [ ! -s /etc/storage/start_script.sh ] ; then
+	umount /etc/storage
+	umount -l /etc/storage
+	{ fuser -m -k /etc/storage 2>/dev/null ; umount -l /etc/storage ; }
+	sleep 1
+	mtd_storage.sh fill
+	restart_firewall
+	exit
+fi
+if ! mountpoint -q /etc/storage ; then
+if [ ! -f /opt/storage/start_script.sh ] && [ -f /etc/storage/start_script.sh ]  ; then
+	mkdir -p -m 755 /opt/storage
+	cp -af /etc/storage/* /opt/storage
+fi
+	logger -t "【外部存储storage】" "/etc/storage -> /opt/storage"
+	mount --bind /opt/storage /etc/storage
+	mtd_storage.sh fill
+fi
+else
+	mountpoint -q /etc/storage && logger -t "【外部存储storage】" "停止外部存储storage！ umount /etc/storage"
+	mountpoint -q /etc/storage && umount /etc/storage
+	mountpoint -q /etc/storage && umount -l /etc/storage
+	mountpoint -q /etc/storage && { fuser -m -k /etc/storage 2>/dev/null ; umount -l /etc/storage ; }
+	sleep 1
+	mtd_storage.sh fill
+fi
+EEE
+chmod 755 "/tmp/re_upan_storage.sh"
+
 cifs_script="/etc/storage/cifs_script.sh"
 if [ ! -f "$cifs_script" ] || [ ! -s "$cifs_script" ] ; then
 	cat > "$cifs_script" <<-\EEE
@@ -770,6 +814,14 @@ opt_download_file)
 	[ -f /tmp/AiDisk_00/cn2qq/opt-file.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
 	opt_download_enable=1
 	opt_download &
+	;;
+re_upan_storage)
+	mount_check
+	killall -q rstats
+	[ $? -eq 0 ] && sleep 1
+	rm -rf /opt/storage/*
+	mtd_storage.sh resetsh
+	/sbin/rstats &
 	;;
 *)
 	mount_check

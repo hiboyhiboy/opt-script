@@ -1312,6 +1312,7 @@ fi
 if [ "$vmess_x_tmp" = "del_link" ] ; then
 	# 清空上次订阅节点配置
 	echo -n "var ACL3List = []" > /www/link/vmess.js
+	echo -n "var ACL4List = []" > /www/link/ss.js
 	vmess_x_tmp=""
 	return
 fi

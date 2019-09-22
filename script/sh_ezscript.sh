@@ -348,32 +348,75 @@ logger -t "【mkfs.ext4】" "格式化完成."
 }
 
 allping () {
-rt_ssnum_x=`nvram get rt_ssnum_x`
-for i in 0 $(seq `expr $rt_ssnum_x - 1`)
+[ ! -f /www/link/link.js ] && logger -t "【ping】" "错误！找不到 /www/link/link.js" && return 1
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【ping】" "找不到 jq，安装 opt 程序"
+	/tmp/script/_mountopt start
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【ping】" "找不到 jq，下载 jq程序"
+	wgetcurl.sh /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
+	chmod 755 "/opt/bin/jq"
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【ping】" "找不到 jq，安装 opt 程序"
+	/tmp/script/_mountopt optwget
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	opkg update
+	opkg install jq
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【ping】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
+	return 1
+fi
+fi
+fi
+fi
+fi
+#set -x
+logger -t "【ping】" "开始 ping"
+echo "" > /tmp/ping_server_error.txt
+i=2
+while read line
 do
-rt_ss_server_x=`nvram get rt_ss_server_x$i`
-echo $rt_ss_server_x;
-if [ ! -z "$rt_ss_server_x" ] ; then
-logger -t "【ping_x$i】" "$rt_ss_server_x"
-ping_text=`ping -4 $rt_ss_server_x -c 1 -w 1 -q`
+grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l
+ilox="$(grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l)"
+if [ -z "$(echo "$line" | grep "ACL2List = ")" ] && [ -z "$(echo "$line" | grep '\[\]\]')" ] ; then
+ping_list="$(echo $line | sed -e 's/],/]/g' )"
+ss_server_x=$(echo $ping_list| jq --compact-output --raw-output 'getpath([1])')
+if [ ! -z "$ss_server_x" ] ; then
+ilog="$(expr $i * 100 / $ilox * 100 / 100)"
+[ "$ilog" -gt 100 ] && ilog=100
+ss_name_x=$(echo $ping_list| jq --compact-output --raw-output 'getpath([0])')
+if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
+ping_text=""
+else
+ping_text=`ping -4 $ss_server_x -c 1 -w 1 -q`
+fi
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-
 if [ ! -z "$ping_time" ] ; then
-	[ $ping_time -le 250 ] && `nvram set ping_ss_x$i="btn-success"`
-	[ $ping_time -gt 250 ] && `nvram set ping_ss_x$i="btn-warning"`
-	[ $ping_time -gt 500 ] && `nvram set ping_ss_x$i="btn-danger"`
-	echo "ping_x$i：$ping_time ms 丢包率：$ping_loss"
-	logger -t "【ping_x$i】" "$ping_time ms"
-	nvram set ping_txt_x$i="$ping_time ms"
+	[ "$ping_time" -le 250 ] && ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([5];"btn-success")')
+	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([5];"btn-warning")')
+	[ "$ping_time" -gt 500 ] && ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([5];"btn-danger")')
+	echo "ping_$ilog%：$ping_time ms ✔️ $ss_server_x"
+	logger -t "【ping_$ilog%】" "$ss_name_x"
+	logger -t "【ping_$ilog%】" "$ping_time ms ✔️ $ss_server_x"
+	ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([6];"'"$ping_time"' ms")')
 else
-	`nvram set ping_ss_x$i="btn-danger"`
-	echo ">1000 ms"
-	logger -t "【ping_x$i】" ">1000 ms"
-	`nvram set ping_txt_x$i=">1000 ms"`
+	ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([5];"btn-danger")')
+	echo "ping_$ilog%：>1000 ms ❌ $ss_server_x"
+	logger -t "【ping_$ilog%】" "$ss_name_x"
+	logger -t "【ping_$ilog%】" ">1000 ms ❌ $ss_server_x"
+	ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([6];">1000 ms")')
+	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
+fi
+if [ ! -z "$ping_list" ] ; then
+sed -i "$i"'s/^.*$/'"$ping_list"", "'/' /www/link/link.js
 fi
 fi
-done
+i=`expr $i + 1`
+fi
+done < /www/link/link.js
+
+logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
 }
 
 reszUID () {

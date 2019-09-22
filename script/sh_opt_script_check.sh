@@ -22,7 +22,7 @@ if [ ! -z "$dnsmasq_tmp" ] ; then
 		logger -t "script_check" "检测到【dnsmasq】错误【dnsmasq is missing】"
 		logger -t "script_check" "重置【dnsmasq配置】等待人类排查错误！"
 		rm -rf /etc/storage/dnsmasq/*
-		/sbin/mtd_storage.sh fill
+		mtd_storage.sh fill
 		echo -n "" > /tmp/dnsmasq_missing0.txt
 		echo -n "" > /tmp/dnsmasq_missing1.txt
 		restart_dhcpd
