@@ -420,6 +420,7 @@ fi
 ssr_link="$(echo "$ssr_link" | tr , \  | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 ssr_link_i=""
 [ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js
+[ -f /www/link/link.js ] && [ -z "$(grep 'var ACL2List = \[\[\],' /www/link/link.js)" ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
 [ -f /www/link/link.js ] && sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
 if [ ! -z "$(echo "$ssr_link" | awk -F ' ' '{print $2}')" ] ; then
 	for ssr_link_ii in $ssr_link
@@ -432,7 +433,7 @@ else
 	do_link
 fi
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-echo -n '[]]' >> /www/link/link.js
+echo '[]]' >> /www/link/link.js
 logger -t "【SS】" "服务器订阅：更新完成"
 }
 
@@ -449,30 +450,21 @@ fi
 }
 
 addlink_ss () {
-shift
-rt_ss_name_x_0="$1"
-shift
-rt_ss_server_x_0="$1"
-shift
-rt_ss_port_x_0="$1"
-shift
-rt_ss_password_x_0="$1"
-shift
-rt_ss_method_x_0="$1"
-shift
-shift
-ss_method_x_0="$1"
-shift
-rt_ss_usage_x_0=""
-while [ $# != 0 ]
-do
-rt_ss_usage_x_0="$rt_ss_usage_x_0"" $1"
-shift
-done
+
+
+rt_ss_name_x_0="$(nvram get rt_ss_name_x_0)"
+rt_ss_server_x_0="$(nvram get rt_ss_server_x_0)"
+rt_ss_port_x_0="$(nvram get rt_ss_port_x_0)"
+rt_ss_password_x_0="$(nvram get rt_ss_password_x_0)"
+rt_ss_method_x_0="$(nvram get rt_ss_method_x_0)"
+rt_ss_usage_x_0="$(nvram get rt_ss_usage_x_0)"
+ss_type_x_0="$(nvram get ss_type_x_0)"
+
+
 [ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " >> /www/link/link.js
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-echo '["'"$rt_ss_name_x_0"'", "'"$rt_ss_server_x_0"'", "'"$rt_ss_port_x_0"'", "'"$rt_ss_password_x_0"'", "'"$rt_ss_method_x_0"'", "", "", "'"$rt_ss_usage_x_0"'", "'"$ss_method_x_0"'"], ' >> /www/link/link.js
-echo -n '[]]' >> /www/link/link.js
+echo '["'"$rt_ss_name_x_0"'", "'"$rt_ss_server_x_0"'", "'"$rt_ss_port_x_0"'", "'"$rt_ss_password_x_0"'", "'"$rt_ss_method_x_0"'", "", "", "'"$rt_ss_usage_x_0"'", "'"$ss_type_x_0"'"], ' >> /www/link/link.js
+echo '[]]' >> /www/link/link.js
 }
 
 dellink_ss () {
@@ -488,17 +480,17 @@ del_x="$(echo "$del_x" | tr -d '_' | tr -d ' ')"
 shift
 done
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-echo -n '[]]' >> /www/link/link.js
+echo '[]]' >> /www/link/link.js
 }
 
 case $ACTION in
 addlink)
 	logger -t "【SS】" "addlink： $2"
-	[ "$(echo "$7" | awk -F ' ' '{print $1}')" = "link.js" ] && [ -f /www/link/link.js ] && addlink_ss $@
+	[ "$2" = "ss" ] || [ "$2" = "ssr" ]  && { [ -f /www/link/link.js ] && addlink_ss $@ ; }
 	;;
 dellink)
 	logger -t "【SS】" "dellink： $@"
-	[ "$(echo "$2" | awk -F ' ' '{print $1}')" = "link.js" ] && [ -f /www/link/link.js ] && dellink_ss $@
+	[ "$2" = "ss" ] || [ "$2" = "ssr" ]  && { [ -f /www/link/link.js ] && dellink_ss $@ ; }
 	;;
 stop)
 	shlinksh=$$
