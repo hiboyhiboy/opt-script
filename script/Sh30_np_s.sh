@@ -15,6 +15,8 @@ nps_renum=`nvram get nps_renum`
 nps_renum=${nps_renum:-"0"}
 
 nps_version=`nvram get app_57`
+nps_update=`nvram get nps_update`
+[ "$nps_update" == "1" ] && nps_version="" &&  && nvram set app_57="" && nvram set nps_update="0"
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="nps"
 cmd_log=""
@@ -349,7 +351,9 @@ update_app () {
 
 mkdir -p /opt/app/nps
 if [ "$1" = "del" ] ; then
+	nps_version=""
 	nvram set app_57=""
+	nvram set nps_update="1"
 	rm -rf /opt/app/nps/Advanced_Extensions_nps.asp
 	rm -rf /opt/bin/nps/web /opt/bin/nps/conf /opt/opt_backup/bin/nps/web /opt/opt_backup/bin/nps/conf
 	rm -f /opt/bin/nps/linux_mipsle_client.tar.gz /opt/bin/nps/linux_mipsle_server.tar.gz /opt/opt_backup/bin/nps/linux_mipsle_client.tar.gz /opt/opt_backup/bin/nps/linux_mipsle_server.tar.gz

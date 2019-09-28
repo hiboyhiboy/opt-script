@@ -1486,7 +1486,11 @@ fi
 # 开始解码订阅节点配置
 cat /tmp/vmess/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/vmess/link/1_link.txt
 base64 -d /tmp/vmess/link/1_link.txt > /tmp/vmess/link/2_link.txt
-sed -e '/^$/d' -i /tmp/vmess/link/2_link.txt
+sed -e  's@vmess://@\nvmess:://@g' -i /tmp/ss/link/2_link.txt
+sed -e  's@ssr://@\nssr://@g' -i /tmp/ss/link/2_link.txt
+sed -e  's@ss://@\nss://@g' -i /tmp/ss/link/2_link.txt
+sed -e  's@vmess:://@vmess://@g' -i /tmp/ss/link/2_link.txt
+sed -e '/^$/d' -i /tmp/ss/link/2_link.txt
 echo >> /tmp/vmess/link/2_link.txt
 rm -f /tmp/vmess/link/vmess_link.txt /tmp/vmess/link/ss_link.txt
 while read line
