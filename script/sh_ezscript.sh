@@ -376,7 +376,6 @@ echo "" > /tmp/ping_server_error.txt
 i=2
 while read line
 do
-grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l
 ilox="$(grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l)"
 if [ -z "$(echo "$line" | grep "ACL2List = ")" ] && [ -z "$(echo "$line" | grep '\[\]\]')" ] ; then
 ping_list="$(echo $line | sed -e 's/],/]/g' )"

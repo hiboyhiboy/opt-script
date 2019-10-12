@@ -207,6 +207,11 @@ rm -rf /tmp/ss/link
 }
 
 do_link () {
+if [ -z  "$(echo "$ssr_link_i" | grep 'http:\/\/')""$(echo "$ssr_link_i" | grep 'https:\/\/')" ]  ; then
+	logger -t "【SS】" "$ssr_link_i"
+	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
+	return
+fi
 mkdir -p /tmp/ss/link
 #logger -t "【SS】" "订阅文件下载: $ssr_link_i"
 rm -f /tmp/ss/link/0_link.txt
@@ -222,6 +227,7 @@ fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	logger -t "【SS】" "$ssr_link_i"
 	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载失败！请检查下载地址"
+	return
 fi
 sed -e '/^$/d' -i /tmp/ss/link/0_link.txt
 sed -e 's/$/&==/g' -i /tmp/ss/link/0_link.txt
@@ -232,7 +238,7 @@ if [ -s /tmp/ss/link/3_link.txt ] ; then
 	logger -t "【SS】" "警告！！SSR 服务器订阅文件下载包含非 BASE64 编码字符！"
 	logger -t "【SS】" "请检查服务器配置和链接："
 	logger -t "【SS】" "$ssr_link_i"
-	continue
+	return
 fi
 # 开始解码订阅节点配置
 cat /tmp/ss/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/ss/link/1_link.txt
@@ -423,8 +429,8 @@ else
 fi
 ssr_link="$(echo "$ssr_link" | tr , \  | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 ssr_link_i=""
-[ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js
-[ -f /www/link/link.js ] && [ -z "$(grep 'var ACL2List = \[\[\],' /www/link/link.js)" ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
+[ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
+[ -f /www/link/link.js ] && [ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
 [ -f /www/link/link.js ] && sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
 if [ ! -z "$(echo "$ssr_link" | awk -F ' ' '{print $2}')" ] ; then
 	for ssr_link_ii in $ssr_link
@@ -451,6 +457,15 @@ logger -t "【SS】" "服务器订阅：由原来 NVRAM 保存节点配置，转
 clear_link
 nvram commit
 fi
+# 初始化 /etc/storage/link/link.js
+if [ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] ; then
+	echo "var ACL2List = [[], " > /www/link/link.js
+	echo '[]]' >> /www/link/link.js
+fi
+if [ -f /www/link/link.js ] && [ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] ; then
+	echo "var ACL2List = [[], " > /www/link/link.js
+	echo '[]]' >> /www/link/link.js
+fi
 }
 
 addlink_ss () {
@@ -465,7 +480,7 @@ rt_ss_usage_x_0="$(nvram get rt_ss_usage_x_0)"
 ss_type_x_0="$(nvram get ss_type_x_0)"
 
 
-[ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " >> /www/link/link.js
+[ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
 echo '["'"$rt_ss_name_x_0"'", "'"$rt_ss_server_x_0"'", "'"$rt_ss_port_x_0"'", "'"$rt_ss_password_x_0"'", "'"$rt_ss_method_x_0"'", "", "", "'"$rt_ss_usage_x_0"'", "'"$ss_type_x_0"'"], ' >> /www/link/link.js
 echo '[]]' >> /www/link/link.js
@@ -489,22 +504,27 @@ echo '[]]' >> /www/link/link.js
 
 case $ACTION in
 addlink)
+	check_link
 	logger -t "【SS】" "addlink： $2"
 	[ "$2" = "ss" ] || [ "$2" = "ssr" ]  && { [ -f /www/link/link.js ] && addlink_ss $@ ; }
 	;;
 dellink)
+	check_link
 	logger -t "【SS】" "dellink： $@"
 	[ "$2" = "ss" ] || [ "$2" = "ssr" ]  && { [ -f /www/link/link.js ] && dellink_ss $@ ; }
 	;;
 stop)
+	check_link
 	shlinksh=$$
 	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
 	;;
 start)
+	check_link
 	start_link
 	;;
 start_nvram)
 	rm -f /etc/storage/link/link.js
+	check_link
 	start_link
 	;;
 check)
