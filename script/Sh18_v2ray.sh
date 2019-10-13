@@ -189,7 +189,7 @@ while [ "$v2ray_enable" = "1" ]; do
 				sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 				cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv
-server=127.0.0.1#$8053
+server=127.0.0.1#8053
 dns-forward-max=1000
 min-cache-ttl=1800
 EOF

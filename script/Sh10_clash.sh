@@ -169,18 +169,19 @@ while [ "$clash_enable" = "1" ]; do
 			clash_restart
 		fi
 		if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
-			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+			port=$(grep "server=::1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 			if [ "$port" = 0 ] ; then
 				sleep 10
-				port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+				port=$(grep "server=::1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 			fi
 			if [ "$port" = 0 ] ; then
 				logger -t "【clash】" "检测:找不到 dnsmasq 转发规则, 重新添加"
 				# 写入dnsmasq配置
-				sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+				sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 				cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv
-server=127.0.0.1#$8053
+#server=127.0.0.1#8053
+server=::1#8053
 dns-forward-max=1000
 min-cache-ttl=1800
 EOF
@@ -336,19 +337,20 @@ logger -t "【clash】" "备注：默认配置的透明代理会导致广告过�
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 echo "已经启动 chinadns 防止域名污染"
 else
-logger -t "【clash】" "启动 dnsproxy 防止域名污染"
+logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
 pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
-if [ -s /sbin/dnsproxy ] ; then
-	/sbin/dnsproxy -d
-else
-	dnsproxy -d
-fi
+#if [ -s /sbin/dnsproxy ] ; then
+	#/sbin/dnsproxy -d
+#else
+	#dnsproxy -d
+#fi
 #防火墙转发规则加载
-sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
 no-resolv
-server=127.0.0.1#8053
+#server=127.0.0.1#8053
+server=::1#8053
 dns-forward-max=1000
 min-cache-ttl=1800
 EOF
@@ -440,7 +442,7 @@ flush_r() {
 	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j RETURN
 	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j RETURN
 	if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
-		sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+		sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 	fi
 	restart_dhcpd
 	return 0
@@ -486,7 +488,6 @@ include_ac_rules() {
 *$1
 :SS_SPEC_CLASH_LAN_DG - [0:0]
 :SS_SPEC_WAN_FW - [0:0]
--A SS_SPEC_CLASH_LAN_DG -m mark --mark 0xff -j RETURN
 -A SS_SPEC_CLASH_LAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
 -A SS_SPEC_CLASH_LAN_DG -j SS_SPEC_WAN_FW
 COMMIT
@@ -696,8 +697,8 @@ mkdir -p /tmp/clash
 cat > "/tmp/clash/dns.yml" <<-\EEE
 dns:
   enable: true
-  ipv6: false
-  # listen: 0.0.0.0:8053
+  ipv6: true
+  listen: 0.0.0.0:8053
   enhanced-mode: redir-host
   # enhanced-mode: redir-host # 或 fake-ip
   # # fake-ip-range: 198.18.0.1/16 # 如果你不知道这个参数的作用，请勿修改
