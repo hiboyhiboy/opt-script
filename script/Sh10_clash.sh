@@ -290,9 +290,13 @@ rm -f /tmp/temp?????????
 logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
 yq d -i $config_yml dns
 rm -f /tmp/temp?????????
+if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
+echo "已经启动 chinadns 防止域名污染"
+else
 logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
 yq m -x -i $config_yml /tmp/clash/dns.yml
 rm -f /tmp/temp?????????
+fi
 if [ ! -s $config_yml ] ; then
 logger -t "【clash】" "yq 初始化 clash 配置错误！请检查配置！"
 logger -t "【clash】" "尝试直接使用原始配置启动！"
@@ -335,7 +339,7 @@ flush_r
 logger -t "【clash】" "启动 透明代理"
 logger -t "【clash】" "备注：默认配置的透明代理会导致广告过滤失效，需要手动改造配置前置代理过滤软件"
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
-echo "已经启动 chinadns 防止域名污染"
+logger -t "【clash】" "已经启动 chinadns 防止域名污染"
 else
 logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
 pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
