@@ -381,7 +381,7 @@ if [ -z "$(echo "$line" | grep "ACL2List = ")" ] && [ -z "$(echo "$line" | grep 
 ping_list="$(echo $line | sed -e 's/],/]/g' )"
 ss_server_x=$(echo $ping_list| jq --compact-output --raw-output 'getpath([1])')
 if [ ! -z "$ss_server_x" ] ; then
-ilog="$(expr $i * 100 / $ilox * 100 / 100)"
+ilog="$(expr $i \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
 ss_name_x=$(echo $ping_list| jq --compact-output --raw-output 'getpath([0])')
 if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then

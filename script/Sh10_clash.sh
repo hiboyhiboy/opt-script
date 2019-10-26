@@ -290,6 +290,7 @@ rm -f /tmp/temp?????????
 logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
 yq d -i $config_yml dns
 rm -f /tmp/temp?????????
+config_nslookup_server $config_yml
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 echo "已经启动 chinadns 防止域名污染"
 else
@@ -326,7 +327,7 @@ fi
 logger -t "【clash】" "运行 /opt/bin/clash"
 su_cmd2="/opt/bin/clash -d /opt/app/clash/config"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
-sleep 3
+sleep 7
 [ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
 [ -z "`pidof clash`" ] && logger -t "【clash】" "启动失败, 注意检clash是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
 nvram set app_86=0
@@ -673,6 +674,7 @@ else
 	cp -f $yml_tmp /etc/storage/app_20.sh
 	yq w -i /etc/storage/app_20.sh allow-lan true
 	rm -f /tmp/temp?????????
+	#config_nslookup_server /etc/storage/app_20.sh
 	if [ ! -s /etc/storage/app_20.sh ] ; then
 		logger -t "【clash】" "yq 格式化 clash 订阅文件错误！请检查订阅文件！"
 		logger -t "【clash】" "尝试直接使用原始订阅文件！"
@@ -684,6 +686,35 @@ else
 fi
 logger -t "【clash】" "服务器订阅：更新完成"
 logger -t "【clash】" "请按F5或刷新 web 页面刷新配置"
+}
+
+config_nslookup_server () {
+ilox=$(yq r $1 Proxy.*.server | wc -l)
+i=0
+for Proxy_server in $(yq r $1 Proxy.*.server | sed -e "s@- @@g")
+do
+if [ -z $(echo $Proxy_server | grep -E -o '([0-9]+\.){3}[0-9]+') ] ; then 
+ilog="$(expr $i \* 100 / $ilox \* 100 / 100)"
+[ "$ilog" -gt 100 ] && ilog=100
+[ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
+if [ -z $(echo $Proxy_server | grep : | grep -v "\.") ] ; then 
+resolveip=`/usr/bin/resolveip -4 -t 4 $Proxy_server | grep -v : | sed -n '1p'`
+[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $Proxy_server | grep : | sed -n '1p'`
+[ -z "$resolveip" ] && resolveip=`arNslookup $Proxy_server | sed -n '1p'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup6 $Proxy_server | sed -n '1p'` 
+Proxy_server=$resolveip
+else
+# IPv6
+Proxy_server=$Proxy_server
+fi
+yq w -i $1 Proxy.$i.server $Proxy_server
+rm -f /tmp/temp?????????
+fi
+i=`expr $i + 1`
+done
+ilog="$(expr $i \* 100 / $ilox \* 100 / 100)"
+[ "$ilog" -gt 100 ] && ilog=100
+[ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
 }
 
 initconfig () {
