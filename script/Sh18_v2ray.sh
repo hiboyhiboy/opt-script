@@ -673,9 +673,7 @@ if [ -s /tmp/arNslookup/$$ ] ; then
 fi
 }
 
-json_join_gfwlist() {
-[ -z "$(grep gfwall.com /tmp/vmess/mk_vmess.json)" ] && return
-if [ "$mk_mode_x" = "0" ] || [ "$mk_mode_x" = "1" ] ; then
+down_gfwlist() {
 mkdir -p /tmp/vmess
 if [ ! -s "/tmp/vmess/r.gfwlist.conf" ] ; then
 wgetcurl_checkmd5 /tmp/vmess/gfwlist.b64 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt N
@@ -692,6 +690,22 @@ if [[ "$(cat /tmp/vmess/gfwlist_domain.txt | wc -l)" -lt 1000 ]] ; then
 	logger -t "【v2ray】" "使用内置 gfwlist_domain"
 	rm -f /tmp/vmess/gfwlist_domain.txt
 fi
+touch /etc/storage/shadowsocks_mydomain_script.sh /tmp/vmess/gfwlist_domain.txt
+cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u > /tmp/vmess/gfwlist_0.txt
+cat /etc/storage/basedomain.txt /tmp/vmess/gfwlist_0.txt /tmp/vmess/gfwlist_domain.txt | 
+	sort -u > /tmp/vmess/gfwall_domain.txt
+cat /tmp/vmess/gfwall_domain.txt | sort -u | grep -v "^$" | grep '\.' | grep -v '\-\-\-' > /tmp/vmess/all_domain.txt
+rm -f /tmp/vmess/gfw*
+awk '{printf("\,\"%s\"", $1, $1 )}' /tmp/vmess/all_domain.txt > /tmp/vmess/r.gfwlist.conf
+rm -f /tmp/vmess/all_domain.txt
+fi
+}
+
+json_join_gfwlist() {
+[ -z "$(grep gfwall.com /tmp/vmess/mk_vmess.json)" ] && return
+if [ "$mk_mode_x" = "0" ] || [ "$mk_mode_x" = "1" ] ; then
+mkdir -p /tmp/vmess
+if [ ! -s "/tmp/vmess/r.gfwlist.conf" ] ; then
 touch /etc/storage/shadowsocks_mydomain_script.sh /tmp/vmess/gfwlist_domain.txt
 cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u > /tmp/vmess/gfwlist_0.txt
 cat /etc/storage/basedomain.txt /tmp/vmess/gfwlist_0.txt /tmp/vmess/gfwlist_domain.txt | 

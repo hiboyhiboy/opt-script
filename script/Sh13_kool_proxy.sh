@@ -730,20 +730,20 @@ done < /tmp/ad_spec_lan.txt
 	if [ -f /tmp/7620koolproxy/koolproxy_hookport.txt ] && [ "$adm_hookport" == 1 ] ; then
 		hookport443='|'
 		sed -e "s/443$hookport443//" -i /tmp/7620koolproxy/koolproxy_hookport.txt
-		i=1 && hookport1="" && hookport2="" && hookport3="" && hookport4="" && hookport5=""
+		do_i=1 && hookport1="" && hookport2="" && hookport3="" && hookport4="" && hookport5=""
 		for hookport in $(cat /tmp/7620koolproxy/koolproxy_hookport.txt | sed s/\|/\ /g)
 		do
-			[ "$i" -eq 1 ] && hookport1=$hookport
-			[ "$i" -eq 15 ] && hookport2=$hookport
-			[ "$i" -eq 30 ] && hookport3=$hookport
-			[ "$i" -eq 45 ] && hookport4=$hookport
-			[ "$i" -eq 60 ] && hookport5=$hookport
-			[ "$i" -gt 1 ] && [ "$i" -lt 15 ] && hookport1=$hookport1","$hookport
-			[ "$i" -gt 15 ] && [ "$i" -lt 30 ] && hookport2=$hookport2","$hookport
-			[ "$i" -gt 30 ] && [ "$i" -lt 45 ] && hookport3=$hookport3","$hookport
-			[ "$i" -gt 45 ] && [ "$i" -lt 60 ] && hookport4=$hookport4","$hookport
-			[ "$i" -gt 60 ] && [ "$i" -lt 75 ] && hookport5=$hookport5","$hookport
-			i=`expr $i + 1`
+			[ "$do_i" -eq 1 ] && hookport1=$hookport
+			[ "$do_i" -eq 15 ] && hookport2=$hookport
+			[ "$do_i" -eq 30 ] && hookport3=$hookport
+			[ "$do_i" -eq 45 ] && hookport4=$hookport
+			[ "$do_i" -eq 60 ] && hookport5=$hookport
+			[ "$do_i" -gt 1 ] && [ "$do_i" -lt 15 ] && hookport1=$hookport1","$hookport
+			[ "$do_i" -gt 15 ] && [ "$do_i" -lt 30 ] && hookport2=$hookport2","$hookport
+			[ "$do_i" -gt 30 ] && [ "$do_i" -lt 45 ] && hookport3=$hookport3","$hookport
+			[ "$do_i" -gt 45 ] && [ "$do_i" -lt 60 ] && hookport4=$hookport4","$hookport
+			[ "$do_i" -gt 60 ] && [ "$do_i" -lt 75 ] && hookport5=$hookport5","$hookport
+			do_i=`expr $do_i + 1`
 		done
 		[ ! -z "$hookport1" ] && iptables -t nat -I PREROUTING $wifidognx -p tcp -m multiport --dports $hookport1 -j AD_BYBY
 		[ ! -z "$hookport2" ] && iptables -t nat -I PREROUTING $wifidognx -p tcp -m multiport --dports $hookport2 -j AD_BYBY

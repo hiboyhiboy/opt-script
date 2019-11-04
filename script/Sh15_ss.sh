@@ -2708,7 +2708,14 @@ SS_keep () {
 cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
 #!/bin/sh
 source /etc/storage/script/init.sh
-sleep 919
+for ss_1i in \$(seq 0 16)
+do
+NUM=\`ps -w | grep "Sh15_ss.sh keep" | grep -v grep |wc -l\`
+if [ "\$NUM" -lt "1" ] ; then
+break
+fi
+sleep 60
+done
 ss_enable=\`nvram get ss_enable\`
 if [ ! -f /tmp/cron_ss.lock ] && [ "\$ss_enable" = "1" ] ; then
 kill_ps "$scriptname"
@@ -2726,6 +2733,7 @@ kcptun2_enable=`nvram get kcptun2_enable`
 kcptun2_enable2=`nvram get kcptun2_enable2`
 ss_run_ss_local=`nvram get ss_run_ss_local`
 ss_mode_x=`nvram get ss_mode_x`
+app_95="$(nvram get app_95)"
 [ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 rm -f /tmp/cron_ss.lock
@@ -2988,7 +2996,15 @@ if [ "$check" == "200" ] ; then
 	#跳出当前循环
 	continue
 fi
-
+if [ ! -z "$app_95" ] ; then
+	nvram set ss_internet="2"
+	rebss=`expr $rebss + 1`
+	logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
+	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
+	/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+	#跳出当前循环
+	continue
+fi
 #404
 if [ "$kcptun2_enable" = "1" ] ; then
 	nvram set ss_internet="2"
@@ -3079,7 +3095,6 @@ restart_dhcpd
 done
 
 }
-
 
 ss_link_cron_job(){
 

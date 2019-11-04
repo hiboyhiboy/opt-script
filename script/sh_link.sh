@@ -132,14 +132,14 @@ ss_x=$(( ss_x - 1 ))
 # 导出节点配置
 ss_s=/tmp/ss/link/daochu_1.txt
 echo -n "" > $ss_s
-for ss_i in $(seq 0 $ss_x)
+for ss_1i in $(seq 0 $ss_x)
 do
-    echo rt_ss_name_x$ss_i=$(nvram get rt_ss_name_x$ss_i) >> $ss_s
-    echo rt_ss_port_x$ss_i=$(nvram get rt_ss_port_x$ss_i) >> $ss_s
-    echo rt_ss_password_x$ss_i=$(nvram get rt_ss_password_x$ss_i) >> $ss_s
-    echo rt_ss_server_x$ss_i=$(nvram get rt_ss_server_x$ss_i) >> $ss_s
-    echo rt_ss_usage_x$ss_i=$(nvram get rt_ss_usage_x$ss_i) >> $ss_s
-    echo rt_ss_method_x$ss_i=$(nvram get rt_ss_method_x$ss_i) >> $ss_s
+    echo rt_ss_name_x$ss_1i=$(nvram get rt_ss_name_x$ss_1i) >> $ss_s
+    echo rt_ss_port_x$ss_1i=$(nvram get rt_ss_port_x$ss_1i) >> $ss_s
+    echo rt_ss_password_x$ss_1i=$(nvram get rt_ss_password_x$ss_1i) >> $ss_s
+    echo rt_ss_server_x$ss_1i=$(nvram get rt_ss_server_x$ss_1i) >> $ss_s
+    echo rt_ss_usage_x$ss_1i=$(nvram get rt_ss_usage_x$ss_1i) >> $ss_s
+    echo rt_ss_method_x$ss_1i=$(nvram get rt_ss_method_x$ss_1i) >> $ss_s
 done
 # 删除🔗订阅连接
 cat /tmp/ss/link/daochu_1.txt | sort -u | grep -v "^$" > /tmp/ss/link/daochu_2.txt
@@ -155,21 +155,21 @@ do
 done < /tmp/ss/link/daochu_3.txt
 # 重排序
 ss_s=/tmp/ss/link/daochu_2.txt
-for ss_i in $(seq 0 $ss_x)
+for ss_1i in $(seq 0 $ss_x)
 do
-    for ss_ii in $(seq $ss_i $ss_x)
+    for ss_2ii in $(seq $ss_1i $ss_x)
     do
-        ss_iii=0
-        if [ ! -z "$(grep "rt_ss_name_x$ss_ii=" $ss_s)" ] ; then
-            sed -Ei s/rt_ss_name_x$ss_ii=/rt_ss_name_x$ss_i=/g $ss_s
-            sed -Ei s/rt_ss_port_x$ss_ii=/rt_ss_port_x$ss_i=/g $ss_s
-            sed -Ei s/rt_ss_password_x$ss_ii=/rt_ss_password_x$ss_i=/g $ss_s
-            sed -Ei s/rt_ss_server_x$ss_ii=/rt_ss_server_x$ss_i=/g $ss_s
-            sed -Ei s/rt_ss_usage_x$ss_ii=/rt_ss_usage_x$ss_i=/g $ss_s
-            sed -Ei s/rt_ss_method_x$ss_ii=/rt_ss_method_x$ss_i=/g $ss_s
-            ss_iii=1
+        ss_3iii=0
+        if [ ! -z "$(grep "rt_ss_name_x$ss_2ii=" $ss_s)" ] ; then
+            sed -Ei s/rt_ss_name_x$ss_2ii=/rt_ss_name_x$ss_1i=/g $ss_s
+            sed -Ei s/rt_ss_port_x$ss_2ii=/rt_ss_port_x$ss_1i=/g $ss_s
+            sed -Ei s/rt_ss_password_x$ss_2ii=/rt_ss_password_x$ss_1i=/g $ss_s
+            sed -Ei s/rt_ss_server_x$ss_2ii=/rt_ss_server_x$ss_1i=/g $ss_s
+            sed -Ei s/rt_ss_usage_x$ss_2ii=/rt_ss_usage_x$ss_1i=/g $ss_s
+            sed -Ei s/rt_ss_method_x$ss_2ii=/rt_ss_method_x$ss_1i=/g $ss_s
+            ss_3iii=1
         fi
-        if [ "$ss_iii"x == "1x" ] ; then
+        if [ "$ss_3iii"x == "1x" ] ; then
             break
         fi
     done
@@ -264,7 +264,7 @@ done < /tmp/ss/link/2_link.txt
 
 #echo > /tmp/ss/link/c_link.txt
 
-i=`nvram get rt_ssnum_x`
+do_i=`nvram get rt_ssnum_x`
 if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 	sed -e 's/$/&==/g' -i /tmp/ss/link/ssr_link.txt
 	sed -e "s/_/\//g" -i /tmp/ss/link/ssr_link.txt
@@ -277,13 +277,13 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 		add_ssr_link "$line"
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
 		if [ ! -f /www/link/link.js ] ; then
-			eval "nvram set rt_ss_name_x$i=\"🔗$ss_link_name\""
-			eval "nvram set rt_ss_port_x$i=$ss_link_port"
-			eval "nvram set rt_ss_password_x$i=\"$ss_link_password\""
-			eval "nvram set rt_ss_server_x$i=$ss_link_server"
-			eval "nvram set rt_ss_usage_x$i=\"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam\""
-			eval "nvram set rt_ss_method_x$i=$ss_link_method"
-			i=$(( i + 1 ))
+			eval "nvram set rt_ss_name_x$do_i=\"🔗$ss_link_name\""
+			eval "nvram set rt_ss_port_x$do_i=$ss_link_port"
+			eval "nvram set rt_ss_password_x$do_i=\"$ss_link_password\""
+			eval "nvram set rt_ss_server_x$do_i=$ss_link_server"
+			eval "nvram set rt_ss_usage_x$do_i=\"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam\""
+			eval "nvram set rt_ss_method_x$do_i=$ss_link_method"
+			do_i=$(( do_i + 1 ))
 		else
 			link_echo=""
 			link_echo="$link_echo"'["🔗'"$ss_link_name"'", '
@@ -311,13 +311,13 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 		add_ss_link "$line"
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
 		if [ ! -f /www/link/link.js ] ; then
-			eval "nvram set rt_ss_name_x$i=\"🔗$ss_link_name\""
-			eval "nvram set rt_ss_port_x$i=$ss_link_port"
-			eval "nvram set rt_ss_password_x$i=\"$ss_link_password\""
-			eval "nvram set rt_ss_server_x$i=$ss_link_server"
-			eval "nvram set rt_ss_method_x$i=$ss_link_method"
-			eval "nvram set rt_ss_usage_x$i=\"$ss_link_plugin_opts\""
-			i=$(( i + 1 ))
+			eval "nvram set rt_ss_name_x$do_i=\"🔗$ss_link_name\""
+			eval "nvram set rt_ss_port_x$do_i=$ss_link_port"
+			eval "nvram set rt_ss_password_x$do_i=\"$ss_link_password\""
+			eval "nvram set rt_ss_server_x$do_i=$ss_link_server"
+			eval "nvram set rt_ss_method_x$do_i=$ss_link_method"
+			eval "nvram set rt_ss_usage_x$do_i=\"$ss_link_plugin_opts\""
+			do_i=$(( do_i + 1 ))
 		else
 			link_echo=""
 			link_echo="$link_echo"'["🔗'"$ss_link_name"'", '
@@ -340,7 +340,7 @@ if [ ! -f /www/link/link.js ] ; then
 # 保存有效节点数量
 rt_ssnum_x=`nvram get rt_ssnum_x`
 [ -z $rt_ssnum_x ] && rt_ssnum_x=0 && nvram set rt_ssnum_x=0
-[ $rt_ssnum_x -lt $i ] && nvram set rt_ssnum_x=$i
+[ $rt_ssnum_x -lt $do_i ] && nvram set rt_ssnum_x=$do_i
 nvram commit
 fi
 rm -rf /tmp/ss/link
@@ -429,9 +429,12 @@ else
 fi
 ssr_link="$(echo "$ssr_link" | tr , \  | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 ssr_link_i=""
-[ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
-[ -f /www/link/link.js ] && [ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
-[ -f /www/link/link.js ] && sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
+if [ -f /www/link/link.js ]  ; then
+[ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
+[ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
+sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
+rm -f /tmp/link_matching/link_matching.txt
+fi
 if [ ! -z "$(echo "$ssr_link" | awk -F ' ' '{print $2}')" ] ; then
 	for ssr_link_ii in $ssr_link
 	do
@@ -442,9 +445,16 @@ else
 	ssr_link_i="$ssr_link"
 	do_link
 fi
+if [ -f /www/link/link.js ]  ; then
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
 echo '[]]' >> /www/link/link.js
+fi
 logger -t "【SS】" "服务器订阅：更新完成"
+app_99="$(nvram get app_99)"
+if [ "$app_99" == 1 ] ; then
+logger -t "【SS】" "服务器订阅：更新后自动选用节点 /tmp/link_matching/link_matching.txt"
+/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+fi
 }
 
 check_link () {

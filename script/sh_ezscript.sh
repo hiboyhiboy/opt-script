@@ -347,33 +347,117 @@ logger -t "【mkfs.ext4】" "格式化完成."
 } &
 }
 
-allping () {
-[ ! -f /www/link/link.js ] && logger -t "【ping】" "错误！找不到 /www/link/link.js" && return 1
+jq_check () {
+
+[ ! -f /www/link/link.js ] && logger -t "【jq_check】" "错误！找不到 /www/link/link.js" && return 1
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【ping】" "找不到 jq，安装 opt 程序"
+	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	/tmp/script/_mountopt start
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【ping】" "找不到 jq，下载 jq程序"
+	logger -t "【jq_check】" "找不到 jq，下载 jq程序"
 	wgetcurl.sh /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
 	chmod 755 "/opt/bin/jq"
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【ping】" "找不到 jq，安装 opt 程序"
+	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	/tmp/script/_mountopt optwget
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	opkg update
 	opkg install jq
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【ping】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
+	logger -t "【jq_check】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
 	return 1
 fi
 fi
 fi
 fi
 fi
-#set -x
+}
+
+
+ss_link_matching(){
+
+[ ! -f /www/link/link.js ] && logger -t "【自动选用节点】" "错误！找不到 /www/link/link.js" && return 1
+jq_check
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	return 1
+fi
+# 排序节点
+mkdir /tmp/link_matching -p
+if [ ! -f /tmp/link_matching/link_matching.txt ] || [ ! -s /tmp/link_matching/link_matching.txt ] ; then
+match="$(nvram get app_95)"
+mismatch="$(nvram get app_96)"
+[ ! -z "$match" ] && grep $match /www/link/link.js > /tmp/link_matching/0.txt
+[ -z "$match" ] && cat /www/link/link.js > /tmp/link_matching/0.txt
+echo -n "" > /tmp/link_matching/1.txt
+while read line
+do
+[ ! -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep $match | grep -v $mismatch )"
+[ -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep $match )"
+[ -z "$match" ] && line3="line3"
+line4="line4"
+if [ ! -z "$line3" ] ; then
+line2="$(echo "$line" | grep -Eo '"btn-success","'[0-9]+' ms"' | grep -Eo [0-9]+ )"
+[ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
+line2="$(echo "$line" | grep -Eo '"btn-warning","'[0-9]+' ms"' | grep -Eo [0-9]+ )"
+[ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
+line2="$(echo "$line" | grep -Eo '"btn-danger",">1000 ms"' | grep -Eo [0-9]+ )"
+[ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
+[ ! -z "$line4" ] && line2="0000" && echo -n "$line2" >> /tmp/link_matching/1.txt
+echo -n "$line" >> /tmp/link_matching/1.txt
+echo "" >> /tmp/link_matching/1.txt
+fi
+done < /tmp/link_matching/0.txt
+cat /tmp/link_matching/1.txt | sort  | grep -v "^$" > /tmp/link_matching/2.txt
+echo -n "" > /tmp/link_matching/link_matching.txt
+while read line
+do
+line="$(echo $line | sed -e 's/],/]/g' )"
+echo ${line:4} >> /tmp/link_matching/link_matching.txt
+done < /tmp/link_matching/2.txt
+rm -f /tmp/link_matching/?.txt
+fi
+# 选用节点
+if [ -z "$(cat /tmp/link_matching/link_matching.txt | grep -v 已经自动选用节点)" ] ; then
+sed -e 's/已经自动选用节点//g' -i /tmp/link_matching/link_matching.txt
+fi
+i_matching=1
+while read line
+do
+line2="$(echo "$line" | grep -v "已经自动选用节点" )"
+if [ ! -z "$line2" ] ; then
+app_97=$(echo $line| jq --compact-output --raw-output 'getpath([0])')
+ss_server=$(echo $line| jq --compact-output --raw-output 'getpath([1])')
+ss_server_port=$(echo $line| jq --compact-output --raw-output 'getpath([2])')
+ss_key=$(echo $line| jq --compact-output --raw-output 'getpath([3])')
+ss_method=$(echo $line| jq --compact-output --raw-output 'getpath([4])')
+ss_usage=$(echo $line| jq --compact-output --raw-output 'getpath([7])')
+sed -i $i_matching's/^/已经自动选用节点/' /tmp/link_matching/link_matching.txt
+nvram set app_97="$app_97"
+nvram set ss_server="$ss_server"
+nvram set ss_server_port="$ss_server_port"
+nvram set ss_key="$ss_key"
+nvram set ss_method="$ss_method"
+nvram set ss_usage="$ss_usage"
+# 重启SS
+eval "Sh15_ss.sh &"
+break
+fi
+i_matching=`expr $i_matching + 1`
+done < /tmp/link_matching/link_matching.txt
+
+}
+
+allping () {
+
+[ ! -f /www/link/link.js ] && logger -t "【ping】" "错误！找不到 /www/link/link.js" && return 1
+jq_check
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	return 1
+fi
 logger -t "【ping】" "开始 ping"
 echo "" > /tmp/ping_server_error.txt
-i=2
+rm -f /tmp/link_matching/link_matching.txt
+i_ping=2
 while read line
 do
 ilox="$(grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l)"
@@ -381,7 +465,7 @@ if [ -z "$(echo "$line" | grep "ACL2List = ")" ] && [ -z "$(echo "$line" | grep 
 ping_list="$(echo $line | sed -e 's/],/]/g' )"
 ss_server_x=$(echo $ping_list| jq --compact-output --raw-output 'getpath([1])')
 if [ ! -z "$ss_server_x" ] ; then
-ilog="$(expr $i \* 100 / $ilox \* 100 / 100)"
+ilog="$(expr $i_ping \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
 ss_name_x=$(echo $ping_list| jq --compact-output --raw-output 'getpath([0])')
 if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
@@ -408,14 +492,18 @@ else
 	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
 fi
 if [ ! -z "$ping_list" ] ; then
-sed -i "$i"'s/^.*$/'"$ping_list"", "'/' /www/link/link.js
+sed -i "$i_ping"'s/^.*$/'"$ping_list"", "'/' /www/link/link.js
 fi
 fi
-i=`expr $i + 1`
+i_ping=`expr $i_ping + 1`
 fi
 done < /www/link/link.js
-
 logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
+app_99="$(nvram get app_99)"
+if [ "$app_99" == 1 ] ; then
+logger -t "【ping】" "服务器订阅：更新后自动选用节点 /tmp/link_matching/link_matching.txt"
+/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+fi
 }
 
 reszUID () {
@@ -467,6 +555,9 @@ ping)
   ;;
 allping)
   allping &
+  ;;
+ss_link_matching)
+  ss_link_matching &
   ;;
 reszUID)
   reszUID

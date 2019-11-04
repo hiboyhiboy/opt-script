@@ -690,11 +690,11 @@ logger -t "【clash】" "请按F5或刷新 web 页面刷新配置"
 
 config_nslookup_server () {
 ilox=$(yq r $1 Proxy.*.server | wc -l)
-i=0
+do_i=0
 for Proxy_server in $(yq r $1 Proxy.*.server | sed -e "s@- @@g")
 do
 if [ -z $(echo $Proxy_server | grep -E -o '([0-9]+\.){3}[0-9]+') ] ; then 
-ilog="$(expr $i \* 100 / $ilox \* 100 / 100)"
+ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
 [ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
 if [ -z $(echo $Proxy_server | grep : | grep -v "\.") ] ; then 
@@ -707,12 +707,12 @@ else
 # IPv6
 Proxy_server=$Proxy_server
 fi
-yq w -i $1 Proxy.$i.server $Proxy_server
+yq w -i $1 Proxy.$do_i.server $Proxy_server
 rm -f /tmp/temp?????????
 fi
-i=`expr $i + 1`
+do_i=`expr $do_i + 1`
 done
-ilog="$(expr $i \* 100 / $ilox \* 100 / 100)"
+ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
 [ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
 }
