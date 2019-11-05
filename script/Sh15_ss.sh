@@ -2704,6 +2704,19 @@ fi
 
 }
 
+sleep_rnd () {
+sleep 10
+#随机延时
+ss_internet=`nvram get ss_internet`
+if [ "$ss_internet" = "1" ] ; then
+	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+	RND_NUM=`echo $SEED 55 88|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	sleep $RND_NUM
+fi
+#/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+}
+
+
 SS_keep () {
 cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
 #!/bin/sh
@@ -2774,15 +2787,7 @@ if [ "$rebss" -gt 6 ] ; then
 		exit 0
 	fi
 fi
-ss_internet=`nvram get ss_internet`
 sleep 10
-#随机延时
-if [ "$ss_internet" = "1" ] ; then
-	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-	RND_NUM=`echo $SEED 55 88|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-	sleep $RND_NUM
-fi
-#/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 ss_enable=`nvram get ss_enable`
 if [ -f /tmp/cron_ss.lock ] || [ "$ss_enable" != "1" ] ; then
 	#跳出当前循环
@@ -2799,8 +2804,11 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 		sleep 10
 		exit 0
 	fi
-	#跳出当前循环
-	[ "$ss_mode_x" = "3" ] && continue
+	if [ "$ss_mode_x" = "3" ] ; then
+		sleep_rnd
+		#跳出当前循环
+		continue
+	fi
 fi
 
 NUM=`ps -w | grep ss-redir_ | grep -v grep |wc -l`
@@ -2854,6 +2862,7 @@ ss_keep_check=`nvram get ss_keep_check`
 [ -z "$ss_keep_check" ] && ss_keep_check=1 && nvram set ss_keep_check=$ss_keep_check
 if [ "$ss_keep_check" != "1" ] ; then
 	#不需要 持续检查 SS 服务器状态
+	sleep_rnd
 	#跳出当前循环
 	continue
 fi
@@ -2910,6 +2919,7 @@ if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
 	nvram set ss_internet="1"
+	sleep_rnd
 	#跳出当前循环
 	continue
 fi
@@ -2993,19 +3003,21 @@ if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
 	nvram set ss_internet="1"
+	sleep_rnd
 	#跳出当前循环
 	continue
 fi
+#404
 if [ ! -z "$app_95" ] ; then
 	nvram set ss_internet="2"
 	rebss=`expr $rebss + 1`
 	logger -t "【SS】" " SS 服务器 $CURRENT_ip 【$CURRENT】 检测到问题, $rebss"
 	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
 	/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+	sleep 10
 	#跳出当前循环
 	continue
 fi
-#404
 if [ "$kcptun2_enable" = "1" ] ; then
 	nvram set ss_internet="2"
 	rebss=`expr $rebss + 1`
@@ -3077,6 +3089,7 @@ if [ ! -z "$ss_rdd_server" ] ; then
 	if [ "$check" == "200" ] ; then
 		logger -t "【SS】" " SS 服务器 $Server_ip 【$Server】 连接√"
 		rebss="1"
+		sleep_rnd
 		#跳出当前循环
 		continue
 	else
@@ -3104,7 +3117,6 @@ ss_link_cron_job(){
 
 SS_swap(){
 
-
 CURRENT=`nvram get ss_working_port`
 [ ${CURRENT:=1090} ] && [ $CURRENT == 1091 ] && Server=1090 || Server=1091
 [ $Server == 1090 ] && Server_ip=$ss_server1 && CURRENT_ip=$ss_server2
@@ -3122,6 +3134,16 @@ ss_mode_x=`nvram get ss_mode_x`
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 if [ "$ss_internet" != "1" ] ; then
 	logger -t "【ss】" "注意！各线路正在启动，请等待启动后再尝试切换"
+fi
+app_95="$(nvram get app_95)"
+if [ ! -z "$app_95" ] && [ "$ss_internet" = "1" ] ; then
+	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
+	nvram set ss_internet="2"
+	/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+	sleep 10
+	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+	nvram set ss_internet="1"
+	return
 fi
 if [ -z "$ss_rdd_server" ] ; then
 	logger -t "【ss】" "错误！备用线路未启用，请配置启用后再尝试切换"
