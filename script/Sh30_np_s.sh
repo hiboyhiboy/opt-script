@@ -16,7 +16,7 @@ nps_renum=${nps_renum:-"0"}
 
 nps_version=`nvram get app_57`
 nps_update=`nvram get nps_update`
-[ "$nps_update" == "1" ] && nps_version="" &&  && nvram set app_57="" && nvram set nps_update="0"
+[ "$nps_update" == "1" ] && nps_version="" && nvram set app_57="" && nvram set nps_update="0"
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="nps"
 cmd_log=""
