@@ -308,23 +308,23 @@ else
 yq d -i $config_yml redir-port
 rm_temp
 fi
-yq w -i $config_yml external-controller $clash_ui
-rm_temp
-yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
-rm_temp
 logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
 yq d -i $config_yml dns
 rm_temp
 config_nslookup_server $config_yml
-logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
-cat /tmp/clash/dns.yml >> $config_yml
-#yq m -x -i $config_yml /tmp/clash/dns.yml
-#rm_temp
+yq w -i $config_yml external-controller $clash_ui
+rm_temp
+yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
+rm_temp
 if [ ! -s $config_yml ] ; then
 logger -t "【clash】" "yq 初始化 clash 配置错误！请检查配置！"
 logger -t "【clash】" "尝试直接使用原始配置启动！"
 cp -f /etc/storage/app_20.sh $config_yml
 else
+logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
+cat /tmp/clash/dns.yml >> $config_yml
+#yq m -x -i $config_yml /tmp/clash/dns.yml
+#rm_temp
 logger -t "【clash】" "初始化 clash 配置完成！"
 fi
 
