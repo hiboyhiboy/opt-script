@@ -114,7 +114,7 @@ clash_get_status () {
 
 A_restart=`nvram get clash_status`
 B_restart="$clash_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui"
-B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$B_restart""$(cat /etc/storage/app_20.sh /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -169,10 +169,10 @@ while [ "$clash_enable" = "1" ]; do
 			clash_restart
 		fi
 		if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
-			port=$(grep "server=::1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 			if [ "$port" = 0 ] ; then
 				sleep 10
-				port=$(grep "server=::1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+				port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 			fi
 			if [ "$port" = 0 ] ; then
 				logger -t "【clash】" "检测:找不到 dnsmasq 转发规则, 重新添加"
@@ -180,7 +180,7 @@ while [ "$clash_enable" = "1" ]; do
 				sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 				cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv
-#server=127.0.0.1#8053
+server=127.0.0.1#8053
 server=::1#8053
 dns-forward-max=1000
 min-cache-ttl=1800
@@ -247,13 +247,38 @@ if [ ! -d "/opt/app/clash/clash_webs" ] ; then
 	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
 fi
 
+logger -t "【clash】" "初始化 clash dns 配置"
+mkdir -p /tmp/clash
+config_dns_yml="/tmp/clash/dns.yml"
+rm_temp
+cp -f /etc/storage/app_21.sh $config_dns_yml
+yq w -i $config_dns_yml dns.ipv6 true
+rm_temp
+if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
+logger -t "【clash】" "已经启动 chinadns 防止域名污染，变更 clash dns 端口 listen 0.0.0.0:8054"
+yq w -i $config_dns_yml dns.listen 0.0.0.0:8054
+rm_temp
+else
+logger -t "【clash】" "启动 clash dns 端口 listen 0.0.0.0:8054"
+yq w -i $config_dns_yml dns.listen 0.0.0.0:8053
+rm_temp
+fi
+if [ ! -s $config_dns_yml ] ; then
+logger -t "【clash】" "yq 初始化 clash dns 配置错误！请检查配置！"
+logger -t "【clash】" "恢复原始 clash dns 配置！"
+rm -f /etc/storage/app_21.sh
+initconfig
+cp -f /etc/storage/app_21.sh $config_dns_yml
+
+fi
+
 logger -t "【clash】" "初始化 clash 配置"
 mkdir -p /opt/app/clash/config
 config_yml="/opt/app/clash/config/config.yml"
-rm -f /tmp/temp?????????
+rm_temp
 cp -f /etc/storage/app_20.sh $config_yml
 yq w -i $config_yml allow-lan true
-rm -f /tmp/temp?????????
+rm_temp
 # sed -e '/^$/d' -i $config_yml
 # sed -r 's@^[ ]+#@#@g' -i $config_yml
 # sed -e '/^#/d' -i $config_yml
@@ -261,43 +286,40 @@ rm -f /tmp/temp?????????
 logger -t "【clash】" "允许局域网的连接"
 if [ "$clash_http_enable" != "0" ] ; then
 yq w -i $config_yml port 7890
-rm -f /tmp/temp?????????
+rm_temp
 logger -t "【clash】" "HTTP 代理端口：7890"
 else
 yq d -i $config_yml port
-rm -f /tmp/temp?????????
+rm_temp
 fi
 if [ "$clash_socks_enable" != "0" ] ; then
 yq w -i $config_yml socks-port 7891
-rm -f /tmp/temp?????????
+rm_temp
 logger -t "【clash】" "SOCKS5 代理端口：7891"
 else
 yq d -i $config_yml socks-port
-rm -f /tmp/temp?????????
+rm_temp
 fi
 if [ "$clash_follow" != "0" ] ; then
 yq w -i $config_yml redir-port 7892
-rm -f /tmp/temp?????????
+rm_temp
 logger -t "【clash】" "redir 代理端口：7892"
 else
 yq d -i $config_yml redir-port
-rm -f /tmp/temp?????????
+rm_temp
 fi
 yq w -i $config_yml external-controller $clash_ui
-rm -f /tmp/temp?????????
+rm_temp
 yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
-rm -f /tmp/temp?????????
+rm_temp
 logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
 yq d -i $config_yml dns
-rm -f /tmp/temp?????????
+rm_temp
 config_nslookup_server $config_yml
-if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
-echo "已经启动 chinadns 防止域名污染"
-else
 logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
-yq m -x -i $config_yml /tmp/clash/dns.yml
-rm -f /tmp/temp?????????
-fi
+cat /tmp/clash/dns.yml >> $config_yml
+#yq m -x -i $config_yml /tmp/clash/dns.yml
+#rm_temp
 if [ ! -s $config_yml ] ; then
 logger -t "【clash】" "yq 初始化 clash 配置错误！请检查配置！"
 logger -t "【clash】" "尝试直接使用原始配置启动！"
@@ -354,7 +376,7 @@ pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
 sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
 no-resolv
-#server=127.0.0.1#8053
+server=127.0.0.1#8053
 server=::1#8053
 dns-forward-max=1000
 min-cache-ttl=1800
@@ -673,7 +695,7 @@ else
 	nvram set clash_status=wget_yml
 	cp -f $yml_tmp /etc/storage/app_20.sh
 	yq w -i /etc/storage/app_20.sh allow-lan true
-	rm -f /tmp/temp?????????
+	rm_temp
 	#config_nslookup_server /etc/storage/app_20.sh
 	if [ ! -s /etc/storage/app_20.sh ] ; then
 		logger -t "【clash】" "yq 格式化 clash 订阅文件错误！请检查订阅文件！"
@@ -689,32 +711,35 @@ logger -t "【clash】" "请按F5或刷新 web 页面刷新配置"
 }
 
 config_nslookup_server () {
-ilox=$(yq r $1 Proxy.*.server | wc -l)
+mkdir -p /tmp/clash
+grep '^  server: ' $config_yml > /tmp/clash/server.txt
+ilox=$(cat /tmp/clash/server.txt | wc -l)
 do_i=0
-for Proxy_server in $(yq r $1 Proxy.*.server | sed -e "s@- @@g")
+while read Proxy_server1
 do
-if [ -z $(echo $Proxy_server | grep -E -o '([0-9]+\.){3}[0-9]+') ] ; then 
+Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server: //g')"
+if [ -z $(echo "$Proxy_server2" | grep -E -o '([0-9]+\.){3}[0-9]+') ] && [ ! -z "$Proxy_server2" ] ; then 
 ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
-[ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
-if [ -z $(echo $Proxy_server | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $Proxy_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $Proxy_server | grep : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $Proxy_server | sed -n '1p'` 
-[ -z "$resolveip" ] && resolveip=`arNslookup6 $Proxy_server | sed -n '1p'` 
-Proxy_server=$resolveip
-else
-# IPv6
-Proxy_server=$Proxy_server
+[ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp % 【$Proxy_server2】"
+if [ -z $(echo "$Proxy_server2" | grep : | grep -v "\.") ] ; then 
+resolveip=`/usr/bin/resolveip -4 -t 4 $Proxy_server2 | grep -v : | sed -n '1p'`
+[ -z "$resolveip" ] && resolveip=`arNslookup $Proxy_server2 | sed -n '1p'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup6 $Proxy_server2 | sed -n '1p'` 
+Proxy_server3=$resolveip
+sed -e 's/^  server: '"$Proxy_server2"'/  server: '"$Proxy_server3"'/g' -i $config_yml
 fi
-yq w -i $1 Proxy.$do_i.server $Proxy_server
-rm -f /tmp/temp?????????
 fi
 do_i=`expr $do_i + 1`
-done
+done < /tmp/clash/server.txt
+rm -f /tmp/clash/server.txt
 ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
 [ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
+}
+
+rm_temp () {
+rm -f /tmp/temp?????????
 }
 
 initconfig () {
@@ -728,8 +753,9 @@ EEE
 	chmod 755 "$app_20"
 fi
 
-mkdir -p /tmp/clash
-cat > "/tmp/clash/dns.yml" <<-\EEE
+app_21="/etc/storage/app_21.sh"
+if [ ! -f "$app_21" ] || [ ! -s "$app_21" ] ; then
+	cat > "$app_21" <<-\EEE
 dns:
   enable: true
   ipv6: true
@@ -765,6 +791,8 @@ dns:
     # - https://cloudflare-dns.com/dns-query
     # - https://dns.google/dns-query
 EEE
+	chmod 755 "$app_21"
+fi
 
 }
 
