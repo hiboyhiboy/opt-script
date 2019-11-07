@@ -113,7 +113,7 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui"
+B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui"
 B_restart="$B_restart""$(cat /etc/storage/app_20.sh /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -232,6 +232,8 @@ if [ ! -s "/opt/bin/yq" ] ; then
 	logger -t "【clash】" "找不到 /opt/bin/yq 下载程序"
 	wgetcurl.sh /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
 	chmod 755 "/opt/bin/yq"
+fi
+if [ -s "/opt/bin/yq" ] ; then
 	[[ "$(yq -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
 fi
 if [ ! -s "/opt/bin/yq" ] ; then
@@ -252,6 +254,7 @@ mkdir -p /tmp/clash
 config_dns_yml="/tmp/clash/dns.yml"
 rm_temp
 cp -f /etc/storage/app_21.sh $config_dns_yml
+sed -Ei '/^$/d' $config_dns_yml
 yq w -i $config_dns_yml dns.ipv6 true
 rm_temp
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
@@ -277,6 +280,7 @@ mkdir -p /opt/app/clash/config
 config_yml="/opt/app/clash/config/config.yml"
 rm_temp
 cp -f /etc/storage/app_20.sh $config_yml
+sed -Ei '/^$/d' $config_yml
 yq w -i $config_yml allow-lan true
 rm_temp
 # sed -e '/^$/d' -i $config_yml
@@ -717,7 +721,7 @@ ilox=$(cat /tmp/clash/server.txt | wc -l)
 do_i=0
 while read Proxy_server1
 do
-Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server: //g')"
+Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server://g' | sed -e 's/ //g')"
 if [ -z $(echo "$Proxy_server2" | grep -E -o '([0-9]+\.){3}[0-9]+') ] && [ ! -z "$Proxy_server2" ] ; then 
 ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
