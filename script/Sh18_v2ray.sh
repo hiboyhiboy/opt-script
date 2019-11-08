@@ -780,36 +780,28 @@ fi
 }
 
 json_jq_check () {
+
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
 	/tmp/script/_mountopt start
-else
-	return 0
-fi
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，下载 jq程序"
 	wgetcurl.sh /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
 	chmod 755 "/opt/bin/jq"
-else
-	return 0
-fi
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
+	rm -f /opt/bin/jq
 	/tmp/script/_mountopt optwget
-else
-	return 0
-fi
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	opkg update
 	opkg install jq
-else
-	return 0
-fi
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
 	return 1
-else
-	return 0
+fi
+fi
+fi
+fi
 fi
 }
 
@@ -823,8 +815,13 @@ if [ "$vmess_x_tmp" != "0" ] ; then
 nvram set app_82="0"
 fi
 
+
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
-[ "$?" == "0" ] || return 1
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	return 1
+fi
+fi
 
 if [ "$vmess_x_tmp" = "vmess" ] ; then
 logger -t "【vmess】" "开始生成vmess配置"
@@ -1335,8 +1332,12 @@ if [ "$vmess_x_tmp" != "up_link" ] ; then
 	return
 fi
 
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
-[ "$?" == "0" ] || return 1
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	return 1
+fi
+fi
 
 vmess_link="`nvram get app_66`"
 vmess_link_up=`nvram get app_67`

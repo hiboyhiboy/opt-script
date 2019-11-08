@@ -349,7 +349,6 @@ logger -t "【mkfs.ext4】" "格式化完成."
 
 jq_check () {
 
-[ ! -f /www/link/link.js ] && logger -t "【jq_check】" "错误！找不到 /www/link/link.js" && return 1
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	/tmp/script/_mountopt start
@@ -359,6 +358,7 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	chmod 755 "/opt/bin/jq"
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
+	rm -f /opt/bin/jq
 	/tmp/script/_mountopt optwget
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	opkg update
@@ -377,9 +377,11 @@ fi
 ss_link_matching(){
 
 [ ! -f /www/link/link.js ] && logger -t "【自动选用节点】" "错误！找不到 /www/link/link.js" && return 1
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 jq_check
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	return 1
+fi
 fi
 # 排序节点
 mkdir /tmp/link_matching -p
@@ -450,9 +452,11 @@ done < /tmp/link_matching/link_matching.txt
 allping () {
 
 [ ! -f /www/link/link.js ] && logger -t "【ping】" "错误！找不到 /www/link/link.js" && return 1
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 jq_check
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	return 1
+fi
 fi
 logger -t "【ping】" "开始 ping"
 echo "" > /tmp/ping_server_error.txt

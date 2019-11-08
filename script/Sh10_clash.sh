@@ -228,17 +228,12 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【clash】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【clash】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
 fi
-if [ ! -s "/opt/bin/yq" ] ; then
-	logger -t "【clash】" "找不到 /opt/bin/yq 下载程序"
-	wgetcurl.sh /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
-	chmod 755 "/opt/bin/yq"
-fi
-if [ -s "/opt/bin/yq" ] ; then
-	[[ "$(yq -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
-fi
-if [ ! -s "/opt/bin/yq" ] ; then
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	yq_check
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 /opt/bin/yq ，需要手动安装 /opt/bin/yq"
 	logger -t "【clash】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
+fi
 fi
 # 下载clash_webs
 if [ ! -d "/opt/app/clash/clash_webs" ] ; then
@@ -277,9 +272,11 @@ fi
 
 logger -t "【clash】" "初始化 clash 配置"
 mkdir -p /opt/app/clash/config
-config_yml="/opt/app/clash/config/config.yml"
+config_yml="/opt/app/clash/config/config.yaml"
 rm_temp
 cp -f /etc/storage/app_20.sh $config_yml
+rm -f /opt/app/clash/config/config.yml
+ln -sf $config_yml /opt/app/clash/config/config.yml
 sed -Ei '/^$/d' $config_yml
 yq w -i $config_yml allow-lan true
 rm_temp
@@ -680,7 +677,14 @@ fi
 
 wget_yml () {
 nvram set app_86=0
-[ -z "$clash_wget_yml" ] && return
+[ -z "$clash_wget_yml" ] && logger -t "【clash】" "找不到 【订阅链接】，需要手动填写" && return
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	yq_check
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "找不到 /opt/bin/yq ，需要手动安装 /opt/bin/yq"
+	return
+fi
+fi
 mkdir -p /tmp/clash
 logger -t "【clash】" "服务器订阅：开始更新"
 yml_tmp="/tmp/clash/app_20.sh"
@@ -714,9 +718,35 @@ logger -t "【clash】" "服务器订阅：更新完成"
 logger -t "【clash】" "请按F5或刷新 web 页面刷新配置"
 }
 
+yq_check () {
+
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "找不到 yq，安装 opt 程序"
+	/tmp/script/_mountopt start
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "找不到 yq，下载 yq程序"
+	wgetcurl.sh /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
+	chmod 755 "/opt/bin/yq"
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "找不到 yq，安装 opt 程序"
+	rm -f /opt/bin/yq
+	/tmp/script/_mountopt optwget
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	opkg update
+	opkg install yq
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "找不到 yq，需要手动安装 opt 后输入[opkg update; opkg install yq]安装"
+	return 1
+fi
+fi
+fi
+fi
+fi
+}
+
 config_nslookup_server () {
 mkdir -p /tmp/clash
-grep '^  server: ' $config_yml > /tmp/clash/server.txt
+grep '^  server: ' $1 > /tmp/clash/server.txt
 ilox=$(cat /tmp/clash/server.txt | wc -l)
 do_i=0
 while read Proxy_server1
@@ -731,7 +761,7 @@ resolveip=`/usr/bin/resolveip -4 -t 4 $Proxy_server2 | grep -v : | sed -n '1p'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $Proxy_server2 | sed -n '1p'` 
 [ -z "$resolveip" ] && resolveip=`arNslookup6 $Proxy_server2 | sed -n '1p'` 
 Proxy_server3=$resolveip
-sed -e 's/^  server: '"$Proxy_server2"'/  server: '"$Proxy_server3"'/g' -i $config_yml
+sed -e 's/^  server: '"$Proxy_server2"'/  server: '"$Proxy_server3"'/g' -i $1
 fi
 fi
 do_i=`expr $do_i + 1`
