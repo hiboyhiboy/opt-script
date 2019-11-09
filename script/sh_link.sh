@@ -291,7 +291,8 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			link_echo="$link_echo"'"'"$ss_link_port"'", '
 			link_echo="$link_echo"'"'"$ss_link_password"'", '
 			link_echo="$link_echo"'"'"$ss_link_method"'", '
-			ping_link
+			link_echo="$link_echo"'"", '
+			link_echo="$link_echo"'"", '
 			link_echo="$link_echo"'"-o '"$ss_link_obfs"' -O '"$ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
 			link_echo="$link_echo"'"ssr"], '
 			echo "$link_echo" >> /www/link/link.js
@@ -325,7 +326,8 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 			link_echo="$link_echo"'"'"$ss_link_port"'", '
 			link_echo="$link_echo"'"'"$ss_link_password"'", '
 			link_echo="$link_echo"'"'"$ss_link_method"'", '
-			ping_link
+			link_echo="$link_echo"'"", '
+			link_echo="$link_echo"'"", '
 			link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
 			link_echo="$link_echo"'"ss"], '
 			echo "$link_echo" >> /www/link/link.js
@@ -346,34 +348,6 @@ fi
 rm -rf /tmp/ss/link
 }
 
-
-ping_link () {
-if [ "$ss_link_ping" != 1 ] ; then
-ping_text=`ping -4 $ss_link_server -c 1 -w 1 -q`
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-if [ ! -z "$ping_time" ] ; then
-	[ $ping_time -le 250 ] && link_echo="$link_echo"'"btn-success", '
-	[ $ping_time -gt 250 ] && link_echo="$link_echo"'"btn-warning", '
-	[ $ping_time -gt 500 ] && link_echo="$link_echo"'"btn-danger", '
-	echo "🔗$ss_link_name：$ping_time ms 丢包率：$ping_loss"
-	#logger -t "【🔗$ss_link_name】" "$ping_time ms"
-	link_echo="$link_echo"'"'"$ping_time ms"'", '
-else
-	link_echo="$link_echo"'"btn-danger", '
-	echo "🔗$ss_link_name：>1000 ms"
-	#logger -t "【🔗$ss_link_name】" ">1000 ms"
-	link_echo="$link_echo"'">1000 ms", '
-fi
-else
-# 停止ping订阅节点
-	link_echo="$link_echo"'"", '
-	echo "🔗$ss_link_name：停止ping订阅节点"
-	link_echo="$link_echo"'"", '
-fi
-}
-
-
 start_link () {
 
 rt_ssnum_x=$(nvram get rt_ssnum_x)
@@ -390,6 +364,8 @@ if [ "$rt_ssnum_x_tmp" = "del" ] ; then
 	clear_link
 	nvram set rt_ssnum_x_tmp=0
 	nvram commit
+	logger -t "【SS】" "完成清空上次订阅节点配置 请按【F5】刷新 web 查看"
+	rm -f /tmp/link_matching/link_matching.txt
 	exit
 fi
 
@@ -397,6 +373,11 @@ fi
 ssr_link="`nvram get ssr_link`"
 ss_link_up=`nvram get ss_link_up`
 ss_link_ping=`nvram get ss_link_ping`
+app_99="$(nvram get app_99)"
+if [ "$app_99" == 1 ] ; then
+	ss_link_ping=0
+	nvram set ss_link_ping=0
+fi
 A_restart=`nvram get ss_link_status`
 #B_restart="$ssr_link"
 B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -427,7 +408,7 @@ if [ ! -f /www/link/link.js ] ; then
 else
 	logger -t "【SS】" "服务器订阅：开始更新"
 fi
-ssr_link="$(echo "$ssr_link" | tr , \  | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
+ssr_link="$(echo "$ssr_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 ssr_link_i=""
 if [ -f /www/link/link.js ]  ; then
 [ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
@@ -450,11 +431,12 @@ sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
 echo '[]]' >> /www/link/link.js
 fi
 logger -t "【SS】" "服务器订阅：更新完成"
-app_99="$(nvram get app_99)"
-if [ "$app_99" == 1 ] ; then
-logger -t "【SS】" "服务器订阅：更新后自动选用节点 /tmp/link_matching/link_matching.txt"
-/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+if [ "$ss_link_ping" != 1 ] ; then
+	/etc/storage/script/sh_ezscript.sh allping
+else
+	echo "🔗$ss_link_name：停止ping订阅节点"
 fi
+
 }
 
 check_link () {

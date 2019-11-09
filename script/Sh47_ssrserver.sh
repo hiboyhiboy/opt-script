@@ -176,7 +176,7 @@ mkdir -p /opt/shadowsocksr-manyuser/shadowsocks/crypto/
 if [ ! -f /opt/shadowsocksr-manyuser/shadowsocks/server.py ] ; then
 	logger -t "【SSR_server】" "找不到 shadowsocks/server.py"
 	[ "$ssrserver_update" == "0" ] && ssrserver_update=2
-	echo "" > /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
+	echo -n "" > /opt/shadowsocksr-manyuser/shadowsocks/crypto/util.py
 fi
 if [ "$ssrserver_update" != "0" ] ; then
 logger -t "【SSR_server】" "SSR_server 检测更新"

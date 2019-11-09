@@ -124,6 +124,8 @@ fi
 
 v2ray_check () {
 
+check_link
+ping_vmess_link
 start_vmess_link
 json_mk_vmess
 v2ray_get_status
@@ -1309,12 +1311,160 @@ echo '{
 
 }
 
+ping_vmess_link () {
 
-start_vmess_link () {
+vmess_x_tmp="`nvram get app_83`"
+if [ "$vmess_x_tmp" != "ping_link" ] ; then
+	return
+fi
+if [ ! -z "$vmess_x_tmp" ] ; then
+nvram set app_83=""
+fi
+[ ! -f /www/link/vmess.js ] && logger -t "【vmess】" "错误！找不到 /www/link/vmess.js" && return 1
+ilox="$(grep -v '^\]'  /www/link/vmess.js | grep -v "ACL3List = " |wc -l)"
+[ "$ilox" == "0" ] && ilox="$(grep -v '^\]'  /www/link/ss.js | grep -v "ACL4List = " |wc -l)"
+[ "$ilox" == "0" ] && logger -t "【ping】" "错误！节点列表为空" && return
+logger -t "【ping】" "开始 ping"
+allping 3
+allping 4
+logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
 
+
+}
+allping () {
+
+[ "$1" == "3" ] && js_vmess="vmess.js"
+[ "$1" == "4" ] && js_vmess="ss.js"
+mkdir -p /tmp/allping_$1
+rm -f /tmp/allping_$1/?.txt
+rm -f /tmp/ping_server_error.txt
+touch /tmp/ping_server_error.txt
+rm -f /tmp/allping_$1.js
+touch /tmp/allping_$1.js
+i_x_ping=2
+ilox="$(grep -v '^\]'  /www/link/$js_vmess | grep -v "ACL""$1""List = " |wc -l)"
+while read line
+do
+if [ -z "$(echo "$line" | grep "ACL""$1""List = ")" ] && [ -z "$(echo "$line" | grep '^\]')" ] ; then
+if [ ! -z "$line" ] ; then
+echo "$line" > /tmp/allping_$1/$i_x_ping
+fi
+i_x_ping=`expr $i_x_ping + 1`
+fi
+done < /www/link/$js_vmess
+while [ "$(ls /tmp/allping_$1 | head -1)" != "" ];
+do
+x_ping_x $1 &
+usleep 100000
+i_ping="$(cat /tmp/allping_$1.js | grep -v "^$" |wc -l)"
+done
+i_x_ping=1
+while [ "$i_ping" != "$ilox" ];
+do
+sleep 1
+i_ping="$(cat /tmp/allping_$1.js | grep -v "^$" |wc -l)"
+i_x_ping=`expr $i_x_ping + 1`
+if [ "$i_x_ping" -gt 30 ] ; then
+logger -t "【ping】" "刷新 ping 失败！超时 30 秒！ 请重新按【ping】按钮再次尝试。"
+return
+fi
+done
+# 排序节点
+rm -f /tmp/allping_$1/?.txt
+cat /tmp/allping_$1.js | sort | grep -v "^$" > /tmp/allping_$1/0.txt
+echo "var ACL""$1""List = [ " > /tmp/allping_$1/1.txt
+while read line
+do
+echo ${line:4} >> /tmp/allping_$1/1.txt
+done < /tmp/allping_$1/0.txt
+sed -i "s/\"\]$/\"\],/g" /tmp/allping_$1/1.txt
+sed -i "$(cat /tmp/allping_$1/1.txt |wc -l)""s/\"\],$/\"\]/g" /tmp/allping_$1/1.txt
+echo "]" >> /tmp/allping_$1/1.txt
+cp -f /tmp/allping_$1/1.txt /www/link/$js_vmess
+#rm -f /tmp/allping_$1/?.txt /tmp/allping_$1.js
+
+}
+
+x_ping_x () {
+	
+[ "$1" == "3" ] && js_1_ping="4" && js_2_ping="3"
+[ "$1" == "4" ] && js_1_ping="3" && js_2_ping="2"
+ping_txt_list="$(ls /tmp/allping_$1 | head -1)"
+if [ ! -z "$ping_txt_list" ] ; then
+ping_list="$(cat /tmp/allping_$1/$ping_txt_list)"
+rm -f /tmp/allping_$1/$ping_txt_list
+ss_server_x=$(echo $ping_list | cut -d',' -f "$js_1_ping" | sed -e "s@"'"'"\| \|"'\['"@@g")
+if [ ! -z "$ss_server_x" ] ; then
+ss_name_x=$(echo $ping_list | cut -d',' -f "$js_2_ping" | sed -e "s@"'"'"\|"'\['"@@g")
+if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
+ping_text=""
+else
+ping_text=`ping -4 $ss_server_x -c 1 -w 1 -q`
+fi
+ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
+i2log="$(expr $(cat /tmp/allping_$1.js | grep -v "^$" |wc -l) + 1)"
+ilog="$(expr $i2log \* 100 / $ilox \* 100 / 100)"
+[ "$ilog" -gt 100 ] && ilog=100
+if [ ! -z "$ping_time" ] ; then
+	echo "ping_$ilog%：$ping_time ms ✔️ $ss_server_x"
+	logger -t "【ping_$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
+	[ "$ping_time" -le 250 ] && ping_list_btn="btn-success"
+	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list_btn="btn-warning"
+	[ "$ping_time" -gt 500 ] && ping_list_btn="btn-danger"
+	ping_time2="0000""$ping_time"
+	ping_time2="$(echo ${ping_time2: 0-4})"
+else
+	ping_list_btn="btn-danger"
+	echo "ping_$ilog%：>1000 ms ❌ $ss_server_x"
+	logger -t "【ping_$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
+	ping_time=">1000"
+	ping_time2="1000"
+	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
+fi
+if [ ! -z "$(echo $ping_list | grep -E -o \"btn-.+\ ms\",)" ] ; then
+	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_time ms"'"'"@g")
+	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f1 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_list_btn"'"'"@g")
+else
+	ping_list=$(echo $ping_list | sed "s@"'", "", "", "'"@"'", "'"$ping_list_btn"'", "'"$ping_time ms"'", "'"@g")
+fi
+fi
+if [ ! -z "$ping_list" ] ; then
+ping_list="$ping_time2""$ping_list"
+#(
+#	flock 161
+echo "$ping_list" >> /tmp/allping_$1.js
+#) 161>/var/lock/161_flock.lock
+fi
+fi
+}
+
+check_link () {
 mkdir -p /etc/storage/link
 touch /etc/storage/link/vmess.js
 touch /etc/storage/link/ss.js
+# 初始化 /etc/storage/link/vmess.js
+if [ -f /www/link/vmess.js ] && [ ! -s /www/link/vmess.js ] ; then
+	echo "var ACL3List = [ " > /www/link/vmess.js
+	echo ']' >> /www/link/vmess.js
+fi
+if [ -f /www/link/vmess.js ] && [ "$(sed -n 1p /www/link/vmess.js)" != "var ACL3List = [ " ] ; then
+	echo "var ACL3List = [ " > /www/link/vmess.js
+	echo ']' >> /www/link/vmess.js
+fi
+# 初始化 /etc/storage/link/ss.js
+if [ -f /www/link/ss.js ] && [ ! -s /www/link/ss.js ] ; then
+	echo "var ACL4List = [ " > /www/link/ss.js
+	echo ']' >> /www/link/ss.js
+fi
+if [ -f /www/link/ss.js ] && [ "$(sed -n 1p /www/link/ss.js)" != "var ACL4List = [ " ] ; then
+	echo "var ACL4List = [ " > /www/link/ss.js
+	echo ']' >> /www/link/ss.js
+fi
+}
+
+start_vmess_link () {
+
 if [ -f /www/link/vmess.js ]  ; then
 vmess_x_tmp="`nvram get app_83`"
 if [ ! -z "$vmess_x_tmp" ] ; then
@@ -1322,9 +1472,12 @@ nvram set app_83=""
 fi
 if [ "$vmess_x_tmp" = "del_link" ] ; then
 	# 清空上次订阅节点配置
-	echo -n "var ACL3List = []" > /www/link/vmess.js
-	echo -n "var ACL4List = []" > /www/link/ss.js
+	echo "var ACL3List = [ " > /www/link/vmess.js
+	echo ']' >> /www/link/vmess.js
+	echo "var ACL4List = [ " > /www/link/ss.js
+	echo ']' >> /www/link/ss.js
 	vmess_x_tmp=""
+	logger -t "【vmess】" "完成清空上次订阅节点配置 请按【F5】刷新 web 查看"
 	return
 fi
 
@@ -1352,7 +1505,7 @@ nvram set vmess_link_status=$B_restart
 		return
 	else
 		if [ "$vmess_link_up" != 1 ] ; then
-			cru.sh a vmess_link_update "12 */3 * * * $scriptfilepath uplink &" &
+			cru.sh a vmess_link_update "12 */3 * * * $scriptfilepath up_link &" &
 			logger -t "【vmess】" "启动 vmess 服务器订阅，添加计划任务 (Crontab)，每三小时更新"
 		else
 			cru.sh d vmess_link_update
@@ -1366,12 +1519,10 @@ fi
 
 logger -t "【vmess】" "服务器订阅：开始更新"
 
-vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@   @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
+vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 vmess_link_i=""
-[ -f /www/link/vmess.js ] && echo -n "var ACL3List = [" > /www/link/vmess.js
-[ -f /www/link/ss.js ] && echo -n "var ACL4List = [" > /www/link/ss.js
-i_s=0
-ii_s=0
+[ -f /www/link/vmess.js ] && echo "var ACL3List = [ " > /www/link/vmess.js && echo ']' >> /www/link/vmess.js
+[ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
 if [ ! -z "$(echo "$vmess_link" | awk -F ' ' '{print $2}')" ] ; then
 	for vmess_link_ii in $vmess_link
 	do
@@ -1383,10 +1534,15 @@ else
 	do_link
 fi
 sed -Ei "s@]]@]@g" /www/link/vmess.js
-echo -n ']' >> /www/link/vmess.js;
+echo ']' >> /www/link/vmess.js;
 sed -Ei "s@]]@]@g" /www/link/ss.js
-echo -n ']' >> /www/link/ss.js;
+echo ']' >> /www/link/ss.js;
 logger -t "【vmess】" "服务器订阅：更新完成"
+if [ "$vmess_link_ping" != 1 ] ; then
+	ping_vmess_link
+else
+	echo "🔗$ss_link_name：停止ping订阅节点"
+fi
 return
 fi
 }
@@ -1471,6 +1627,7 @@ ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
 }
 
 do_link () {
+
 mkdir -p /tmp/vmess/link
 #logger -t "【vmess】" "订阅文件下载: $vmess_link_i"
 rm -f /tmp/vmess/link/0_link.txt
@@ -1536,15 +1693,14 @@ sed -e "s/\-/\+/g" -i /tmp/vmess/link/vmess_link.txt
 		link_json=$(echo -n $line | jq --raw-output  '{"v": .v,"ps": .ps,"add": .add,"port": .port,"id": .id,"aid": .aid,"net": .net,"type": .type,"host": .host,"path": .path,"tls": .tls}')
 		vmess_link_value="$(echo -n "$link_json" | jq  '.[]' | sed -e ":a;N;s/\n/, /g;ta" )"
 		link_echo=""
-		[ $i_s -gt 0 ] && link_echo="$link_echo"', '
 		link_echo="$link_echo"'["vmess", '
 		link_echo="$link_echo"''"$vmess_link_value"', '
-		ping_link
-		link_echo="$link_echo"'"end"]'
-		link_echo="$link_echo"']'
-		sed -Ei "s@]]@]@g" /www/link/vmess.js
-		echo -n "$link_echo" >> /www/link/vmess.js
-		i_s=$(( i_s + 1 ))
+		link_echo="$link_echo"'"", '
+		link_echo="$link_echo"'"", '
+		link_echo="$link_echo"'"end"]]'
+		sed -Ei "s@]]@],@g" /www/link/vmess.js
+		sed -Ei '/^\]|^$/d' /www/link/vmess.js
+		echo "$link_echo" >> /www/link/vmess.js
 	fi
 	done < /tmp/vmess/link/vmess2_link.txt
 fi
@@ -1569,7 +1725,6 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 		add_ss_link "$line"
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
-		[ $ii_s -gt 0 ] && link_echo="$link_echo"', '
 		link_echo="$link_echo"'["ss", '
 		link_echo="$link_echo"'"'"$ss_link_name"'", '
 		vmess_link_ps="$ss_link_name"
@@ -1578,45 +1733,18 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 		link_echo="$link_echo"'"'"$ss_link_port"'", '
 		link_echo="$link_echo"'"'"$ss_link_password"'", '
 		link_echo="$link_echo"'"'"$ss_link_method"'", '
-		ping_link
+		link_echo="$link_echo"'"", '
+		link_echo="$link_echo"'"", '
 		link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
 		link_echo="$link_echo"'"0", '
 		link_echo="$link_echo"'"end"]]'
-		sed -Ei "s@]]@]@g" /www/link/ss.js
-		echo -n "$link_echo" >> /www/link/ss.js
-		ii_s=$(( ii_s + 1 ))
+		sed -Ei "s@]]@],@g" /www/link/ss.js
+		sed -Ei '/^\]|^$/d' /www/link/ss.js
+		echo "$link_echo" >> /www/link/ss.js
 	fi
 	done < /tmp/vmess/link/ss_link.txt
 fi
 rm -rf /tmp/vmess/link/*
-}
-
-
-ping_link () {
-if [ "$vmess_link_ping" != 1 ] ; then
-ping_text=`ping -4 $vmess_link_add -c 1 -w 1 -q`
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-if [ ! -z "$ping_time" ] ; then
-	[ $ping_time -le 250 ] && link_echo="$link_echo"'"btn-success", '
-	[ $ping_time -gt 250 ] && link_echo="$link_echo"'"btn-warning", '
-	[ $ping_time -gt 500 ] && link_echo="$link_echo"'"btn-danger", '
-	echo "$vmess_link_ps：$ping_time ms 丢包率：$ping_loss"
-	#logger -t "【$vmess_link_ps】" "$ping_time ms"
-	link_echo="$link_echo"'"'"$ping_time ms"'", '
-else
-	link_echo="$link_echo"'"btn-danger", '
-	echo "$vmess_link_ps：>1000 ms"
-	#logger -t "【$vmess_link_ps】" ">1000 ms"
-	link_echo="$link_echo"'">1000 ms", '
-fi
-else
-
-# 停止ping订阅节点
-	link_echo="$link_echo"'"", '
-	echo "$vmess_link_ps ：停止ping订阅节点"
-	link_echo="$link_echo"'"", '
-fi
 }
 
 case $ACTION in
@@ -1642,8 +1770,21 @@ updatev2ray)
 initconfig)
 	initconfig
 	;;
-start_vmess_link)
-	start_vmess_link
+uplink)
+	nvram set app_83="up_link"
+	v2ray_check
+	;;
+up_link)
+	nvram set app_83="up_link"
+	v2ray_check
+	;;
+del_link)
+	nvram set app_83="del_link"
+	v2ray_check
+	;;
+ping_link)
+	nvram set app_83="ping_link"
+	v2ray_check
 	;;
 *)
 	v2ray_check

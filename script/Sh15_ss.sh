@@ -1158,7 +1158,7 @@ echo "start_ss_rules"
 #	0  默认值, 常规, 未在以下设定的 内网IP 根据 SS配置工作模式 走 SS
 #	1		 全局, 未在以下设定的 内网IP 使用全局代理 走 SS
 #	2		 绕过, 未在以下设定的 内网IP 不使用 SS
-mkdir /tmp/ss -p
+mkdir -p /tmp/ss
 if [ -n "$LAN_AC_IP" ] ; then
 	case "${LAN_AC_IP:0:1}" in
 		0)
@@ -2083,7 +2083,7 @@ else
 #/tmp/sh_adblock_hosts.sh $confdir &
 # if [ "$ss_mode_x" != "2" ] ; then
 	touch /tmp/cron_ss.lock
-	mkdir /tmp/ss -p
+	mkdir -p /tmp/ss
 	ss_updatess2=`nvram get ss_updatess2`
 if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 	# 启动时先用高春辉的这个列表，更新交给守护进程去做。

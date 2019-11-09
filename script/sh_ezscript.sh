@@ -384,7 +384,7 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 fi
 fi
 # 排序节点
-mkdir /tmp/link_matching -p
+mkdir -p /tmp/link_matching
 if [ ! -f /tmp/link_matching/link_matching.txt ] || [ ! -s /tmp/link_matching/link_matching.txt ] ; then
 match="$(nvram get app_95)"
 mismatch="$(nvram get app_96)"
@@ -452,56 +452,56 @@ done < /tmp/link_matching/link_matching.txt
 allping () {
 
 [ ! -f /www/link/link.js ] && logger -t "【ping】" "错误！找不到 /www/link/link.js" && return 1
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-jq_check
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	return 1
-fi
-fi
 logger -t "【ping】" "开始 ping"
-echo "" > /tmp/ping_server_error.txt
+mkdir -p /tmp/allping
+rm -f /tmp/allping/?.txt
+rm -f /tmp/ping_server_error.txt
+touch /tmp/ping_server_error.txt
+rm -f /tmp/allping.js
+touch /tmp/allping.js
 rm -f /tmp/link_matching/link_matching.txt
-i_ping=2
+i_x_ping=2
+ilox="$(grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l)"
+[ "$ilox" == "0" ] && logger -t "【ping】" "错误！节点列表为空" && return
 while read line
 do
-ilox="$(grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l)"
 if [ -z "$(echo "$line" | grep "ACL2List = ")" ] && [ -z "$(echo "$line" | grep '\[\]\]')" ] ; then
-ping_list="$(echo $line | sed -e 's/],/]/g' )"
-ss_server_x=$(echo $ping_list| jq --compact-output --raw-output 'getpath([1])')
-if [ ! -z "$ss_server_x" ] ; then
-ilog="$(expr $i_ping \* 100 / $ilox \* 100 / 100)"
-[ "$ilog" -gt 100 ] && ilog=100
-ss_name_x=$(echo $ping_list| jq --compact-output --raw-output 'getpath([0])')
-if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
-ping_text=""
-else
-ping_text=`ping -4 $ss_server_x -c 1 -w 1 -q`
+if [ ! -z "$line" ] ; then
+echo "$line" > /tmp/allping/$i_x_ping
 fi
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
-if [ ! -z "$ping_time" ] ; then
-	[ "$ping_time" -le 250 ] && ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([5];"btn-success")')
-	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([5];"btn-warning")')
-	[ "$ping_time" -gt 500 ] && ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([5];"btn-danger")')
-	echo "ping_$ilog%：$ping_time ms ✔️ $ss_server_x"
-	logger -t "【ping_$ilog%】" "$ss_name_x"
-	logger -t "【ping_$ilog%】" "$ping_time ms ✔️ $ss_server_x"
-	ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([6];"'"$ping_time"' ms")')
-else
-	ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([5];"btn-danger")')
-	echo "ping_$ilog%：>1000 ms ❌ $ss_server_x"
-	logger -t "【ping_$ilog%】" "$ss_name_x"
-	logger -t "【ping_$ilog%】" ">1000 ms ❌ $ss_server_x"
-	ping_list=$(echo $ping_list| jq --compact-output --raw-output 'setpath([6];">1000 ms")')
-	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
-fi
-if [ ! -z "$ping_list" ] ; then
-sed -i "$i_ping"'s/^.*$/'"$ping_list"", "'/' /www/link/link.js
-fi
-fi
-i_ping=`expr $i_ping + 1`
+i_x_ping=`expr $i_x_ping + 1`
 fi
 done < /www/link/link.js
+while [ "$(ls /tmp/allping | head -1)" != "" ];
+do
+x_ping_x &
+usleep 100000
+i_ping="$(cat /tmp/allping.js | grep -v "^$" |wc -l)"
+done
+i_x_ping=1
+while [ "$i_ping" != "$ilox" ];
+do
+sleep 1
+i_ping="$(cat /tmp/allping.js | grep -v "^$" |wc -l)"
+i_x_ping=`expr $i_x_ping + 1`
+if [ "$i_x_ping" -gt 30 ] ; then
+logger -t "【ping】" "刷新 ping 失败！超时 30 秒！ 请重新按【ping】按钮再次尝试。"
+return
+fi
+done
+# 排序节点
+rm -f /tmp/allping/?.txt
+cat /tmp/allping.js | sort | grep -v "^$" > /tmp/allping/0.txt
+echo "var ACL2List = [[], " > /tmp/allping/1.txt
+while read line
+do
+echo ${line:4} >> /tmp/allping/1.txt
+done < /tmp/allping/0.txt
+echo "[]]" >> /tmp/allping/1.txt
+cp -f /tmp/allping/1.txt /www/link/link.js
+rm -f /tmp/allping/?.txt /tmp/allping.js
+
+
 logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
 app_99="$(nvram get app_99)"
 if [ "$app_99" == 1 ] ; then
@@ -509,6 +509,60 @@ logger -t "【ping】" "服务器订阅：更新后自动选用节点 /tmp/link_
 /etc/storage/script/sh_ezscript.sh ss_link_matching & 
 fi
 }
+
+
+x_ping_x () {
+	
+ping_txt_list="$(ls /tmp/allping | head -1)"
+if [ ! -z "$ping_txt_list" ] ; then
+ping_list="$(cat /tmp/allping/$ping_txt_list)"
+rm -f /tmp/allping/$ping_txt_list
+ss_server_x=$(echo $ping_list | cut -d',' -f2 | sed -e "s@"'"'"\| \|"'\['"@@g")
+if [ ! -z "$ss_server_x" ] ; then
+ss_name_x=$(echo $ping_list | cut -d',' -f1 | sed -e "s@"'"'"\|"'\['"@@g")
+if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
+ping_text=""
+else
+ping_text=`ping -4 $ss_server_x -c 1 -w 1 -q`
+fi
+ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
+i2log="$(expr $(cat /tmp/allping.js | grep -v "^$" |wc -l) + 1)"
+ilog="$(expr $i2log \* 100 / $ilox \* 100 / 100)"
+[ "$ilog" -gt 100 ] && ilog=100
+if [ ! -z "$ping_time" ] ; then
+	echo "ping_$ilog%：$ping_time ms ✔️ $ss_server_x"
+	logger -t "【ping_$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
+	[ "$ping_time" -le 250 ] && ping_list_btn="btn-success"
+	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list_btn="btn-warning"
+	[ "$ping_time" -gt 500 ] && ping_list_btn="btn-danger"
+	ping_time2="0000""$ping_time"
+	ping_time2="$(echo ${ping_time2: 0-4})"
+else
+	ping_list_btn="btn-danger"
+	echo "ping_$ilog%：>1000 ms ❌ $ss_server_x"
+	logger -t "【ping_$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
+	ping_time=">1000"
+	ping_time2="1000"
+	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
+fi
+if [ ! -z "$(echo $ping_list | grep -E -o \"btn-.+\ ms\",)" ] ; then
+	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_time ms"'"'"@g")
+	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f1 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_list_btn"'"'"@g")
+else
+	ping_list=$(echo $ping_list | sed "s@"'", "", "", "'"@"'", "'"$ping_list_btn"'", "'"$ping_time ms"'", "'"@g")
+fi
+fi
+if [ ! -z "$ping_list" ] ; then
+ping_list="$ping_time2""$ping_list"
+#(
+#	flock 161
+echo "$ping_list" >> /tmp/allping.js
+#) 161>/var/lock/161_flock.lock
+fi
+fi
+}
+
 
 reszUID () {
 killall oraynewph oraysl
