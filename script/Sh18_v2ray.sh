@@ -1505,7 +1505,7 @@ nvram set vmess_link_status=$B_restart
 		return
 	else
 		if [ "$vmess_link_up" != 1 ] ; then
-			cru.sh a vmess_link_update "12 */3 * * * $scriptfilepath up_link &" &
+			cru.sh a vmess_link_update "12 */6 * * * $scriptfilepath up_link &" &
 			logger -t "【vmess】" "启动 vmess 服务器订阅，添加计划任务 (Crontab)，每三小时更新"
 		else
 			cru.sh d vmess_link_update

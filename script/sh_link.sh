@@ -378,7 +378,7 @@ if [ "$app_99" == 1 ] ; then
 	ss_link_ping=0
 	nvram set ss_link_ping=0
 fi
-A_restart=`nvram get ss_link_status`
+A_restart="$(nvram get ss_link_status)"
 #B_restart="$ssr_link"
 B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -389,7 +389,7 @@ nvram set ss_link_status=$B_restart
 		return
 	else
 		if [ "$ss_link_up" != 1 ] ; then
-			cru.sh a ss_link_update "12 */3 * * * $scriptfilepath uplink &" &
+			cru.sh a ss_link_update "12 */6 * * * $scriptfilepath uplink &" &
 			logger -t "【SS】" "启动 SS 服务器订阅，添加计划任务 (Crontab)，每三小时更新"
 		else
 			cru.sh d ss_link_update

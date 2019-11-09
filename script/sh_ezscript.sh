@@ -388,21 +388,21 @@ mkdir -p /tmp/link_matching
 if [ ! -f /tmp/link_matching/link_matching.txt ] || [ ! -s /tmp/link_matching/link_matching.txt ] ; then
 match="$(nvram get app_95)"
 mismatch="$(nvram get app_96)"
-[ ! -z "$match" ] && grep $match /www/link/link.js > /tmp/link_matching/0.txt
+[ ! -z "$match" ] && grep -E "$match" /www/link/link.js > /tmp/link_matching/0.txt
 [ -z "$match" ] && cat /www/link/link.js > /tmp/link_matching/0.txt
 echo -n "" > /tmp/link_matching/1.txt
 while read line
 do
-[ ! -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep $match | grep -v $mismatch )"
-[ -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep $match )"
+[ ! -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v "$mismatch" )"
+[ -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" )"
 [ -z "$match" ] && line3="line3"
 line4="line4"
 if [ ! -z "$line3" ] ; then
-line2="$(echo "$line" | grep -Eo '"btn-success","'[0-9]+' ms"' | grep -Eo [0-9]+ )"
+line2="$(echo "$line" | grep -E -o \"btn-success.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
 [ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
-line2="$(echo "$line" | grep -Eo '"btn-warning","'[0-9]+' ms"' | grep -Eo [0-9]+ )"
+line2="$(echo "$line" | grep -E -o \"btn-warning.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
 [ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
-line2="$(echo "$line" | grep -Eo '"btn-danger",">1000 ms"' | grep -Eo [0-9]+ )"
+line2="$(echo "$line" | grep -E -o \"btn-danger.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
 [ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
 [ ! -z "$line4" ] && line2="0000" && echo -n "$line2" >> /tmp/link_matching/1.txt
 echo -n "$line" >> /tmp/link_matching/1.txt
