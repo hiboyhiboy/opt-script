@@ -393,7 +393,7 @@ mismatch="$(nvram get app_96)"
 echo -n "" > /tmp/link_matching/1.txt
 while read line
 do
-[ ! -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v "$mismatch" )"
+[ ! -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" )"
 [ -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" )"
 [ -z "$match" ] && line3="line3"
 line4="line4"
