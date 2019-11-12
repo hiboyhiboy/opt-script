@@ -463,6 +463,13 @@ rm -f /tmp/link_matching/link_matching.txt
 i_x_ping=2
 ilox="$(grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l)"
 [ "$ilox" == "0" ] && logger -t "【ping】" "错误！节点列表为空" && return
+app_100="$(nvram get app_100)"
+if [ "$app_100" == "1" ] ; then
+logger -t "【ping】" "默认排序节点"
+else
+logger -t "【ping】" "优选排序节点"
+app_100="0"
+fi
 while read line
 do
 if [ -z "$(echo "$line" | grep "ACL2List = ")" ] && [ -z "$(echo "$line" | grep '\[\]\]')" ] ; then
@@ -536,14 +543,24 @@ if [ ! -z "$ping_time" ] ; then
 	[ "$ping_time" -le 250 ] && ping_list_btn="btn-success"
 	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list_btn="btn-warning"
 	[ "$ping_time" -gt 500 ] && ping_list_btn="btn-danger"
+	if [ "$app_100" == "1" ] ; then
+	ping_time2="0000""$ping_txt_list"
+	ping_time2="$(echo ${ping_time2: 0-4})"
+	else
 	ping_time2="0000""$ping_time"
 	ping_time2="$(echo ${ping_time2: 0-4})"
+	fi
 else
 	ping_list_btn="btn-danger"
 	echo "ping_$ilog%：>1000 ms ❌ $ss_server_x"
 	logger -t "【ping_$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
 	ping_time=">1000"
+	if [ "$app_100" == "1" ] ; then
+	ping_time2="0000""$ping_txt_list"
+	ping_time2="$(echo ${ping_time2: 0-4})"
+	else
 	ping_time2="1000"
+	fi
 	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
 fi
 if [ ! -z "$(echo $ping_list | grep -E -o \"btn-.+\ ms\",)" ] ; then

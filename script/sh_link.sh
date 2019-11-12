@@ -390,7 +390,7 @@ nvram set ss_link_status=$B_restart
 	else
 		if [ "$ss_link_up" != 1 ] ; then
 			cru.sh a ss_link_update "12 */6 * * * $scriptfilepath uplink &" &
-			logger -t "【SS】" "启动 SS 服务器订阅，添加计划任务 (Crontab)，每三小时更新"
+			logger -t "【SS】" "启动 SS 服务器订阅，添加计划任务 (Crontab)，每6小时更新"
 		else
 			cru.sh d ss_link_update
 		fi
