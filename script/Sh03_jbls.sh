@@ -77,7 +77,7 @@ if [ ! -f "$jbls_script" ] || [ ! -s "$jbls_script" ] ; then
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 
-# 感谢bigandy编译和提供： http://www.right.com.cn/forum/forum.php?mod=viewthread&tid=161324&page=672#pid1640158
+# 感谢bigandy编译和提供：
 # jetbrains license server 。
 # 进展： Deamon 开发完成，通过了 IDEA， CLION 的验证测试。
 # 特点：纯C编写，编译后仅16K大小，不给路由存储增加压力，独立http 服务。
