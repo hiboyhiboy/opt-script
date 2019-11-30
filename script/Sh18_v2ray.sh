@@ -1412,8 +1412,8 @@ if [ ! -z "$ping_time" ] ; then
 	[ "$ping_time" -le 250 ] && ping_list_btn="btn-success"
 	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list_btn="btn-warning"
 	[ "$ping_time" -gt 500 ] && ping_list_btn="btn-danger"
-	ping_time2="0000""$ping_time"
-	ping_time2="$(echo ${ping_time2: 0-4})"
+	ping_time2="00000""$ping_time"
+	ping_time2="${ping_time2:0-4}"
 else
 	ping_list_btn="btn-danger"
 	echo "ping_$ilog%：>1000 ms ❌ $ss_server_x"

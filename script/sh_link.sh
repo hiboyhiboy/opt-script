@@ -256,7 +256,7 @@ ssr_line=`echo -n $line | sed -n '1p' | grep 'ssr://'`
 if [ ! -z "$ssr_line" ] ; then
 	echo  "$ssr_line" | awk -F 'ssr://' '{print $2}' >> /tmp/ss/link/ssr_link.txt
 fi
-ss_line=`echo -n $line | sed -n '1p' |grep 'ss://'`
+ss_line=`echo -n $line | sed -n '1p' |grep '^ss://'`
 if [ ! -z "$ss_line" ] ; then
 	echo  "$ss_line" | awk -F 'ss://' '{print $2}' >> /tmp/ss/link/ss_link.txt
 fi

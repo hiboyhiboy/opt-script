@@ -400,11 +400,11 @@ do
 line4="line4"
 if [ ! -z "$line3" ] ; then
 line2="$(echo "$line" | grep -E -o \"btn-success.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
-[ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
+[ ! -z "$line2" ] && line2="00000""$line2" && echo -n "${line2:0-4}" >> /tmp/link_matching/1.txt && line4=""
 line2="$(echo "$line" | grep -E -o \"btn-warning.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
-[ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
+[ ! -z "$line2" ] && line2="00000""$line2" && echo -n "${line2:0-4}" >> /tmp/link_matching/1.txt && line4=""
 line2="$(echo "$line" | grep -E -o \"btn-danger.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
-[ ! -z "$line2" ] && line2="0000""$line2" && echo -n "$(echo ${line2: 0-4})" >> /tmp/link_matching/1.txt && line4=""
+[ ! -z "$line2" ] && line2="00000""$line2" && echo -n "${line2:0-4}" >> /tmp/link_matching/1.txt && line4=""
 [ ! -z "$line4" ] && line2="0000" && echo -n "$line2" >> /tmp/link_matching/1.txt
 echo -n "$line" >> /tmp/link_matching/1.txt
 echo "" >> /tmp/link_matching/1.txt
@@ -545,11 +545,11 @@ if [ ! -z "$ping_time" ] ; then
 	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list_btn="btn-warning"
 	[ "$ping_time" -gt 500 ] && ping_list_btn="btn-danger"
 	if [ "$app_100" == "1" ] ; then
-	ping_time2="0000""$ping_txt_list"
-	ping_time2="$(echo ${ping_time2: 0-4})"
+	ping_time2="00000""$ping_txt_list"
+	ping_time2="${ping_time2:0-4}"
 	else
-	ping_time2="0000""$ping_time"
-	ping_time2="$(echo ${ping_time2: 0-4})"
+	ping_time2="00000""$ping_time"
+	ping_time2="${ping_time2:0-4}"
 	fi
 else
 	ping_list_btn="btn-danger"
@@ -557,8 +557,8 @@ else
 	logger -t "【ping_$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
 	ping_time=">1000"
 	if [ "$app_100" == "1" ] ; then
-	ping_time2="0000""$ping_txt_list"
-	ping_time2="$(echo ${ping_time2: 0-4})"
+	ping_time2="00000""$ping_txt_list"
+	ping_time2="${ping_time2:0-4}"
 	else
 	ping_time2="1000"
 	fi

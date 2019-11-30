@@ -12,7 +12,7 @@ tmall_renum=`nvram get tmall_renum`
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="tmall"
 cmd_log=""
-if [ "$cmd_log_enable" = "1" ] || [ "$ddnsto_renum" -gt "0" ] ; then
+if [ "$cmd_log_enable" = "1" ] || [ "$tmall_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
 
