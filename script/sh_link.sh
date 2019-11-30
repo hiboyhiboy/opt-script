@@ -356,6 +356,21 @@ rt_ssnum_x=$(nvram get rt_ssnum_x)
 nvram set rt_ssnum_x=$rt_ssnum_x
 
 rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
+if [ "$rt_ssnum_x_tmp" = "clean" ] ; then
+	shlinksh=$$
+	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
+	rm -f /www/link/link.js
+	echo "var ACL2List = [[], " > /www/link/link.js
+	echo '["🔗显示测试，请重新更新订阅", "192.168.123.1", "8888", "passwd", "aes-128-gcm", "btn-success", "11 ms", " -O origin -o plain ", "ss"],' >> /www/link/link.js
+	echo '[]]' >> /www/link/link.js
+	nvram set rt_ssnum_x_tmp=0
+	nvram commit
+	logger -t "【SS】" "完成重置订阅文件，请重新更新订阅"
+	rm -f /tmp/link_matching/link_matching.txt
+	exit
+fi
+
+rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
 if [ "$rt_ssnum_x_tmp" = "del" ] ; then
 	shlinksh=$$
 	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
@@ -368,7 +383,6 @@ if [ "$rt_ssnum_x_tmp" = "del" ] ; then
 	rm -f /tmp/link_matching/link_matching.txt
 	exit
 fi
-
 
 ssr_link="`nvram get ssr_link`"
 ss_link_up=`nvram get ss_link_up`
@@ -411,8 +425,8 @@ fi
 ssr_link="$(echo "$ssr_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 ssr_link_i=""
 if [ -f /www/link/link.js ]  ; then
-[ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
-[ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] && echo "var ACL2List = [[], " > /www/link/link.js && echo '[]]' >> /www/link/link.js
+[ ! -s /www/link/link.js ] &&  { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; echo '[]]' >> /www/link/link.js ; }
+[ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] && { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; echo '[]]' >> /www/link/link.js ; }
 sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
 rm -f /tmp/link_matching/link_matching.txt
 fi
@@ -451,10 +465,12 @@ nvram commit
 fi
 # 初始化 /etc/storage/link/link.js
 if [ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] ; then
+	rm -f /www/link/link.js
 	echo "var ACL2List = [[], " > /www/link/link.js
 	echo '[]]' >> /www/link/link.js
 fi
 if [ -f /www/link/link.js ] && [ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] ; then
+	rm -f /www/link/link.js
 	echo "var ACL2List = [[], " > /www/link/link.js
 	echo '[]]' >> /www/link/link.js
 fi
@@ -472,7 +488,7 @@ rt_ss_usage_x_0="$(nvram get rt_ss_usage_x_0)"
 ss_type_x_0="$(nvram get ss_type_x_0)"
 
 
-[ ! -s /www/link/link.js ] && echo "var ACL2List = [[], " > /www/link/link.js
+[ ! -s /www/link/link.js ] && { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; }
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
 echo '["'"$rt_ss_name_x_0"'", "'"$rt_ss_server_x_0"'", "'"$rt_ss_port_x_0"'", "'"$rt_ss_password_x_0"'", "'"$rt_ss_method_x_0"'", "", "", "'"$rt_ss_usage_x_0"'", "'"$ss_type_x_0"'"], ' >> /www/link/link.js
 echo '[]]' >> /www/link/link.js
@@ -487,7 +503,13 @@ do
 del_x="$1"
 del_x="$(echo "$del_x" | tr -d '_' | tr -d ' ')"
 [ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -gt 0 ] || del_x="0" ; }
-[ "$del_x" -gt 1 ] && sed -i "$del_x""c dellink_ss" /www/link/link.js
+if [ "$del_x" -gt 1 ] ; then
+	if [ -z "$(sed -n "$del_x"p /www/link/link.js | grep "\[\"🔗")" ] ; then
+		sed -i "$del_x""c dellink_ss" /www/link/link.js
+	else
+		sed -i "$del_x"'{N;s/🔗//}' /www/link/link.js
+	fi
+fi
 shift
 done
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
@@ -521,6 +543,11 @@ start_nvram)
 	;;
 check)
 	check_link
+	;;
+clear_link)
+	clear_link
+	nvram set rt_ssnum_x_tmp=clean
+	start_link
 	;;
 *)
 	check_link

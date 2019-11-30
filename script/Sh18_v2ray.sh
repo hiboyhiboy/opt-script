@@ -1472,8 +1472,10 @@ nvram set app_83=""
 fi
 if [ "$vmess_x_tmp" = "del_link" ] ; then
 	# 清空上次订阅节点配置
+	rm -f /www/link/vmess.js
 	echo "var ACL3List = [ " > /www/link/vmess.js
 	echo ']' >> /www/link/vmess.js
+	rm -f /www/link/ss.js
 	echo "var ACL4List = [ " > /www/link/ss.js
 	echo ']' >> /www/link/ss.js
 	vmess_x_tmp=""

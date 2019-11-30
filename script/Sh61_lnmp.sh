@@ -287,6 +287,7 @@ lnmp_Available
 
 [ -f /opt/bin/onmp ] && sed -e 's/^#exit_tmp/exit #exit_tmp/g' -i /opt/bin/onmp # 外部控制启动
 ldconfig > /dev/null 2>&1
+ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache > /dev/null 2>&1
 if [ "$default_enable" = "5" ] ; then
 	logger -t "【LNMP】" "重置 所有网站+mysql 数据.初始化lnmp重新再来，需时3分钟左右"
 	mysql_enable_tmp=$mysql_enable ; nvram set mysql_enable=9 ; nvram commit ;

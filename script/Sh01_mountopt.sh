@@ -210,6 +210,7 @@ then
 	ln -sf /etc/localtime /opt/etc/localtime
 fi	
 ldconfig > /dev/null 2>&1
+ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache > /dev/null 2>&1
 #使用文件创建swap分区
 #bs  blocksize ，每个块大小为1k.count=204800。则总大小为200M的文件
 #dd if=/dev/zero of=/opt/.swap bs=1k count=204800

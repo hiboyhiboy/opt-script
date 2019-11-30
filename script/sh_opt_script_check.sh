@@ -23,6 +23,7 @@ if [ ! -z "$dnsmasq_tmp" ] ; then
 		logger -t "script_check" "重置【dnsmasq配置】等待人类排查错误！"
 		rm -rf /etc/storage/dnsmasq/*
 		mtd_storage.sh fill
+		rm -f /tmp/dnsmasq_missing0.txt /tmp/dnsmasq_missing1.txt
 		echo -n "" > /tmp/dnsmasq_missing0.txt
 		echo -n "" > /tmp/dnsmasq_missing1.txt
 		restart_dhcpd
@@ -30,6 +31,7 @@ if [ ! -z "$dnsmasq_tmp" ] ; then
 		sed  "s/dnsmasq is missing,/【dnsmasq is missing】,/" -Ei /tmp/syslog.log
 	else
 		if [ ! -z "`grep "0000000000" /tmp/dnsmasq_missing0.txt `" ] ; then
+			rm -f /tmp/dnsmasq_missing0.txt /tmp/dnsmasq_missing1.txt
 			echo -n "" > /tmp/dnsmasq_missing0.txt
 			echo -n "" > /tmp/dnsmasq_missing1.txt
 			sed  "s/dnsmasq is missing,/【dnsmasq is missing】,/" -Ei /tmp/syslog.log
@@ -52,6 +54,7 @@ if [ ! -z "$EMI_tmp" ] ; then
 	fi
 fi
 
+rm -f /tmp/ps
 ps -w > /tmp/ps
 [ ! -f /tmp/webui_yes ] &&   exit 0
 

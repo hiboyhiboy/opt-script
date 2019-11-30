@@ -9,6 +9,13 @@ if [ "$tmall_enable" != "0" ] ; then
 
 tmall_renum=`nvram get tmall_renum`
 
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="tmall"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$ddnsto_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
+
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep t_mall)" ]  && [ ! -s /tmp/script/_app13 ]; then

@@ -317,6 +317,7 @@ serverchan_clean () {
 # 清空以往接入设备名称
 touch /etc/storage/hostname.txt
 logger -t "【微信推送】" "清空以往接入设备名称：/etc/storage/hostname.txt"
+rm -f /etc/storage/hostname.txt
 echo "接入设备名称" > /etc/storage/hostname.txt
 }
 

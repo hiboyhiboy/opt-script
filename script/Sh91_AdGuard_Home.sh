@@ -74,7 +74,7 @@ fi
 }
 
 AdGuardHome_check () {
-
+sync;echo 3 > /proc/sys/vm/drop_caches;
 AdGuardHome_get_status
 if [ "$AdGuardHome_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "停止 AdGuardHome" && AdGuardHome_close
