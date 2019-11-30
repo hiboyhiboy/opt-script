@@ -30,6 +30,8 @@ size_tmpfs=`nvram get size_tmpfs`
 [ -z $size_tmpfs ] && size_tmpfs="0"
 [ "$size_tmpfs" = "0" ] && mount -o remount,size=50% tmpfs /tmp
 # 备份reboot的lib
+ldconfig > /dev/null 2>&1
+ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache > /dev/null 2>&1
 eval $(ldd /sbin/reboot |cut -d'>' -f2 | cut -d' ' -f2 | awk '{print "cp "$1" /tmp/padavan/ ;";}')
 wget --no-check-certificate  -O /tmp/padavan/$Firmware https://opt.cn2qq.com/padavan/$Firmware
 eval $(md5sum /tmp/padavan/$Firmware | awk '{print "MD5_down="$1;}')
