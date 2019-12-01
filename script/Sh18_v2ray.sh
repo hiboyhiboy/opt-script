@@ -1399,7 +1399,7 @@ ss_name_x=$(echo $ping_list | cut -d',' -f "$js_2_ping" | sed -e "s@"'"'"\|"'\['
 if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
 ping_text=""
 else
-ping_text=`ping -4 $ss_server_x -c 1 -w 1 -q`
+ping_text=`ping -4 $ss_server_x -w 3 -W 3 -q`
 fi
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
