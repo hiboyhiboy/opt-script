@@ -46,6 +46,16 @@ if [ "$1" = "x" ] ; then
 	syncthing_renum=`expr $syncthing_renum + 1`
 	nvram set syncthing_renum="$syncthing_renum"
 	if [ "$syncthing_renum" -gt "2" ] ; then
+		syncthing_upanPath=`nvram get syncthing_upanPath`
+		if [ ! -z "$syncthing_upanPath" ] ; then 
+			logger -t "【syncthing】" "多次尝试启动失败，恢复备份【$syncthing_upanPath/syncthing/syncthing_backup.tgz】后自动尝试重新启动"
+			rm -rf $syncthing_upanPath/syncthing/Downloads $syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing.old
+			mkdir -p "$upanPath/syncthing/Downloads"
+			cd $syncthing_upanPath
+			tar -xzvf ./syncthing/syncthing_backup.tgz -C ./
+		fi
+	fi
+	if [ "$syncthing_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【syncthing】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -105,7 +115,15 @@ cat >> "/tmp/script/_opt_script_check" <<-OSC
 OSC
 return
 fi
-
+sleep 600
+syncthing_upanPath=`nvram get syncthing_upanPath`
+if [ ! -z "$syncthing_upanPath" ] ; then 
+	cd $syncthing_upanPath
+	rm -rf $syncthing_upanPath/syncthing/Downloads $syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing.old
+	logger -t "【syncthing】" "备份 $syncthing_upanPath/syncthing 文件夹到【$syncthing_upanPath/syncthing/syncthing_backup.tgz】"
+	tar -cz  -f ./syncthing/syncthing_backup.tgz ./syncthing
+	mkdir -p "$upanPath/syncthing/Downloads"
+fi
 while true; do
 	if [ -z "`pidof syncthing`" ] || [ ! -s "$syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing" ] ; then
 		logger -t "【syncthing】" "重新启动"
@@ -213,7 +231,7 @@ if [ "$port" = 0 ] ; then
 	iptables -t filter -I INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT
 fi
 if [ "$syncthing_wan" = "1" ] ; then
-	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22000 | cut -d " " -f 1 | sort -nr | wc -l)
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$syncthing_wan_port | cut -d " " -f 1 | sort -nr | wc -l)
 	if [ "$port" = 0 ] ; then
 		logger -t "【syncthing】" "WebGUI 允许 $syncthing_wan_port tcp端口通过防火墙"
 		iptables -t filter -I INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT
