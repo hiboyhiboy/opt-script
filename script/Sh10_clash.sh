@@ -53,6 +53,7 @@ if [ "$clash_enable" != "0" ] ; then
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 #nvramshow=`nvram showall | grep '=' | grep clash | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
+mismatch="$(nvram get app_101)"
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_port=`nvram get app_6`
@@ -113,7 +114,7 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui"
+B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch"
 B_restart="$B_restart""$(cat /etc/storage/app_20.sh /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -326,8 +327,9 @@ logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与
 cat /tmp/clash/dns.yml >> $config_yml
 #yq m -x -i $config_yml /tmp/clash/dns.yml
 #rm_temp
-logger -t "【clash】" "初始化 clash 配置完成！"
+merge_dns_ip
 fi
+logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
 
 cd "$(dirname "$SVC_PATH")"
 su_cmd="eval"
@@ -362,30 +364,6 @@ flush_r
 # 透明代理
 logger -t "【clash】" "启动 透明代理"
 logger -t "【clash】" "备注：默认配置的透明代理会导致广告过滤失效，需要手动改造配置前置代理过滤软件"
-if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
-logger -t "【clash】" "已经启动 chinadns 防止域名污染"
-else
-logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
-pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
-pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
-#if [ -s /sbin/dnsproxy ] ; then
-	#/sbin/dnsproxy -d
-#else
-	#dnsproxy -d
-#fi
-#防火墙转发规则加载
-sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
-no-resolv
-server=127.0.0.1#8053
-server=::1#8053
-dns-forward-max=1000
-min-cache-ttl=1800
-EOF
-fi
-
-restart_dhcpd
-
 logger -t "【clash】" "载入 透明代理 转发规则设置"
 #载入iptables模块
 for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
@@ -408,10 +386,8 @@ gen_prerouting_rules nat tcp $wifidognx
 # iptables -t nat -I OUTPUT -p tcp -j SS_SPEC_CLASH_LAN_DG
 # iptables -t nat -D OUTPUT -p tcp -j SS_SPEC_CLASH_LAN_DG
 
-
-
-iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 7892
-iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 7892
+#iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 7892
+#iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 7892
 
 # 同时将代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理
 NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
@@ -435,6 +411,29 @@ fi
 	logger -t "【clash】" "完成 透明代理 转发规则设置"
 	gen_include &
 
+if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
+logger -t "【clash】" "已经启动 chinadns 防止域名污染"
+else
+logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
+pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
+pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
+#if [ -s /sbin/dnsproxy ] ; then
+	#/sbin/dnsproxy -d
+#else
+	#dnsproxy -d
+#fi
+#防火墙转发规则加载
+sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
+no-resolv
+server=127.0.0.1#8053
+server=::1#8053
+dns-forward-max=1000
+min-cache-ttl=1800
+EOF
+fi
+
+restart_dhcpd
 # 透明代理
 fi
 
@@ -744,14 +743,40 @@ fi
 fi
 }
 
+merge_dns_ip () {
+mkdir -p /tmp/clash
+dns_ip="/tmp/clash/dns_ip.txt"
+cat > "$dns_ip" <<-\EEE
+Rule:
+- IP-CIDR,8.8.8.8/32,Proxy
+- IP-CIDR,8.8.4.4/32,Proxy
+- IP-CIDR,208.67.222.222/32,Proxy
+- IP-CIDR,208.67.220.220/32,Proxy
+EEE
+chmod 755 "$dns_ip"
+Proxy_txt="$(yq r $config_yml Rule | grep DOMAIN | grep google | awk -F ',' '{print $3}')"
+[ -z "$Proxy_txt" ] && Proxy_txt="$(yq r $config_yml Rule | grep DOMAIN | grep Google | awk -F ',' '{print $3}')"
+rm_temp
+if [ ! -z "$Proxy_txt" ] ; then
+logger -t "【clash】" "把 DNS 地址加入规则！Proxy：8.8.8.8,8.8.4.4,208.67.222.222,208.67.220.220"
+sed -e "s/,Proxy/,$Proxy_txt/g" -i "$dns_ip"
+yq m -a -i $dns_ip $config_yml
+rm_temp
+cp -f $dns_ip $config_yml
+rm -f $dns_ip
+fi
+
+}
+
 config_nslookup_server () {
+[ -z "$mismatch" ] && return
 mkdir -p /tmp/clash
 grep '^  server: ' $1 > /tmp/clash/server.txt
 ilox=$(cat /tmp/clash/server.txt | wc -l)
 do_i=0
 while read Proxy_server1
 do
-Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server://g' | sed -e 's/ //g')"
+Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server://g' | sed -e 's/ //g' | grep -E "$mismatch")"
 if [ -z $(echo "$Proxy_server2" | grep -E -o '([0-9]+\.){3}[0-9]+') ] && [ ! -z "$Proxy_server2" ] ; then 
 ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
