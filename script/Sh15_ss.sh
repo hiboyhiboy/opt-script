@@ -1379,8 +1379,8 @@ ss_working_port=`nvram get ss_working_port`
 	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
 	sed -e '/.*members.3322.org/d' -i /tmp/ss_spec_wan.txt
 	echo "WAN!members.3322.org" >> /tmp/ss_spec_wan.txt
-	sed -e '/.*ip.6655.com/d' -i /tmp/ss_spec_wan.txt
-	echo "WAN!ip.6655.com" >> /tmp/ss_spec_wan.txt
+	sed -e '/.*pv.sohu.com/d' -i /tmp/ss_spec_wan.txt
+	echo "WAN!pv.sohu.com" >> /tmp/ss_spec_wan.txt
 	sed -e '/.*ip.3322.net/d' -i /tmp/ss_spec_wan.txt
 	echo "WAN!ip.3322.net" >> /tmp/ss_spec_wan.txt
 	sed -e '/.*www.cloudxns.net/d' -i /tmp/ss_spec_wan.txt
