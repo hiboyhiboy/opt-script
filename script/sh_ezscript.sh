@@ -388,10 +388,12 @@ fi
 mkdir -p /tmp/link_matching
 if [ ! -f /tmp/link_matching/link_matching.txt ] || [ ! -s /tmp/link_matching/link_matching.txt ] ; then
 match="$(nvram get app_95)"
+[ "$match" == "*" ] && match="."
 mismatch="$(nvram get app_96)"
 [ ! -z "$match" ] && grep -E "$match" /www/link/link.js > /tmp/link_matching/0.txt
 [ -z "$match" ] && cat /www/link/link.js > /tmp/link_matching/0.txt
 echo -n "" > /tmp/link_matching/1.txt
+sed -Ei "/^var ACL2List|^\[\]\]/d" /tmp/link_matching/0.txt
 while read line
 do
 [ ! -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" )"

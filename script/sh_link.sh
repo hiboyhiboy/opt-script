@@ -11,19 +11,19 @@ echo -n "$1" \
  | sed -e 's@\n@_@g' \
  | sed -e 's@,@，@g' \
  | sed -e 's@+@➕@g' \
- | sed -e 's@=@↔️@g' \
+ | sed -e 's@=@＝@g' \
  | sed -e 's@|@丨@g' \
- | sed -e "s@%@💯@g" \
- | sed -e "s@\^@🔄@g" \
- | sed -e 's@/@↗️@g' \
- | sed -e 's@\\@↘️@g' \
+ | sed -e "s@%@％@g" \
+ | sed -e "s@\^@∧@g" \
+ | sed -e 's@/@／@g' \
+ | sed -e 's@\\@＼@g' \
  | sed -e "s@<@《@g" \
  | sed -e "s@>@》@g" \
- | sed -e 's@;@🔚@g' \
+ | sed -e 's@;@；@g' \
  | sed -e 's@`@▪️@g' \
  | sed -e 's@:@：@g' \
  | sed -e 's@!@❗️@g' \
- | sed -e 's@*@✳️@g' \
+ | sed -e 's@*@﹡@g' \
  | sed -e 's@?@❓@g' \
  | sed -e 's@\$@💲@g' \
  | sed -e 's@(@（@g' \
@@ -32,7 +32,7 @@ echo -n "$1" \
  | sed -e 's@}@』@g' \
  | sed -e 's@\[@【@g' \
  | sed -e 's@\]@】@g' \
- | sed -e 's@&@🖇@g' \
+ | sed -e 's@&@﹠@g' \
  | sed -e "s@'@▫️@g" \
  | sed -e 's@"@”@g'
  
