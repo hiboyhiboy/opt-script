@@ -216,9 +216,10 @@ killall chinadns && killall -9 chinadns 2>/dev/null
 logger -t "【chinadns_ng】" "运行 $SVC_PATH"
 cmd_name="chinadns_ng"
 eval "/opt/bin/chinadns_ng $usage $cmd_log" &
+sleep 2
 [ ! -f /opt/app/chinadns_ng/chnroute.ipset ] && update_chnroute || { ipset -F chnroute; ipset -R -exist </opt/app/chinadns_ng/chnroute.ipset; }
 [ ! -f /opt/app/chinadns_ng/chnroute6.ipset ] && update_chnroute6 || { ipset -F chnroute6; ipset -R -exist </opt/app/chinadns_ng/chnroute6.ipset; }
-sleep 2
+
 [ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && [ ! -z "$(ps -w | grep "/opt/bin/dns2tcp" | grep -v grep )" ] && logger -t "【chinadns_ng】" "启动成功 $chinadns_ng_v " && chinadns_ng_restart o
 [ -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/chinadns_ng 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
 [ -z "$(ps -w | grep "/opt/bin/dns2tcp" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/dns2tcp 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
@@ -303,7 +304,7 @@ fi
 update_app () {
 update_init
 if [ "$1" = "del" ] ; then
-	rm -rf /opt/bin/chinadns_ng /opt/opt_backup/bin/chinadns_ng /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp /opt/app/chinadns_ng/gfwlist.txt /opt/app/chinadns_ng/chnroute6.ipset /opt/app/chinadns_ng/chnroute.ipset
+	rm -rf /opt/bin/dns2tcp /opt/opt_backup/bin/dns2tcp /opt/bin/chinadns_ng /opt/opt_backup/bin/chinadns_ng /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp /opt/app/chinadns_ng/gfwlist.txt /opt/app/chinadns_ng/chnroute6.ipset /opt/app/chinadns_ng/chnroute.ipset
 fi
 # 加载程序配置页面
 mkdir -p /opt/app/chinadns_ng
