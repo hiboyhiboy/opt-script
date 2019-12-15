@@ -171,13 +171,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $kcptun_path，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【kcptun】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/client_linux_mipsle "$hiboyfile/client_linux_mipsle" "$hiboyfile2/client_linux_mipsle"
-	chmod 755 "/opt/bin/client_linux_mipsle"
-else
-	logger -t "【kcptun】" "找到 $SVC_PATH"
-fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/client_linux_mipsle" "$hiboyfile2/client_linux_mipsle"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【kcptun】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && kcptun_restart x

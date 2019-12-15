@@ -579,19 +579,13 @@ mkdir -p /tmp/cpu4
 v2ray_cpu4_pb="/tmp/cpu4/ss-redir_v2ray.pb"
 v2ray_cpu4_json="/tmp/cpu4/ss-redir_v2ray.json"
 v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
-if [ ! -s "$v2ctl_path" ] ; then
-	wgetcurl.sh $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
-	chmod 755 "$v2ctl_path"
-fi
+wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
 if [[ "$($v2ctl_path -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	[ -f "$v2ctl_path" ] && rm -f "$v2ctl_path"
 	logger -t "【SS】" "找不到 $v2ctl_path ，多线程启动失败"
 	return
 fi
-if [ ! -s "$v2ray_path" ] ; then
-	wgetcurl.sh "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
-	chmod 755 "$v2ray_path"
-fi
+wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
 if [[ "$($v2ray_path -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	[ -f "$v2ray_path" ] && rm -f "$v2ray_path"
 	logger -t "【SS】" "找不到 $v2ray_path ，多线程启动失败"
@@ -1963,6 +1957,10 @@ else
 fi
 	# 临时添加的域名
 	echo "whatsapp.net" >> /tmp/ss/gfwall_domain.txt
+	printf "twimg.edgesuite.net\n" >> /tmp/ss/gfwall_domain.txt
+	printf "blogspot.ae\nblogspot.al\nblogspot.am\nblogspot.ba\nblogspot.be\nblogspot.bg\nblogspot.bj\nblogspot.ca\nblogspot.cat\nblogspot.cf\nblogspot.ch\nblogspot.cl\nblogspot.co.at\nblogspot.co.id\nblogspot.co.il\nblogspot.co.ke\nblogspot.com\nblogspot.com.ar\nblogspot.com.au\nblogspot.com.br\nblogspot.com.by\nblogspot.com.co\nblogspot.com.cy\nblogspot.com.ee\nblogspot.com.eg\nblogspot.com.es\nblogspot.com.mt\nblogspot.com.ng\nblogspot.com.tr\nblogspot.com.uy\nblogspot.co.nz\nblogspot.co.uk\nblogspot.co.za\nblogspot.cv\nblogspot.cz\nblogspot.de\nblogspot.dk\nblogspot.fi\nblogspot.fr\nblogspot.gr\nblogspot.hk\nblogspot.hr\nblogspot.hu\nblogspot.ie\nblogspot.in\nblogspot.is\nblogspot.it\nblogspot.jp\nblogspot.kr\nblogspot.li\nblogspot.lt\nblogspot.lu\nblogspot.md\nblogspot.mk\nblogspot.mr\nblogspot.mx\nblogspot.my\nblogspot.nl\nblogspot.no\nblogspot.pe\nblogspot.pt\nblogspot.qa\nblogspot.re\nblogspot.ro\nblogspot.rs\nblogspot.ru\nblogspot.se\nblogspot.sg\nblogspot.si\nblogspot.sk\nblogspot.sn\nblogspot.td\nblogspot.tw\nblogspot.ug\nblogspot.vn\n" >> /tmp/ss/gfwall_domain.txt
+	printf "dns.google\ngoogle.ac\ngoogle.ad\ngoogle.ae\ngoogle.al\ngoogle.am\ngoogle.as\ngoogle.at\ngoogle.az\ngoogle.ba\ngoogle.be\ngoogle.bf\ngoogle.bg\ngoogle.bi\ngoogle.bj\ngoogle.bs\ngoogle.bt\ngoogle.by\ngoogle.ca\ngoogle.cat\ngoogle.cc\ngoogle.cd\ngoogle.cf\ngoogle.cg\ngoogle.ch\ngoogle.ci\ngoogle.cl\ngoogle.cm\ngoogle.cn\ngoogle.co.ao\ngoogle.co.bw\ngoogle.co.ck\ngoogle.co.cr\ngoogle.co.id\ngoogle.co.il\ngoogle.co.in\ngoogle.co.jp\ngoogle.co.ke\ngoogle.co.kr\ngoogle.co.ls\ngoogle.com\ngoogle.co.ma\ngoogle.com.af\ngoogle.com.ag\ngoogle.com.ai\ngoogle.com.ar\ngoogle.com.au\ngoogle.com.bd\ngoogle.com.bh\ngoogle.com.bn\ngoogle.com.bo\ngoogle.com.br\ngoogle.com.bz\ngoogle.com.co\ngoogle.com.cu\ngoogle.com.cy\ngoogle.com.do\ngoogle.com.ec\ngoogle.com.eg\ngoogle.com.et\ngoogle.com.fj\ngoogle.com.gh\ngoogle.com.gi\ngoogle.com.gt\ngoogle.com.hk\ngoogle.com.jm\ngoogle.com.kh\ngoogle.com.kw\ngoogle.com.lb\ngoogle.com.lc\ngoogle.com.ly\ngoogle.com.mm\ngoogle.com.mt\ngoogle.com.mx\ngoogle.com.my\ngoogle.com.na\ngoogle.com.nf\ngoogle.com.ng\ngoogle.com.ni\ngoogle.com.np\ngoogle.com.om\ngoogle.com.pa\ngoogle.com.pe\ngoogle.com.pg\ngoogle.com.ph\ngoogle.com.pk\ngoogle.com.pr\ngoogle.com.py\ngoogle.com.qa\ngoogle.com.sa\ngoogle.com.sb\ngoogle.com.sg\ngoogle.com.sl\ngoogle.com.sv\ngoogle.com.tj\ngoogle.com.tr\ngoogle.com.tw\ngoogle.com.ua\ngoogle.com.uy\ngoogle.com.vc\ngoogle.com.vn\ngoogle.co.mz\ngoogle.co.nz\ngoogle.co.th\ngoogle.co.tz\ngoogle.co.ug\ngoogle.co.uk\ngoogle.co.uz\ngoogle.co.ve\ngoogle.co.vi\ngoogle.co.za\ngoogle.co.zm\ngoogle.co.zw\ngoogle.cv\ngoogle.cz\ngoogle.de\ngoogle.dj\ngoogle.dk\ngoogle.dm\ngoogle.dz\ngoogle.ee\ngoogle.es\ngoogle.fi\ngoogle.fm\ngoogle.fr\ngoogle.ga\ngoogle.ge\ngoogle.gf\ngoogle.gg\ngoogle.gl\ngoogle.gm\ngoogle.gp\ngoogle.gr\ngoogle.gy\ngoogle.hn\ngoogle.hr\ngoogle.ht\ngoogle.hu\ngoogle.ie\ngoogle.im\ngoogle.io\ngoogle.iq\ngoogle.is\ngoogle.it\ngoogle.je\ngoogle.jo\ngoogle.kg\ngoogle.ki\ngoogle.kz\ngoogle.la\ngoogle.li\ngoogle.lk\ngoogle.lt\ngoogle.lu\ngoogle.lv\ngoogle.md\ngoogle.me\ngoogle.mg\ngoogle.mk\ngoogle.ml\ngoogle.mn\ngoogle.ms\ngoogle.mu\ngoogle.mv\ngoogle.mw\ngoogle.ne\ngoogle.net\ngoogle.nl\ngoogle.no\ngoogle.nr\ngoogle.nu\ngoogle.org\ngoogle.pl\ngoogle.pn\ngoogle.ps\ngoogle.pt\ngoogle.ro\ngoogle.rs\ngoogle.ru\ngoogle.rw\ngoogle.sc\ngoogle.se\ngoogle.sh\ngoogle.si\ngoogle.sk\ngoogle.sm\ngoogle.sn\ngoogle.so\ngoogle.sr\ngoogle.st\ngoogle.td\ngoogle.tg\ngoogle.tk\ngoogle.tl\ngoogle.tm\ngoogle.tn\ngoogle.to\ngoogle.tt\ngoogle.vg\ngoogle.vu\ngoogle.ws\n" >> /tmp/ss/gfwall_domain.txt
+
 	
 	grep -v '^#' /etc/storage/shadowsocks_ss_spec_wan.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ss_spec_wan.txt
 	#删除忽略的域名
@@ -2289,9 +2287,7 @@ chmod 777 "/usr/sbin/ss-local"
 	hash ss-local 2>/dev/null || optssredir="2"
 fi
 if [ "$optssredir" = "1" ] ; then
-	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
-	chmod 777 "/opt/bin/ss-redir"
+	[ ! -s /opt/bin/ss-redir ] && wgetcurl_file "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
 	hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
@@ -2300,17 +2296,13 @@ chmod 777 "/usr/sbin/ss-local"
 	hash ss-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	logger -t "【SS】" "找不到 ss-local. opt 下载程序"
-	[ ! -s /opt/bin/ss-local ] && wgetcurl.sh "/opt/bin/ss-local" "$hiboyfile/$libsodium_so/ss-local" "$hiboyfile2/$libsodium_so/ss-local"
-	chmod 777 "/opt/bin/ss-local"
+	[ ! -s /opt/bin/ss-local ] && wgetcurl_file "/opt/bin/ss-local" "$hiboyfile/$libsodium_so/ss-local" "$hiboyfile2/$libsodium_so/ss-local"
 	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; ss_restart x ; }
 fi
 if [ ! -z "$ss_plugin_name" ] ; then
 	hash $ss_plugin_name 2>/dev/null || optssredir="4"
 	if [ "$optssredir" = "4" ] ; then
-		logger -t "【SS】" "找不到 ss_plugin_name : $ss_plugin_name , opt 下载程序"
-		[ ! -s /opt/bin/$ss_plugin_name ] && wgetcurl.sh "/opt/bin/$ss_plugin_name" "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
-		chmod 777 "/opt/bin/$ss_plugin_name"
+		[ ! -s /opt/bin/$ss_plugin_name ] && wgetcurl_file "/opt/bin/$ss_plugin_name" "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
 	fi
 fi
 if [ ! -z "$ss_plugin_name" ] ; then
@@ -2322,9 +2314,7 @@ fi
 if [ ! -z "$ss2_plugin_name" ] ; then
 	hash $ss2_plugin_name 2>/dev/null || optssredir="4"
 	if [ "$optssredir" = "4" ] ; then
-		logger -t "【SS】" "找不到 ss2_plugin_name : $ss2_plugin_name , opt 下载程序"
-		[ ! -s /opt/bin/$ss2_plugin_name ] && wgetcurl.sh "/opt/bin/$ss2_plugin_name" "$hiboyfile/$ss2_plugin_name" "$hiboyfile2/$ss2_plugin_name"
-		chmod 777 "/opt/bin/$ss2_plugin_name"
+		[ ! -s /opt/bin/$ss2_plugin_name ] && wgetcurl_file "/opt/bin/$ss2_plugin_name" "$hiboyfile/$ss2_plugin_name" "$hiboyfile2/$ss2_plugin_name"
 	fi
 fi
 if [ ! -z "$ss2_plugin_name" ] ; then
@@ -2349,8 +2339,7 @@ chmod 777 "/opt/bin/ssrr-local"
 	hash ssrr-local 2>/dev/null || optssredir="2"
 fi
 if [ "$optssredir" = "1" ] ; then
-	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl.sh "/opt/bin/ssrr-redir" "$hiboyfile/$libsodium_so/ssrr-redir" "$hiboyfile2/$libsodium_so/ssrr-redir"
-	chmod 777 "/opt/bin/ssrr-redir"
+	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl_file "/opt/bin/ssrr-redir" "$hiboyfile/$libsodium_so/ssrr-redir" "$hiboyfile2/$libsodium_so/ssrr-redir"
 	hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
@@ -2359,8 +2348,7 @@ chmod 777 "/opt/bin/ssrr-local"
 	hash ssrr-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	[ ! -s /opt/bin/ssrr-local ] && wgetcurl.sh "/opt/bin/ssrr-local" "$hiboyfile/$libsodium_so/ssrr-local" "$hiboyfile2/$libsodium_so/ssrr-local"
-	chmod 777 "/opt/bin/ssrr-local"
+	[ ! -s /opt/bin/ssrr-local ] && wgetcurl_file "/opt/bin/ssrr-local" "$hiboyfile/$libsodium_so/ssrr-local" "$hiboyfile2/$libsodium_so/ssrr-local"
 	hash ssrr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-local, 请检查系统"; ss_restart x ; }
 fi
 # SSRR
@@ -2376,8 +2364,8 @@ chmod 777 "/usr/sbin/ssr-local"
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
 if [ "$optssredir" = "1" ] ; then
-	[ ! -s /opt/bin/ssr-redir ] && wgetcurl.sh "/opt/bin/ssr-redir" "$hiboyfile/$libsodium_so/ssr-redir" "$hiboyfile2/$libsodium_so/ssr-redir"
-	chmod 777 "/opt/bin/ssr-redir"
+	[ ! -s /opt/bin/ssr-redir ] && wgetcurl_file "/opt/bin/ssr-redir" "$hiboyfile/$libsodium_so/ssr-redir" "$hiboyfile2/$libsodium_so/ssr-redir"
+
 	hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
 fi
 if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
@@ -2386,8 +2374,7 @@ chmod 777 "/usr/sbin/ssr-local"
 	hash ssr-local 2>/dev/null || optssredir="3"
 fi
 if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	[ ! -s /opt/bin/ssr-local ] && wgetcurl.sh "/opt/bin/ssr-local" "$hiboyfile/$libsodium_so/ssr-local" "$hiboyfile2/$libsodium_so/ssr-local"
-	chmod 777 "/opt/bin/ssr-local"
+	[ ! -s /opt/bin/ssr-local ] && wgetcurl_file "/opt/bin/ssr-local" "$hiboyfile/$libsodium_so/ssr-local" "$hiboyfile2/$libsodium_so/ssr-local"
 	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; ss_restart x ; }
 fi
 # SSR
@@ -2402,8 +2389,7 @@ if [ "$dnsproxy_x" = "0" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 	if [ ! -s /opt/bin/dnsproxy ] ; then
-		wgetcurl.sh "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
-		chmod 777 "/opt/bin/dnsproxy"
+		wgetcurl_file "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
 	fi
 	hash dnsproxy 2>/dev/null || { logger -t "【SS】" "找不到 dnsproxy, 请检查系统"; ss_restart x ; }
 fi
@@ -2415,8 +2401,7 @@ if [ "$dnsproxy_x" = "0" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 	if [ ! -s /opt/bin/pdnsd ] ; then
-		wgetcurl.sh "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
-		chmod 777 "/opt/bin/pdnsd"
+		wgetcurl_file "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
 	fi
 	hash pdnsd 2>/dev/null || { logger -t "【SS】" "找不到 pdnsd, 请检查系统"; ss_restart x ; }
 fi

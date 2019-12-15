@@ -2,6 +2,7 @@
 #copyright by hiboy
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
+init_ver=2
 #set -x
 #hiboyfile="https://bitbucket.org/hiboyhiboy/opt-file/raw/master"
 #hiboyscript="https://bitbucket.org/hiboyhiboy/opt-script/raw/master"
@@ -30,6 +31,20 @@ fi
 if [ "$2" == "exit0" ] ; then
 	exit 0
 fi
+}
+
+wgetcurl_file () {
+output="$1"
+url1="$2"
+url2="$3"
+check_n="$4"
+check_lines="$5"
+if [ ! -s "$output" ] ; then
+	logger -t "【file】" "找不到 $output ，重新下载数据，请稍后"
+	wgetcurl.sh $output $url1 $url2 $check_n $check_lines
+	logger -t "【file】" "下载完成 $output"
+fi
+[ -f "$output" ] && chmod 777 "$output"
 }
 
 wgetcurl_checkmd5 () {

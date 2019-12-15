@@ -170,13 +170,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【MentoHUST】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/mentohust "$hiboyfile/mentohust" "$hiboyfile2/mentohust"
-	chmod 755 "/opt/bin/mentohust"
-else
-	logger -t "【MentoHUST】" "找到 $SVC_PATH"
-fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/mentohust" "$hiboyfile2/mentohust"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【MentoHUST】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【MentoHUST】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && mentohust_restart x

@@ -129,12 +129,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【goflyway】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【goflyway】" "找不到 $SVC_PATH ，安装 goflyway 程序"
-	logger -t "【goflyway】" "开始下载 goflyway"
-	wgetcurl.sh "/opt/bin/goflyway" "$hiboyfile/goflyway" "$hiboyfile2/goflyway"
-fi
-chmod 777 "$SVC_PATH"
+wgetcurl_file "$SVC_PATH" "$hiboyfile/goflyway" "$hiboyfile2/goflyway"
 if [ -s "$SVC_PATH" ] ; then
 if [ ! -s "$capem_s_path" ] && [ -s "$capem_path" ] ; then
 cp -f "$keypem_path" "$keypem_s_path"
@@ -148,19 +143,13 @@ if [ ! -s "$capem_path" ] && [[ "$(goflyway -h 2>&1 | grep gen-ca | wc -l)" -gt 
 	cd /opt/bin/
 	./goflyway -gen-ca
 fi
-if [ ! -s "$capem_path" ] ; then
-	logger -t "【goflyway】" "找不到 $capem_path 下载文件"
-	wgetcurl.sh "$capem_path" "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem"
-fi
+wgetcurl_file "$capem_path" "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem"
 if [ -s "$capem_path" ] ; then
 	chmod 755 "$capem_path" "$keypem_path"
 fi
 chinalist_path="/opt/bin/chinalist.txt"
-if [ ! -s "$chinalist_path" ] ; then
-	logger -t "【goflyway】" "找不到 $chinalist_path 下载文件"
-	wgetcurl.sh "$chinalist_path" "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
-	chmod 755 "$chinalist_path"
-fi
+wgetcurl_file "$chinalist_path" "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
+
 fi
 [[ "$(goflyway -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/goflyway
 if [ ! -s "$SVC_PATH" ] ; then
@@ -222,8 +211,21 @@ VVR
 
 initconfig
 
-update_app () {
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
 
+update_app () {
+update_init
 mkdir -p /opt/app/goflyway
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/goflyway/Advanced_Extensions_goflyway.asp

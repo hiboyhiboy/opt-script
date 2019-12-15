@@ -4,11 +4,19 @@ source /etc/storage/script/init.sh
 
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_ng_enable="`nvram get app_102`"
+[ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 #if [ "$chinadns_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep chinadns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
-chinadns_enable=`nvram get app_1`
-[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+
+if [ "$chinadns_ng_enable" == "1" ] ; then
+[ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 ChinaDNS-NG 后才能关闭 ChinaDNS"
+Sh19_chinadns_ng.sh $ACTION
+chinadns_status=""
+exit
+fi
+
 chinadns_d=`nvram get app_2`
 [ -z $chinadns_d ] && chinadns_d=0 && nvram set app_2=0
 chinadns_m=`nvram get app_3`
@@ -188,13 +196,9 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt optwget
 fi
 if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【chinadns】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/chinadns "$hiboyfile/chinadns2" "$hiboyfile2/chinadns2"
-	chmod 755 "/opt/bin/chinadns"
+	wgetcurl_file /opt/bin/chinadns "$hiboyfile/chinadns2" "$hiboyfile2/chinadns2"
 	if [[ "$(chinadns -h | wc -l)" -lt 2 ]] ; then
-		rm -rf /opt/bin/chinadns
-		wgetcurl.sh /opt/bin/chinadns "$hiboyfile/chinadns" "$hiboyfile2/chinadns"
-		chmod 755 "/opt/bin/chinadns"
+		wgetcurl_file /opt/bin/chinadns "$hiboyfile/chinadns" "$hiboyfile2/chinadns"
 	fi
 else
 	logger -t "【chinadns】" "找到 $SVC_PATH"
@@ -261,7 +265,21 @@ fi
 
 }
 
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
+
 update_app () {
+update_init
 if [ "$1" = "del" ] ; then
 	rm -rf $chinadns_path /opt/opt_backup/bin/chinadns /opt/app/chinadns/Advanced_Extensions_chinadns.asp /opt/app/chinadns/chinadns_iplist.txt
 fi

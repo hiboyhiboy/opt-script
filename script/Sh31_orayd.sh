@@ -173,15 +173,8 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
-if [ ! -s "$SVC_PATH" ] || [ ! -s "$SVC_PATH2" ] ; then
-	[ ! -s "$SVC_PATH" ] && logger -t "【花生壳内网版】" "找不到 $SVC_PATH 下载程序"
-	[ ! -s "$SVC_PATH2" ] && logger -t "【花生壳内网版】" "找不到 $SVC_PATH2 下载程序"
-	wgetcurl.sh /opt/bin/oraysl "$hiboyfile/phddns2/bin/oraysl" "$hiboyfile2/phddns2/bin/oraysl"
-	wgetcurl.sh /opt/bin/oraynewph "$hiboyfile/phddns2/bin/oraynewph" "$hiboyfile2/phddns2/bin/oraynewph"
-	chmod 755 /opt/bin/oraysl /opt/bin/oraynewph
-else
-	logger -t "【花生壳内网版】" "找到 $SVC_PATH"
-fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/phddns2/bin/oraysl" "$hiboyfile2/phddns2/bin/oraysl"
+wgetcurl_file "$SVC_PATH2" "$hiboyfile/phddns2/bin/oraynewph" "$hiboyfile2/phddns2/bin/oraynewph"
 if [ ! -s "$SVC_PATH" ] || [ ! -s "$SVC_PATH2" ] ; then
 	[ ! -s "$SVC_PATH" ] && logger -t "【花生壳内网版】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	[ ! -s "$SVC_PATH2" ] && logger -t "【花生壳内网版】" "找不到 $SVC_PATH2 ，需要手动安装 $SVC_PATH2"

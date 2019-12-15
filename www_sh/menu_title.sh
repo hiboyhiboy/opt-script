@@ -7,7 +7,7 @@ menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端 
 menu_title2="SS配置      SS节点  Kcptun  SS_Server SSR_Server COW    MEOW     SoftEtherVPN"
 menu_title3="花生壳内网版 Ngrok  frp      DNSPod   huaweidns  Aliddns cloudflare qcloud nps ddnsto"
 menu_title4="Adbyby     ADM    koolproxy  guestkit transocks    translate   tgbot tmall  cryfs   AdGuardHome"
-menu_title5="搭建Web环境 v2ray  chinadns 假装在中国 upd2pro 家庭云提速 filemanager verysync clash"
+menu_title5="搭建Web环境 v2ray  chinadns chinadns_ng 假装在中国 upd2pro 家庭云提速 filemanager verysync clash"
 ################################
 menu_title_all="$menu_title1 $menu_title2 $menu_title3 $menu_title4 $menu_title5"
 source /etc/storage/script/init.sh

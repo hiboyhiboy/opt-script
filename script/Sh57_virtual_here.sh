@@ -128,13 +128,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【virtualhere】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【virtualhere】" "找不到 $SVC_PATH ，安装 virtualhere 程序"
-	logger -t "【virtualhere】" "开始下载 virtualhere"
-	wgetcurl.sh "/opt/bin/virtualhere" "$hiboyfile/virtualhere" "$hiboyfile2/virtualhere"
-fi
-chmod 777 "$SVC_PATH"
-
+wgetcurl_file "$SVC_PATH" "$hiboyfile/virtualhere" "$hiboyfile2/virtualhere"
 [[ "$(virtualhere -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/virtualhere
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【virtualhere】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
@@ -196,8 +190,21 @@ if [ "$virtualhere_wan" = "1" ] ; then
 fi
 }
 
-update_app () {
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
 
+update_app () {
+update_init
 mkdir -p /opt/app/virtualhere
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp

@@ -148,13 +148,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ngrok】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/ngrokc "$hiboyfile/ngrokc" "$hiboyfile2/ngrokc"
-	chmod 755 "/opt/bin/ngrokc"
-else
-	logger -t "【ngrok】" "找到 $SVC_PATH"
-fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/ngrokc" "$hiboyfile2/ngrokc"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ngrok】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【ngrok】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ngrok_restart x

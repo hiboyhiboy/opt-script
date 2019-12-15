@@ -195,9 +195,8 @@ if [ ! -z "$action_nps" ] ; then
 		initopt
 	fi
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "npc" ] ; then
-		logger -t "【nps】" "找不到 $SVC_PATH 下载程序"
 		nps_ver_wget="https://github.com/cnlh/nps/releases/download/$nps_version/linux_mipsle_client.tar.gz"
-		wgetcurl.sh /opt/bin/nps/linux_mipsle_client.tar.gz "$nps_ver_wget"
+		wgetcurl_file /opt/bin/nps/linux_mipsle_client.tar.gz "$nps_ver_wget"
 		rm -rf /opt/bin/nps/tmp
 		mkdir -p /opt/bin/nps/tmp
 		tar -xz -C /opt/bin/nps/tmp -f /opt/bin/nps/linux_mipsle_client.tar.gz
@@ -207,9 +206,8 @@ if [ ! -z "$action_nps" ] ; then
 	fi
 	[ "$action_nps" = "nps" ] && [ ! -d /opt/bin/nps/conf ] && rm -rf $SVC_PATH /opt/bin/nps/conf
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "nps" ] ; then
-		logger -t "【nps】" "找不到 $SVC_PATH 下载程序"
 		nps_ver_wget="https://github.com/cnlh/nps/releases/download/$nps_version/linux_mipsle_server.tar.gz"
-		wgetcurl.sh /opt/bin/nps/linux_mipsle_server.tar.gz "$nps_ver_wget"
+		wgetcurl_file /opt/bin/nps/linux_mipsle_server.tar.gz "$nps_ver_wget"
 		rm -f /opt/bin/nps/conf/nps.conf
 		tar -xz -C /opt/bin -f /opt/bin/nps/linux_mipsle_server.tar.gz
 		rm -f /opt/bin/nps/conf/nps.conf /opt/bin/nps/linux_mipsle_server.tar.gz
@@ -347,8 +345,21 @@ fi
 
 initconfig
 
-update_app () {
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
 
+update_app () {
+update_init
 mkdir -p /opt/app/nps
 if [ "$1" = "del" ] ; then
 	nps_version=""

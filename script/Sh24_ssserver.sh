@@ -147,13 +147,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【SS_server】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/ss-server "$hiboyfile/$libsodium_so/ss-server" "$hiboyfile2/$libsodium_so/ss-server"
-	chmod 755 "/opt/bin/ss-server"
-else
-	logger -t "【SS_server】" "找到 $SVC_PATH"
-fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/$libsodium_so/ss-server" "$hiboyfile2/$libsodium_so/ss-server"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【SS_server】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
@@ -164,13 +158,7 @@ if [ ! -z "echo $ssserver_usage | grep obfs-server" ] ; then
 		/tmp/script/_mountopt start
 		initopt
 	fi
-	if [ ! -s "/opt/bin/obfs-server" ] ; then
-		logger -t "【SS_server】" "找不到 /opt/bin/obfs-server 下载程序"
-		wgetcurl.sh /opt/bin/obfs-server "$hiboyfile/obfs-server" "$hiboyfile2/obfs-server"
-		chmod 755 "/opt/bin/obfs-server"
-	else
-		logger -t "【SS_server】" "找到 /opt/bin/obfs-server"
-	fi
+	wgetcurl_file /opt/bin/obfs-server "$hiboyfile/obfs-server" "$hiboyfile2/obfs-server"
 fi
 if [ ! -z "echo $ssserver_usage | grep gq-server" ] ; then
 	if [ ! -s "/opt/bin/gq-server" ] ; then
@@ -178,13 +166,7 @@ if [ ! -z "echo $ssserver_usage | grep gq-server" ] ; then
 		/tmp/script/_mountopt start
 		initopt
 	fi
-	if [ ! -s "/opt/bin/gq-server" ] ; then
-		logger -t "【SS_server】" "找不到 /opt/bin/gq-server 下载程序"
-		wgetcurl.sh /opt/bin/gq-server "$hiboyfile/gq-server" "$hiboyfile2/gq-server"
-		chmod 755 "/opt/bin/gq-server"
-	else
-		logger -t "【SS_server】" "找到 /opt/bin/gq-server"
-	fi
+	wgetcurl_file /opt/bin/gq-server "$hiboyfile/gq-server" "$hiboyfile2/gq-server"
 fi
 logger -t "【SS_server】" "启动 ss-server 服务"
 if [ "$ssserver_udp" == "1" ] ; then

@@ -354,9 +354,7 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	/tmp/script/_mountopt start
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【jq_check】" "找不到 jq，下载 jq程序"
-	wgetcurl.sh /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
-	chmod 755 "/opt/bin/jq"
+	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	rm -f /opt/bin/jq

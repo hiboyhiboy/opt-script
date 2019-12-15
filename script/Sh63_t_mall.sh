@@ -129,12 +129,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	initopt
 fi
 mkdir -p "/opt/tmall"
-if [ ! -s "$SVC_PATH" ] && [ -d "/opt/tmall" ] ; then
-	logger -t "【天猫精灵】" "找不到 $SVC_PATH ，安装 caddy_tmall 程序"
-	logger -t "【天猫精灵】" "开始下载 caddy_tmall"
-	wgetcurl.sh "/opt/tmall/caddy_tmall" "$hiboyfile/caddy" "$hiboyfile2/caddy"
-fi
-chmod 777 "$SVC_PATH"
+wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy" "$hiboyfile2/caddy"
 [ -z "$($SVC_PATH -plugins 2>&1 | grep http.cgi)" ] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【天猫精灵】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
@@ -271,8 +266,21 @@ fi
 
 initconfig
 
-update_app () {
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
 
+update_app () {
+update_init
 mkdir -p /opt/app/tmall
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/tmall/Advanced_Extensions_tmall.asp

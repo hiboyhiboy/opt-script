@@ -166,9 +166,7 @@ fi
 optssredir="0"
 hash ss-redir 2>/dev/null || optssredir="1"
 if [ "$optssredir" = "1" ] ; then
-	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
-	chmod 777 "/opt/bin/ss-redir"
+	[ ! -s /opt/bin/ss-redir ] && wgetcurl_file "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
 	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
 	[ ! -s `which ss-redir` ] && { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; fakeincn_restart x ; }
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; fakeincn_restart x ; }
@@ -557,7 +555,7 @@ if [ ! -f "/etc/storage/app_12.sh" ] || [ ! -s "/etc/storage/app_12.sh" ] ; then
 123.126.99.57
 123.59.122.104
 123.59.122.75
-123.59.122.75                
+123.59.122.75
 123.59.122.76
 123.59.122.77
 14.152.77.22
@@ -605,7 +603,21 @@ chmod 777 /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh
 
 initconfig
 
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
+
 update_app () {
+update_init
 if [ "$1" = "del" ] ; then
 	rm -rf /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
 fi

@@ -222,23 +222,11 @@ kill_ps "$scriptname"
 v2ray_wget_v2ctl () {
 
 v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
-if [ ! -s "$v2ctl_path" ] ; then
-	logger -t "【v2ray】" "找不到 $v2ctl_path 下载程序"
-	wgetcurl.sh $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
-	chmod 755 "$v2ctl_path"
-fi
+wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
 geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
-if [ ! -s "$geoip_path" ] ; then
-	logger -t "【v2ray】" "找不到 $geoip_path 下载程序"
-	wgetcurl.sh $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
-	chmod 755 "$geoip_path"
-fi
+wgetcurl_file $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
 geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
-if [ ! -s "$geosite_path" ] ; then
-	logger -t "【v2ray】" "找不到 $geosite_path 下载程序"
-	wgetcurl.sh $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
-	chmod 755 "$geosite_path"
-fi
+wgetcurl_file $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
 if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	mkdir -p /opt/app/ipk/
 	mkdir -p /opt/etc/ssl/certs
@@ -323,9 +311,7 @@ else
 	rm -f /opt/bin/v2ray_config.pb
 fi
 if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【v2ray】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/v2ray "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
-	chmod 755 "/opt/bin/v2ray"
+	wgetcurl_file "$SVC_PATH" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
 else
 	logger -t "【v2ray】" "找到 $SVC_PATH"
 	[ -f /opt/bin/v2ray ] && chmod 755 /opt/bin/v2ray
@@ -787,9 +773,7 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
 	/tmp/script/_mountopt start
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【v2ray】" "找不到 jq，下载 jq程序"
-	wgetcurl.sh /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
-	chmod 755 "/opt/bin/jq"
+	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
 	rm -f /opt/bin/jq
@@ -1536,8 +1520,10 @@ else
 	do_link
 fi
 sed -Ei "s@]]@]@g" /www/link/vmess.js
+sed -Ei '/^\]|^$/d' /www/link/vmess.js
 echo ']' >> /www/link/vmess.js;
 sed -Ei "s@]]@]@g" /www/link/ss.js
+sed -Ei '/^\]|^$/d' /www/link/ss.js
 echo ']' >> /www/link/ss.js;
 logger -t "【vmess】" "服务器订阅：更新完成"
 if [ "$vmess_link_ping" != 1 ] ; then
@@ -1557,19 +1543,19 @@ echo -n "$1" \
  | sed -e 's@\n@_@g' \
  | sed -e 's@,@，@g' \
  | sed -e 's@+@➕@g' \
- | sed -e 's@=@↔️@g' \
+ | sed -e 's@=@＝@g' \
  | sed -e 's@|@丨@g' \
- | sed -e "s@%@💯@g" \
- | sed -e "s@\^@🔄@g" \
- | sed -e 's@/@↗️@g' \
- | sed -e 's@\\@↘️@g' \
+ | sed -e "s@%@％@g" \
+ | sed -e "s@\^@∧@g" \
+ | sed -e 's@/@／@g' \
+ | sed -e 's@\\@＼@g' \
  | sed -e "s@<@《@g" \
  | sed -e "s@>@》@g" \
- | sed -e 's@;@🔚@g' \
+ | sed -e 's@;@；@g' \
  | sed -e 's@`@▪️@g' \
  | sed -e 's@:@：@g' \
  | sed -e 's@!@❗️@g' \
- | sed -e 's@*@✳️@g' \
+ | sed -e 's@*@﹡@g' \
  | sed -e 's@?@❓@g' \
  | sed -e 's@\$@💲@g' \
  | sed -e 's@(@（@g' \
@@ -1578,7 +1564,7 @@ echo -n "$1" \
  | sed -e 's@}@』@g' \
  | sed -e 's@\[@【@g' \
  | sed -e 's@\]@】@g' \
- | sed -e 's@&@🖇@g' \
+ | sed -e 's@&@﹠@g' \
  | sed -e "s@'@▫️@g" \
  | sed -e 's@"@”@g'
  

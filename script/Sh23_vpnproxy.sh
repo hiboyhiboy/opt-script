@@ -130,13 +130,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 nvpproxy，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【vpnproxy】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/nvpproxy "$hiboyfile/nvpproxy" "$hiboyfile2/nvpproxy"
-	chmod 755 "/opt/bin/nvpproxy"
-else
-	logger -t "【vpnproxy】" "找到 $SVC_PATH"
-fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/nvpproxy" "$hiboyfile2/nvpproxy"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【vpnproxy】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && vpnproxy_restart x

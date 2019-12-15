@@ -204,8 +204,7 @@ chmod 777 "/opt/bin/udp2raw"
 [[ "$(udp2raw -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/udp2raw
 hash udp2raw 2>/dev/null || optupd2pro="1"
 if [ "$optupd2pro" = "1" ] ; then
-	logger -t "【SS】" "找不到 udp2raw. opt下载程序"
-	[ ! -s /opt/bin/udp2raw ] && wgetcurl.sh "/opt/bin/udp2raw" "$hiboyfile/udp2raw" "$hiboyfile2/udp2raw"
+	[ ! -s /opt/bin/udp2raw ] && wgetcurl_file "/opt/bin/udp2raw" "$hiboyfile/udp2raw" "$hiboyfile2/udp2raw"
 hash udp2raw 2>/dev/null || { logger -t "【SS】" "找不到 udp2raw, 请检查系统"; upd2pro_restart x ; }
 fi
 fi
@@ -215,8 +214,7 @@ chmod 777 "/opt/bin/speeder"
 [[ "$(speeder -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/speeder
 hash speeder 2>/dev/null || optupd2pro="2"
 if [ "$optupd2pro" = "2" ] ; then
-	logger -t "【SS】" "找不到 speeder. opt下载程序"
-	[ ! -s /opt/bin/speeder ] && wgetcurl.sh "/opt/bin/speeder" "$hiboyfile/speeder" "$hiboyfile2/speeder"
+	[ ! -s /opt/bin/speeder ] && wgetcurl_file "/opt/bin/speeder" "$hiboyfile/speeder" "$hiboyfile2/speeder"
 hash speeder 2>/dev/null || { logger -t "【SS】" "找不到 speeder, 请检查系统"; upd2pro_restart x ; }
 fi
 fi
@@ -226,8 +224,7 @@ chmod 777 "/opt/bin/speederv2"
 [[ "$(speederv2 -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/speederv2
 hash speederv2 2>/dev/null || optupd2pro="3"
 if [ "$optupd2pro" = "3" ] ; then
-	logger -t "【SS】" "找不到 speederv2. opt下载程序"
-	[ ! -s /opt/bin/speederv2 ] && wgetcurl.sh "/opt/bin/speederv2" "$hiboyfile/speederv2" "$hiboyfile2/speederv2"
+	[ ! -s /opt/bin/speederv2 ] && wgetcurl_file "/opt/bin/speederv2" "$hiboyfile/speederv2" "$hiboyfile2/speederv2"
 hash speederv2 2>/dev/null || { logger -t "【SS】" "找不到 speederv2, 请检查系统"; upd2pro_restart x ; }
 fi
 fi
@@ -326,7 +323,21 @@ chmod 777 /etc/storage/app_3.sh /etc/storage/app_4.sh /etc/storage/app_6.sh
 
 initconfig
 
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
+
 update_app () {
+update_init
 if [ "$1" = "del1" ] ; then
 	rm -rf /etc/storage/app_3.sh /opt/bin/udp2raw /opt/opt_backup/bin/udp2raw /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
 fi

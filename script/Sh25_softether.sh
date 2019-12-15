@@ -144,17 +144,9 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 fi
 mkdir -p /opt/softether
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【softether】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/softether/vpnserver "$hiboyfile/vpnserver" "$hiboyfile2/vpnserver"
-	chmod 755 "/opt/softether/vpnserver"
-	wgetcurl.sh /opt/softether/vpncmd "$hiboyfile/vpncmd" "$hiboyfile2/vpncmd"
-	chmod 755 "/opt/softether/vpncmd"
-	wgetcurl.sh /opt/softether/hamcore.se2 "$hiboyfile/hamcore.se2" "$hiboyfile2/hamcore.se2"
-	chmod 755 "/opt/softether/hamcore.se2"
-else
-	logger -t "【softether】" "找到 $SVC_PATH"
-fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/vpnserver" "$hiboyfile2/vpnserver"
+wgetcurl_file "$(dirname $SVC_PATH)"/vpncmd "$hiboyfile/vpncmd" "$hiboyfile2/vpncmd"
+wgetcurl_file "$(dirname $SVC_PATH)"/hamcore.se2 "$hiboyfile/hamcore.se2" "$hiboyfile2/hamcore.se2"
 chmod 777 "$SVC_PATH"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then

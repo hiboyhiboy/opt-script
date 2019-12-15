@@ -48,7 +48,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2019-12-10"
+	nvram set scripto="2019-12-15"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -161,7 +161,7 @@ sync;echo 3 > /proc/sys/vm/drop_caches
 all_check () {
 logger -t "【WebUI】" "UI 开关遍历 all_check"
 touch /tmp/webui_yes
-sync;echo 3 > /proc/sys/vm/drop_caches;sleep 3;
+sync;echo 3 > /proc/sys/vm/drop_caches
 /etc/storage/crontabs_script.sh 
 }
 

@@ -196,7 +196,7 @@ if [ "$del_tmp" = "1" ] ; then
 		wgetcurl.sh /etc/storage/script/Sh32_frp.sh "$hiboyscript/script/Sh32_frp.sh" "$hiboyscript2/script/Sh32_frp.sh"
 	fi
 	frp_restart o
-	logger -t "【frp】" "重启" && frp_restart
+	/etc/storage/script/Sh32_frp.sh update_app
 fi
 fi
 for action_frp in $action_for
@@ -209,13 +209,7 @@ do
 		/tmp/script/_mountopt start
 		initopt
 	fi
-	if [ ! -s "$SVC_PATH" ] ; then
-		logger -t "【frp】" "找不到 $SVC_PATH 下载程序"
-		wgetcurl.sh /opt/bin/$action_frp "$hiboyfile/$action_frp$frp_ver_wget" "$hiboyfile2/$action_frp$frp_ver_wget"
-		chmod 755 "/opt/bin/$action_frp"
-	else
-		logger -t "【frp】" "找到 $SVC_PATH"
-	fi
+	wgetcurl_file "$SVC_PATH" "$hiboyfile/$action_frp$frp_ver_wget" "$hiboyfile2/$action_frp$frp_ver_wget"
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【frp】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 		logger -t "【frp】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && frp_restart x
@@ -332,8 +326,21 @@ fi
 
 initconfig
 
-update_app () {
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
 
+update_app () {
+update_init
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/bin/frpc /opt/bin/frps /opt/opt_backup/bin/frpc /opt/opt_backup/bin/frps
 fi
@@ -368,6 +375,10 @@ updatefrp)
 	frp_restart o
 	[ "$frp_enable" = "1" ] && nvram set frp_status="updatefrp" && logger -t "【frp】" "重启" && frp_restart
 	[ "$frp_enable" != "1" ] && nvram set frpc_v="" && nvram set frps_v="" && logger -t "【frp】" "frpc、frps更新" && update_app del
+	;;
+update_app)
+	update_app
+	frp_restart
 	;;
 *)
 	frp_check

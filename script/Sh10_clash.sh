@@ -214,14 +214,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【clash】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/clash "$hiboyfile/clash" "$hiboyfile2/clash"
-	chmod 755 "/opt/bin/clash"
-else
-	logger -t "【clash】" "找到 $SVC_PATH"
-fi
-chmod 777 "$SVC_PATH"
+wgetcurl_file "$SVC_PATH" "$hiboyfile/clash" "$hiboyfile2/clash"
 clash_v=$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $2;}')
 nvram set clash_v="$clash_v"
 [ -z "$clash_v" ] && rm -rf $SVC_PATH
@@ -238,8 +231,7 @@ fi
 fi
 # 下载clash_webs
 if [ ! -d "/opt/app/clash/clash_webs" ] ; then
-	logger -t "【clash】" "找不到 /opt/app/clash/clash_webs 下载 clash_webs"
-	wgetcurl.sh /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs.tgz" "$hiboyfile2/clash_webs.tgz"
+	wgetcurl_file /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs.tgz" "$hiboyfile2/clash_webs.tgz"
 	tar -xzvf /opt/app/clash/clash_webs.tgz -C /opt/app/clash
 	rm -f /opt/app/clash/clash_webs.tgz
 	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
@@ -723,9 +715,7 @@ if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 yq，安装 opt 程序"
 	/tmp/script/_mountopt start
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 yq，下载 yq程序"
-	wgetcurl.sh /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
-	chmod 755 "/opt/bin/yq"
+	wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 yq，安装 opt 程序"
 	rm -f /opt/bin/yq
@@ -857,7 +847,21 @@ fi
 
 initconfig
 
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
+
 update_app () {
+update_init
 mkdir -p /opt/app/clash
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/clash/Advanced_Extensions_clash.asp /opt/bin/clash /opt/app/clash/config/Country.mmdb /opt/app/clash/clash_webs

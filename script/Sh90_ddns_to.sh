@@ -137,11 +137,7 @@ fi
 if [ -f /etc_ro/ddnsto ] && [ ! -s "$SVC_PATH" ] && [ ! -f /tmp/ddnsto_ro ] ; then
 	cp -f /etc_ro/ddnsto /opt/bin/ddnsto
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ddnsto】" "找不到 $SVC_PATH ，安装 ddnsto 程序"
-	logger -t "【ddnsto】" "开始下载 ddnsto"
-	wgetcurl.sh "/opt/bin/ddnsto" "$hiboyfile/ddnsto" "$hiboyfile2/ddnsto"
-fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/ddnsto" "$hiboyfile2/ddnsto"
 
 #[[ "$(ddnsto -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ddnsto
 if [ ! -s "$SVC_PATH" ] ; then
@@ -188,8 +184,21 @@ echo "ddnsto initconfig"
 
 initconfig
 
-update_app () {
+update_init () {
+source /etc/storage/script/init.sh
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+init_s_ver=2
+if [ "$init_s_ver" -gt "$init_ver" ] ; then
+	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
+	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
+	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
+	chmod 755 /etc/storage/script/init.sh
+	source /etc/storage/script/init.sh
+fi
+}
 
+update_app () {
+update_init
 mkdir -p /opt/app/ddnsto
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/ddnsto/Advanced_Extensions_ddnsto.asp
