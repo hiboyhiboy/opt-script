@@ -738,10 +738,10 @@ mkdir -p /tmp/clash
 dns_ip="/tmp/clash/dns_ip.txt"
 cat > "$dns_ip" <<-\EEE
 Rule:
-- IP-CIDR,8.8.8.8/32,Proxy
-- IP-CIDR,8.8.4.4/32,Proxy
-- IP-CIDR,208.67.222.222/32,Proxy
-- IP-CIDR,208.67.220.220/32,Proxy
+- "IP-CIDR,8.8.8.8/32,Proxy"
+- "IP-CIDR,8.8.4.4/32,Proxy"
+- "IP-CIDR,208.67.222.222/32,Proxy"
+- "IP-CIDR,208.67.220.220/32,Proxy"
 EEE
 chmod 755 "$dns_ip"
 Proxy_txt="$(yq r $config_yml Rule | grep DOMAIN | grep telegram | awk -F ',' '{print $3}'| head -n1)"
@@ -750,6 +750,7 @@ rm_temp
 if [ ! -z "$Proxy_txt" ] ; then
 logger -t "【clash】" "把 DNS 地址加入规则！ $Proxy_txt ：8.8.8.8,8.8.4.4,208.67.222.222,208.67.220.220"
 sed -e "s/,Proxy/,$Proxy_txt/g" -i "$dns_ip"
+sed -e "s/"'""'"$/"'"'"/g" -i "$dns_ip"
 yq m -a -i $dns_ip $config_yml
 rm_temp
 cp -f $dns_ip $config_yml

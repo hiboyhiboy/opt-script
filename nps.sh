@@ -1,5 +1,5 @@
 #!/bin/bash
-NEW_VER_version="v0.23.1"
+NEW_VER_version="v0.25.1"
 # This file is accessible as https://install.direct/go.sh
 # Original source is located at github.com/nps/nps-core/release/install-release.sh
 # https://github.com/nps/nps-core/blob/master/release/install-release.sh

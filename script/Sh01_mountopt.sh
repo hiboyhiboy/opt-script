@@ -180,6 +180,7 @@ if [ -f /etc/storage/authorized_keys ] && [ ! -f /opt/home/admin/.ssh/authorized
 	mkdir -p /opt/home/admin/.ssh
 	cp -f /etc/storage/authorized_keys /opt/home/admin/.ssh
 fi
+[ -f /home/admin/.wget-hsts ] && chmod 644 /home/admin/.wget-hsts
 [ -d /home/admin/.ssh ] && chmod 700 /home/admin/.ssh
 [ -f /home/admin/.ssh/authorized_keys ] && chmod 600 /home/admin/.ssh/authorized_keys
 # Fix for multiuser environment
