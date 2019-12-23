@@ -172,7 +172,7 @@ done
 }
 
 chinadns_close () {
-sed -Ei '/【chinadns_ng】|【chinadns】||^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【chinadns_ng】|【chinadns】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
 ipset -F chnroute
 ipset -F chnroute6

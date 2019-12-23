@@ -493,7 +493,7 @@ else
 fi
 # flush buffers
 sync
-
+[ ! -s /tmp/script/_opt_script_check ] && /etc/storage/script/sh_opt_script_check.sh &
 }
 
 opt_Available () {

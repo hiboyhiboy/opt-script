@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 
 if [ ! -s /tmp/script/_emi ] && [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep emi)" ] ; then
 	mkdir -p /tmp/script
-	cp -Hsf $scriptfilepath /tmp/script/_emi
+	cp -f $scriptfilepath /tmp/script/_emi
 	chmod 777 /tmp/script/_emi
 fi
 

@@ -120,13 +120,13 @@ fi
 
 while true; do
 if [ "$npss_enable" = "1" ] ; then
-	if [ -z "`pidof nps`" ] || [ ! -s "`which nps`" ] ; then
+	if [ -z "`pidof nps`" ] || [ ! -s "/opt/bin/nps/nps" ] ; then
 		logger -t "【nps】" "nps重新启动"
 		nps_restart
 	fi
 fi
 if [ "$npsc_enable" = "1" ] ; then
-	if [ -z "`pidof npc`" ] || [ ! -s "`which npc`" ] ; then
+	if [ -z "`pidof npc`" ] || [ ! -s "/opt/bin/nps/npc" ] ; then
 		logger -t "【nps】" "npc重新启动"
 		nps_restart
 	fi
@@ -226,6 +226,8 @@ if [ ! -z "$action_nps" ] ; then
 	else
 		logger -t "【nps】" "找到 $SVC_PATH"
 		chmod 755 $SVC_PATH
+		ln -sf $SVC_PATH /opt/bin/$action_nps
+		chmod 755 /opt/bin/$action_nps
 	fi
 	logger -t "【nps】" "运行 $action_nps"
 	cd /opt/bin/nps
