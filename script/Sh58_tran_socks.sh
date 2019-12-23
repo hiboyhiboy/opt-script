@@ -3,6 +3,17 @@
 source /etc/storage/script/init.sh
 transocks_enable=`nvram get app_27`
 [ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
+ipt2socks_enable=`nvram get app_104`
+[ -z $ipt2socks_enable ] && ipt2socks_enable=0 && nvram set app_104=0
+
+if [ "$ipt2socks_enable" == "1" ] ; then
+#logger -t "【transocks】" "跳过启用，已经启用 ipt2socks"
+[ "$transocks_enable" == "0" ] && logger -t "【transocks】" "注意！！！需要关闭 transocks 后才能关闭 ipt2socks"
+Sh39_ipt2socks.sh $ACTION
+transocks_status=""
+exit
+fi
+
 transocks_mode_x=`nvram get app_28`
 [ -z $transocks_mode_x ] && transocks_mode_x=0 && nvram set app_28=0
 transocks_proxy_mode=`nvram get app_29`
@@ -12,7 +23,7 @@ transocks_proxy_mode=`nvram get app_29`
 nvram set transocks_proxy_mode_x="$transocks_proxy_mode_x"
 transocks_listen_address=`nvram get app_30`
 transocks_listen_port=`nvram get app_31`
-transocks_server=`nvram get app_32`
+transocks_server="$(nvram get app_32)"
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
 v2ray_enable=`nvram get v2ray_enable`
@@ -97,10 +108,10 @@ transocks_check () {
 
 transocks_get_status
 if [ "$transocks_enable" = "1" ] ; then
-	[ $transocks_server ] || logger -t "【transocks】" "远端服务器IP地址:未填写"
+	[ ! -z "$transocks_server" ] || logger -t "【transocks】" "远端服务器IP地址:未填写"
 	[ $transocks_listen_address ] || logger -t "【transocks】" "透明重定向的代理服务器IP地址:未填写"
 	[ $transocks_listen_port ] || logger -t "【transocks】" "透明重定向的代理服务器端口:未填写"
-	[ $transocks_server ] && [ $transocks_listen_address ] && [ $transocks_listen_port ] \
+	[ ! -z "$transocks_server" ] && [ $transocks_listen_address ] && [ $transocks_listen_port ] \
 	|| { logger -t "【transocks】" "错误！！！请正确填写。"; needed_restart=1; transocks_enable=0; }
 fi
 if [ "$transocks_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
@@ -195,12 +206,14 @@ done
 
 transocks_close () {
 /etc/storage/script/Sh15_ss.sh transock_stop
-sed -Ei '/【transocks】|^$/d' /tmp/script/_opt_script_check
-killall transocks
-killall -9 transocks
+sed -Ei '/【transocks】|【ipt2socks】|^$/d' /tmp/script/_opt_script_check
+killall transocks ipt2socks
+killall -9 transocks ipt2socks
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app10"
 kill_ps "_tran_socks.sh"
+kill_ps "/tmp/script/_app20"
+kill_ps "_ipt2socks.sh"
 kill_ps "$scriptname"
 }
 

@@ -632,12 +632,12 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget -T 5 -t 3 --no-check-certificate --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
+		Address="`wget -T 5 -t 3 --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
 	else
-		Address="`curl -k -s http://119.29.29.29/d?dn=$1`"
+		Address="`curl --user-agent 'Mozilla/5.0 Windows NT 10.0; Win64; x64 AppleWebKit/537.36 KHTML, like Gecko Chrome/78.0.3904.108 Safari/537.36' -s http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
@@ -1622,11 +1622,11 @@ rm -f /tmp/vmess/link/0_link.txt
 wgetcurl.sh /tmp/vmess/link/0_link.txt "$vmess_link_i" "$vmess_link_i" N
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	rm -f /tmp/vmess/link/0_link.txt
-	wget -T 5 -t 3 --no-check-certificate --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -O /tmp/vmess/link/0_link.txt "$vmess_link_i"
+	wget -T 5 -t 3 --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -O /tmp/vmess/link/0_link.txt "$vmess_link_i"
 fi
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	rm -f /tmp/vmess/link/0_link.txt
-	curl -L -k --user-agent 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36' -o /tmp/vmess/link/0_link.txt "$vmess_link_i"
+	curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -o /tmp/vmess/link/0_link.txt "$vmess_link_i"
 fi
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	logger -t "【vmess】" "$vmess_link_i"

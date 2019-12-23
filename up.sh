@@ -101,6 +101,7 @@ if [ -s "/tmp/padavan/$Firmware" ] && [ "$MD5_txt"x = "$MD5_down"x ] ; then
         logger_echo " 更新【$Firmware】，[ok]！"
         logger_echo " 稍等【$Firmware】，自动重启！"
         logger_echo " 出现[ok]！为刷入成功，自动重启路由"
+        sleep 2
         export LD_LIBRARY_PATH=/tmp/padavan
         /tmp/padavan/mtd_write -r unlock mtd1
         sleep 10

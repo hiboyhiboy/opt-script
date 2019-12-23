@@ -8,9 +8,16 @@ ad=`nvram get button_script_1_s`
 ss=`nvram get button_script_2_s`
 [ -z "$ss" ] && ss="SS_[1]" && nvram set button_script_2_s="SS_[1]"
 
+ipt2socks_enable=`nvram get app_104`
+[ -z $ipt2socks_enable ] && ipt2socks_enable=0 && nvram set app_104=0
 transocks_enable=`nvram get app_27`
 [ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
+[ "$ipt2socks_enable" != "0" ] && [ "$ss" != "2socks" ] && ss="2socks" && nvram set button_script_2_s="2socks"
+if [ "$ss" != "2socks" ]  ; then
 [ "$transocks_enable" != "0" ] && [ "$ss" != "Tsocks" ] && ss="Tsocks" && nvram set button_script_2_s="Tsocks"
+else
+[ "$ipt2socks_enable" == "0" ] && [ "$transocks_enable" != "0" ] && [ "$ss" != "Tsocks" ] && ss="Tsocks" && nvram set button_script_2_s="Tsocks"
+fi
 
 clash_enable=`nvram get app_88`
 [ -z $clash_enable ] && clash_enable=0 && nvram set clash_enable=0
@@ -36,7 +43,7 @@ if [ "$ss_enable" != "0" ]  ; then
 		[ ${ss_info:=SS_[1]} ] && [ "$ss" != "$ss_info" ] && { ss="$ss_info" ; nvram set button_script_2_s="$ss"; }
 	fi
 	if [ "$ss_mode_x" = 3 ]  ; then
-		[ "$ss" != "SS" ] && { ss="SS" ; nvram set button_script_2_s="$ss"; }
+		[ "$ss" != "SS" ] && [ "$ss" != "V2Ray" ] && [ "$ss" != "clash" ] && [ "$ss" != "Tsocks" ] && [ "$ss" != "2socks" ] && { ss="SS" ; nvram set button_script_2_s="$ss"; }
 	fi
 fi
 
@@ -171,6 +178,32 @@ if [ "$apply" = 1 ] ; then
 fi
 fi
 
+if [ "$ss" = "2socks" ] ; then
+if [ ! -s /tmp/script/_app20 ] ; then
+	logger -t "【按钮②】" "请稍等 ipt2socks 脚本初始化！"
+	return
+fi
+# 按钮②状态0 执行以下命令
+if [ "$apply" = 0 ] ; then
+	#nvram set button_script_2="1"
+	logger -t "【按钮②】" "开启 ipt2socks 进程"
+	nvram set ipt2socks_status=0
+	nvram set app_104=1
+	nvram set app_27=1
+	/tmp/script/_app20 &
+	nvram set button_script_2="1"
+fi
+# 按钮②状态1时执行以下命令
+if [ "$apply" = 1 ] ; then
+	logger -t "【按钮②】" "关闭 ipt2socks 进程"
+	nvram set ipt2socks_status=1
+	nvram set app_104=0
+	nvram set app_27=0
+	/tmp/script/_app20 &
+	nvram set button_script_2="0"
+fi
+fi
+
 if [ "$ss" = "Tsocks" ] ; then
 if [ ! -s /tmp/script/_app10 ] ; then
 	logger -t "【按钮②】" "请稍等 transocks 脚本初始化！"
@@ -242,6 +275,8 @@ elif [ "$ss" = "V2Ray" ] ; then
 	PROCESS=$(pidof v2ray)
 elif [ "$ss" = "Tsocks" ] ; then
 	PROCESS=$(pidof transocks)
+elif [ "$ss" = "2socks" ] ; then
+	PROCESS=$(pidof ipt2socks)
 elif [ "$ss" = "clash" ] ; then
 	PROCESS=$(pidof clash)
 fi

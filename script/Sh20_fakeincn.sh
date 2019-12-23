@@ -284,7 +284,7 @@ while [ "$fakeincn_enable" = "1" ]; do
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		country=`wget -T 5 -t 3 -qO- https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	else
-		country=`curl -L -k -s https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
+		country=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	fi
 	if [ "$country" != "CN" ]; then
 		logger -t "【fakeincn】" "ChinaServer不正确：$country，尝试下一个服务器：$server。"
