@@ -48,7 +48,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2019-12-23"
+	nvram set scripto="2019-12-24"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -144,6 +144,15 @@ done
 
 }
 
+all_re_stop () {
+logger -t "【WebUI】" "UI 开关 stop"
+rm -f /tmp/webui_yes
+cp -f /etc/storage/script/sh_opt_script_check.sh /tmp/script/_opt_script_check
+killall menu_title.sh 
+sync;echo 1 > /proc/sys/vm/drop_caches
+sleep 2
+}
+
 all_stop () {
 logger -t "【WebUI】" "UI 开关遍历 all_stop"
 rm -f /tmp/webui_yes
@@ -173,7 +182,7 @@ all_check)
 	all_check
 	;;
 all_stop)
-	all_stop
+	all_re_stop
 	;;
 all_re)
 	all_stop

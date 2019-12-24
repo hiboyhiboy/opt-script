@@ -53,8 +53,9 @@ url1="$2"
 url2="$3"
 check_n="$4"
 check_lines="$5"
+[ -f "$output" ] && rm -f "$output"
 wgetcurl.sh $output $url1 $url2 $check_n $check_lines
-if [ -s "$output" ] ; then
+if [ -f "$output" ] ; then
 	eval $(md5sum $output | awk '{print "MD5_down="$1;}')
 	mkdir -p /tmp/checkmd5/
 	checkmd5tmp=$$
