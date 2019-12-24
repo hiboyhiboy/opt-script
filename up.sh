@@ -32,7 +32,10 @@ if [ -s /tmp/padavan/ver_osub ] && [ -s /tmp/padavan/ver_nsub ] && [ "$(cat /tmp
 	logger_echo "未有更新！如需再次刷入,请在一分钟内再次运行此命令进行强制更新"
 	echo -n "$(date "+%y%m%d%H%M")" > /tmp/ver_time
 	echo "$(date "+%y%m%d%H%M")"
-	rm -f /tmp/up_Firmware; rm -f /tmp/padavan/* ; exit;
+	rm -f /tmp/up_Firmware; rm -f /tmp/padavan/* ;
+	logger_echo "更新脚本"
+	sh_upscript.sh upscript
+	exit;
 else
 	echo -n `nvram get firmver_sub` > /tmp/padavan/ver_osub
 	logger_echo "新的固件：$(cat /tmp/padavan/ver_nsub | grep -v "^$") ，目前旧固件： $(cat /tmp/padavan/ver_osub | grep -v "^$") "
