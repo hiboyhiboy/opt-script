@@ -446,7 +446,10 @@ if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
 		rm -f /opt/app/ipk/certs.tgz
 	fi
+	chmod 644 /etc/ssl/certs -R
+	chmod 777 /etc/ssl/certs
 	chmod 644 /opt/etc/ssl/certs -R
+	chmod 777 /opt/etc/ssl/certs
 fi
 fi
 # flush buffers

@@ -423,14 +423,22 @@ if [ ! -f /tmp/link_matching/link_matching.txt ] || [ ! -s /tmp/link_matching/li
 match="$(nvram get app_95)"
 [ "$match" == "*" ] && match="."
 mismatch="$(nvram get app_96)"
-[ ! -z "$match" ] && grep -E "$match" /www/link/link.js > /tmp/link_matching/0.txt
-[ -z "$match" ] && cat /www/link/link.js > /tmp/link_matching/0.txt
+#[ ! -z "$match" ] && grep -E "$match" /www/link/link.js > /tmp/link_matching/0.txt
+#[ -z "$match" ] && cat /www/link/link.js > /tmp/link_matching/0.txt
+cat /www/link/link.js > /tmp/link_matching/0.txt
 echo -n "" > /tmp/link_matching/1.txt
 sed -Ei "/^var ACL2List|^\[\]\]/d" /tmp/link_matching/0.txt
 while read line
 do
-[ ! -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" )"
-[ -z "$mismatch" ] && line3="$(echo "$line" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" )"
+if [ ! -z "$(echo -n "$line" | grep "🔐📐")" ] ; then
+	# 解码base64
+	line0="$(echo -n "$line" | awk -F "🔐📐" '{print $2}' | awk -F "📐🔐" '{print $1}')"
+	line0="$(base64decode 🔐📐"$line0"📐🔐)"'",'
+else
+	line0="$line"
+fi
+[ ! -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" )"
+[ -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" )"
 [ -z "$match" ] && line3="line3"
 line4="line4"
 if [ ! -z "$line3" ] ; then
@@ -463,12 +471,15 @@ while read line
 do
 line2="$(echo "$line" | grep -v "已经自动选用节点" )"
 if [ ! -z "$line2" ] ; then
-app_97=$(echo $line| jq --compact-output --raw-output 'getpath([0])')
+app_97="$(echo $line| jq --compact-output --raw-output 'getpath([0])')"
+app_97="$(base64decode "$app_97")"
 ss_server=$(echo $line| jq --compact-output --raw-output 'getpath([1])')
 ss_server_port=$(echo $line| jq --compact-output --raw-output 'getpath([2])')
 ss_key=$(echo $line| jq --compact-output --raw-output 'getpath([3])')
+ss_key="$(base64decode "$ss_key")"
 ss_method=$(echo $line| jq --compact-output --raw-output 'getpath([4])')
-ss_usage=$(echo $line| jq --compact-output --raw-output 'getpath([7])')
+ss_usage="$(echo $line| jq --compact-output --raw-output 'getpath([7])')"
+ss_usage="$(base64decode "$ss_usage")"
 sed -i $i_matching's/^/已经自动选用节点/' /tmp/link_matching/link_matching.txt
 nvram set app_97="$app_97"
 nvram set ss_server="$ss_server"
@@ -554,6 +565,21 @@ fi
 }
 
 
+base64decode () {
+# 解码
+if [ ! -z "$(echo -n "$1" | grep "🔐📐")" ] ; then
+	# 转换base64
+	base64decode_tmp="$(echo -n "$1" | sed -e "s/🔗|🔐📐|📐🔐//g" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d | sed ":a;N;s/\n//g;ta")"
+	if [ ! -z "$(echo -n "$1" | grep "🔗")" ] ; then
+		echo -n "🔗$base64decode_tmp"
+	else
+		echo -n "$base64decode_tmp"
+	fi
+else
+	echo -n "$1"
+fi
+}
+
 x_ping_x () {
 	
 ping_txt_list="$(ls /tmp/allping | head -1)"
@@ -562,7 +588,8 @@ ping_list="$(cat /tmp/allping/$ping_txt_list)"
 rm -f /tmp/allping/$ping_txt_list
 ss_server_x=$(echo $ping_list | cut -d',' -f2 | sed -e "s@"'"'"\| \|"'\['"@@g")
 if [ ! -z "$ss_server_x" ] ; then
-ss_name_x=$(echo $ping_list | cut -d',' -f1 | sed -e "s@"'"'"\|"'\['"@@g")
+ss_name_x="$(echo $ping_list | cut -d',' -f1 | sed -e "s@"'"'"\|"'\['"@@g")"
+ss_name_x="$(base64decode "$ss_name_x")"
 if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
 ping_text=""
 else

@@ -342,6 +342,12 @@ if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
 	fi
 fi
 logger -t "【clash】" "运行 /opt/bin/clash"
+chmod 777 /opt/app/clash/config -R
+chmod 777 /opt/app/clash/config
+chmod 644 /opt/etc/ssl/certs -R
+chmod 777 /opt/etc/ssl/certs
+chmod 644 /etc/ssl/certs -R
+chmod 777 /etc/ssl/certs
 su_cmd2="/opt/bin/clash -d /opt/app/clash/config"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
 sleep 7

@@ -2,9 +2,26 @@
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
+# 🔐📐|📐🔐
+if [ -z "$( grep "🔐📐" /www/link_d.js )" ] ; then
+name_base64=0
+else
+name_base64=1
+fi
+
+base64encode () {
+# 转码
+if [ "$name_base64" == 0 ] ; then
+echo -n "$1"
+else
+# 转换base64
+echo -n "🔐📐$(echo -n "$1" | sed ":a;N;s/\n//g;ta" | base64 | sed -e "s/\//_/g" | sed -e "s/\+/-/g" | sed 's/&==//g' | sed ":a;N;s/\n//g;ta")📐🔐"
+fi
+}
 
 get_emoji () {
 
+if [ "$name_base64" == 0 ] ; then
 echo -n "$1" \
  | sed -e 's@#@♯@g' \
  | sed -e 's@\r@_@g' \
@@ -37,7 +54,9 @@ echo -n "$1" \
  | sed -e 's@"@”@g'
  
 # | sed -e 's@ @_@g'
-
+else
+echo -n "$1"
+fi
 }
 
 add_ss_link () {
@@ -64,7 +83,7 @@ if [ ! -z "$ex_params" ] ; then
 	#存在插件
 	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&]*"  | cut -d '=' -f2)";
 	ex_obfsparam=$(printf $(echo -n $ex_obfsparam | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))
-	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts @')";
+	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts @')"
 	link2="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $1}')"
 else
 	ss_link_plugin_opts=" -O origin -o plain "
@@ -85,10 +104,10 @@ ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
 add_ssr_link () {
 link="$1"
 ex_params="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}')"
-ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
-ex_protoparam="$(echo -n "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
-ex_remarks="$(echo -n "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
-#ex_group="$(echo -n "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )";
+ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
+ex_protoparam="$(echo -n "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
+ex_remarks="$(echo -n "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
+#ex_group="$(echo -n "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
 
 [ ! -z "$ex_remarks" ] && ss_link_name="$(get_emoji "$(echo -n "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )")"
 ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')"
@@ -229,6 +248,8 @@ if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载失败！请检查下载地址"
 	return
 fi
+dos2unix /tmp/ss/link/0_link.txt
+sed -e 's@\r@@g' -i /tmp/ss/link/0_link.txt
 sed -e '/^$/d' -i /tmp/ss/link/0_link.txt
 sed -e 's/$/&==/g' -i /tmp/ss/link/0_link.txt
 sed -e "s/_/\//g" -i /tmp/ss/link/0_link.txt
@@ -243,6 +264,8 @@ fi
 # 开始解码订阅节点配置
 cat /tmp/ss/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/ss/link/1_link.txt
 base64 -d /tmp/ss/link/1_link.txt > /tmp/ss/link/2_link.txt
+dos2unix /tmp/ss/link/2_link.txt
+sed -e 's@\r@@g' -i /tmp/ss/link/2_link.txt
 sed -e  's@vmess://@\nvmess:://@g' -i /tmp/ss/link/2_link.txt
 sed -e  's@ssr://@\nssr://@g' -i /tmp/ss/link/2_link.txt
 sed -e  's@ss://@\nss://@g' -i /tmp/ss/link/2_link.txt
@@ -286,14 +309,15 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			do_i=$(( do_i + 1 ))
 		else
 			link_echo=""
-			link_echo="$link_echo"'["🔗'"$ss_link_name"'", '
+			link_echo="$link_echo"'["🔗'"$(base64encode "$ss_link_name")"'", '
 			link_echo="$link_echo"'"'"$ss_link_server"'", '
 			link_echo="$link_echo"'"'"$ss_link_port"'", '
-			link_echo="$link_echo"'"'"$ss_link_password"'", '
+			link_echo="$link_echo"'"'"$(base64encode "$ss_link_password")"'", '
 			link_echo="$link_echo"'"'"$ss_link_method"'", '
 			link_echo="$link_echo"'"", '
 			link_echo="$link_echo"'"", '
-			link_echo="$link_echo"'"-o '"$ss_link_obfs"' -O '"$ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
+			#link_echo="$link_echo"'"-o '"$ss_link_obfs"' -O '"$ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
+			link_echo="$link_echo"'"'"$(base64encode "-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam")"'", '
 			link_echo="$link_echo"'"ssr"], '
 			echo "$link_echo" >> /www/link/link.js
 			sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
@@ -321,14 +345,14 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 			do_i=$(( do_i + 1 ))
 		else
 			link_echo=""
-			link_echo="$link_echo"'["🔗'"$ss_link_name"'", '
+			link_echo="$link_echo"'["'"🔗$(base64encode "$ss_link_name")"'", '
 			link_echo="$link_echo"'"'"$ss_link_server"'", '
 			link_echo="$link_echo"'"'"$ss_link_port"'", '
-			link_echo="$link_echo"'"'"$ss_link_password"'", '
+			link_echo="$link_echo"'"'"$(base64encode "$ss_link_password")"'", '
 			link_echo="$link_echo"'"'"$ss_link_method"'", '
 			link_echo="$link_echo"'"", '
 			link_echo="$link_echo"'"", '
-			link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
+			link_echo="$link_echo"'"'"$(base64encode "$ss_link_plugin_opts")"'", '
 			link_echo="$link_echo"'"ss"], '
 			echo "$link_echo" >> /www/link/link.js
 			sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
@@ -479,12 +503,12 @@ fi
 addlink_ss () {
 
 
-rt_ss_name_x_0="$(nvram get rt_ss_name_x_0)"
+rt_ss_name_x_0="$(base64encode "$(nvram get rt_ss_name_x_0)")"
 rt_ss_server_x_0="$(nvram get rt_ss_server_x_0)"
 rt_ss_port_x_0="$(nvram get rt_ss_port_x_0)"
-rt_ss_password_x_0="$(nvram get rt_ss_password_x_0)"
+rt_ss_password_x_0="$(base64encode "$(nvram get rt_ss_password_x_0)")"
 rt_ss_method_x_0="$(nvram get rt_ss_method_x_0)"
-rt_ss_usage_x_0="$(nvram get rt_ss_usage_x_0)"
+rt_ss_usage_x_0="$(base64encode "$(nvram get rt_ss_usage_x_0)")"
 ss_type_x_0="$(nvram get ss_type_x_0)"
 
 

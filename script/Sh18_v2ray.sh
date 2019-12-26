@@ -243,7 +243,10 @@ if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
 		rm -f /opt/app/ipk/certs.tgz
 	fi
+	chmod 644 /etc/ssl/certs -R
+	chmod 777 /etc/ssl/certs
 	chmod 644 /opt/etc/ssl/certs -R
+	chmod 777 /opt/etc/ssl/certs
 fi
 }
 
@@ -314,10 +317,11 @@ if [ ! -s "$SVC_PATH" ] ; then
 	wgetcurl_file "$SVC_PATH" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
 else
 	logger -t "【v2ray】" "找到 $SVC_PATH"
-	[ -f /opt/bin/v2ray ] && chmod 755 /opt/bin/v2ray
-	[ -f /opt/bin/v2ctl ] && chmod 755 /opt/bin/v2ctl
-	[ -f /opt/bin/geoip.dat ] && chmod 666 /opt/bin/geoip.dat
-	[ -f /opt/bin/geosite.dat ] && chmod 666 /opt/bin/geosite.dat
+	chmod 777 "$SVC_PATH"
+	[ -f /opt/bin/v2ray ] && chmod 777 /opt/bin/v2ray
+	[ -f /opt/bin/v2ctl ] && chmod 777 /opt/bin/v2ctl
+	[ -f /opt/bin/geoip.dat ] && chmod 777 /opt/bin/geoip.dat
+	[ -f /opt/bin/geosite.dat ] && chmod 777 /opt/bin/geosite.dat
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【v2ray】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
@@ -328,7 +332,11 @@ if [ -s "$SVC_PATH" ] ; then
 fi
 v2ray_path="$SVC_PATH"
 logger -t "【v2ray】" "运行 v2ray_script"
-chmod 755 /etc/storage/v2ray_script.sh
+chmod 777 /etc/storage/v2ray_script.sh
+chmod 644 /opt/etc/ssl/certs -R
+chmod 777 /opt/etc/ssl/certs
+chmod 644 /etc/ssl/certs -R
+chmod 777 /etc/ssl/certs
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
 su_cmd="eval"
@@ -356,6 +364,11 @@ if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
 else
 	cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
 	json_join_gfwlist
+	chmod 777 /tmp/vmess
+	chmod 777 /tmp/vmess/mk_vmess.json
+	chmod 777 /etc/storage/v2ray_config_script.sh
+	chmod 777 /opt/bin
+	chmod 777 /opt/bin/v2ray_config.pb
 	[ ! -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /tmp/vmess/mk_vmess.json -format json"
 	[ -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /opt/bin/v2ray_config.pb -format pb"
 fi
@@ -988,6 +1001,12 @@ echo '{
 }
 '
 }
+
+  # "tlsSettings": {
+    # "allowInsecure": true,
+    # "allowInsecureCiphers": true
+  # },
+
 json_int_vmess_streamSettings () {
 echo '{
   "network": "",
@@ -1077,7 +1096,7 @@ json_int () {
 echo '{
   "log": {
     "error": "/tmp/syslog.log",
-    "loglevel": "warning"
+    "loglevel": "error"
   },
   "inbounds": [
     {
@@ -1365,7 +1384,7 @@ sed -i "s/\"\]$/\"\],/g" /tmp/allping_$1/1.txt
 sed -i "$(cat /tmp/allping_$1/1.txt |wc -l)""s/\"\],$/\"\]/g" /tmp/allping_$1/1.txt
 echo "]" >> /tmp/allping_$1/1.txt
 cp -f /tmp/allping_$1/1.txt /www/link/$js_vmess
-#rm -f /tmp/allping_$1/?.txt /tmp/allping_$1.js
+rm -f /tmp/allping_$1/?.txt /tmp/allping_$1.js
 
 }
 
@@ -1377,9 +1396,11 @@ ping_txt_list="$(ls /tmp/allping_$1 | head -1)"
 if [ ! -z "$ping_txt_list" ] ; then
 ping_list="$(cat /tmp/allping_$1/$ping_txt_list)"
 rm -f /tmp/allping_$1/$ping_txt_list
-ss_server_x=$(echo $ping_list | cut -d',' -f "$js_1_ping" | sed -e "s@"'"'"\| \|"'\['"@@g")
+ss_server_x="$(echo $ping_list | cut -d',' -f "$js_1_ping" | sed -e "s@"'"'"\| \|"'\['"@@g")"
+ss_server_x="$(base64decode "$ss_server_x")"
 if [ ! -z "$ss_server_x" ] ; then
-ss_name_x=$(echo $ping_list | cut -d',' -f "$js_2_ping" | sed -e "s@"'"'"\|"'\['"@@g")
+ss_name_x="$(echo $ping_list | cut -d',' -f "$js_2_ping" | sed -e "s@"'"'"\|"'\['"@@g")"
+ss_name_x="$(base64decode "$ss_name_x")"
 if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
 ping_text=""
 else
@@ -1527,11 +1548,44 @@ sed -Ei '/^\]|^$/d' /www/link/ss.js
 echo ']' >> /www/link/ss.js;
 logger -t "【vmess】" "服务器订阅：更新完成"
 if [ "$vmess_link_ping" != 1 ] ; then
+	nvram set app_83="ping_link"
 	ping_vmess_link
 else
 	echo "🔗$ss_link_name：停止ping订阅节点"
 fi
 return
+fi
+}
+
+# 🔐📐|📐🔐
+if [ -z "$( grep "🔐📐" /www/link_d.js )" ] ; then
+name_base64=0
+else
+name_base64=1
+fi
+
+base64encode () {
+# 转码
+if [ "$name_base64" == 0 ] ; then
+echo -n "$1"
+else
+# 转换base64
+echo -n "🔐📐$(echo -n "$1" | sed ":a;N;s/\n//g;ta" | base64 | sed -e "s/\//_/g" | sed -e "s/\+/-/g" | sed 's/&==//g' | sed ":a;N;s/\n//g;ta")📐🔐"
+fi
+}
+
+base64decode () {
+# 解码
+if [ ! -z "$(echo -n "$1" | grep "🔐📐")" ] ; then
+	# 转换base64
+	base64decode_tmp="$(echo -n "$1" | sed -e "s/🔗|🔐📐|📐🔐//g" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d | sed ":a;N;s/\n//g;ta")"
+	if [ ! -z "$(echo -n "$1" | grep "🔗")" ] ; then
+		echo -n "🔗$base64decode_tmp"
+	else
+		echo -n "$base64decode_tmp"
+	fi
+else
+	echo -n "$1"
 fi
 }
 
@@ -1632,6 +1686,8 @@ if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	logger -t "【vmess】" "$vmess_link_i"
 	logger -t "【vmess】" "错误！！vmess 服务器订阅文件下载失败！请检查下载地址"
 fi
+dos2unix /tmp/vmess/link/0_link.txt
+sed -e 's@\r@@g' -i /tmp/vmess/link/0_link.txt
 sed -e '/^$/d' -i /tmp/vmess/link/0_link.txt
 sed -e 's/$/&==/g' -i /tmp/vmess/link/0_link.txt
 sed -e "s/_/\//g" -i /tmp/vmess/link/0_link.txt
@@ -1646,6 +1702,8 @@ fi
 # 开始解码订阅节点配置
 cat /tmp/vmess/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/vmess/link/1_link.txt
 base64 -d /tmp/vmess/link/1_link.txt > /tmp/vmess/link/2_link.txt
+dos2unix /tmp/vmess/link/2_link.txt
+sed -e 's@\r@@g' -i /tmp/vmess/link/2_link.txt
 sed -e  's@vmess://@\nvmess:://@g' -i /tmp/ss/link/2_link.txt
 sed -e  's@ssr://@\nssr://@g' -i /tmp/ss/link/2_link.txt
 sed -e  's@ss://@\nss://@g' -i /tmp/ss/link/2_link.txt
@@ -1676,7 +1734,8 @@ sed -e "s/\-/\+/g" -i /tmp/vmess/link/vmess_link.txt
 		vmess_link_ps=""
 		vmess_link_add="$(echo -n $line | jq --raw-output '.add')"
 		vmess_link_ps="$(get_emoji "$(echo -n $line | jq --raw-output '.ps')")"
-		line=$(echo $line | jq --raw-output 'setpath(["ps"];"'"$vmess_link_ps"'")')
+		vmess_link_ps_en="$(base64encode "$vmess_link_ps")"
+		line=$(echo $line | jq --raw-output 'setpath(["ps"];"'"$vmess_link_ps_en"'")')
 		# jq 取得数据排序
 		link_json=$(echo -n $line | jq --raw-output  '{"v": .v,"ps": .ps,"add": .add,"port": .port,"id": .id,"aid": .aid,"net": .net,"type": .type,"host": .host,"path": .path,"tls": .tls}')
 		vmess_link_value="$(echo -n "$link_json" | jq  '.[]' | sed -e ":a;N;s/\n/, /g;ta" )"
@@ -1714,15 +1773,18 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
 		link_echo="$link_echo"'["ss", '
-		link_echo="$link_echo"'"'"$ss_link_name"'", '
 		vmess_link_ps="$ss_link_name"
+		ss_link_name="$(base64encode "$ss_link_name")"
+		link_echo="$link_echo"'"'"$ss_link_name"'", '
 		link_echo="$link_echo"'"'"$ss_link_server"'", '
 		vmess_link_add="$ss_link_server"
 		link_echo="$link_echo"'"'"$ss_link_port"'", '
+		ss_link_password="$(base64encode "$ss_link_password")"
 		link_echo="$link_echo"'"'"$ss_link_password"'", '
 		link_echo="$link_echo"'"'"$ss_link_method"'", '
 		link_echo="$link_echo"'"", '
 		link_echo="$link_echo"'"", '
+		ss_link_plugin_opts="$(base64encode "$ss_link_plugin_opts")"
 		link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
 		link_echo="$link_echo"'"0", '
 		link_echo="$link_echo"'"end"]]'
