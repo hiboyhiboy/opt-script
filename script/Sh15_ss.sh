@@ -980,17 +980,17 @@ if [ "$ss_check" = "1" ] ; then
 			if [ "$check" == "404" ] ; then
 				curltest=`which curl`
 				if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-					wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+					wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 					[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 					if [ "$check" == "404" ] ; then
-						wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+						wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 						[ "$?" == "0" ] && check=200 || check=404
 					fi
 					logger -t "【ss-redir】" "wget  检查 $ss_link_1 : $check"
 				else
-					check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+					check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 					[ "$check" != "200" ] && sleep 1
-					[ "$check" != "200" ] && check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+					[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 					logger -t "【ss-redir】" "curl  检查 $ss_link_1 : $check"
 				fi
 				ss_link_1_tmp=$ss_link_1
@@ -1650,12 +1650,12 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget -T 5 -t 3 --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
+		Address="`wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
 	else
-		Address="`curl --user-agent 'Mozilla/5.0 Windows NT 10.0; Win64; x64 AppleWebKit/537.36 KHTML, like Gecko Chrome/78.0.3904.108 Safari/537.36' -s http://119.29.29.29/d?dn=$1`"
+		Address="`curl --user-agent "$user_agent" -s http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
@@ -2093,11 +2093,11 @@ else
 if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
 	# 启动时先用高春辉的这个列表，更新交给守护进程去做。
 	# 完整apnic 列表更新指令，不需要去重，ipset -! 会自动去重。此指令暂时屏蔽，这个列表获取10~90秒不等，有时候甚至卡住不动。
-	# wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' | sed -e "s/^/-A nogfwnet &/g" | ipset -R -!
+	# wget --user-agent "$user_agent" -q -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' | sed -e "s/^/-A nogfwnet &/g" | ipset -R -!
 	logger -t "【SS】" "下载 chnroutes"
 	ip_list="ss_spec_dst_sh"
 		echo ss_spec_dst_sh
-		# wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > /tmp/ss/chnroute.txt
+		# wget --user-agent "$user_agent" -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > /tmp/ss/chnroute.txt
 		# echo ""  >> /tmp/ss/chnroute.txt
 		wgetcurl_checkmd5 /tmp/ss/tmp_chnroute.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt N 5
 		cat /tmp/ss/tmp_chnroute.txt > /tmp/ss/chnroute.txt
@@ -2459,17 +2459,17 @@ echo "Debug: $DNS_Server"
 		check_link="$ss_link_1"
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 			if [ "$check" == "404" ] ; then
-				wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+				wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 				[ "$?" == "0" ] && check=200 || check=404
 			fi
 			logger -t "【ss-redir】" "wget  检查 $ss_link_1 : $check"
 		else
-			check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			[ "$check" != "200" ] && sleep 1
-			[ "$check" != "200" ] && check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			logger -t "【ss-redir】" "curl  检查 $ss_link_1 : $check"
 		fi
 	fi
@@ -2895,16 +2895,16 @@ hash check_network 2>/dev/null || check=404
 if [ "$check" == "404" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 $ss_link_2 -O /dev/null
+		wget --user-agent "$user_agent" -q  -T 5 -t 3 $ss_link_2 -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 		if [ "$check" == "404" ] ; then
-			wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
+			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
-		check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 	fi
 fi
 if [ "$check" == "200" ] ; then
@@ -2930,16 +2930,16 @@ hash check_network 2>/dev/null || check=404
 if [ "$check" == "404" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+		wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 		if [ "$check" == "404" ] ; then
-			wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
-		check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
 fi
 if [ "$check" == "200" ] ; then
@@ -2979,16 +2979,16 @@ hash check_network 2>/dev/null || check=404
 if [ "$check" == "404" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 $ss_link_2 -O /dev/null
+		wget --user-agent "$user_agent" -q  -T 5 -t 3 $ss_link_2 -O /dev/null
 		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 		if [ "$check" == "404" ] ; then
-			wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
+			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
 			[ "$?" == "0" ] && check=200 || check=404
 		fi
 	else
-		check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 	fi
 fi
 if [ "$check" == "200" ] ; then
@@ -3066,16 +3066,16 @@ if [ ! -z "$ss_rdd_server" ] ; then
 	if [ "$check" == "404" ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 $ss_link_2 -O /dev/null
+			wget --user-agent "$user_agent" -q  -T 5 -t 3 $ss_link_2 -O /dev/null
 			[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
 			if [ "$check" == "404" ] ; then
-				wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
+				wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
 				[ "$?" == "0" ] && check=200 || check=404
 			fi
 		else
-			check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+			check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 			[ "$check" != "200" ] && sleep 1
-			[ "$check" != "200" ] && check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+			[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 		fi
 	fi
 	if [ "$check" == "200" ] ; then

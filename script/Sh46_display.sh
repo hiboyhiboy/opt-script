@@ -330,7 +330,7 @@ mkdir -p /opt/lcd4linux/tmp/
 #获取AQI数据和数据绘图。http://www.aqicn.org
 rm -f /opt/lcd4linux/tmp/aqicn
 aqicnorg="http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
-#wget -c -O /opt/lcd4linux/tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'
+#wget -c -O /opt/lcd4linux/tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --user-agent "$user_agent"
 wgetcurl.sh /opt/lcd4linux/tmp/aqicn "$aqicnorg" "$aqicnorg" N
 if [ ! -s /opt/lcd4linux/tmp/aqicn ]; then
 	logger -t "【相框显示】" "获取AQI数据错误！请检查链接："

@@ -269,6 +269,7 @@ server3=xxx3.dynu.com
 ss_router_port=1234   #服务器端口
 ss_passwd=xxxxxxxxx   #密码
 method=chacha20       #加密方式
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'
 
 index=1
 ln -sf `which ss-redir` /opt/app/fakeincn/fakeincn
@@ -284,7 +285,7 @@ while [ "$fakeincn_enable" = "1" ]; do
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		country=`wget -T 5 -t 3 -qO- https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	else
-		country=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
+		country=`curl -L --user-agent "$user_agent" -s https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	fi
 	if [ "$country" != "CN" ]; then
 		logger -t "【fakeincn】" "ChinaServer不正确：$country，尝试下一个服务器：$server。"

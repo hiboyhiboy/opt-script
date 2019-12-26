@@ -269,16 +269,16 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ "$check" == "404" ] ; then
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check=200 || { check=404;  sleep 1; }
 			if [ "$check" == "404" ] ; then
-				wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+				wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
 				[ "$?" == "0" ] && check=200 || check=404
 			fi
 		else
-			check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 			[ "$check" != "200" ] &&  sleep 1
-			[ "$check" != "200" ] && check=`curl -L --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+			[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 		fi
 	fi
 	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
@@ -433,12 +433,12 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	# logger -t "【Adbyby】" "测试下载规则"
 	# curltest=`which curl`
 	# if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		# wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -q  -T 5 -t 3 http://update.adbyby.com/rule3/video.jpg -O /dev/null
+		# wget --user-agent "$user_agent" -q  -T 5 -t 3 http://update.adbyby.com/rule3/video.jpg -O /dev/null
 		# [ "$?" == "0" ] && check=200 || check=404
 	# else
-		# check=`curl --connect-timeout 10 --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
+		# check=`curl --connect-timeout 10 --user-agent "$user_agent" -s -w "%{http_code}" "http://update.adbyby.com/rule3/video.jpg" -o /dev/null`
 		# if [ "$check" != "200" ] ; then
-			# wget --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36's -q  -T 5 -t 3 http://update.adbyby.com/rule3/video.jpg -O /dev/null
+			# wget --user-agent "$user_agent"s -q  -T 5 -t 3 http://update.adbyby.com/rule3/video.jpg -O /dev/null
 			# [ "$?" == "0" ] && check=200 || check=404
 		# fi
 	# fi
@@ -923,12 +923,12 @@ rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget -T 5 -t 3 --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36' --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
+		Address="`wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
 	else
-		Address="`curl --user-agent 'Mozilla/5.0 Windows NT 10.0; Win64; x64 AppleWebKit/537.36 KHTML, like Gecko Chrome/78.0.3904.108 Safari/537.36' -s http://119.29.29.29/d?dn=$1`"
+		Address="`curl --user-agent "$user_agent" -s http://119.29.29.29/d?dn=$1`"
 		if [ $? -eq 0 ]; then
 		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
 		fi
