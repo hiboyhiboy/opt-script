@@ -164,19 +164,22 @@ IPv6=0
 if [ "$huaweidns_domian"x != "x" ] && [ "$huaweidns_host"x != "x" ] ; then
 	DOMAIN="$huaweidns_domian"
 	HOST="$huaweidns_host"
+	Record_ID=""
 	arDdnsCheck $huaweidns_domian $huaweidns_host
 fi
 if [ "$huaweidns_domian2"x != "x" ] && [ "$huaweidns_host2"x != "x" ] ; then
-	sleep 1
+	sleep 5
 	DOMAIN="$huaweidns_domian2"
 	HOST="$huaweidns_host2"
+	Record_ID=""
 	arDdnsCheck $huaweidns_domian2 $huaweidns_host2
 fi
 if [ "$huaweidns_domian6"x != "x" ] && [ "$huaweidns_host6"x != "x" ] ; then
+	sleep 5
 	IPv6=1
-	sleep 1
 	DOMAIN="$huaweidns_domian6"
 	HOST="$huaweidns_host6"
+	Record_ID=""
 	arDdnsCheck $huaweidns_domian6 $huaweidns_host6
 fi
 }
@@ -184,13 +187,13 @@ fi
 token=""
 get_token() {
 
-versions="$(curl -L -k -s -X  GET \
+versions="$(curl -L    -s -X  GET \
 https://dns.myhuaweicloud.com/ \
   -H 'content-type: application/json' \
    | grep -Eo '"id":"[^"]*"' | awk -F 'id":"' '{print $2}' | tr -d '"' |head -n1)"
 [ "$versions" != "v2"] && logger -t "【huaweidns动态域名】" "错误！API的版本不是【v2】，请更新脚本后尝试重新启动" && sleep 10 && huaweidns_restart x
-
-eval 'token_X="$(curl -L -k -s -D - -o /dev/null  -X POST \
+sleep 1
+eval 'token_X="$(curl -L    -s -D - -o /dev/null  -X POST \
   https://iam.myhuaweicloud.com/v3/auth/tokens \
   -H '"'"'content-type: application/json'"'"' \
   -d '"'"'{
@@ -216,18 +219,20 @@ eval 'token_X="$(curl -L -k -s -D - -o /dev/null  -X POST \
   }'"'"'| grep X-Subject-Token)"'
 token="$(echo $token_X | awk -F ' ' '{print $2}')"
 [ -z "$token" ] && logger -t "【huaweidns动态域名】" "错误！【token】获取失败，请检查用户名或密码后尝试重新启动" && sleep 10 && huaweidns_restart x
+sleep 1
 
 }
 
 Zone_ID=""
 get_Zone_ID() {
 # 获得Zone_ID
-Zone_ID="$(curl -L -k -s -X GET \
+Zone_ID="$(curl -L    -s -X GET \
   https://dns.myhuaweicloud.com/v2/zones?name=$DOMAIN. \
   -H 'content-type: application/json' \
   -H 'X-Auth-Token: '$token)"
 Zone_ID="$(echo $Zone_ID|grep -Eo "\"id\":\"[0-9a-z]*\",\"name\":\"$DOMAIN.\",\"description\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")"
 [ -z "$Zone_ID" ] && logger -t "【huaweidns动态域名】" "错误！【Zone_ID】获取失败，请到华为云DNS手动创建公网域名后尝试重新启动" && sleep 10 && huaweidns_restart x
+sleep 1
 
 }
 
@@ -249,10 +254,11 @@ esac
 	else
 		domain_type="A"
 	fi
-	Record_re="$(curl -L -k -s -X GET \
+	Record_re="$(curl -L    -s -X GET \
       https://dns.myhuaweicloud.com/v2.1/recordsets?name=$HOST2.$DOMAIN.\&type=$domain_type \
       -H 'content-type: application/json' \
       -H 'X-Auth-Token: '$token)"
+	sleep 1
 	Record_ID="$(echo $Record_re|grep -o "\"id\":\"[0-9a-z]*\",\"name\":\"$HOST2.$DOMAIN.\",\"description\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")"
 	# 检查是否有名称重复的子域名
 	if [ "$(echo $Record_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
@@ -260,10 +266,11 @@ esac
         for Delete_RECORD_ID in $Record_ID
         do
         logger -t "【huaweidns动态域名】" "$HOST.$DOMAIN 删除名称重复的子域名！ID: $Delete_RECORD_ID"
-        RRecord_re="$(curl -L -k -s -X DELETE \
+        RRecord_re="$(curl -L    -s -X DELETE \
           https://dns.myhuaweicloud.com/v2.1/zones/$Zone_ID/recordsets/$Delete_RECORD_ID \
           -H 'content-type: application/json' \
           -H 'X-Auth-Token: '$token)"
+        sleep 1
         done
 		Record_IP="0"
 		echo $Record_IP
@@ -281,6 +288,7 @@ esac
 		return 0
 		;;
 	*)
+		Record_ID=""
 		echo "Get Record Info Failed!"
 		#logger -t "【huaweidns动态域名】" "获取记录信息失败！"
 		return 1
@@ -360,10 +368,11 @@ Record_ID=""
 while [ "$Record_ID" = "" ] ; do
     I=$(($I - 1))
     [ $I -lt 0 ] && break    # 获得记录ID
-    Record_re="$(curl -L -k -s -X GET \
+    Record_re="$(curl -L    -s -X GET \
       https://dns.myhuaweicloud.com/v2.1/recordsets?name=$HOST2.$DOMAIN.\&type=$domain_type \
       -H 'content-type: application/json' \
       -H 'X-Auth-Token: '$token)"
+    sleep 1
     Record_ID="$(echo $Record_re|grep -o "\"id\":\"[0-9a-z]*\",\"name\":\"$HOST2.$DOMAIN.\",\"description\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")"
     echo "RECORD ID: $Record_ID"
 done
@@ -371,7 +380,7 @@ done
         # 添加子域名记录IP
         logger -t "【huaweidns动态域名】" "添加子域名 $HOST 记录IP"
         IP=$hostIP
-        eval 'RESULT="$(curl -L -k -s -X POST \
+        eval 'RESULT="$(curl -L    -s -X POST \
           https://dns.myhuaweicloud.com/v2.1/zones/'$Zone_ID'/recordsets \
           -H '"'"'content-type: application/json'"'"' \
           -H '"'"'X-Auth-Token: '$token''"'"' \
@@ -383,11 +392,12 @@ done
                 "'$IP'"
             ]
           }'"'"')"'
+        sleep 1
         RESULT="$(echo $RESULT |grep -Eo "\"status\":\"[^\"]+" | tr -d '"' | awk -F : '{print $2}' |head -n1)"
     else
         # 更新记录IP
         IP=$hostIP
-        eval 'RESULT="$(curl -L -k -s -X PUT \
+        eval 'RESULT="$(curl -L    -s -X PUT \
           https://dns.myhuaweicloud.com/v2.1/zones/'$Zone_ID'/recordsets/'$Record_ID' \
           -H '"'"'content-type: application/json'"'"' \
           -H '"'"'X-Auth-Token: '$token''"'"' \
@@ -397,6 +407,7 @@ done
                 "'$IP'"
             ]
           }'"'"')"'
+        sleep 1
         RESULT="$(echo $RESULT |grep -Eo "\"status\":\"[^\"]+" | tr -d '"' | awk -F : '{print $2}' |head -n1)"
     fi
     echo "$RESULT"
@@ -449,25 +460,26 @@ arDdnsCheck() {
 		fi
 	fi
 	echo "Updating Domain: $HOST.$DOMAIN"
-	echo "hostIP: ${hostIP}"
+	echo "hostIP: $hostIP"
 	lastIP=$(arDdnsInfo "$DOMAIN" "$HOST")
 	if [ $? -eq 1 ]; then
 		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$HOST.$DOMAIN")
 		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$HOST.$DOMAIN")
 	fi
-	echo "lastIP: ${lastIP}"
+	echo "lastIP: $lastIP"
 	if [ "$lastIP" != "$hostIP" ] ; then
 		logger -t "【huaweidns动态域名】" "开始更新 $HOST.$DOMAIN 域名 IP 指向"
-		logger -t "【huaweidns动态域名】" "目前 IP: ${hostIP}"
-		logger -t "【huaweidns动态域名】" "上次 IP: ${lastIP}"
+		logger -t "【huaweidns动态域名】" "目前 IP: $hostIP"
+		logger -t "【huaweidns动态域名】" "上次 IP: $lastIP"
+		Record_ID=""
 		sleep 1
 		postRS=$(arDdnsUpdate "$DOMAIN" "$HOST")
 		if [ $? -eq 0 ]; then
-			echo "postRS: ${postRS}"
+			echo "postRS: $postRS"
 			logger -t "【huaweidns动态域名】" "更新动态DNS记录成功！"
 			return 0
 		else
-			echo ${postRS}
+			echo $postRS
 			logger -t "【huaweidns动态域名】" "更新动态DNS记录失败！请检查您的网络。"
 			if [ "$IPv6" = "1" ] ; then 
 				IPv6=0
@@ -477,7 +489,7 @@ arDdnsCheck() {
 			return 1
 		fi
 	fi
-	echo ${lastIP}
+	echo $lastIP
 	echo "Last IP is the same as current IP!"
 	return 1
 }

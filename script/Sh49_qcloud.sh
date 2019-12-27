@@ -157,7 +157,6 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 fi
 IPv6=0
 if [ "$qcloud_domain"x != "x" ] && [ "$qcloud_name"x != "x" ] ; then
-	sleep 1
 	timestamp=`date +%s`
 	qcloud_record_id=""
 	domain="$qcloud_domain"
@@ -165,7 +164,7 @@ if [ "$qcloud_domain"x != "x" ] && [ "$qcloud_name"x != "x" ] ; then
 	arDdnsCheck $qcloud_domain $qcloud_name
 fi
 if [ "$qcloud_domain2"x != "x" ] && [ "$qcloud_name2"x != "x" ] ; then
-	sleep 1
+	sleep 5
 	timestamp=`date +%s`
 	qcloud_record_id=""
 	domain="$qcloud_domain2"
@@ -173,8 +172,8 @@ if [ "$qcloud_domain2"x != "x" ] && [ "$qcloud_name2"x != "x" ] ; then
 	arDdnsCheck $qcloud_domain2 $qcloud_name2
 fi
 if [ "$qcloud_domain6"x != "x" ] && [ "$qcloud_name6"x != "x" ] ; then
+	sleep 5
 	IPv6=1
-	sleep 1
 	timestamp=`date +%s`
 	qcloud_record_id=""
 	domain="$qcloud_domain6"
@@ -205,7 +204,8 @@ send_request() {
 	random=`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`
 	args="Action=$1&Nonce=""`echo ${random:0:5}`""&SecretId=$qcloud_ak&SignatureMethod=HmacSHA1&Timestamp=$timestamp&$2"
 	hash=$(echo -n "GETcns.api.qcloud.com/v2/index.php?$args" | openssl dgst -sha1 -hmac "$qcloud_sk" -binary | openssl base64)
-	curl -L -k -s "https://cns.api.qcloud.com/v2/index.php?$args&Signature=$(enc "$hash")"
+	curl -L    -s "https://cns.api.qcloud.com/v2/index.php?$args&Signature=$(enc "$hash")"
+	sleep 1
 }
 
 get_recordid() {
@@ -260,6 +260,7 @@ name1=$name
 		return 0
 		;;
 	*)
+		qcloud_record_id=""
 		echo "Get Record Info Failed!"
 		#logger -t "【qcloud动态域名】" "获取记录信息失败！"
 		return 1
@@ -391,25 +392,26 @@ arDdnsCheck() {
 		fi
 	fi
 	echo "Updating Domain: $name.$domain"
-	echo "hostIP: ${hostIP}"
+	echo "hostIP: $hostIP"
 	lastIP=$(arDdnsInfo)
 	if [ $? -eq 1 ]; then
 		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$name.$domain")
 		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$name.$domain")
 	fi
-	echo "lastIP: ${lastIP}"
+	echo "lastIP: $lastIP"
 	if [ "$lastIP" != "$hostIP" ] ; then
 		logger -t "【qcloud动态域名】" "开始更新 $name.$domain 域名 IP 指向"
-		logger -t "【qcloud动态域名】" "目前 IP: ${hostIP}"
-		logger -t "【qcloud动态域名】" "上次 IP: ${lastIP}"
+		logger -t "【qcloud动态域名】" "目前 IP: $hostIP"
+		logger -t "【qcloud动态域名】" "上次 IP: $lastIP"
+		qcloud_record_id=""
 		sleep 1
 		postRS=$(arDdnsUpdate)
 		if [ $? -eq 0 ]; then
-			echo "postRS: ${postRS}"
+			echo "postRS: $postRS"
 			logger -t "【qcloud动态域名】" "更新动态DNS记录成功！"
 			return 0
 		else
-			echo ${postRS}
+			echo $postRS
 			logger -t "【qcloud动态域名】" "更新动态DNS记录失败！请检查您的网络。"
 			if [ "$IPv6" = "1" ] ; then 
 				IPv6=0
@@ -419,7 +421,7 @@ arDdnsCheck() {
 			return 1
 		fi
 	fi
-	echo ${lastIP}
+	echo $lastIP
 	echo "Last IP is the same as current IP!"
 	return 1
 }
