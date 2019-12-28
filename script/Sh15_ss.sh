@@ -12,6 +12,7 @@ transocks_enable=`nvram get app_27`
 [ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
 v2ray_follow=`nvram get v2ray_follow`
 [ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
+app_95="$(nvram get app_95)"
 if [ "$transocks_enable" != "0" ]  ; then
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	if [ "$ss_enable" != "0" ]  ; then
@@ -562,7 +563,7 @@ start_ss_redir_check()
 sleep 2
 [ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动成功" && ss_restart o
 [ -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
-check_ip
+check_ip $1
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	[ "$ss_mode_x" = "3" ] && killall_ss_redir
 	[ ! -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动成功" && ss_restart o
@@ -877,7 +878,7 @@ EOF
 # 启动新进程
 start_ss_redir
 start_ss_redir_threads
-start_ss_redir_check
+start_ss_redir_check # "check_ip"
 
 port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 if [ "$port"x = 0x ] ; then
@@ -942,71 +943,164 @@ fi
 fi
 }
 
+x_check_timeout_network_x()
+{
+check1=404
+check2=404
+check4=0
+wget_check="$4"
+check_tmp="/tmp/check_timeout/$1"
+rm -f $check_tmp
+echo "check1=$check1" > $check_tmp
+echo "check2=$check2" >> $check_tmp
+hash check_network 2>/dev/null && check4=1
+[ "$wget_check" == "wget_check" ] && check4=0
+if [ "$2" == "1" ] ; then
+if [ "$check4" == "1" ] ; then
+	check_network 3
+	[ "$?" == "0" ] && check1=200 || check1=404
+	if [ "$check1" == "404" ] ; then
+		check_network 3
+		[ "$?" == "0" ] && check1=200 || check1=404
+	fi
+fi
+hash check_network 2>/dev/null || check1=404
+if [ "$check1" == "404" ] ; then
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+		[ "$?" == "0" ] && check1=200 || check1=404
+		if [ "$check1" == "404" ] ; then
+			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+			[ "$?" == "0" ] && check1=200 || check1=404
+		fi
+	else
+		check1=`curl -L --connect-timeout 5 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check1" != "200" ] && check1=`curl -L --connect-timeout 5 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+	fi
+fi
+if [ -s "$check_tmp" ] ; then
+rm -f $check_tmp
+echo "check1=$check1" > $check_tmp
+echo "check2=$check2" >> $check_tmp
+fi
+fi
+if [ "$3" == "2" ] ; then
+if [ "$check4" == "1" ] ; then
+	check_network
+	[ "$?" == "0" ] && check2=200 || check2=404
+	if [ "$check2" == "404" ] ; then
+		check_network
+		[ "$?" == "0" ] && check2=200 || check2=404
+	fi
+fi
+hash check_network 2>/dev/null || check2=404
+if [ "$check2" == "404" ] ; then
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		wget --user-agent "$user_agent" -q  -T 5 -t 3 $ss_link_2 -O /dev/null
+		[ "$?" == "0" ] && check2=200 || check2=404
+		if [ "$check2" == "404" ] ; then
+			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
+			[ "$?" == "0" ] && check2=200 || check2=404
+		fi
+	else
+		check2=`curl -L --connect-timeout 5 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check2" != "200" ] && check2=`curl -L --connect-timeout 5 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+	fi
+fi
+if [ -s "$check_tmp" ] ; then
+rm -f $check_tmp
+echo "check1=$check1" > $check_tmp
+echo "check2=$check2" >> $check_tmp
+fi
+fi
+[ -s "$check_tmp" ] && echo "check3=200" >> $check_tmp
+sleep 10
+rm -f $check_tmp
+}
+
+check_timeout_network()
+{
+mkdir -p /tmp/check_timeout
+SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+rm -f /tmp/check_timeout/$RND_NUM
+check1="404"
+check2="404"
+check3="404"
+eval 'x_check_timeout_network_x "$RND_NUM" "$1" "$2" "$3"' &
+i_timeout=1
+while [ "$check3" == "404" ] ;
+do
+sleep 1
+[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
+i_timeout=`expr $i_timeout + 1`
+if [ "$i_timeout" -gt 10 ] ; then
+#logger -t "【check_timeout_network】" "网络连接，超时 10 秒！ $check1 $check2"
+echo "【check_timeout_network】 网络连接，超时 10 秒！ $check1 $check2"
+break
+fi
+done
+[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
+rm -f /tmp/check_timeout/$RND_NUM
+}
 
 check_ip()
 {
-if [ "$ss_check" = "1" ] ; then
+if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
 	# 检查主服务器是否能用
 	checkip=0
 	sleep 1
 	for action_port in 1090 1091
 	do
-		action_port=$action_port
-		echo $action_port
+		if [ ! -z "$app_95" ] ; then
+		action_port="1090"
+		action_ssip=$ss_s1_ip
+		Server_ip=$ss_server1 && CURRENT_ip=$ss_server2
+		else
 		[ $action_port == 1090 ] && action_ssip=$ss_s1_ip
 		[ $action_port == 1091 ] && action_ssip=$ss_s2_ip
 		[ $action_port == 1090 ] && Server_ip=$ss_server1 && CURRENT_ip=$ss_server2
 		[ $action_port == 1091 ] && Server_ip=$ss_server2 && CURRENT_ip=$ss_server1
+		fi
+		echo $action_port
 		if [ ! -z "$action_ssip" ] ; then
 			logger -t "【ss-redir】" "check_ip 检查 SS 服务器$action_port是否能用"
 			lan_ipaddr=`nvram get lan_ipaddr`
 			BP_IP="`echo "$ss_s1_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$ss_s2_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `"
 			[ ! -z "$kcptun_server" ] && [ "$kcptun_enable" != "0" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$ss_s2_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$kcptun_server" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `"
-			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,443' -o -O
-			sleep 1
-			check=0
-			hash check_network 2>/dev/null && check=1
-			if [ "$check" == "1" ] ; then
-				check_network 1
-				[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-				if [ "$check" == "404" ] ; then
-					check_network 1
-					[ "$?" == "0" ] && check=200 || check=404
-				fi
-				logger -t "【ss-redir】" "check_network 检查 Google.com : $check"
-				ss_link_1_tmp=Google.com
-			fi
-			hash check_network 2>/dev/null || check=404
-			if [ "$check" == "404" ] ; then
-				curltest=`which curl`
-				if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-					wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
-					[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-					if [ "$check" == "404" ] ; then
-						wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
-						[ "$?" == "0" ] && check=200 || check=404
-					fi
-					logger -t "【ss-redir】" "wget  检查 $ss_link_1 : $check"
-				else
-					check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-					[ "$check" != "200" ] && sleep 1
-					[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-					logger -t "【ss-redir】" "curl  检查 $ss_link_1 : $check"
-				fi
-				ss_link_1_tmp=$ss_link_1
-			fi
-			if [ "$check" == "200" ] ; then
-				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1_tmp 成功"
-				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1 成功"
+			ss-rules -f
+			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,5353,443' -o -O
+			sleep 2
+			check_timeout_network 1 0 "wget_check"
+			check="$check1"
+			if [ "$check" == "200" ] ; then 
+				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接成功"
 				checkip=1
+				if [ ! -z "$app_95" ] ; then
+					ss-rules -f
+					#跳出当前循环
+					break
+				fi
 			else
-				hash check_network 2>/dev/null && logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1_tmp 失败"
-				hash check_network 2>/dev/null || logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接 $ss_link_1 失败"
+				[ "$check1" != "200" ] && logger -t "【SS】" "check_ip 错误！【互联网】连接有问题！！！"
+				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接失败"
+				if [ ! -z "$app_95" ] ; then
+					ss-rules -f
+					nvram set ss_status=""
+					logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
+					/etc/storage/script/sh_ezscript.sh ss_link_matching
+					sleep 20
+					#跳出当前循环
+					break
+				else
 				[ ${action_port:=1090} ] && [ $action_port == 1091 ] && Server=1090 || Server=1091
 				#加上切换标记
 				nvram set ss_working_port=$Server
 				ss_working_port=`nvram get ss_working_port`
 				[ "$checkip" == "0" ] && checkip=0
+				fi
 			fi
 		fi
 		ss-rules -f
@@ -2442,41 +2536,16 @@ echo "Debug: $DNS_Server"
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
 
-	check=0
-	hash check_network 2>/dev/null && check=1
-	if [ "$check" == "1" ] ; then
-		check_link="Google.com"
-		check_network 1
-		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-		if [ "$check" == "404" ] ; then
-			check_network 1
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-		logger -t "【ss-redir】" "check_network 检查 Google.com : $check"
-	fi
-	hash check_network 2>/dev/null || check=404
-	if [ "$check" == "404" ] ; then
-		check_link="$ss_link_1"
-		curltest=`which curl`
-		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
-			[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-			if [ "$check" == "404" ] ; then
-				wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
-				[ "$?" == "0" ] && check=200 || check=404
-			fi
-			logger -t "【ss-redir】" "wget  检查 $ss_link_1 : $check"
-		else
-			check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-			[ "$check" != "200" ] && sleep 1
-			[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-			logger -t "【ss-redir】" "curl  检查 $ss_link_1 : $check"
-		fi
-	fi
-if [ "$check" != "200" ] ; then 
-	logger -t "【SS】" "连 $check_link 的域名都解析不了, 你的网络能用？？"
-	logger -t "【SS】" "SS 网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
-	clean_SS
+	check1=404
+	check2=404
+	check_timeout_network 1 2
+	check="$check1"
+if [ "$check1" != "200" ] || [ "$check2" != "200" ] ; then 
+	[ "$check1" != "200" ] && logger -t "【SS】" "错误！【互联网】连接有问题！！！"
+	[ "$check2" != "200" ] && logger -t "【SS】" "错误！【Google.com】连接有问题！！！"
+	logger -t "【SS】" "网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
+	logger -t "【SS】" "如果是本地组网可忽略此错误！！"
+	logger -t "【SS】" "否则需启用【首次时连接检测】、【运行时持续检测】才能自动故障转移"
 fi
 	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	logger -t "【SS】" "SS 启动成功"
@@ -2532,6 +2601,7 @@ exit 0
 stop_SS()
 {
 cru.sh d ss_update &
+rm -f /tmp/check_timeout/*
 ss-rules -f
 nvram set ss_internet="0"
 nvram set ss_working_port="1090" #恢复主服务器端口
@@ -2643,7 +2713,6 @@ if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$ss_enable" = "1" ] ; then
-	hash getopts 2>/dev/null ||  { logger -t "【SS】" "错误！Shell未加载getopts，请检查固件和busybox配置"; stop_SS; exit 1; }
 	[ $ss_server1 ] || logger -t "【SS】" "服务器地址:未填写"
 	[ $ss_s1_port ] || logger -t "【SS】" "服务器端口:未填写"
 	[ $ss_s1_method ] || logger -t "【SS】" "加密方式:未填写"
@@ -2723,6 +2792,7 @@ sleep 60
 done
 ss_enable=\`nvram get ss_enable\`
 if [ ! -f /tmp/cron_ss.lock ] && [ "\$ss_enable" = "1" ] ; then
+rm -f /tmp/check_timeout/*
 kill_ps "$scriptname"
 eval "$scriptfilepath keep &"
 exit 0
@@ -2738,12 +2808,11 @@ kcptun2_enable=`nvram get kcptun2_enable`
 kcptun2_enable2=`nvram get kcptun2_enable2`
 ss_run_ss_local=`nvram get ss_run_ss_local`
 ss_mode_x=`nvram get ss_mode_x`
-app_95="$(nvram get app_95)"
 [ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
 [ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 rm -f /tmp/cron_ss.lock
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-sleep 10
+sleep 3
 ss_enable=`nvram get ss_enable`
 while [ "$ss_enable" = "1" ];
 do
@@ -2779,7 +2848,7 @@ if [ "$rebss" -gt 6 ] ; then
 		exit 0
 	fi
 fi
-sleep 10
+sleep 3
 ss_enable=`nvram get ss_enable`
 if [ -f /tmp/cron_ss.lock ] || [ "$ss_enable" != "1" ] ; then
 	#跳出当前循环
@@ -2881,32 +2950,9 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 
 #检查是否存在SS备份服务器, 这里通过判断 ss_rdd_server 是否填写来检查是否存在备用服务器
 
-check=0
-hash check_network 2>/dev/null && check=1
-if [ "$check" == "1" ] ; then
-	check_network
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-	if [ "$check" == "404" ] ; then
-		check_network
-		[ "$?" == "0" ] && check=200 || check=404
-	fi
-fi
-hash check_network 2>/dev/null || check=404
-if [ "$check" == "404" ] ; then
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent "$user_agent" -q  -T 5 -t 3 $ss_link_2 -O /dev/null
-		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-		if [ "$check" == "404" ] ; then
-			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-	else
-		check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	fi
-fi
+check=404
+check_timeout_network 0 2
+check="$check2"
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
@@ -2916,32 +2962,9 @@ if [ "$check" == "200" ] ; then
 	continue
 fi
 
-check=0
-hash check_network 2>/dev/null && check=1
-if [ "$check" == "1" ] ; then
-	check_network 3
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-	if [ "$check" == "404" ] ; then
-		check_network 3
-		[ "$?" == "0" ] && check=200 || check=404
-	fi
-fi
-hash check_network 2>/dev/null || check=404
-if [ "$check" == "404" ] ; then
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
-		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-		if [ "$check" == "404" ] ; then
-			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-	else
-		check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-	fi
-fi
+check=404
+check_timeout_network 1 0
+check="$check1"
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] Internet have no problem."
 else
@@ -2965,32 +2988,9 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 		sleep 5
 	fi
 fi
-check=0
-hash check_network 2>/dev/null && check=1
-if [ "$check" == "1" ] ; then
-	check_network
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-	if [ "$check" == "404" ] ; then
-		check_network
-		[ "$?" == "0" ] && check=200 || check=404
-	fi
-fi
-hash check_network 2>/dev/null || check=404
-if [ "$check" == "404" ] ; then
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent "$user_agent" -q  -T 5 -t 3 $ss_link_2 -O /dev/null
-		[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-		if [ "$check" == "404" ] ; then
-			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-	else
-		check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-		[ "$check" != "200" ] && sleep 1
-		[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	fi
-fi
+check=404
+check_timeout_network 0 2
+check="$check2"
 if [ "$check" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
@@ -3052,32 +3052,9 @@ if [ ! -z "$ss_rdd_server" ] ; then
 	gen_include
 	restart_dhcpd
 	sleep 5
-	check=0
-	hash check_network 2>/dev/null && check=1
-	if [ "$check" == "1" ] ; then
-	check_network
-	[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-		if [ "$check" == "404" ] ; then
-			check_network
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-	fi
-	hash check_network 2>/dev/null || check=404
-	if [ "$check" == "404" ] ; then
-		curltest=`which curl`
-		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			wget --user-agent "$user_agent" -q  -T 5 -t 3 $ss_link_2 -O /dev/null
-			[ "$?" == "0" ] && check=200 || { check=404; sleep 1; }
-			if [ "$check" == "404" ] ; then
-				wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
-				[ "$?" == "0" ] && check=200 || check=404
-			fi
-		else
-			check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-			[ "$check" != "200" ] && sleep 1
-			[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-		fi
-	fi
+	check=404
+	check_timeout_network 0 2
+	check="$check2"
 	if [ "$check" == "200" ] ; then
 		logger -t "【SS】" " SS 服务器 $Server_ip 【$Server】 连接√"
 		rebss="1"
@@ -3127,7 +3104,6 @@ ss_mode_x=`nvram get ss_mode_x`
 if [ "$ss_internet" != "1" ] ; then
 	logger -t "【ss】" "注意！各线路正在启动，请等待启动后再尝试切换"
 fi
-app_95="$(nvram get app_95)"
 if [ ! -z "$app_95" ] && [ "$ss_internet" = "1" ] ; then
 	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
 	nvram set ss_internet="2"

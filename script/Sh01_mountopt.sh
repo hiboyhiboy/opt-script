@@ -245,7 +245,7 @@ upanPath=""
 if [ "$ss_opt_x" = "6" ] ; then
 	# 远程共享
 	if ! mountpoint -q "$opt_cifs_2_dir" || [ ! -d $opt_cifs_2_dir ] ; then
-		source /etc/storage/cifs_script.sh
+		[ -s /etc/storage/cifs_script.sh ] && source /etc/storage/cifs_script.sh
 	fi
 	if mountpoint -q "$opt_cifs_2_dir" && [ -d "$opt_cifs_2_dir" ] ; then
 		upanPath="$opt_cifs_2_dir"

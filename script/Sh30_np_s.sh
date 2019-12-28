@@ -49,7 +49,7 @@ if [ "$1" = "x" ] ; then
 	nps_renum=`expr $nps_renum + 1`
 	nvram set nps_renum="$nps_renum"
 	if [ "$nps_renum" -gt "2" ] ; then
-		I=6
+		I=2
 		echo $I > $relock
 		logger -t "【nps】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do

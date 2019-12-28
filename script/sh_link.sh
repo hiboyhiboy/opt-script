@@ -201,7 +201,7 @@ do
     eval "nvram set $ss_a=\"\$ss_b\""
 done < /tmp/ss/link/daochu_2.txt
 #cat /tmp/ss/link/daochu_2.txt | grep '=' | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}' | sed 's/^/nvram set /' | sort -u > /tmp/ss/link/daochu_4.txt
-#source /tmp/ss/link/daochu_4.txt
+#[ -s /tmp/ss/link/daochu_4.txt ] && source /tmp/ss/link/daochu_4.txt
 # 保存有效节点数量
 rt_ssnum_x=$(grep rt_ss_name_x /tmp/ss/link/daochu_2.txt | wc -l)
 [ -z $rt_ssnum_x ] && rt_ssnum_x="0"
@@ -221,7 +221,7 @@ done < /tmp/ss/link/daochu_3.txt
 #sed -Ei "/$(cat /tmp/ss/link/daochu_3.txt | sed ":a;N;s/\n/|/g;ta")/d" /tmp/ss/link/daochu_2.txt
 # 提取运行命令
 cat /tmp/ss/link/daochu_2.txt | sort -u | awk -F '=' '{print $1}' > /tmp/ss/link/daochu_4.txt
-source /tmp/ss/link/daochu_4.txt
+[ -s /tmp/ss/link/daochu_4.txt ] && source /tmp/ss/link/daochu_4.txt
 rm -rf /tmp/ss/link
 }
 
