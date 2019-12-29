@@ -841,26 +841,28 @@ fi
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"listen"];"'$lan_ipaddr'")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"'$lan_ipaddr'")')
 json_gen_special_purpose_ip
-[ ! -z "$ss_s1_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",2,"ip",0];"'$ss_s1_ip'")')
-[ ! -z "$ss_s2_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",2,"ip",1];"'$ss_s2_ip'")')
-[ ! -z "$kcptun_server" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",2,"ip",2];"'$kcptun_server'")')
-[ ! -z "$v2ray_server_addresses" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",2,"ip",3];"'$v2ray_server_addresses'")')
+[ ! -z "$ss_s1_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",3,"ip",0];"'$ss_s1_ip'")')
+[ ! -z "$ss_s2_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",3,"ip",1];"'$ss_s2_ip'")')
+[ ! -z "$kcptun_server" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",3,"ip",2];"'$kcptun_server'")')
+[ ! -z "$v2ray_server_addresses" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",3,"ip",3];"'$v2ray_server_addresses'")')
 mk_mode_x="`nvram get app_69`"
 if [ "$mk_mode_x" = "0" ] ; then
 logger -t "【vmess】" "方案一chnroutes，国外IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"domain",2];"geosite:google")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"domain",3];"geosite:facebook")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",2];"geosite:google")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",4];"geosite:geolocation-!cn")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 fi
 if [ "$mk_mode_x" = "1" ] ; then
 logger -t "【vmess】" "方案二gfwlist（推荐），只有被墙的站点IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"AsIs")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"domain",2];"geosite:google")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",5,"domain",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",2];"geosite:google")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",4];"geosite:geolocation-!cn")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
 mk_vmess_0=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",0])')
 mk_vmess_1=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",1])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0];'"$mk_vmess_1"')')
@@ -869,10 +871,10 @@ fi
 if [ "$mk_mode_x" = "3" ] ; then
 logger -t "【vmess】" "方案四回国模式，国内IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"outboundTag"];"outbound_1")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",5]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"outboundTag"];"outbound_1")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
 mk_vmess_0=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",0])')
 mk_vmess_1=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",1])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0];'"$mk_vmess_1"')')
@@ -881,16 +883,16 @@ fi
 if [ "$mk_mode_x" = "2" ] ; then
 logger -t "【vmess】" "方案三全局代理，全部IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",5]])')
 else
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",4]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",5]])')
 fi
 if [ "$mk_mode_b" = "0" ] ; then
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",3]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",4]])')
 fi
 echo $mk_vmess| jq --raw-output '.' > /tmp/vmess/mk_vmess.json
 if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
@@ -1183,7 +1185,8 @@ echo '{
         "address": "8.8.8.8",
         "port": 53,
         "domains": [
-          "geosite:google"
+          "geosite:google",
+          "geosite:geolocation-!cn"
         ]
       },
       {
@@ -1202,6 +1205,13 @@ echo '{
     "domainStrategy": "AsIs",
     "balancers": [],
     "rules": [
+      {
+        "type": "field",
+        "outboundTag": "blocked",
+        "domain": [
+          "geosite:category-ads-all"
+        ]
+      },
       {
         "type": "field",
         "ip": [
