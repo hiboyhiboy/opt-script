@@ -480,6 +480,9 @@ ss_key="$(base64decode "$ss_key")"
 ss_method=$(echo $line| jq --compact-output --raw-output 'getpath([4])')
 ss_usage="$(echo $line| jq --compact-output --raw-output 'getpath([7])')"
 ss_usage="$(base64decode "$ss_usage")"
+ss_type_tmp="$(echo $line| jq --compact-output --raw-output 'getpath([8])')"
+[ "$ss_type_tmp" == "ssr" ] && nvram set ss_type="1"
+[ "$ss_type_tmp" == "ss" ] && nvram set ss_type="0"
 sed -i $i_matching's/^/已经自动选用节点/' /tmp/link_matching/link_matching.txt
 nvram set app_97="$app_97"
 nvram set ss_server="$ss_server"

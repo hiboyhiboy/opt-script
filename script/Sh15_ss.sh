@@ -2627,6 +2627,7 @@ nvram set gfwlist3="ss-redir stop."
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
+kill_ps "sh_ezscript.sh"
 kill_ps "/tmp/script/_ss"
 kill_ps "_ss.sh"
 kill_ps "$scriptname"

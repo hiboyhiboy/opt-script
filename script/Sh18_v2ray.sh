@@ -258,7 +258,7 @@ if [ "$v2ray_http_enable" = "1" ] && [ -z "$v2ray_http_config" ] ; then
 logger -t "【v2ray】" "错误！配置远程地址 内容为空"
 logger -t "【v2ray】" "请填写配置远程地址！"
 logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
-sleep 30 && v2ray_restart x
+sleep 10 && v2ray_restart x
 fi
 if [ "$v2ray_http_enable" != "1" ] && [ ! -f /opt/bin/v2ray_config.pb ] ; then
 if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
@@ -266,7 +266,13 @@ logger -t "【v2ray】" "错误！ v2ray 配置文件 内容为空"
 logger -t "【v2ray】" "请在服务端运行一键安装脚本："
 logger -t "【v2ray】" "bash <(curl -L -s https://opt.cn2qq.com/opt-script/v2ray.sh)"
 logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
-sleep 30 && v2ray_restart x
+sleep 10 && v2ray_restart x
+fi
+if [ -s "/etc/storage/v2ray_config_script.sh" ] ; then
+if [ ! -z "$(grep '"inbound"'  /etc/storage/v2ray_config_script.sh)" ] || [ ! -z "$(grep '"outbound"'  /etc/storage/v2ray_config_script.sh)" ] ; then
+logger -t "【v2ray】" "注意！！！v4.22.0及以上版本不再兼容旧的v2ray json配置格式（如：inbound {}，outbound {}格式。）"
+logger -t "【v2ray】" "请尽快使用 inbounds []，outbounds []格式替换。"
+fi
 fi
 fi
 
@@ -301,11 +307,12 @@ if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 		[ ! -z "$optPath" ] && rm -f /opt/bin/v2ray
 		rm -f /opt/bin/v2ray_config.pb
 		v2ray_wget_v2ctl
-		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置"
+		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置 /opt/bin/v2ray_config.pb"
 		cd "$(dirname "$SVC_PATH")"
 		cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
 		json_join_gfwlist
 		eval "v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb $cmd_log" 
+		[ ! -s /opt/bin/v2ray_config.pb ] && logger -t "【v2ray】" "错误！ /opt/bin/v2ray_config.pb 内容为空, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 		[ -f /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
 		[ ! -z "$optPath" ] && rm -f /opt/bin/v2ctl /opt/bin/geoip.dat /opt/bin/geosite.dat /tmp/vmess/mk_vmess.json
 	fi
