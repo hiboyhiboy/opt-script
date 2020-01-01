@@ -168,14 +168,14 @@ if [ "$huaweidns_domian"x != "x" ] && [ "$huaweidns_host"x != "x" ] ; then
 	arDdnsCheck $huaweidns_domian $huaweidns_host
 fi
 if [ "$huaweidns_domian2"x != "x" ] && [ "$huaweidns_host2"x != "x" ] ; then
-	sleep 5
+	sleep 1
 	DOMAIN="$huaweidns_domian2"
 	HOST="$huaweidns_host2"
 	Record_ID=""
 	arDdnsCheck $huaweidns_domian2 $huaweidns_host2
 fi
 if [ "$huaweidns_domian6"x != "x" ] && [ "$huaweidns_host6"x != "x" ] ; then
-	sleep 5
+	sleep 1
 	IPv6=1
 	DOMAIN="$huaweidns_domian6"
 	HOST="$huaweidns_host6"

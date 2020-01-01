@@ -109,7 +109,7 @@ if [ "$dnspod_domian"x != "x" ] && [ "$dnspod_host"x != "x" ] ; then
 	arDdnsCheck $dnspod_domian $dnspod_host
 fi
 if [ "$dnspod_domian2"x != "x" ] && [ "$dnspod_host2"x != "x" ] ; then
-	sleep 10
+	sleep 1
 	DOMAIN="$dnspod_domian2"
 	HOST="$dnspod_host2"
 	domainID=""
@@ -118,7 +118,7 @@ if [ "$dnspod_domian2"x != "x" ] && [ "$dnspod_host2"x != "x" ] ; then
 	arDdnsCheck $dnspod_domian2 $dnspod_host2
 fi
 if [ "$dnspod_domian6"x != "x" ] && [ "$dnspod_host6"x != "x" ] ; then
-	sleep 10
+	sleep 1
 	IPv6=1
 	DOMAIN="$dnspod_domian6"
 	HOST="$dnspod_host6"
@@ -144,7 +144,7 @@ arDdnsInfo() {
 	
 	# 获得记录ID
 	recordID=$(arApiPost "Record.List" "domain_id=$domainID&sub_domain=$HOST")
-	recordID=$(echo $recordID | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+	recordID=$(echo $recordID | grep -Eo '"records".+' | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 	
 	# 获得最后更新IP
 	recordIP=$(arApiPost "Record.Info" "domain_id=$domainID&record_id=$recordID")
@@ -237,7 +237,7 @@ arApiPost() {
 	else
 		curl -L    -X POST $inter -d $param
 	fi
-	sleep 2
+	sleep 1
 }
 
 # 更新记录信息
@@ -262,7 +262,7 @@ while [ "$recordID" = "" ] ; do
 	sleep 1
 	# 获得记录ID
 	recordID=$(arApiPost "Record.List" "domain_id=$domainID&sub_domain=$HOST")
-	recordID=$(echo $recordID | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+	recordID=$(echo $recordID | grep -Eo '"records".+' | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 done
 	#echo "更新记录信息 recordID: " $recordID
 	if [ "$recordID" = "" ] ; then
@@ -282,7 +282,7 @@ done
 		sleep 10
 		# 获得记录ID
 		recordID=$(arApiPost "Record.List" "domain_id=$domainID&sub_domain=$HOST")
-		recordID=$(echo $recordID | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
+		recordID=$(echo $recordID | grep -Eo '"records".+' | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 		
 		# 获得最后更新IP
 		recordIP=$(arApiPost "Record.Info" "domain_id=$domainID&record_id=$recordID")

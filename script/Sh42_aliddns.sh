@@ -164,7 +164,7 @@ if [ "$aliddns_domain"x != "x" ] && [ "$aliddns_name"x != "x" ] ; then
 	arDdnsCheck $aliddns_domain $aliddns_name
 fi
 if [ "$aliddns_domain2"x != "x" ] && [ "$aliddns_name2"x != "x" ] ; then
-	sleep 5
+	sleep 1
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 	aliddns_record_id=""
 	domain="$aliddns_domain2"
@@ -172,7 +172,7 @@ if [ "$aliddns_domain2"x != "x" ] && [ "$aliddns_name2"x != "x" ] ; then
 	arDdnsCheck $aliddns_domain2 $aliddns_name2
 fi
 if [ "$aliddns_domain6"x != "x" ] && [ "$aliddns_name6"x != "x" ] ; then
-	sleep 5
+	sleep 1
 	IPv6=1
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
 	aliddns_record_id=""

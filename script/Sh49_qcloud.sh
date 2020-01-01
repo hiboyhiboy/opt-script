@@ -164,7 +164,7 @@ if [ "$qcloud_domain"x != "x" ] && [ "$qcloud_name"x != "x" ] ; then
 	arDdnsCheck $qcloud_domain $qcloud_name
 fi
 if [ "$qcloud_domain2"x != "x" ] && [ "$qcloud_name2"x != "x" ] ; then
-	sleep 5
+	sleep 1
 	timestamp=`date +%s`
 	qcloud_record_id=""
 	domain="$qcloud_domain2"
@@ -172,7 +172,7 @@ if [ "$qcloud_domain2"x != "x" ] && [ "$qcloud_name2"x != "x" ] ; then
 	arDdnsCheck $qcloud_domain2 $qcloud_name2
 fi
 if [ "$qcloud_domain6"x != "x" ] && [ "$qcloud_name6"x != "x" ] ; then
-	sleep 5
+	sleep 1
 	IPv6=1
 	timestamp=`date +%s`
 	qcloud_record_id=""

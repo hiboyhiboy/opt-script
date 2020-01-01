@@ -160,14 +160,14 @@ if [ "$cloudflare_domian"x != "x" ] && [ "$cloudflare_host"x != "x" ] ; then
 	arDdnsCheck
 fi
 if [ "$cloudflare_domian2"x != "x" ] && [ "$cloudflare_host2"x != "x" ] ; then
-	sleep 5
+	sleep 1
 	DOMAIN="$cloudflare_domian2"
 	HOST="$cloudflare_host2"
 	RECORD_ID=""
 	arDdnsCheck
 fi
 if [ "$cloudflare_domian6"x != "x" ] && [ "$cloudflare_host6"x != "x" ] ; then
-	sleep 5
+	sleep 1
 	IPv6=1
 	DOMAIN="$cloudflare_domian6"
 	HOST="$cloudflare_host6"
