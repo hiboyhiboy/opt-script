@@ -322,6 +322,14 @@ cat /tmp/clash/dns.yml >> $config_yml
 merge_dns_ip
 fi
 logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
+if [ ! -s /opt/app/clash/config/Country.mmdb ] ; then
+logger -t "【clash】" "初次启动会自动下载 geoip 数据库文件：/opt/app/clash/config/Country.mmdb"
+logger -t "【clash】" "备注：如果缺少 geoip 数据库文件会启动失败，需 v0.17.1 或以上版本才能自动下载 geoip 数据库文件"
+if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
+wgetcurl_file /opt/app/clash/config/Country.mmdb "$hiboyfile/Country.mmdb" "$hiboyfile2/Country.mmdb"
+[ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
+fi
+fi
 
 cd "$(dirname "$SVC_PATH")"
 su_cmd="eval"

@@ -17,6 +17,8 @@ mk_mode_x="`nvram get app_69`"
 mk_mode_b="`nvram get app_70`"
 [ -z $mk_mode_b ] && mk_mode_b=0 && nvram set app_70=0
 [ "$mk_mode_x" = "3" ] && mk_mode_b=1
+mk_mode_dns="`nvram get app_105`"
+[ -z $mk_mode_dns ] && mk_mode_dns=0 && nvram set app_105=0
 lan_ipaddr=`nvram get lan_ipaddr`
 if [ "$transocks_enable" != "0" ]  ; then
 	if [ "$ss_enable" != "0" ]  ; then
@@ -32,7 +34,7 @@ if [ "$transocks_enable" != "0" ]  ; then
 		v2ray_follow=0 && nvram set v2ray_follow=0
 	fi
 fi
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | sed -n '1p' | cut -d':' -f2 | tr -d '"' | tr -d ',')
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 if [ "$v2ray_enable" != "0" ] ; then
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 #nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -394,16 +396,26 @@ flush_r
 # 透明代理
 logger -t "【v2ray】" "启动 透明代理"
 logger -t "【v2ray】" "备注：默认配置的透明代理会导致广告过滤失效，需要手动改造配置前置代理过滤软件"
+if [ ! -z "$(grep '"port": 8053' /etc/storage/v2ray_config_script.sh)" ] ; then
+logger -t "【v2ray】" "配置含内置 DNS outbound 功能，让 V2Ray 充当 DNS 服务。"
+chinadns_enable=0 && nvram set app_1=0
+nvram set app_102=0
+Sh09_chinadns_ng.sh
+Sh19_chinadns.sh
+
+fi
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 logger -t "【v2ray】" "chinadns 已经启动 防止域名污染"
 else
-logger -t "【v2ray】" "启动 dnsproxy 防止域名污染"
 pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
+if [ -z "$(grep '"port": 8053' /etc/storage/v2ray_config_script.sh)" ] ; then
+logger -t "【v2ray】" "启动 dnsproxy 防止域名污染"
 if [ -s /sbin/dnsproxy ] ; then
 	/sbin/dnsproxy -d
 else
 	dnsproxy -d
+fi
 fi
 #防火墙转发规则加载
 sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
@@ -441,8 +453,10 @@ gen_prerouting_rules nat tcp $wifidognx
 
 
 
+if [ -z "$(grep '"port": 8053' /etc/storage/v2ray_config_script.sh)" ] ; then
 iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $v2ray_door
 iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $v2ray_door
+fi
 
 # 同时将代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理
 NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
@@ -620,7 +634,7 @@ cat > "/etc/storage/v2ray_script.sh" <<-\VVR
 # 启动前运行的脚本
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | sed -n '1p' | cut -d':' -f2 | tr -d '"' | tr -d ',')
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 v2ray_door=`nvram get v2ray_door`
 [ -z $v2ray_door ] && v2ray_door=1099 && nvram set v2ray_door=1099
 lan_ipaddr=`nvram get lan_ipaddr`
@@ -733,6 +747,7 @@ ss_s1_ip=""
 ss_s2_ip=""
 kcptun_server=""
 v2ray_server_addresses=""
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 #处理肯定不走通道的目标网段
 kcptun_server=`nvram get kcptun_server`
 kcptun_enable=`nvram get kcptun_enable`
@@ -776,6 +791,8 @@ else
 ss_s2_ip=$ss_server2
 fi
 fi
+[ ! -z "$vmess_link_add" ] && server_addresses="$vmess_link_add"
+[ ! -z "$ss_link_add" ] && server_addresses="$ss_link_add"
 if [ ! -z "$server_addresses" ] ; then
 	resolveip=`/usr/bin/resolveip -4 -t 4 $server_addresses | grep -v : | sed -n '1p'`
 	[ -z "$resolveip" ] && resolveip=`arNslookup $server_addresses | sed -n '1p'` 
@@ -848,28 +865,28 @@ fi
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"listen"];"'$lan_ipaddr'")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"'$lan_ipaddr'")')
 json_gen_special_purpose_ip
-[ ! -z "$ss_s1_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",3,"ip",0];"'$ss_s1_ip'")')
-[ ! -z "$ss_s2_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",3,"ip",1];"'$ss_s2_ip'")')
-[ ! -z "$kcptun_server" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",3,"ip",2];"'$kcptun_server'")')
-[ ! -z "$v2ray_server_addresses" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",3,"ip",3];"'$v2ray_server_addresses'")')
+[ ! -z "$ss_s1_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",0];"'$ss_s1_ip'")')
+[ ! -z "$ss_s2_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",1];"'$ss_s2_ip'")')
+[ ! -z "$kcptun_server" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",2];"'$kcptun_server'")')
+[ ! -z "$v2ray_server_addresses" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",3];"'$v2ray_server_addresses'")')
 mk_mode_x="`nvram get app_69`"
 if [ "$mk_mode_x" = "0" ] ; then
 logger -t "【vmess】" "方案一chnroutes，国外IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",2];"geosite:google")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",3];"geosite:facebook")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",4];"geosite:geolocation-!cn")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",2];"geosite:google")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",4];"geosite:geolocation-!cn")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
 fi
 if [ "$mk_mode_x" = "1" ] ; then
 logger -t "【vmess】" "方案二gfwlist（推荐），只有被墙的站点IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"AsIs")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",2];"geosite:google")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",3];"geosite:facebook")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",6,"domain",4];"geosite:geolocation-!cn")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",2];"geosite:google")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",4];"geosite:geolocation-!cn")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
 mk_vmess_0=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",0])')
 mk_vmess_1=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",1])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0];'"$mk_vmess_1"')')
@@ -878,10 +895,10 @@ fi
 if [ "$mk_mode_x" = "3" ] ; then
 logger -t "【vmess】" "方案四回国模式，国内IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"outboundTag"];"outbound_1")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",8,"outboundTag"];"outbound_1")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",11]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
 mk_vmess_0=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",0])')
 mk_vmess_1=$(echo $mk_vmess| jq --raw-output 'getpath(["outbounds",1])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0];'"$mk_vmess_1"')')
@@ -890,16 +907,22 @@ fi
 if [ "$mk_mode_x" = "2" ] ; then
 logger -t "【vmess】" "方案三全局代理，全部IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",11]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",7]])')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
 else
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",5]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
 fi
 if [ "$mk_mode_b" = "0" ] ; then
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",4]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",5]])')
+fi
+if [ "$mk_mode_dns" = "0" ] ; then
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["inbounds",2]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",0]])')
+else
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["dns","servers",4]])')
 fi
 echo $mk_vmess| jq --raw-output '.' > /tmp/vmess/mk_vmess.json
 if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
@@ -924,6 +947,7 @@ vmess_link_type=`nvram get app_78`
 vmess_link_host=`nvram get app_79`
 vmess_link_path=`nvram get app_80`
 vmess_link_tls=`nvram get app_81`
+v2ray_server_addresses="$vmess_link_add"
 [ "$vmess_link_v" -gt 0 ] || vmess_link_v=1
 if [ "$vmess_link_v" -lt 2 ] ; then
 vmess_link_path=$(echo $vmess_link_host | awk -F '/' '{print $2}')
@@ -1069,6 +1093,7 @@ ss_link_port=`nvram get app_74`
 ss_link_password=`nvram get app_75`
 ss_link_method=`nvram get app_78`
 ss_link_ota=`nvram get app_79`
+v2ray_server_addresses="$ss_link_add"
 mk_vmess=$(json_int_ss_settings)
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"address"];"'$ss_link_add'")')
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"port"];'$ss_link_port')')
@@ -1143,6 +1168,16 @@ echo '{
           "tls"
         ]
       }
+    },
+    {
+      "port": 8053,
+      "tag": "dns_in",
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "8.8.8.8",
+        "port": 53,
+        "network": "tcp,udp"
+      }
     }
   ],
   "outbounds": [
@@ -1184,6 +1219,10 @@ echo '{
           "mark": 255
         }
       }
+    },
+    {
+      "protocol": "dns",
+      "tag": "dns_out"
     }
   ],
   "dns": {
@@ -1212,6 +1251,11 @@ echo '{
     "domainStrategy": "AsIs",
     "balancers": [],
     "rules": [
+      {
+        "inboundTag": ["dns_in"],
+        "outboundTag": "dns_out",
+        "type": "field"
+      },
       {
         "type": "field",
         "outboundTag": "blocked",
