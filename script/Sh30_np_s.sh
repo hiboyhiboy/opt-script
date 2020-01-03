@@ -49,7 +49,7 @@ if [ "$1" = "x" ] ; then
 	nps_renum=`expr $nps_renum + 1`
 	nvram set nps_renum="$nps_renum"
 	if [ "$nps_renum" -gt "2" ] ; then
-		I=2
+		I=19
 		echo $I > $relock
 		logger -t "【nps】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do
@@ -156,9 +156,9 @@ del_tmp=0
 if [ -z "$nps_version" ] ; then
 	nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0  https://github.com/cnlh/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
 	[ -z "$nps_tag" ] && nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/cnlh/nps/releases/latest  2>&1 | grep '<a href="/cnlh/nps/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
-	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.23.2]" && nps_restart x
+	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.25.4]" && nps_restart x
 	[ ! -z "$nps_tag" ] && logger -t "【nps】" "自动下载最新版本 $nps_tag"
-	[ -z "$nps_tag" ] && nps_tag="v0.23.2"
+	[ -z "$nps_tag" ] && nps_tag="v0.25.4"
 	nps_version=$nps_tag && nvram set app_57=$nps_tag
 	nps_restart o
 	logger -t "【nps】" "重启" && nps_restart
@@ -232,6 +232,12 @@ if [ ! -z "$action_nps" ] ; then
 	logger -t "【nps】" "运行 $action_nps"
 	cd /opt/bin/nps
 	if [ "$action_nps" = "npc" ] ; then
+		app_15="/etc/storage/app_15.sh"
+		if [ -z "$(grep "auto_reconnection=true" $app_15)" ] ; then
+			logger -t "【nps】" "客户端配置文件添加断线重连 auto_reconnection=true"
+			sed -Ei '/auto_reconnection=/d' $app_15
+			echo "auto_reconnection=true" >> $app_15
+		fi
 		cmd_name="$action_nps"
 		eval "./$action_nps -config /etc/storage/app_15.sh $cmd_log" &
 		logger -t "【nps】" "客户端配置文件在 /etc/storage/app_15.sh"
@@ -276,6 +282,7 @@ if [ ! -f "$app_15" ] || [ ! -s "$app_15" ] ; then
 server_addr=1.1.1.1:8284
 conn_type=tcp
 vkey=web界面中显示的密钥
+auto_reconnection=true
 
 EEE
 	chmod 755 "$app_15"

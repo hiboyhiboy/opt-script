@@ -968,15 +968,15 @@ hash check_network 2>/dev/null || check1=404
 if [ "$check1" == "404" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+		wget --user-agent "$user_agent" -q  -T 3 -t 1 "$ss_link_1" -O /dev/null
 		[ "$?" == "0" ] && check1=200 || check1=404
 		if [ "$check1" == "404" ] ; then
-			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
+			wget --user-agent "$user_agent" -q  -T 3 -t 2 "$ss_link_1" -O /dev/null
 			[ "$?" == "0" ] && check1=200 || check1=404
 		fi
 	else
-		check1=`curl -L --connect-timeout 5 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-		[ "$check1" != "200" ] && check1=`curl -L --connect-timeout 5 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		check1=`curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
+		[ "$check1" != "200" ] && check1=`curl -L --connect-timeout 4 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
 	fi
 fi
 if [ -s "$check_tmp" ] ; then
@@ -998,15 +998,15 @@ hash check_network 2>/dev/null || check2=404
 if [ "$check2" == "404" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent "$user_agent" -q  -T 5 -t 3 $ss_link_2 -O /dev/null
+		wget --user-agent "$user_agent" -q  -T 3 -t 1 $ss_link_2 -O /dev/null
 		[ "$?" == "0" ] && check2=200 || check2=404
 		if [ "$check2" == "404" ] ; then
-			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_2" -O /dev/null
+			wget --user-agent "$user_agent" -q  -T 3 -t 2 "$ss_link_2" -O /dev/null
 			[ "$?" == "0" ] && check2=200 || check2=404
 		fi
 	else
-		check2=`curl -L --connect-timeout 5 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-		[ "$check2" != "200" ] && check2=`curl -L --connect-timeout 5 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		check2=`curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
+		[ "$check2" != "200" ] && check2=`curl -L --connect-timeout 4 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
 	fi
 fi
 if [ -s "$check_tmp" ] ; then
@@ -1071,11 +1071,17 @@ if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
 			BP_IP="`echo "$ss_s1_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$ss_s2_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `"
 			[ ! -z "$kcptun_server" ] && [ "$kcptun_enable" != "0" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$ss_s2_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$kcptun_server" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `"
 			ss-rules -f
-			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,5353,443' -o -O
+			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,443' -o -O
 			sleep 2
-			check_timeout_network 1 0 "wget_check"
-			check="$check1"
-			if [ "$check" == "200" ] ; then 
+			check1="404"
+			check2="404"
+			check_timeout_network 0 2 "wget_check"
+			check_2_ip="$check2"
+			[ "$check_2_ip" != "200" ] && check_timeout_network 1 0 "wget_check"
+			check_1_ip="$check1"
+			if [ "$check_1_ip" == "200" ] || [ "$check_2_ip" == "200" ] ; then 
+				[ "$check_1_ip" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
+				[ "$check_2_ip" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
 				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接成功"
 				checkip=1
 				if [ ! -z "$app_95" ] ; then
@@ -1084,7 +1090,10 @@ if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
 					break
 				fi
 			else
-				[ "$check1" != "200" ] && logger -t "【SS】" "check_ip 错误！【互联网】连接有问题！！！"
+				[ "$check_1_ip" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
+				[ "$check_2_ip" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
+				[ "$check_1_ip" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_1】连接有问题！！！"
+				[ "$check_2_ip" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_2】连接有问题！！！"
 				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接失败"
 				if [ ! -z "$app_95" ] ; then
 					ss-rules -f
@@ -2006,7 +2015,11 @@ ipset=/githubusercontent.com/gfwlist
 server=/githubusercontent.com/127.0.0.1#8053
 ipset=/github.io/gfwlist
 server=/github.io/127.0.0.1#8053
+ipset=/opt.cn2qq.com/gfwlist
+server=/opt.cn2qq.com/127.0.0.1#8053
 _CONF
+	echo "ipset=/$ss_link_2/gfwlist" >> $confdir/r.wantoss.conf
+	echo "server=/$ss_link_2/127.0.0.1#8053" >> $confdir/r.wantoss.conf
 	restart_dhcpd
 	ss_updatess2=`nvram get ss_updatess2`
 if [ "$ss_updatess" = "0" ] || [ "$ss_updatess2" = "1" ] ; then
@@ -2310,7 +2323,9 @@ rm -f $confdir/r.wantoss.conf
 cat >> "$confdir/r.wantoss.conf" <<-\_CONF
 server=/githubusercontent.com/127.0.0.1#8053
 server=/github.io/127.0.0.1#8053
+server=/opt.cn2qq.com/127.0.0.1#8053
 _CONF
+echo "server=/$ss_link_2/127.0.0.1#8053" >> $confdir/r.wantoss.conf
 restart_dhcpd
 }
 
@@ -2514,7 +2529,7 @@ echo "Debug: $DNS_Server"
 	logger -t "【SS】" "###############启动程序###############"
 	if [ "$ss_mode_x" = "3" ] ; then
 		start_ss_redir
-		start_ss_redir_check
+		start_ss_redir_check # "check_ip"
 		logger -t "【ss-local】" "启动. 可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用."
 		logger -t "【ss-local】" "shadowsocks 进程守护启动"
 		ss_cron_job
@@ -2526,7 +2541,7 @@ echo "Debug: $DNS_Server"
 	dnsmasq_reconf
 	start_ss_redir
 	start_ss_redir_threads
-	start_ss_redir_check
+	start_ss_redir_check # "check_ip"
 	start_ss_rules
 
 	nvram set ss_updatess2=0
@@ -2718,7 +2733,7 @@ if [ "$ss_enable" = "1" ] ; then
 	[ $ss_s1_port ] || logger -t "【SS】" "服务器端口:未填写"
 	[ $ss_s1_method ] || logger -t "【SS】" "加密方式:未填写"
 	[ $ss_server1 ] && [ $ss_s1_port ] && [ $ss_s1_method ] \
-	 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; exit 1; }
+	 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; [ ! -z "$app_95" ] && /etc/storage/script/sh_ezscript.sh ss_link_matching; sleep 20; exit 1; }
 	if [ "$needed_restart" = "2" ] ; then
 		logger -t "【SS】" "检测:更换线路配置，进行快速切换服务器。"
 		swap_ss_redir

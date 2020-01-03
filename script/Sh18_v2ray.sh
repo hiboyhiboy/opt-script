@@ -1231,6 +1231,7 @@ echo '{
         "address": "8.8.8.8",
         "port": 53,
         "domains": [
+          "domain:cn2qq.com",
           "geosite:google",
           "geosite:geolocation-!cn"
         ]
