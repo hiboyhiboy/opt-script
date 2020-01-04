@@ -15,7 +15,7 @@ chinadns_enable=1 && nvram set app_1=1
 fi
 
 chinadns_ng_usage=`nvram get app_103`
-[ -z "$chinadns_ng_usage" ] && chinadns_ng_usage=' -n -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 -g /opt/app/chinadns_ng/gfwlist.txt ' && nvram set app_103="$chinadns_ng_usage"
+[ -z "$chinadns_ng_usage" ] && chinadns_ng_usage=' -n -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 --chnlist-first -m /opt/app/chinadns_ng/chnlist.txt -g /opt/app/chinadns_ng/gfwlist.txt ' && nvram set app_103="$chinadns_ng_usage"
 chinadns_ng_port=`nvram get app_6`
 [ -z $chinadns_ng_port ] && chinadns_ng_port=8053 && nvram set app_6=8053
 
@@ -202,6 +202,7 @@ fi
 logger -t "【chinadns_ng】" "运行 /opt/bin/dns2tcp"
 cmd_name="dns2tcp"
 eval "/opt/bin/dns2tcp -L0.0.0.0#55353 -R8.8.8.8#53 $cmd_log" &
+[ ! -f /opt/app/chinadns_ng/chnlist.txt ] && update_chnlist
 [ ! -f /opt/app/chinadns_ng/gfwlist.txt ] && update_gfwlist
 # 配置参数 '/opt/bin/chinadns_ng -l 8053  -n -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 -g /opt/app/chinadns_ng/gfwlist.txt  '
 usage=" -l $chinadns_ng_port "
@@ -242,6 +243,15 @@ eval "$scriptfilepath keep &"
 exit 0
 }
 
+update_chnlist () {
+[ -z "$( echo "$chinadns_ng_usage" | grep "/opt/app/chinadns_ng/chnlist.txt")" ] && return
+url='https://raw.github.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
+wgetcurl.sh /opt/app/chinadns_ng/chnlist.tmp "$url" "$url" N
+[ ! -s /opt/app/chinadns_ng/chnlist.tmp ] && logger -t "【chinadns_ng】" "错误！ chnlist.txt 下载失败" && return
+cat /opt/app/chinadns_ng/chnlist.tmp | awk -F/ '{print $2}' | sort | uniq >/opt/app/chinadns_ng/chnlist.txt
+rm -f /opt/app/chinadns_ng/chnlist.tmp
+}
+
 update_gfwlist () {
 wgetcurl_checkmd5 /opt/app/chinadns_ng/gfwlist.b64 https://raw.github.com/gfwlist/gfwlist/master/gfwlist.txt https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt N
 	base64 -d  /opt/app/chinadns_ng/gfwlist.b64 > /opt/app/chinadns_ng/gfwlist.txt
@@ -264,7 +274,11 @@ rm -f /opt/app/chinadns_ng/gfwlist.b64 /opt/app/chinadns_ng/gfwlist_domain.txt
 
 update_chnroute () {
 echo "create chnroute hash:net family inet" >/opt/app/chinadns_ng/chnroute.ipset
-curl -4sSkL 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | grep CN | grep ipv4 | awk -F'|' '{printf("add chnroute %s/%d\n", $4, 32-log($5)/log(2))}' >>/opt/app/chinadns_ng/chnroute.ipset
+url='http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
+wgetcurl.sh /opt/app/chinadns_ng/chnroute.tmp "$url" "$url" N
+[ ! -s /opt/app/chinadns_ng/chnroute.tmp ] && logger -t "【chinadns_ng】" "错误！ chnroute.ipset 下载失败" && return
+cat /opt/app/chinadns_ng/chnroute.tmp | grep CN | grep ipv4 | awk -F'|' '{printf("add chnroute %s/%d\n", $4, 32-log($5)/log(2))}' >>/opt/app/chinadns_ng/chnroute.ipset
+rm -f /opt/app/chinadns_ng/chnroute.tmp
 ipset -F chnroute
 ipset -R -exist </opt/app/chinadns_ng/chnroute.ipset
 
@@ -273,7 +287,11 @@ ipset -R -exist </opt/app/chinadns_ng/chnroute.ipset
 
 update_chnroute6 () {
 echo "create chnroute6 hash:net family inet6" >/opt/app/chinadns_ng/chnroute6.ipset
-curl -4sSkL 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | grep CN | grep ipv6 | awk -F'|' '{printf("add chnroute6 %s/%d\n", $4, $5)}' >>/opt/app/chinadns_ng/chnroute6.ipset
+url='http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
+wgetcurl.sh /opt/app/chinadns_ng/chnroute6.tmp "$url" "$url" N
+[ ! -s /opt/app/chinadns_ng/chnroute6.tmp ] && logger -t "【chinadns_ng】" "错误！ chnroute6.ipset 下载失败" && return
+cat /opt/app/chinadns_ng/chnroute6.tmp | grep CN | grep ipv6 | awk -F'|' '{printf("add chnroute6 %s/%d\n", $4, $5)}' >>/opt/app/chinadns_ng/chnroute6.ipset
+rm -f /opt/app/chinadns_ng/chnroute6.tmp
 ipset -F chnroute6
 ipset -R -exist </opt/app/chinadns_ng/chnroute6.ipset
 
@@ -335,7 +353,7 @@ keep)
 	;;
 updateapp19)
 	chinadns_ng_restart o
-	[ "$chinadns_ng_enable" = "1" ] && nvram set chinadns_ng_status="updatechinadns_ng" && logger -t "【chinadns_ng】" "更新规则" && { update_gfwlist; update_chnroute; update_chnroute6; chinadns_ng_restart; }
+	[ "$chinadns_ng_enable" = "1" ] && nvram set chinadns_ng_status="updatechinadns_ng" && logger -t "【chinadns_ng】" "更新规则" && { update_chnlist; update_gfwlist; update_chnroute; update_chnroute6; chinadns_ng_restart; }
 	[ "$chinadns_ng_enable" != "1" ] && nvram set chinadns_ng_v="" && logger -t "【chinadns_ng】" "更新" && update_app del
 	;;
 update_app)

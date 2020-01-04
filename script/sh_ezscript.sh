@@ -461,6 +461,7 @@ line="$(echo $line | sed -e 's/],/]/g' )"
 echo ${line:4} >> /tmp/link_matching/link_matching.txt
 done < /tmp/link_matching/2.txt
 rm -f /tmp/link_matching/?.txt
+logger -t "【自动选用节点】" "重新生成自动选用节点列表： /tmp/link_matching/link_matching.txt"
 fi
 # 选用节点
 if [ -z "$(cat /tmp/link_matching/link_matching.txt | grep -v 已经自动选用节点)" ] ; then
@@ -484,6 +485,7 @@ ss_type_tmp="$(echo $line| jq --compact-output --raw-output 'getpath([8])')"
 [ "$ss_type_tmp" == "ssr" ] && nvram set ss_type="1"
 [ "$ss_type_tmp" == "ss" ] && nvram set ss_type="0"
 sed -i $i_matching's/^/已经自动选用节点/' /tmp/link_matching/link_matching.txt
+logger -t "【自动选用节点】" "已经自动选用节点： $app_97"
 nvram set app_97="$app_97"
 nvram set ss_server="$ss_server"
 nvram set ss_server_port="$ss_server_port"
