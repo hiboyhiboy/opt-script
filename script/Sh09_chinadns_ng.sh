@@ -412,9 +412,9 @@ server 1.1.1.1 -group office
 server-https https://dns.cloudflare.com/dns-query -group office
 server-tls 1.1.1.1 -group office
 # adguard
-server 176.103.130.130 -group office
+#server 176.103.130.130 -group office
 #server 2a00:5a60::ad1:0ff -group office
-server-https https://dns.adguard.com/dns-query -group office
+#server-https https://dns.adguard.com/dns-query -group office
 # OpenDNS
 server 208.67.222.222 -group office
 server-tcp 208.67.222.222:443 -group office
@@ -485,7 +485,7 @@ prefetch-domain yes
 # rr-ttl-max: 资源记录的最大ttl
 # example:
 # rr-ttl 300
-# rr-ttl-min 60
+rr-ttl-min 300
 # rr-ttl-max 86400
 
 # 设置日志级别
