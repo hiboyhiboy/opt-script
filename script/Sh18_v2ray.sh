@@ -1653,6 +1653,7 @@ fi
 
 get_emoji () {
 
+if [ "$name_base64" == 0 ] ; then
 echo -n "$1" \
  | sed -e 's@#@♯@g' \
  | sed -e 's@\r@_@g' \
@@ -1685,7 +1686,9 @@ echo -n "$1" \
  | sed -e 's@"@”@g'
  
 # | sed -e 's@ @_@g'
-
+else
+echo -n "$1"
+fi
 }
 
 add_ss_link () {
@@ -1712,7 +1715,7 @@ if [ ! -z "$ex_params" ] ; then
 	#存在插件
 	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&]*"  | cut -d '=' -f2)";
 	ex_obfsparam=$(printf $(echo -n $ex_obfsparam | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))
-	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts @')";
+	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts @')"
 	link2="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $1}')"
 else
 	ss_link_plugin_opts=" -O origin -o plain "
@@ -1728,6 +1731,48 @@ ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
 ss_link_password=$(echo -n "$ss_link_methodpassword"  | cut -d ':' -f2 )
 ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
 
+}
+
+add_ssr_link () {
+link="$1"
+ex_params="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}')"
+ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
+ex_protoparam="$(echo -n "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
+ex_remarks="$(echo -n "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
+#ex_group="$(echo -n "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
+
+[ ! -z "$ex_remarks" ] && ss_link_name="$(get_emoji "$(echo -n "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )")"
+ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')"
+[ -z "$ex_remarks" ] && ss_link_name="♯""`echo -n "$ss_link_usage" | cut -d ':' -f1 `"
+ss_link_name="$(echo "$ss_link_name"| sed -n '1p')"
+
+ss_link_server=`echo -n "$ss_link_usage" | cut -d ':' -f1 `
+ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
+ss_link_password=$(echo -n "$ss_link_usage"  | cut -d ':' -f6 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d)
+ss_link_method=`echo -n "$ss_link_usage" | cut -d ':' -f4 `
+ss_link_obfs=`echo -n "$ss_link_usage" | cut -d ':' -f5 ` # -o
+if [ "$ss_link_obfs"x = "tls1.2_ticket_fastauth"x ] ; then
+	ss_link_obfs="tls1.2_ticket_auth"
+fi
+ss_link_protocol="$(echo -n "$ss_link_usage" | cut -d ':' -f3)" # -O
+[ ! -z "$ex_obfsparam" ] && ss_link_obfsparam=" -g $ex_obfsparam" # -g
+[ ! -z "$ex_protoparam" ] && ss_link_protoparam=" -G $ex_protoparam" # -G
+
+}
+
+add_0 () {
+ss_link_name=""
+ss_link_server=""
+ss_link_port=""
+ss_link_password=""
+ss_link_method=""
+ss_link_obfs=""
+ss_link_protocol=""
+ss_link_obfsparam=""
+ss_link_protoparam=""
+ss_link_plugin_opts=""
+vmess_link_add=""
+vmess_link_ps=""
 }
 
 do_link () {
@@ -1772,7 +1817,7 @@ sed -e  's@ss://@\nss://@g' -i /tmp/ss/link/2_link.txt
 sed -e  's@vmess:://@vmess://@g' -i /tmp/ss/link/2_link.txt
 sed -e '/^$/d' -i /tmp/ss/link/2_link.txt
 echo >> /tmp/vmess/link/2_link.txt
-rm -f /tmp/vmess/link/vmess_link.txt /tmp/vmess/link/ss_link.txt
+rm -f /tmp/vmess/link/vmess_link.txt /tmp/vmess/link/ss_link.txt /tmp/vmess/link/ssr_link.txt
 while read line
 do
 vmess_line=`echo -n $line | sed -n '1p' |grep 'vmess://'`
@@ -1782,6 +1827,10 @@ fi
 ss_line=`echo -n $line | sed -n '1p' |grep '^ss://'`
 if [ ! -z "$ss_line" ] ; then
 	echo  "$ss_line" | awk -F 'ss://' '{print $2}' >> /tmp/vmess/link/ss_link.txt
+fi
+ssr_line=`echo -n $line | sed -n '1p' |grep '^ssr://'`
+if [ ! -z "$ssr_line" ] ; then
+	echo  "$ssr_line" | awk -F 'ssr://' '{print $2}' >> /tmp/vmess/link/ssr_link.txt
 fi
 done < /tmp/vmess/link/2_link.txt
 if [ -f /tmp/vmess/link/vmess_link.txt ] ; then
@@ -1819,18 +1868,7 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 	while read line
 	do
 	if [ ! -z "$line" ] ; then
-		ss_link_name=""
-		ss_link_server=""
-		ss_link_port=""
-		ss_link_password=""
-		ss_link_method=""
-		ss_link_obfs=""
-		ss_link_protocol=""
-		ss_link_obfsparam=""
-		ss_link_protoparam=""
-		ss_link_plugin_opts=""
-		vmess_link_add=""
-		vmess_link_ps=""
+		add_0
 		add_ss_link "$line"
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
@@ -1856,6 +1894,46 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 	fi
 	done < /tmp/vmess/link/ss_link.txt
 fi
+
+if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
+	sed -e 's/$/&==/g' -i /tmp/vmess/link/ssr_link.txt
+	sed -e "s/_/\//g" -i /tmp/vmess/link/ssr_link.txt
+	sed -e "s/\-/\+/g" -i /tmp/vmess/link/ssr_link.txt
+	awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/vmess/link/ssr_link.txt > /tmp/vmess/link/ss_link2.txt
+	while read line
+	do
+	if [ ! -z "$line" ] ; then
+		add_0
+		add_ssr_link "$line"
+		#SS:-o plain -O origin  
+		if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
+		ss_link_plugin_opts=" -O origin -o plain "
+		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
+		link_echo=""
+		link_echo="$link_echo"'["ss", '
+		vmess_link_ps="$ss_link_name"
+		ss_link_name="$(base64encode "$ss_link_name")"
+		link_echo="$link_echo"'"'"$ss_link_name"'", '
+		link_echo="$link_echo"'"'"$ss_link_server"'", '
+		vmess_link_add="$ss_link_server"
+		link_echo="$link_echo"'"'"$ss_link_port"'", '
+		ss_link_password="$(base64encode "$ss_link_password")"
+		link_echo="$link_echo"'"'"$ss_link_password"'", '
+		link_echo="$link_echo"'"'"$ss_link_method"'", '
+		link_echo="$link_echo"'"", '
+		link_echo="$link_echo"'"", '
+		ss_link_plugin_opts="$(base64encode "$ss_link_plugin_opts")"
+		link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
+		link_echo="$link_echo"'"0", '
+		link_echo="$link_echo"'"end"]]'
+		sed -Ei "s@]]@],@g" /www/link/ss.js
+		sed -Ei '/^\]|^$/d' /www/link/ss.js
+		echo "$link_echo" >> /www/link/ss.js
+		fi
+	fi
+	done < /tmp/vmess/link/ss_link2.txt
+fi
+
 rm -rf /tmp/vmess/link/*
 }
 

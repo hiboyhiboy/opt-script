@@ -10,12 +10,17 @@ chinadns_enable=`nvram get app_1`
 #nvramshow=`nvram showall | grep '=' | grep chinadns_ng | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
 if [ "$chinadns_ng_enable" == "1" ] ; then
+smartdns_enable="`nvram get app_106`"
+[ -z $smartdns_enable ] && smartdns_enable=0 && nvram set app_106=0
 [ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 ChinaDNS-NG 后才能关闭 ChinaDNS"
 chinadns_enable=1 && nvram set app_1=1
 fi
 
 chinadns_ng_usage=`nvram get app_103`
 [ -z "$chinadns_ng_usage" ] && chinadns_ng_usage=' -n -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 --chnlist-first -m /opt/app/chinadns_ng/chnlist.txt -g /opt/app/chinadns_ng/gfwlist.txt ' && nvram set app_103="$chinadns_ng_usage"
+smartdns_usage=`nvram get app_107`
+[ -z "$smartdns_usage" ] && smartdns_usage=' -n -b 0.0.0.0 -c 127.0.0.1#8051 -t 127.0.0.1#8052 --chnlist-first -m /opt/app/chinadns_ng/chnlist.txt -g /opt/app/chinadns_ng/gfwlist.txt ' && nvram set app_107="$smartdns_usage"
+
 chinadns_ng_port=`nvram get app_6`
 [ -z $chinadns_ng_port ] && chinadns_ng_port=8053 && nvram set app_6=8053
 
@@ -75,7 +80,7 @@ chinadns_ng_get_status () {
 
 #lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get chinadns_ng_status`
-B_restart="$chinadns_ng_enable$chinadns_ng_usage"
+B_restart="$chinadns_ng_enable$chinadns_ng_usage$smartdns_enable$smartdns_usage$(cat /etc/storage/app_23.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set chinadns_ng_status=$B_restart
@@ -124,13 +129,33 @@ chinadns_ng_keep () {
 logger -t "【chinadns_ng】" "守护进程启动"
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check
+if [ "$smartdns_enable" == "1" ] ; then
 cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "/opt/bin/smartdns" /tmp/ps | grep -v grep |wc -l\` # 【chinadns_ng】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/smartdns" ] ; then # 【chinadns_ng】
+		logger -t "【chinadns_ng】" "smartdns重新启动\$NUM" # 【chinadns_ng】
+		nvram set chinadns_ng_status=00 && eval "$scriptfilepath &" && sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check # 【chinadns_ng】
+	fi # 【chinadns_ng】
 	NUM=\`grep "/opt/bin/chinadns_ng" /tmp/ps | grep -v grep |wc -l\` # 【chinadns_ng】
 	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/chinadns_ng" ] ; then # 【chinadns_ng】
-		logger -t "【chinadns_ng】" "重新启动\$NUM" # 【chinadns_ng】
+		logger -t "【chinadns_ng】" "chinadns_ng重新启动\$NUM" # 【chinadns_ng】
 		nvram set chinadns_ng_status=00 && eval "$scriptfilepath &" && sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check # 【chinadns_ng】
 	fi # 【chinadns_ng】
 OSC
+else
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "/opt/bin/dns2tcp" /tmp/ps | grep -v grep |wc -l\` # 【chinadns_ng】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/dns2tcp" ] ; then # 【chinadns_ng】
+		logger -t "【chinadns_ng】" "dns2tcp重新启动\$NUM" # 【chinadns_ng】
+		nvram set chinadns_ng_status=00 && eval "$scriptfilepath &" && sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check # 【chinadns_ng】
+	fi # 【chinadns_ng】
+	NUM=\`grep "/opt/bin/chinadns_ng" /tmp/ps | grep -v grep |wc -l\` # 【chinadns_ng】
+	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/chinadns_ng" ] ; then # 【chinadns_ng】
+		logger -t "【chinadns_ng】" "chinadns_ng重新启动\$NUM" # 【chinadns_ng】
+		nvram set chinadns_ng_status=00 && eval "$scriptfilepath &" && sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check # 【chinadns_ng】
+	fi # 【chinadns_ng】
+OSC
+fi
 #return
 fi
 sleep 60
@@ -170,8 +195,8 @@ sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=
 ipset -F chnroute
 ipset -F chnroute6
 restart_dhcpd
-killall chinadns chinadns_ng dns2tcp
-killall -9 chinadns chinadns_ng dns2tcp
+killall chinadns chinadns_ng dns2tcp smartdns
+killall -9 chinadns chinadns_ng dns2tcp smartdns
 kill_ps "/tmp/script/_app1"
 kill_ps "_chinadns.sh"
 kill_ps "/tmp/script/_app19"
@@ -194,6 +219,18 @@ if [ ! -s "$SVC_PATH" ] ; then
 else
 ln -sf /opt/bin/chinadns_ng /opt/bin/chinadns-ng
 fi
+
+if [ "$smartdns_enable" == "1" ] ; then
+wgetcurl_file /opt/bin/smartdns "$hiboyfile/smartdns" "$hiboyfile2/smartdns"
+if [ ! -s "/opt/bin/smartdns" ] ; then
+	logger -t "【chinadns_ng】" "找不到 /opt/bin/smartdns ，需要手动安装 /opt/bin/smartdns"
+	logger -t "【chinadns_ng】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
+fi
+logger -t "【chinadns_ng】" "运行 /opt/bin/smartdns"
+smartdns_v=`smartdns -v`
+nvram set smartdns_v="$smartdns_v"
+eval "/opt/bin/smartdns -c /etc/storage/app_23.sh" &
+else
 wgetcurl_file /opt/bin/dns2tcp "$hiboyfile/dns2tcp" "$hiboyfile2/dns2tcp"
 if [ ! -s "/opt/bin/dns2tcp" ] ; then
 	logger -t "【chinadns_ng】" "找不到 /opt/bin/dns2tcp ，需要手动安装 /opt/bin/dns2tcp"
@@ -202,11 +239,16 @@ fi
 logger -t "【chinadns_ng】" "运行 /opt/bin/dns2tcp"
 cmd_name="dns2tcp"
 eval "/opt/bin/dns2tcp -L0.0.0.0#55353 -R8.8.8.8#53 $cmd_log" &
+fi
 [ ! -f /opt/app/chinadns_ng/chnlist.txt ] && update_chnlist
 [ ! -f /opt/app/chinadns_ng/gfwlist.txt ] && update_gfwlist
 # 配置参数 '/opt/bin/chinadns_ng -l 8053  -n -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 -g /opt/app/chinadns_ng/gfwlist.txt  '
 usage=" -l $chinadns_ng_port "
+if [ "$smartdns_enable" == "1" ] ; then
+usage="$usage $smartdns_usage "
+else
 usage="$usage $chinadns_ng_usage "
+fi
 update_app
 chinadns_ng_v=`chinadns_ng -V | awk -F ' ' '{print $2;}'`
 nvram set chinadns_ng_v="$chinadns_ng_v"
@@ -221,9 +263,15 @@ sleep 2
 [ ! -f /opt/app/chinadns_ng/chnroute.ipset ] && update_chnroute || { ipset -F chnroute; ipset -R -exist </opt/app/chinadns_ng/chnroute.ipset; }
 [ ! -f /opt/app/chinadns_ng/chnroute6.ipset ] && update_chnroute6 || { ipset -F chnroute6; ipset -R -exist </opt/app/chinadns_ng/chnroute6.ipset; }
 
+if [ "$smartdns_enable" == "1" ] ; then
+[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && [ ! -z "$(ps -w | grep "/opt/bin/smartdns" | grep -v grep )" ] && logger -t "【chinadns_ng】" "启动成功 $chinadns_ng_v " && chinadns_ng_restart o
+[ -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/chinadns_ng 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
+[ -z "$(ps -w | grep "/opt/bin/smartdns" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/smartdns 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
+else
 [ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && [ ! -z "$(ps -w | grep "/opt/bin/dns2tcp" | grep -v grep )" ] && logger -t "【chinadns_ng】" "启动成功 $chinadns_ng_v " && chinadns_ng_restart o
 [ -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/chinadns_ng 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
 [ -z "$(ps -w | grep "/opt/bin/dns2tcp" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/dns2tcp 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
+fi
 initopt
 
 # 写入dnsmasq配置
@@ -307,6 +355,221 @@ fi
 
 }
 
+initconfig () {
+
+app_23="/etc/storage/app_23.sh"
+if [ ! -f "$app_23" ] || [ ! -s "$app_23" ] ; then
+	cat > "$app_23" <<-\EEE
+# DNS服务器名称, defaut is host name
+server-name smartdns
+
+# 附加配置文件
+# conf-file [file]
+# conf-file /etc/storage/smartdns.more.conf
+
+# dns服务器绑定ip和端口，默认dns服务器端口为53，支持绑定多个ip和端口
+# bind udp server
+#   bind [IP]:[port] [-group [group]] [-no-rule-addr] [-no-rule-nameserver] [-no-rule-ipset] [-no-speed-check] [-no-cache] [-no-rule-soa] [-no-dualstack-selection]
+# bind tcp server
+#   bind-tcp [IP]:[port] [-group [group]] [-no-rule-addr] [-no-rule-nameserver] [-no-rule-ipset] [-no-speed-check] [-no-cache] [-no-rule-soa] [-no-dualstack-selection]
+# option:
+#   -group: 请求时使用的DNS服务器组。
+#   -no-rule-addr: 跳过address规则。
+#   -no-rule-nameserver: 跳过Nameserver规则。
+#   -no-rule-ipset: 跳过Ipset规则。
+#   -no-speed-check: 停用测速。
+#   -no-cache: 停止缓存。
+#   -no-rule-soa: 跳过SOA(#)规则。
+#   -no-dualstack-selection: 停用双栈测速。
+# example: 
+#  IPV4: 
+#    bind :53
+#    bind :6053 -group office -no-speed-check
+#  IPV6:
+#    bind [::]:53
+#    bind-tcp [::]:53
+bind 0.0.0.0:8051 -group china
+bind 0.0.0.0:8052 -group office
+
+# china 服务器
+server 114.114.114.114 -group china
+server 223.5.5.5 -group china
+server 119.29.29.29 -group china
+server 1.2.4.8 -group china
+#server 240c::6666 -group china
+#server 240c::6644 -group china
+
+# office 服务器 https://kb.adguard.com/en/general/dns-providers
+# Google DNS
+server 8.8.8.8 -group office
+#server 2001:4860:4860::8888 -group office
+server-https https://dns.google/dns-query -group office
+server-tcp 8.8.8.8 -group office
+server-tls 8.8.8.8 -group office
+# Cloudflare DNS
+server 1.1.1.1 -group office
+#server 2606:4700:4700::1111 -group office
+server-https https://dns.cloudflare.com/dns-query -group office
+server-tls 1.1.1.1 -group office
+# adguard
+server 176.103.130.130 -group office
+#server 2a00:5a60::ad1:0ff -group office
+server-https https://dns.adguard.com/dns-query -group office
+# OpenDNS
+server 208.67.222.222 -group office
+server-tcp 208.67.222.222:443 -group office
+#server 2620:119:35::35 -group office
+# Yandex
+#server 77.88.8.8 -group office
+#server 2a02:6b8::feed:0ff -group office
+# Neustar Recursive
+#server 156.154.70.1 -group office
+#server 2610:a1:1018::1 -group office
+# verisign
+#server 64.6.64.6 -group office
+#server 2620:74:1b::1:1 -group office
+# Quad101
+#server 101.101.101.101 -group office
+#server 2001:de4::101 -group office
+# safedns
+#server 195.46.39.39 -group office
+
+# TCP链接空闲超时时间
+# tcp-idle-time [second]
+#tcp-idle-time 120
+
+# 域名结果缓存个数
+# cache-size [number]
+#   0: for no cache
+cache-size 512
+
+# 域名预先获取功能
+# prefetch-domain [yes|no]
+prefetch-domain yes
+
+# 假冒IP地址过滤
+# bogus-nxdomain [ip/subnet]
+
+# 黑名单IP地址
+# blacklist-ip [ip/subnet]
+
+# 白名单IP地址
+# whitelist-ip [ip/subnet]
+
+# 忽略IP地址
+# ignore-ip [ip/subnet]
+
+# 测速模式选择
+# speed-check-mode [ping|tcp:port|none|,]
+# example:
+#   speed-check-mode ping,tcp:80
+#   speed-check-mode tcp:443,ping
+#   speed-check-mode none
+
+# 强制AAAA地址返回SOA
+# force-AAAA-SOA [yes|no]
+
+# 启用IPV4，IPV6双栈IP优化选择策略
+# dualstack-ip-selection-threshold [num] (0~1000)
+# dualstack-ip-selection [yes|no]
+# dualstack-ip-selection yes
+
+# edns客户端子网
+# edns-client-subnet [ip/subnet]
+# edns-client-subnet 192.168.1.1/24
+# edns-client-subnet [8::8]/56
+
+# ttl用于所有资源记录
+# rr-ttl: 所有记录的ttl
+# rr-ttl-min: 资源记录的最小ttl
+# rr-ttl-max: 资源记录的最大ttl
+# example:
+# rr-ttl 300
+# rr-ttl-min 60
+# rr-ttl-max 86400
+
+# 设置日志级别
+# log-level: [level], level=fatal, error, warn, notice, info, debug
+# log-file: 日志文件的文件路径。
+# log-size: log-size：每个日志文件的大小，支持k，m，g
+# log-num: number of logs
+#log-level warn
+#log-file /tmp/syslog.log
+# log-size 128k
+# log-num 2
+
+# DNS审核
+# audit-enable [yes|no]: 启用或禁用审核。
+# audit-enable yes
+# audit-SOA [yes|no]: 启用或禁用日志soa结果。
+# 每个审核文件的audit-size大小，支持k，m，g
+# audit-file /var/log/smartdns-audit.log
+# audit-size 128k
+# audit-num 2
+
+# 远程udp dns服务器列表
+# server [IP]:[PORT] [-blacklist-ip] [-whitelist-ip] [-check-edns] [-group [group] ...] [-exclude-default-group]
+# 默认端口为53
+#   -blacklist-ip: 使用黑名单ip过滤结果
+#   -whitelist-ip: 过滤白名单ip的结果，白名单ip的结果将被接受。
+#   -check-edns: 结果必须存在edns RR，或丢弃结果。
+#   -group [group]: set server to group, use with nameserver /domain/group.
+#   -exclude-default-group: 将此服务器从默认组中排除。
+# server 8.8.8.8 -blacklist-ip -check-edns -group g1 -group g2
+
+# 远程tcp dns服务器列表
+# server-tcp [IP]:[PORT] [-blacklist-ip] [-whitelist-ip] [-group [group] ...] [-exclude-default-group]
+# 默认端口为53
+# server-tcp 8.8.8.8
+
+# 远程tls dns服务器列表
+# server-tls [IP]:[PORT] [-blacklist-ip] [-whitelist-ip] [-spki-pin [sha256-pin]] [-group [group] ...] [-exclude-default-group]
+#   -spki-pin: TLS spki pin to verify.
+#   -tls-host-check: cert hostname to verify.
+#   -hostname: TLS sni hostname.
+# Get SPKI with this command:
+#    echo | openssl s_client -connect '[ip]:853' | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+# default port is 853
+# server-tls 8.8.8.8
+# server-tls 1.0.0.1
+
+# 远程https dns服务器列表
+# server-https https://[host]:[port]/path [-blacklist-ip] [-whitelist-ip] [-spki-pin [sha256-pin]] [-group [group] ...] [-exclude-default-group]
+#   -spki-pin: TLS spki pin to verify.
+#   -tls-host-check: cert hostname to verify.
+#   -hostname: TLS sni hostname.
+#   -http-host: http host.
+# default port is 443
+# server-https https://cloudflare-dns.com/dns-query
+
+# 指定域名使用server组解析
+# nameserver /domain/[group|-]
+# nameserver /www.example.com/office, Set the domain name to use the appropriate server group.
+# nameserver /www.example.com/-, ignore this domain
+nameserver /opt.cn2qq.com/office
+
+# 指定域名IP地址
+# address /domain/[ip|-|-4|-6|#|#4|#6]
+# address /www.example.com/1.2.3.4, return ip 1.2.3.4 to client
+# address /www.example.com/-, ignore address, query from upstream, suffix 4, for ipv4, 6 for ipv6, none for all
+# address /www.example.com/#, return SOA to client, suffix 4, for ipv4, 6 for ipv6, none for all
+
+# 设置IPSET超时功能启用
+# ipset-timeout yes
+
+# 指定 ipset 使用域名
+# ipset /domain/[ipset|-]
+# ipset /www.example.com/block, set ipset with ipset name of block 
+# ipset /www.example.com/-, ignore this domain
+
+EEE
+	chmod 755 "$app_23"
+fi
+
+}
+
+initconfig
+
 update_init () {
 source /etc/storage/script/init.sh
 [ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
@@ -323,7 +586,7 @@ fi
 update_app () {
 update_init
 if [ "$1" = "del" ] ; then
-	rm -rf /opt/bin/dns2tcp /opt/opt_backup/bin/dns2tcp /opt/bin/chinadns_ng /opt/opt_backup/bin/chinadns_ng /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp /opt/app/chinadns_ng/gfwlist.txt /opt/app/chinadns_ng/chnroute6.ipset /opt/app/chinadns_ng/chnroute.ipset
+	rm -rf /opt/bin/dns2tcp /opt/opt_backup/bin/dns2tcp /opt/bin/smartdns /opt/opt_backup/bin/smartdns /opt/bin/chinadns_ng /opt/opt_backup/bin/chinadns_ng /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp /opt/app/chinadns_ng/gfwlist.txt /opt/app/chinadns_ng/chnroute6.ipset /opt/app/chinadns_ng/chnroute.ipset
 fi
 # 加载程序配置页面
 mkdir -p /opt/app/chinadns_ng

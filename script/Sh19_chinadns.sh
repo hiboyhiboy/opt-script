@@ -178,8 +178,8 @@ ipset -F chnroute
 ipset -F chnroute6
 restart_dhcpd
 [ ! -z "$chinadns_path" ] && eval $(ps -w | grep "$chinadns_path" | grep -v grep | awk '{print "kill "$1";";}')
-killall chinadns chinadns_ng dns2tcp
-killall -9 chinadns chinadns_ng dns2tcp
+killall chinadns chinadns_ng dns2tcp smartdns
+killall -9 chinadns chinadns_ng dns2tcp smartdns
 kill_ps "/tmp/script/_app1"
 kill_ps "_chinadns.sh"
 kill_ps "/tmp/script/_app19"

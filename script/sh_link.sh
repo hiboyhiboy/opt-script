@@ -318,7 +318,12 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			link_echo="$link_echo"'"", '
 			#link_echo="$link_echo"'"-o '"$ss_link_obfs"' -O '"$ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
 			link_echo="$link_echo"'"'"$(base64encode "-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam")"'", '
+			#SS:-o plain -O origin  
+			if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
+			link_echo="$link_echo"'"ss"], '
+			else
 			link_echo="$link_echo"'"ssr"], '
+			fi
 			echo "$link_echo" >> /www/link/link.js
 			sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
 			echo '[]]' >> /www/link/link.js
