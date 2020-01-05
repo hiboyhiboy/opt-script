@@ -6,12 +6,14 @@ chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_ng_enable="`nvram get app_102`"
 [ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
+smartdns_enable="`nvram get app_106`"
+[ -z $smartdns_enable ] && smartdns_enable=0 && nvram set app_106=0
 #if [ "$chinadns_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep chinadns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
 
-if [ "$chinadns_ng_enable" == "1" ] ; then
-[ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 ChinaDNS-NG 后才能关闭 ChinaDNS"
+if [ "$chinadns_ng_enable" == "1" ] || [ "$smartdns_enable" == "1" ] ; then
+[ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 smartdns、ChinaDNS-NG 后才能关闭 ChinaDNS"
 Sh19_chinadns_ng.sh $ACTION
 chinadns_status=""
 exit

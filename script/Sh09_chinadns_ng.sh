@@ -6,14 +6,15 @@ chinadns_ng_enable="`nvram get app_102`"
 [ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+smartdns_enable="`nvram get app_106`"
+[ -z $smartdns_enable ] && smartdns_enable=0 && nvram set app_106=0
 #if [ "$chinadns_ng_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep chinadns_ng | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
-if [ "$chinadns_ng_enable" == "1" ] ; then
-smartdns_enable="`nvram get app_106`"
-[ -z $smartdns_enable ] && smartdns_enable=0 && nvram set app_106=0
-[ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 ChinaDNS-NG 后才能关闭 ChinaDNS"
-chinadns_enable=1 && nvram set app_1=1
+if [ "$chinadns_ng_enable" == "1" ] || [ "$smartdns_enable" == "1" ] ; then
+[ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 smartdns、ChinaDNS-NG 后才能关闭 ChinaDNS"
+[ "$chinadns_enable" == "0" ] && chinadns_enable=1 && nvram set app_1=1
+[ "$chinadns_ng_enable" == "0" ] && chinadns_ng_enable=1 && nvram set chinadns_ng_enable=1
 fi
 
 chinadns_ng_usage=`nvram get app_103`
@@ -292,7 +293,7 @@ exit 0
 }
 
 update_chnlist () {
-[ -z "$( echo "$chinadns_ng_usage" | grep "/opt/app/chinadns_ng/chnlist.txt")" ] && return
+[ -z "$(echo "$chinadns_ng_usage$smartdns_usage" | grep "/opt/app/chinadns_ng/chnlist.txt")" ] && return
 url='https://raw.github.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
 wgetcurl.sh /opt/app/chinadns_ng/chnlist.tmp "$url" "$url" N
 [ ! -s /opt/app/chinadns_ng/chnlist.tmp ] && logger -t "【chinadns_ng】" "错误！ chnlist.txt 下载失败" && return
