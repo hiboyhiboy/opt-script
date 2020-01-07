@@ -659,7 +659,7 @@ else
 ss_s2_ip=$ss_server2
 fi
 fi
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | sed -n '1p' | cut -d':' -f2 | tr -d '"' | tr -d ',')
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 if [ ! -z "$server_addresses" ] ; then
 	resolveip=`/usr/bin/resolveip -4 -t 4 $server_addresses | grep -v : | sed -n '1p'`
 	[ -z "$resolveip" ] && resolveip=`arNslookup $server_addresses | sed -n '1p'` 

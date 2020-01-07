@@ -89,7 +89,7 @@ kcptun2_enable2=`nvram get kcptun2_enable2`
 [ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | sed -n '1p' | cut -d':' -f2 | tr -d '"' | tr -d ',')
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 
 nvram set ss_server1=`nvram get ss_server`
 nvram set ss_s1_port=`nvram get ss_server_port`

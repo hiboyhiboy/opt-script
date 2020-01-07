@@ -297,31 +297,30 @@ Mem_lt=100000
 if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 	[ ! -z "$optPath" ] && logger -t "【v2ray】" " /opt/ 在内存储存"
 	[ "$Mem_total" -lt "$Mem_lt" ] && logger -t "【v2ray】" "内存不足100M"
-	[ "$Mem_total" -lt "70000" ] && export  V2RAY_RAY_BUFFER_SIZE=1
-	if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
-		[ "$v2ray_http_format" = "1" ] && wgetcurl.sh /etc/storage/v2ray_config_script.sh "$v2ray_http_config" "$v2ray_http_config"
-		[ "$v2ray_http_format" = "2" ] &&  wgetcurl.sh /opt/bin/v2ray_config.pb "$v2ray_http_config" "$v2ray_http_config"
-		v2ray_http_enable=0
-	fi
-	A_restart=`nvram get app_19`
-	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
-		[ ! -z "$optPath" ] && rm -f /opt/bin/v2ray
-		rm -f /opt/bin/v2ray_config.pb
-		v2ray_wget_v2ctl
-		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置 /opt/bin/v2ray_config.pb"
-		cd "$(dirname "$SVC_PATH")"
-		cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
-		json_join_gfwlist
-		eval "v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb $cmd_log" 
-		[ ! -s /opt/bin/v2ray_config.pb ] && logger -t "【v2ray】" "错误！ /opt/bin/v2ray_config.pb 内容为空, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
-		[ -f /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
-		[ ! -z "$optPath" ] && rm -f /opt/bin/v2ctl /opt/bin/geoip.dat /opt/bin/geosite.dat /tmp/vmess/mk_vmess.json
-	fi
-else
+fi
+	# [ "$Mem_total" -lt "70000" ] && export  V2RAY_RAY_BUFFER_SIZE=1
+	# if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
+		# [ "$v2ray_http_format" = "1" ] && wgetcurl.sh /etc/storage/v2ray_config_script.sh "$v2ray_http_config" "$v2ray_http_config"
+		# [ "$v2ray_http_format" = "2" ] &&  wgetcurl.sh /opt/bin/v2ray_config.pb "$v2ray_http_config" "$v2ray_http_config"
+		# v2ray_http_enable=0
+	# fi
+	# A_restart=`nvram get app_19`
+	# B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	# if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
+		# [ ! -z "$optPath" ] && rm -f /opt/bin/v2ray
+		# rm -f /opt/bin/v2ray_config.pb
+		# v2ray_wget_v2ctl
+		# logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置 /opt/bin/v2ray_config.pb"
+		# cd "$(dirname "$SVC_PATH")"
+		# cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
+		# json_join_gfwlist
+		# eval "v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb $cmd_log" 
+		# [ ! -s /opt/bin/v2ray_config.pb ] && logger -t "【v2ray】" "错误！ /opt/bin/v2ray_config.pb 内容为空, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
+		# [ -f /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
+		# [ ! -z "$optPath" ] && rm -f /opt/bin/v2ctl /opt/bin/geoip.dat /opt/bin/geosite.dat /tmp/vmess/mk_vmess.json
+	# fi
 	v2ray_wget_v2ctl
 	rm -f /opt/bin/v2ray_config.pb
-fi
 if [ ! -s "$SVC_PATH" ] ; then
 	wgetcurl_file "$SVC_PATH" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
 else
