@@ -178,7 +178,7 @@ do
 c_line=`echo $line |grep -v "#" |grep -v 'www_sht='`
 file_name="${line%%=*}"
 if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
-    MD5_TMP="$(cat /tmp/www_shsh.txt | grep "$file_name" | awk -F '=' '{print $NF;}')"
+    MD5_TMP="$(cat /tmp/www_shsh.txt | grep "$file_name""=" | awk -F '=' '{print $NF;}')"
     MD5_ORI="$(md5sum /etc/storage/www_sh/$file_name | awk '{print $1}')"
     if [ ! -s /etc/storage/www_sh/$file_name ] || [ "$MD5_TMP"x != "$MD5_ORI"x ] ; then
         logger -t "【www_sh】" "/etc/storage/www_sh/$file_name 脚本需要更新，自动下载！$hiboyscript/www_sh/$file_name"

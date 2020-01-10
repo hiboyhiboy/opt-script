@@ -19,22 +19,30 @@ mk_mode_b="`nvram get app_70`"
 [ "$mk_mode_x" = "3" ] && mk_mode_b=1
 mk_mode_dns="`nvram get app_105`"
 [ -z $mk_mode_dns ] && mk_mode_dns=0 && nvram set app_105=0
+mk_mode_routing=`nvram get app_108`
+[ -z $mk_mode_routing ] && mk_mode_routing=0 && nvram set app_108=0
 lan_ipaddr=`nvram get lan_ipaddr`
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+if [ "$mk_mode_routing" == "1" ]  ; then
+v2ray_follow=0 && nvram set v2ray_follow=0
+nvram set app_30="$lan_ipaddr"
+nvram set app_31="1088"
+nvram set app_32="$server_addresses"
+fi
 if [ "$transocks_enable" != "0" ]  ; then
 	if [ "$ss_enable" != "0" ]  ; then
 		ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
 		[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
 		if [ "$ss_mode_x" != 3 ]  ; then
-			logger -t "【v2ray】" "错误！！！由于已启用 transocks ，停止启用 SS 透明代理！"
+			logger -t "【v2ray】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 SS 透明代理！"
 			ss_enable=0 && nvram set ss_enable=0
 		fi
 	fi
 	if [ "$v2ray_enable" != 0 ] && [ "$v2ray_follow" != 0 ]  ; then
-		logger -t "【v2ray】" "错误！！！由于已启用 transocks ，停止启用 v2ray 透明代理！"
+		logger -t "【v2ray】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 v2ray 透明代理！"
 		v2ray_follow=0 && nvram set v2ray_follow=0
 	fi
 fi
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 if [ "$v2ray_enable" != "0" ] ; then
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 #nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -114,7 +122,7 @@ exit 0
 v2ray_get_status () {
 
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$chinadns_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$chinadns_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set v2ray_status=$B_restart
@@ -154,6 +162,7 @@ fi
 
 v2ray_keep () {
 logger -t "【v2ray】" "守护进程启动"
+[ "$mk_mode_routing" == "1" ] && nvram set app_104=1 && Sh39_ipt2socks.sh # 启用 ipt2socks
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
@@ -348,6 +357,22 @@ chmod 777 /etc/ssl/certs
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
 su_cmd="eval"
+if [ "$mk_mode_routing" == "1" ]  ; then
+# 停止 ipt2socks
+/etc/storage/script/Sh15_ss.sh transock_stop
+sed -Ei '/【transocks】|【ipt2socks】|^$/d' /tmp/script/_opt_script_check
+killall transocks ipt2socks
+killall -9 transocks ipt2socks
+kill_ps "/tmp/script/_app10"
+kill_ps "_tran_socks.sh"
+kill_ps "/tmp/script/_app20"
+kill_ps "_ipt2socks.sh"
+v2ray_follow=0 && nvram set v2ray_follow=0
+nvram set app_30="$lan_ipaddr"
+nvram set app_31="1088"
+nvram set app_32="$server_addresses"
+Sh39_ipt2socks.sh
+fi
 if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
 	NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
 	hash su 2>/dev/null && su_x="1"
@@ -370,7 +395,11 @@ if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
 	[ "$v2ray_http_format" = "1" ] && su_cmd2="$v2ray_path -format json -config $v2ray_http_config"
 	[ "$v2ray_http_format" = "2" ] && su_cmd2="$v2ray_path -format pb  -config $v2ray_http_config"
 else
+	if [ "$mk_mode_routing" != "0" ]  ; then
+	json_mk_ipt2socks
+	else
 	cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
+	fi
 	json_join_gfwlist
 	chmod 777 /tmp/vmess
 	chmod 777 /tmp/vmess/mk_vmess.json
@@ -396,12 +425,11 @@ flush_r
 logger -t "【v2ray】" "启动 透明代理"
 logger -t "【v2ray】" "备注：默认配置的透明代理会导致广告过滤失效，需要手动改造配置前置代理过滤软件"
 if [ ! -z "$(grep '"port": 8053' /etc/storage/v2ray_config_script.sh)" ] ; then
-logger -t "【v2ray】" "配置含内置 DNS outbound 功能，让 V2Ray 充当 DNS 服务。"
-chinadns_enable=0 && nvram set app_1=0
-nvram set app_102=0
-Sh09_chinadns_ng.sh
-Sh19_chinadns.sh
-
+	logger -t "【v2ray】" "配置含内置 DNS outbound 功能，让 V2Ray 充当 DNS 服务。"
+	chinadns_enable=0 && nvram set app_1=0
+	nvram set app_102=0
+	Sh09_chinadns_ng.sh
+	Sh19_chinadns.sh
 fi
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 logger -t "【v2ray】" "chinadns 已经启动 防止域名污染"
@@ -825,6 +853,154 @@ fi
 fi
 fi
 fi
+}
+
+json_int_ipt2socks () {
+echo '{
+  "log": {
+    "error": "/tmp/syslog.log",
+    "loglevel": "error"
+  },
+  "inbounds": [
+    {
+      "port": 1088,
+      "listen": "192.168.123.1",
+      "protocol": "socks",
+      "settings": {
+        "auth": "noauth",
+        "udp": true,
+        "ip": "192.168.123.1"
+      },
+      "tag": "local_1088",
+      "sniffing": {
+        "enabled": false,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "",
+      "settings": {},
+      "tag": "outbound_1",
+      "streamSettings": {
+        "network": "",
+        "security": "",
+        "tlsSettings": {},
+        "tcpSettings": {},
+        "kcpSettings": {},
+        "wsSettings": {},
+        "httpSettings": {},
+        "dsSettings": {},
+        "quicSettings": {},
+        "sockopt": {
+          "mark": 255
+        }
+      }
+    },
+    {
+      "protocol": "freedom",
+      "settings": {},
+      "tag": "direct",
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255
+        }
+      }
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "blocked",
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255
+        }
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "AsIs",
+    "balancers": [],
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "127.0.0.0/8",
+          "::1/128"
+        ],
+        "outboundTag": "blocked"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "8.8.8.8",
+          "8.8.4.4",
+          "208.67.222.222",
+          "208.67.220.220",
+          "1.1.1.1",
+          "1.0.0.1"
+        ],
+        "outboundTag": "outbound_1"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "1.2.3.4",
+          "1.2.3.4",
+          "1.2.3.4",
+          "1.2.3.4",
+          "geoip:private",
+          "100.100.100.100/32",
+          "188.188.188.188/32",
+          "110.110.110.110/32"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "local_1088"
+        ],
+        "outboundTag": "outbound_1"
+      }
+    ]
+  }
+}
+'
+
+}
+
+json_mk_ipt2socks () {
+mkdir -p /tmp/vmess
+if [ "$mk_mode_routing" != "1" ] ; then
+	return
+fi
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+json_jq_check
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	return 1
+fi
+fi
+logger -t "【vmess】" "开始生成 ipt2socks 配置"
+mk_ipt2socks=$(json_int_ipt2socks)
+mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["inbounds",0,"listen"];"'$lan_ipaddr'")')
+mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"'$lan_ipaddr'")')
+logger -t "【vmess】" "提取 outbounds 生成 ipt2socks 配置"
+mk_config="$(cat /etc/storage/v2ray_config_script.sh | jq --raw-output '.')"
+mk_config_0=$(echo $mk_config| jq --raw-output 'getpath(["outbounds",0])')
+mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["outbounds",0];'"$mk_config_0"')')
+mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["outbounds",0,"tag"];"outbound_1")')
+echo $mk_ipt2socks | jq --raw-output '.' > /tmp/vmess/mk_vmess.json
+if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
+	logger -t "【vmess】" "错误！生成透明代理路由规则使用 ipt2socks 方式的 V2Ray 配置为空，请看看哪里问题？"
+else
+	logger -t "【vmess】" "完成！生成透明代理路由规则使用 ipt2socks 方式的 V2Ray 配置，"
+fi
+
 }
 
 json_mk_vmess () {

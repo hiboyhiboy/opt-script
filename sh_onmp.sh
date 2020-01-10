@@ -219,7 +219,8 @@ nginx_special_conf()
 # php-fpm
 cat > "/opt/etc/nginx/conf/php-fpm.conf" <<-\OOO
 location ~ \.php(?:$|/) {
-    fastcgi_split_path_info ^(.+\.php)(/.+)$; 
+    fastcgi_split_path_info ^(.+?\.php)(/.*|)$;
+    try_files $fastcgi_script_name =404;
     fastcgi_pass unix:/opt/var/run/php7-fpm.sock;
     fastcgi_index index.php;
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
@@ -265,11 +266,13 @@ location ~ ^/(?:\.|autotest|occ|issue|indie|db_|console) {
     deny all;
 }
 
-location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|ocs-provider/.+)\.php(?:$|/) {
-    fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|oc[ms]-provider/.+)\.php(?:$|/) {
+    fastcgi_split_path_info ^(.+?\.php)(/.*|)$;
+    set $path_info $fastcgi_path_info;
+    try_files $fastcgi_script_name =404;
     include fastcgi_params;
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-    fastcgi_param PATH_INFO $fastcgi_path_info;
+    fastcgi_param PATH_INFO $path_info;
     fastcgi_param modHeadersAvailable true;
     fastcgi_param front_controller_active true;
     fastcgi_pass unix:/opt/var/run/php7-fpm.sock;
@@ -282,7 +285,7 @@ location ~ ^/(?:updater|ocs-provider)(?:$|/) {
     index index.php;
 }
 
-location ~ \.(?:css|js|woff|svg|gif)$ {
+location ~ \.(?:css|js|woff|woff2?|svg|gif|map)$ {
     try_files $uri /index.php$request_uri;
     add_header Cache-Control "public, max-age=15778463";
     add_header X-Content-Type-Options nosniff;
@@ -337,12 +340,14 @@ location ~ ^/(?:\.|autotest|occ|issue|indie|db_|console) {
     return 404;
 }
 
-location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|ocs-provider/.+|core/templates/40[34])\.php(?:$|/) {
-    fastcgi_split_path_info ^(.+\.php)(/.*)$;
+location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|oc[ms]-provider/.+|core/templates/40[34])\.php(?:$|/) {
+    fastcgi_split_path_info ^(.+?\.php)(/.*|)$;
+    set $path_info $fastcgi_path_info;
+    try_files $fastcgi_script_name =404;
     include fastcgi_params;
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     fastcgi_param SCRIPT_NAME $fastcgi_script_name;
-    fastcgi_param PATH_INFO $fastcgi_path_info;
+    fastcgi_param PATH_INFO $path_info;
     fastcgi_param modHeadersAvailable true;
     fastcgi_param front_controller_active true;
     fastcgi_read_timeout 180;

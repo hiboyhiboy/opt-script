@@ -14,7 +14,7 @@ smartdns_enable="`nvram get app_106`"
 if [ "$chinadns_ng_enable" == "1" ] || [ "$smartdns_enable" == "1" ] ; then
 [ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 smartdns、ChinaDNS-NG 后才能关闭 ChinaDNS"
 [ "$chinadns_enable" == "0" ] && chinadns_enable=1 && nvram set app_1=1
-[ "$chinadns_ng_enable" == "0" ] && chinadns_ng_enable=1 && nvram set chinadns_ng_enable=1
+[ "$chinadns_ng_enable" == "0" ] && chinadns_ng_enable=1 && nvram set app_102=1
 fi
 
 chinadns_ng_usage=`nvram get app_103`

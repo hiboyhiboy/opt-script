@@ -23,6 +23,146 @@ cmd_log2=' 2>&1 | awk '"'"'{cmd="logger -t '"'"'"'"'"'"'"'"'【'"'"'$cmd_name'"'
 chmod 755 /etc/storage/*.sh
 ulimit -HSn 65536
 
+x_check_timeout_network_x()
+{
+[ -z "$(which check_network)" ] && return
+check_tmp="/tmp/check_timeout/$1"
+[ "$2" == "1" ] && ss_link_3="3" 
+[ "$2" == "2" ] && ss_link_3="0"
+check_network "$ss_link_3"
+if [ "$?" != "0" ] ; then
+	check_network "$ss_link_3"
+	[ "$?" == "0" ] && echo "check$2=200" >> $check_tmp || echo "check$2=404" >> $check_tmp
+else
+	echo "check$2=200" >> $check_tmp
+fi
+re_txt=`expr $2 + 2`
+echo "check$re_txt=200" >> $check_tmp
+sleep 10
+rm -f $check_tmp
+}
+
+x_wget_check_timeout_network_x()
+{
+[ -z "$(which wget)" ] && return
+check_tmp="/tmp/check_timeout/$1"
+[ "$2" == "1" ] && ss_link_3="$ss_link_1" 
+[ "$2" == "2" ] && ss_link_3="$ss_link_2"
+wget --user-agent "$user_agent" -q  -T 3 -t 1 "$ss_link_3" -O /dev/null
+if [ "$?" != "0" ] ; then
+	wget --user-agent "$user_agent" -q  -T 3 -t 2 "$ss_link_3" -O /dev/null
+	[ "$?" == "0" ] && echo "check$2=200" >> $check_tmp || echo "check$2=404" >> $check_tmp
+else
+	echo "check$2=200" >> $check_tmp
+fi
+re_txt=`expr $2 + 2`
+echo "check$re_txt=200" >> $check_tmp
+sleep 10
+rm -f $check_tmp
+}
+
+x_curl_check_timeout_network_x()
+{
+[ -z "$(which curl)" ] && return
+check_tmp="/tmp/check_timeout/$1"
+[ "$2" == "1" ] && ss_link_3="$ss_link_1" 
+[ "$2" == "2" ] && ss_link_3="$ss_link_2"
+if [ "$(curl -L --connect-timeout 10 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)" != "200" ] ; then
+	[ "$(curl -L --connect-timeout 10 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)" == "200" ] || echo "check$2=200" >> $check_tmp && echo "check$2=404" >> $check_tmp
+else
+	echo "check$2=200" >> $check_tmp
+fi
+re_txt=`expr $2 + 2`
+echo "check$re_txt=200" >> $check_tmp
+sleep 10
+rm -f $check_tmp
+}
+
+check_timeout_network()
+{
+mkdir -p /tmp/check_timeout
+if [ "$1" != "wget_check" ] ; then
+SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+rm -f /tmp/check_timeout/$RND_NUM
+check1="404"
+check2="404"
+check3="404"
+check4="404"
+eval 'x_check_timeout_network_x "$RND_NUM" "1"' &
+eval 'x_check_timeout_network_x "$RND_NUM" "2"' &
+i_timeout=1
+while [ "$check3" == "404" ] || [ "$check4" == "404" ] ;
+do
+sleep 1
+[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
+i_timeout=`expr $i_timeout + 1`
+if [ "$i_timeout" -gt 10 ] ; then
+#logger -t "【check_timeout_network】" "网络连接，超时 10 秒！ $check1 $check2"
+echo "【check_timeout_network】 网络连接，超时 10 秒！ $check1 $check2"
+break
+fi
+done
+[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
+rm -f /tmp/check_timeout/$RND_NUM
+fi
+
+if [ ! -z "$(which curl)" ] ; then 
+if [ "$check1" == "404" ] || [ "$check2" == "404" ] ; then 
+SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+rm -f /tmp/check_timeout/$RND_NUM
+check1="404"
+check2="404"
+check3="404"
+check4="404"
+eval 'x_curl_check_timeout_network_x "$RND_NUM" "1"' &
+eval 'x_curl_check_timeout_network_x "$RND_NUM" "2"' &
+i_timeout=1
+while [ "$check3" == "404" ] || [ "$check4" == "404" ] ;
+do
+sleep 1
+[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
+i_timeout=`expr $i_timeout + 1`
+if [ "$i_timeout" -gt 10 ] ; then
+#logger -t "【check_timeout_network】" "网络连接，超时 10 秒！ $check1 $check2"
+echo "【check_timeout_network】 网络连接，超时 10 秒！ $check1 $check2"
+break
+fi
+done
+[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
+rm -f /tmp/check_timeout/$RND_NUM
+fi
+fi
+
+if [ "$check1" == "404" ] || [ "$check2" == "404" ] ; then 
+SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+rm -f /tmp/check_timeout/$RND_NUM
+check1="404"
+check2="404"
+check3="404"
+check4="404"
+eval 'x_wget_check_timeout_network_x "$RND_NUM" "1"' &
+eval 'x_wget_check_timeout_network_x "$RND_NUM" "2"' &
+i_timeout=1
+while [ "$check3" == "404" ] || [ "$check4" == "404" ] ;
+do
+sleep 1
+[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
+i_timeout=`expr $i_timeout + 1`
+if [ "$i_timeout" -gt 10 ] ; then
+#logger -t "【check_timeout_network】" "网络连接，超时 10 秒！ $check1 $check2"
+echo "【check_timeout_network】 网络连接，超时 10 秒！ $check1 $check2"
+break
+fi
+done
+[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
+rm -f /tmp/check_timeout/$RND_NUM
+fi
+
+}
+
 kill_ps () {
 
 COMMAND="$1"

@@ -29,11 +29,11 @@ ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为�
 [ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
 if [ "$transocks_enable" != "0" ]  ; then
 	if [ "$ss_enable" != "0" ] && [ "$ss_mode_x" != 3 ]  ; then
-		logger -t "【clash】" "错误！！！由于已启用 transocks ，停止启用 SS 透明代理！"
+		logger -t "【clash】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 SS 透明代理！"
 		ss_enable=0 && nvram set ss_enable=0
 	fi
 	if [ "$clash_enable" != 0 ] && [ "$clash_follow" != 0 ]  ; then
-		logger -t "【clash】" "错误！！！由于已启用 transocks ，停止启用 clash 透明代理！"
+		logger -t "【clash】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 clash 透明代理！"
 		clash_follow=0 && nvram set app_92=0
 	fi
 fi

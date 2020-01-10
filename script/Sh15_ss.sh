@@ -19,12 +19,12 @@ if [ "$transocks_enable" != "0" ]  ; then
 		ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
 		[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
 		if [ "$ss_mode_x" != 3 ]  ; then
-			logger -t "【SS】" "错误！！！由于已启用 transocks ，停止启用 SS 透明代理！"
+			logger -t "【SS】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 SS 透明代理！"
 			ss_enable=0 && nvram set ss_enable=0
 		fi
 	fi
 	if [ "$v2ray_enable" != 0 ] && [ "$v2ray_follow" != 0 ]  ; then
-		logger -t "【SS】" "错误！！！由于已启用 transocks ，停止启用 v2ray 透明代理！"
+		logger -t "【SS】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 v2ray 透明代理！"
 		v2ray_follow=0 && nvram set v2ray_follow=0
 	fi
 fi
@@ -563,7 +563,7 @@ start_ss_redir_check()
 sleep 2
 [ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动成功" && ss_restart o
 [ -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
-check_ip $1
+[ "$ss_mode_x" != "3" ] && check_ip $1
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	[ "$ss_mode_x" = "3" ] && killall_ss_redir
 	[ ! -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动成功" && ss_restart o
@@ -879,7 +879,7 @@ EOF
 start_ss_redir
 start_ss_redir_threads
 start_ss_redir_check # "check_ip"
-
+[ "$ss_mode_x" = "3" ] && return
 port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 if [ "$port"x = 0x ] ; then
 	logger -t "【SS】" "检测1:找不到 SS_SPEC 转发规则, 重新添加"
@@ -943,109 +943,6 @@ fi
 fi
 }
 
-x_check_timeout_network_x()
-{
-check1=404
-check2=404
-check4=0
-wget_check="$4"
-check_tmp="/tmp/check_timeout/$1"
-rm -f $check_tmp
-echo "check1=$check1" > $check_tmp
-echo "check2=$check2" >> $check_tmp
-hash check_network 2>/dev/null && check4=1
-[ "$wget_check" == "wget_check" ] && check4=0
-if [ "$2" == "1" ] ; then
-if [ "$check4" == "1" ] ; then
-	check_network 3
-	[ "$?" == "0" ] && check1=200 || check1=404
-	if [ "$check1" == "404" ] ; then
-		check_network 3
-		[ "$?" == "0" ] && check1=200 || check1=404
-	fi
-fi
-hash check_network 2>/dev/null || check1=404
-if [ "$check1" == "404" ] ; then
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent "$user_agent" -q  -T 3 -t 1 "$ss_link_1" -O /dev/null
-		[ "$?" == "0" ] && check1=200 || check1=404
-		if [ "$check1" == "404" ] ; then
-			wget --user-agent "$user_agent" -q  -T 3 -t 2 "$ss_link_1" -O /dev/null
-			[ "$?" == "0" ] && check1=200 || check1=404
-		fi
-	else
-		check1=`curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-		[ "$check1" != "200" ] && check1=`curl -L --connect-timeout 4 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-	fi
-fi
-if [ -s "$check_tmp" ] ; then
-rm -f $check_tmp
-echo "check1=$check1" > $check_tmp
-echo "check2=$check2" >> $check_tmp
-fi
-fi
-if [ "$3" == "2" ] ; then
-if [ "$check4" == "1" ] ; then
-	check_network
-	[ "$?" == "0" ] && check2=200 || check2=404
-	if [ "$check2" == "404" ] ; then
-		check_network
-		[ "$?" == "0" ] && check2=200 || check2=404
-	fi
-fi
-hash check_network 2>/dev/null || check2=404
-if [ "$check2" == "404" ] ; then
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		wget --user-agent "$user_agent" -q  -T 3 -t 1 $ss_link_2 -O /dev/null
-		[ "$?" == "0" ] && check2=200 || check2=404
-		if [ "$check2" == "404" ] ; then
-			wget --user-agent "$user_agent" -q  -T 3 -t 2 "$ss_link_2" -O /dev/null
-			[ "$?" == "0" ] && check2=200 || check2=404
-		fi
-	else
-		check2=`curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-		[ "$check2" != "200" ] && check2=`curl -L --connect-timeout 4 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null`
-	fi
-fi
-if [ -s "$check_tmp" ] ; then
-rm -f $check_tmp
-echo "check1=$check1" > $check_tmp
-echo "check2=$check2" >> $check_tmp
-fi
-fi
-[ -s "$check_tmp" ] && echo "check3=200" >> $check_tmp
-sleep 10
-rm -f $check_tmp
-}
-
-check_timeout_network()
-{
-mkdir -p /tmp/check_timeout
-SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-rm -f /tmp/check_timeout/$RND_NUM
-check1="404"
-check2="404"
-check3="404"
-eval 'x_check_timeout_network_x "$RND_NUM" "$1" "$2" "$3"' &
-i_timeout=1
-while [ "$check3" == "404" ] ;
-do
-sleep 1
-[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
-i_timeout=`expr $i_timeout + 1`
-if [ "$i_timeout" -gt 10 ] ; then
-#logger -t "【check_timeout_network】" "网络连接，超时 10 秒！ $check1 $check2"
-echo "【check_timeout_network】 网络连接，超时 10 秒！ $check1 $check2"
-break
-fi
-done
-[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
-rm -f /tmp/check_timeout/$RND_NUM
-}
-
 check_ip()
 {
 if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
@@ -1075,13 +972,12 @@ if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
 			sleep 2
 			check1="404"
 			check2="404"
-			check_timeout_network 0 2 "wget_check"
-			check_2_ip="$check2"
-			[ "$check_2_ip" != "200" ] && check_timeout_network 1 0 "wget_check"
-			check_1_ip="$check1"
-			if [ "$check_1_ip" == "200" ] || [ "$check_2_ip" == "200" ] ; then 
-				[ "$check_1_ip" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
-				[ "$check_2_ip" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
+			check_timeout_network "wget_check"
+			if [ "$check1" == "200" ] || [ "$check2" == "200" ] ; then 
+				[ "$check1" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
+				[ "$check2" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
+				[ "$check1" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_1】连接有问题！！！"
+				[ "$check2" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_2】连接有问题！！！"
 				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接成功"
 				checkip=1
 				if [ ! -z "$app_95" ] ; then
@@ -1090,10 +986,10 @@ if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
 					break
 				fi
 			else
-				[ "$check_1_ip" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
-				[ "$check_2_ip" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
-				[ "$check_1_ip" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_1】连接有问题！！！"
-				[ "$check_2_ip" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_2】连接有问题！！！"
+				[ "$check1" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
+				[ "$check2" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
+				[ "$check1" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_1】连接有问题！！！"
+				[ "$check2" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_2】连接有问题！！！"
 				logger -t "【ss-redir】" "check_ip 检查 SS 服务器 $Server_ip 【$action_port】 代理连接失败"
 				if [ ! -z "$app_95" ] ; then
 					ss-rules -f
@@ -2560,9 +2456,10 @@ echo "Debug: $DNS_Server"
 
 	check1=404
 	check2=404
-	check_timeout_network 1 2
-	check="$check1"
+	check_timeout_network "wget_check"
 if [ "$check1" != "200" ] || [ "$check2" != "200" ] ; then 
+	[ "$check1" == "200" ] && logger -t "【SS】" "连接到【互联网】正常。"
+	[ "$check2" == "200" ] && logger -t "【SS】" "连接到【Google.com】正常。"
 	[ "$check1" != "200" ] && logger -t "【SS】" "错误！【互联网】连接有问题！！！"
 	[ "$check2" != "200" ] && logger -t "【SS】" "错误！【Google.com】连接有问题！！！"
 	logger -t "【SS】" "网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
@@ -2973,10 +2870,9 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 
 #检查是否存在SS备份服务器, 这里通过判断 ss_rdd_server 是否填写来检查是否存在备用服务器
 
-check=404
-check_timeout_network 0 2
-check="$check2"
-if [ "$check" == "200" ] ; then
+check2=404
+check_timeout_network "wget_check"
+if [ "$check2" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
 	nvram set ss_internet="1"
@@ -2985,10 +2881,9 @@ if [ "$check" == "200" ] ; then
 	continue
 fi
 
-check=404
-check_timeout_network 1 0
-check="$check1"
-if [ "$check" == "200" ] ; then
+check1=404
+check_timeout_network "wget_check"
+if [ "$check1" == "200" ] ; then
 	echo "[$LOGTIME] Internet have no problem."
 else
 	logger -t "【SS】" " Internet 问题, 请检查您的服务供应商."
@@ -3011,10 +2906,9 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 		sleep 5
 	fi
 fi
-check=404
-check_timeout_network 0 2
-check="$check2"
-if [ "$check" == "200" ] ; then
+check2=404
+check_timeout_network "wget_check"
+if [ "$check2" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
 	nvram set ss_internet="1"
@@ -3075,10 +2969,9 @@ if [ ! -z "$ss_rdd_server" ] ; then
 	gen_include
 	restart_dhcpd
 	sleep 5
-	check=404
-	check_timeout_network 0 2
-	check="$check2"
-	if [ "$check" == "200" ] ; then
+	check2=404
+	check_timeout_network "wget_check"
+	if [ "$check2" == "200" ] ; then
 		logger -t "【SS】" " SS 服务器 $Server_ip 【$Server】 连接√"
 		rebss="1"
 		sleep_rnd

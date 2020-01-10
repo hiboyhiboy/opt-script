@@ -54,8 +54,57 @@ if [ ! -z "$EMI_tmp" ] ; then
 	fi
 fi
 
+cmd_cpu_enable=`nvram get cmd_cpu_enable`
+if [ "$cmd_cpu_enable" != "1" ] ; then
+[ -f /tmp/top ] && { rm -f /tmp/top; } || { top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" > /tmp/top; }
+if [ -s /tmp/top ] ; then
+ #21445 21444 admin    R     1972  0.4   2 24.9 COMMAND
+ #  810 30601 admin    R     1588  0.3   3  2.2 top -n 1
+
+while read line
+do
+if [ ! -z "$line" ] ; then
+top_PID="$(echo $line | awk '{print substr($0,1,5)}')"
+top_COMMAND="$(echo ${line: 46: 34})"
+top_CPU="$(echo ${line: 41: 2})"
+threads=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
+[ -z $threads ] && threads=1
+max_cpu=`expr 100 / $threads - 3 `
+if [ $max_cpu -lt $top_CPU ] ; then
+if [ -z "$(grep $top_PID© /tmp/top_run)" ] ; then
+logger -t "script_check" "检测到进程 PID【$top_PID】使用CPU $top_CPU% 进入防卡CPU检测序列 $top_COMMAND"
+#©§
+echo "$top_PID©$top_CPU©§1§$top_COMMAND" >> /tmp/top_run
+fi
+fi
+fi
+done < /tmp/top
+
+while read line
+do
+if [ ! -z "$line" ] ; then
+top_PID="$(echo $line | awk -F '©' '{print $1}')"
+if [ -z "$(grep "$top_PID " /tmp/top)" ] ; then
+sed -Ei "/^$top_PID©/d" /tmp/top_run
+break
+#continue
+fi
+top_i="$(echo $line | awk -F '§' '{print $2}')"
+top_CPU="$(echo $line | awk -F '©' '{print $2}')"
+top_2i=`expr $top_i + 1`
+if [ $top_2i -gt 50 ] ; then
+kill $top_PID
+kill -9 $top_PID
+logger -t "script_check" "检测到进程 PID【$top_PID】 $top_COMMAND"
+logger -t "script_check" "已经使用CPU $top_CPU% 大于15分钟，尝试 kill 进程防卡CPU"
+fi
+sed -e "s@^$top_PID©$top_CPU©§$top_i§@$top_PID©$top_CPU©§$top_2i§@g" -i /tmp/top_run
+fi
+done < /tmp/top_run
+fi
+fi
+
 rm -f /tmp/ps
 ps -w > /tmp/ps
 [ ! -f /tmp/webui_yes ] &&   exit 0
-
 

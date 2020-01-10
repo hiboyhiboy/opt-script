@@ -14,7 +14,7 @@ smartdns_enable="`nvram get app_106`"
 
 if [ "$chinadns_ng_enable" == "1" ] || [ "$smartdns_enable" == "1" ] ; then
 [ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 smartdns、ChinaDNS-NG 后才能关闭 ChinaDNS"
-Sh19_chinadns_ng.sh $ACTION
+/etc/storage/script/Sh09_chinadns_ng.sh $ACTION
 chinadns_status=""
 exit
 fi

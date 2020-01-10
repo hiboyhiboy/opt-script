@@ -266,33 +266,10 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 		sleep 5
 		reboot
 	fi
-	check=0
-	hash check_network 2>/dev/null && check=1
-	if [ "$check" == "1" ] ; then
-		check_network 3
-		[ "$?" == "0" ] && check=200 || { check=404;  sleep 1; }
-		if [ "$check" == "404" ] ; then
-			check_network 3
-			[ "$?" == "0" ] && check=200 || check=404
-		fi
-	fi
-	hash check_network 2>/dev/null || check=404
-	if [ "$check" == "404" ] ; then
-		curltest=`which curl`
-		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
-			[ "$?" == "0" ] && check=200 || { check=404;  sleep 1; }
-			if [ "$check" == "404" ] ; then
-				wget --user-agent "$user_agent" -q  -T 5 -t 3 "$ss_link_1" -O /dev/null
-				[ "$?" == "0" ] && check=200 || check=404
-			fi
-		else
-			check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-			[ "$check" != "200" ] &&  sleep 1
-			[ "$check" != "200" ] && check=`curl -L --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_1" -o /dev/null`
-		fi
-	fi
-	if [ "$check" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
+	check1="404"
+	check2="404"
+	check_timeout_network "wget_check"
+	if [ "$check1" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		reb=1
 		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 
