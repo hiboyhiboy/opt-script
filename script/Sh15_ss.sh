@@ -947,8 +947,8 @@ check_ip()
 {
 if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
 	# 检查主服务器是否能用
+	dnsmasq_tmp_reconf
 	checkip=0
-	sleep 1
 	for action_port in 1090 1091
 	do
 		if [ ! -z "$app_95" ] ; then
@@ -969,7 +969,7 @@ if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
 			[ ! -z "$kcptun_server" ] && [ "$kcptun_enable" != "0" ] && BP_IP="`echo "$ss_s1_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$ss_s2_ip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `,`echo "$kcptun_server" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+' `"
 			ss-rules -f
 			ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,443' -o -O
-			sleep 2
+			sleep 1
 			check1="404"
 			check2="404"
 			check_timeout_network "wget_check"
@@ -2229,6 +2229,11 @@ server=/github.io/127.0.0.1#8053
 server=/opt.cn2qq.com/127.0.0.1#8053
 _CONF
 echo "server=/$ss_link_2/127.0.0.1#8053" >> $confdir/r.wantoss.conf
+restart_dhcpd
+}
+
+dnsmasq_tmp_reconf()
+{
 if [ -s /sbin/dnsproxy ] ; then
 	ln -sf /sbin/dnsproxy /tmp/dns_tmp_proxy
 	# 启用临时DNS
@@ -2237,10 +2242,20 @@ if [ -s /sbin/dnsproxy ] ; then
 	/tmp/dns_tmp_proxy -d -p 8353
 	# 把检测域名加入临时DNS
 	sed -e 's@#8053@#8353@g' -i  $confdir/r.wantoss.conf
-fi
 	restart_dhcpd
+fi
 }
 
+dnsmasq_end_reconf()
+{
+if [ -s /sbin/dnsproxy ] ; then
+	# 恢复域名DNS
+	sed -e 's@#8353@#8053@g' -i  $confdir/r.wantoss.conf
+	restart_dhcpd
+	# 停用临时DNS
+	killall  dns_tmp_proxy
+fi
+}
 
 start_SS()
 {
@@ -2462,7 +2477,7 @@ echo "Debug: $DNS_Server"
 	nvram set ss_updatess2=1
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
-	dnsmasq_reconf
+	dnsmasq_tmp_reconf
 	check1=404
 	check2=404
 	check_timeout_network "wget_check"
@@ -2485,13 +2500,7 @@ fi
 	nvram set ss_internet="1"
 	ss_cron_job
 	#ss_get_status
-if [ -s /sbin/dnsproxy ] ; then
-	# 恢复域名DNS
-	sed -e 's@#8353@#8053@g' -i  $confdir/r.wantoss.conf
-	restart_dhcpd
-	# 停用临时DNS
-	killall  dns_tmp_proxy
-fi
+	dnsmasq_end_reconf
 if [ "$ss_dnsproxy_x" = "2" ] ; then
 	logger -t "【SS】" "使用 dnsmasq ，开启 ChinaDNS 防止域名污染"
 	if [ -f "/etc/storage/script/Sh19_chinadns.sh" ] || [ -s "/etc/storage/script/Sh19_chinadns.sh" ] ; then

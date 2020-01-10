@@ -23,7 +23,7 @@ mk_mode_routing=`nvram get app_108`
 [ -z $mk_mode_routing ] && mk_mode_routing=0 && nvram set app_108=0
 lan_ipaddr=`nvram get lan_ipaddr`
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
-if [ "$mk_mode_routing" == "1" ]  ; then
+if [ "$mk_mode_routing" == "1" ] ; then
 v2ray_follow=0 && nvram set v2ray_follow=0
 nvram set app_30="$lan_ipaddr"
 nvram set app_31="1088"
@@ -234,10 +234,15 @@ v2ray_wget_v2ctl () {
 
 v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
 wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
-geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
-wgetcurl_file $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
-geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
-wgetcurl_file $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
+if [ "$mk_mode_routing" == "1" ] ; then
+	#rm -f /opt/bin/geoip.dat /opt/bin/geosite.dat
+	echo "mk_mode_routing"
+else
+	geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
+	wgetcurl_file $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
+	geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
+	wgetcurl_file $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
+fi
 if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	mkdir -p /opt/app/ipk/
 	mkdir -p /opt/etc/ssl/certs
@@ -305,7 +310,14 @@ Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
 Mem_lt=100000
 if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 	[ ! -z "$optPath" ] && logger -t "【v2ray】" " /opt/ 在内存储存"
-	[ "$Mem_total" -lt "$Mem_lt" ] && logger -t "【v2ray】" "内存不足100M"
+	if [ "$Mem_total" -lt "$Mem_lt" ] ; then
+		logger -t "【v2ray】" "内存不足100M"
+		if [ "$mk_mode_routing" == "1" ] ; then
+			rm -f /opt/bin/geoip.dat /opt/bin/geosite.dat /opt/opt_backup/bin/geoip.dat /opt/opt_backup/bin/geosite.dat
+		else
+			logger -t "【v2ray】" "建议使用 ipt2socks 分流(降低负载，适合低配路由)"
+		fi
+	fi
 fi
 	# [ "$Mem_total" -lt "70000" ] && export  V2RAY_RAY_BUFFER_SIZE=1
 	# if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
@@ -357,7 +369,7 @@ chmod 777 /etc/ssl/certs
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
 su_cmd="eval"
-if [ "$mk_mode_routing" == "1" ]  ; then
+if [ "$mk_mode_routing" == "1" ] ; then
 # 停止 ipt2socks
 /etc/storage/script/Sh15_ss.sh transock_stop
 sed -Ei '/【transocks】|【ipt2socks】|^$/d' /tmp/script/_opt_script_check
@@ -949,11 +961,6 @@ echo '{
       {
         "type": "field",
         "ip": [
-          "1.2.3.4",
-          "1.2.3.4",
-          "1.2.3.4",
-          "1.2.3.4",
-          "geoip:private",
           "100.100.100.100/32",
           "188.188.188.188/32",
           "110.110.110.110/32"

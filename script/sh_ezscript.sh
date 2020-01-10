@@ -68,12 +68,14 @@ if [ "$apply" = 0 ] && [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
 	logger -t "【按钮①】" "添加转发规则, 启动 $ad"
 	nvram set adm_status=0
 	nvram set adm_enable=1
+	nvram save
 	/tmp/script/_ad_m &
 fi
 if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
 	nvram set adm_status=1
 	nvram set adm_enable=0
+	nvram save
 	/tmp/script/_ad_m stop &
 fi
 fi
@@ -89,12 +91,14 @@ if [ "$apply" = 0 ] && [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
 	logger -t "【按钮①】" "添加转发规则, 启动 $ad"
 	nvram set koolproxy_status=0
 	nvram set koolproxy_enable=1
+	nvram save
 	/tmp/script/_kool_proxy &
 fi
 if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
 	nvram set koolproxy_status=1
 	nvram set koolproxy_enable=0
+	nvram save
 	/tmp/script/_kool_proxy &
 fi
 fi
@@ -110,12 +114,14 @@ if [ "$apply" = 0 ] && [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
 	logger -t "【按钮①】" "添加转发规则, 启动 $ad"
 	nvram set adbyby_status=0
 	nvram set adbyby_enable=1
+	nvram save
 	/tmp/script/_ad_byby &
 fi
 if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
 	nvram set adbyby_status=1
 	nvram set adbyby_enable=0
+	nvram save
 	/tmp/script/_ad_byby  &
 fi
 fi
@@ -141,6 +147,7 @@ if [ "$apply" = 0 ] ; then
 	logger -t "【按钮②】" "开启 shadowsocks 进程"
 	nvram set ss_status=0
 	nvram set ss_enable=1
+	nvram save
 	/tmp/script/_ss &
 	nvram set button_script_2="1"
 fi
@@ -149,6 +156,7 @@ if [ "$apply" = 1 ] ; then
 	logger -t "【按钮②】" "关闭 shadowsocks 进程"
 	nvram set ss_status=1
 	nvram set ss_enable=0
+	nvram save
 	/tmp/script/_ss &
 	nvram set button_script_2="0"
 fi
@@ -165,6 +173,7 @@ if [ "$apply" = 0 ] ; then
 	logger -t "【按钮②】" "开启 v2ray 进程"
 	nvram set v2ray_status=0
 	nvram set v2ray_enable=1
+	nvram save
 	/tmp/script/_v2ray &
 	nvram set button_script_2="1"
 fi
@@ -173,6 +182,7 @@ if [ "$apply" = 1 ] ; then
 	logger -t "【按钮②】" "关闭 v2ray 进程"
 	nvram set v2ray_status=1
 	nvram set v2ray_enable=0
+	nvram save
 	/tmp/script/_v2ray &
 	nvram set button_script_2="0"
 fi
@@ -190,6 +200,7 @@ if [ "$apply" = 0 ] ; then
 	nvram set ipt2socks_status=0
 	nvram set app_104=1
 	nvram set app_27=1
+	nvram save
 	/tmp/script/_app20 &
 	nvram set button_script_2="1"
 fi
@@ -199,6 +210,7 @@ if [ "$apply" = 1 ] ; then
 	nvram set ipt2socks_status=1
 	nvram set app_104=0
 	nvram set app_27=0
+	nvram save
 	/tmp/script/_app20 &
 	nvram set button_script_2="0"
 fi
@@ -215,6 +227,7 @@ if [ "$apply" = 0 ] ; then
 	logger -t "【按钮②】" "开启 transocks 进程"
 	nvram set transocks_status=0
 	nvram set app_27=1
+	nvram save
 	/tmp/script/_app10 &
 	nvram set button_script_2="1"
 fi
@@ -223,6 +236,7 @@ if [ "$apply" = 1 ] ; then
 	logger -t "【按钮②】" "关闭 transocks 进程"
 	nvram set transocks_status=1
 	nvram set app_27=0
+	nvram save
 	/tmp/script/_app10 &
 	nvram set button_script_2="0"
 fi
@@ -239,6 +253,7 @@ if [ "$apply" = 0 ] ; then
 	logger -t "【按钮②】" "开启 clash 进程"
 	nvram set clash_status=0
 	nvram set app_88=1
+	nvram save
 	/tmp/script/_app18 &
 	nvram set button_script_2="1"
 fi
@@ -247,6 +262,7 @@ if [ "$apply" = 1 ] ; then
 	logger -t "【按钮②】" "关闭 clash 进程"
 	nvram set clash_status=1
 	nvram set app_88=0
+	nvram save
 	/tmp/script/_app18 &
 	nvram set button_script_2="0"
 fi
