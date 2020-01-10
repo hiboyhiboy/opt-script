@@ -55,7 +55,7 @@ if [ ! -z "$EMI_tmp" ] ; then
 fi
 
 cmd_cpu_enable=`nvram get cmd_cpu_enable`
-if [ "$cmd_cpu_enable" != "1" ] ; then
+if [ "$cmd_cpu_enable" == "1" ] ; then
 if [ -f /tmp/top ] ; then
 rm -f /tmp/top
 else
@@ -97,11 +97,11 @@ break
 fi
 top_i="$(echo $line | awk -F '§' '{print $2}')"
 top_2i=`expr $top_i + 1`
-if [ $top_2i -gt 50 ] ; then
+if [ $top_2i -gt 100 ] ; then
 kill $top_PID
 kill -9 $top_PID
 logger -t "script_check" "检测到进程 PID【$top_PID】 $top_COMMAND"
-logger -t "script_check" "已经连续使用CPU $top_CPU% 大于15分钟，尝试 kill 进程防卡CPU"
+logger -t "script_check" "已经连续使用CPU $top_CPU% 大于33分钟，尝试 kill 进程防卡CPU"
 sed -Ei "/^$top_PID©/d" /tmp/top_run
 fi
 sed -e "s@^$top_PID©$top_CPU©§$top_i§@$top_PID©$top_CPU©§$top_2i§@g" -i /tmp/top_run
