@@ -2229,7 +2229,16 @@ server=/github.io/127.0.0.1#8053
 server=/opt.cn2qq.com/127.0.0.1#8053
 _CONF
 echo "server=/$ss_link_2/127.0.0.1#8053" >> $confdir/r.wantoss.conf
-restart_dhcpd
+if [ -s /sbin/dnsproxy ] ; then
+	ln -sf /sbin/dnsproxy /tmp/dns_tmp_proxy
+	# 启用临时DNS
+	killall dns_tmp_proxy
+	#/tmp/dns_tmp_proxy -d -p 8053
+	/tmp/dns_tmp_proxy -d -p 8353
+	# 把检测域名加入临时DNS
+	sed -e 's@#8053@#8353@g' -i  $confdir/r.wantoss.conf
+fi
+	restart_dhcpd
 }
 
 
@@ -2453,7 +2462,7 @@ echo "Debug: $DNS_Server"
 	nvram set ss_updatess2=1
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
-
+	dnsmasq_reconf
 	check1=404
 	check2=404
 	check_timeout_network "wget_check"
@@ -2476,6 +2485,13 @@ fi
 	nvram set ss_internet="1"
 	ss_cron_job
 	#ss_get_status
+if [ -s /sbin/dnsproxy ] ; then
+	# 恢复域名DNS
+	sed -e 's@#8353@#8053@g' -i  $confdir/r.wantoss.conf
+	restart_dhcpd
+	# 停用临时DNS
+	killall  dns_tmp_proxy
+fi
 if [ "$ss_dnsproxy_x" = "2" ] ; then
 	logger -t "【SS】" "使用 dnsmasq ，开启 ChinaDNS 防止域名污染"
 	if [ -f "/etc/storage/script/Sh19_chinadns.sh" ] || [ -s "/etc/storage/script/Sh19_chinadns.sh" ] ; then
@@ -2870,6 +2886,7 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 
 #检查是否存在SS备份服务器, 这里通过判断 ss_rdd_server 是否填写来检查是否存在备用服务器
 
+check1=404
 check2=404
 check_timeout_network "wget_check"
 if [ "$check2" == "200" ] ; then
@@ -2882,6 +2899,7 @@ if [ "$check2" == "200" ] ; then
 fi
 
 check1=404
+check2=404
 check_timeout_network "wget_check"
 if [ "$check1" == "200" ] ; then
 	echo "[$LOGTIME] Internet have no problem."
@@ -2906,6 +2924,7 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 		sleep 5
 	fi
 fi
+check1=404
 check2=404
 check_timeout_network "wget_check"
 if [ "$check2" == "200" ] ; then
@@ -2969,6 +2988,7 @@ if [ ! -z "$ss_rdd_server" ] ; then
 	gen_include
 	restart_dhcpd
 	sleep 5
+	check1=404
 	check2=404
 	check_timeout_network "wget_check"
 	if [ "$check2" == "200" ] ; then

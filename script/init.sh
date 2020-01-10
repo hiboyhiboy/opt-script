@@ -38,7 +38,7 @@ else
 fi
 re_txt=`expr $2 + 2`
 echo "check$re_txt=200" >> $check_tmp
-sleep 10
+sleep 8
 rm -f $check_tmp
 }
 
@@ -57,7 +57,7 @@ else
 fi
 re_txt=`expr $2 + 2`
 echo "check$re_txt=200" >> $check_tmp
-sleep 10
+sleep 8
 rm -f $check_tmp
 }
 
@@ -65,32 +65,36 @@ x_curl_check_timeout_network_x()
 {
 [ -z "$(which curl)" ] && return
 check_tmp="/tmp/check_timeout/$1"
-[ "$2" == "1" ] && ss_link_3="$ss_link_1" 
 [ "$2" == "2" ] && ss_link_3="$ss_link_2"
-if [ "$(curl -L --connect-timeout 10 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)" != "200" ] ; then
-	[ "$(curl -L --connect-timeout 10 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)" == "200" ] || echo "check$2=200" >> $check_tmp && echo "check$2=404" >> $check_tmp
+sleep 1
+[ "$2" == "1" ] && ss_link_3="$ss_link_1" 
+check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)"
+if [ "$check_code" != "200" ] ; then
+	check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)"
+	[ "$check_code" == "200" ] && echo "check$2=200" >> $check_tmp || echo "check$2=404" >> $check_tmp
 else
 	echo "check$2=200" >> $check_tmp
 fi
 re_txt=`expr $2 + 2`
 echo "check$re_txt=200" >> $check_tmp
-sleep 10
+sleep 8
 rm -f $check_tmp
 }
 
 check_timeout_network()
 {
 mkdir -p /tmp/check_timeout
-if [ "$1" != "wget_check" ] ; then
-SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-rm -f /tmp/check_timeout/$RND_NUM
 check1="404"
 check2="404"
 check3="404"
 check4="404"
-eval 'x_check_timeout_network_x "$RND_NUM" "1"' &
+if [ "$1" != "wget_check" ] ; then
+SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+rm -f /tmp/check_timeout/$RND_NUM
 eval 'x_check_timeout_network_x "$RND_NUM" "2"' &
+sleep 1
+eval 'x_check_timeout_network_x "$RND_NUM" "1"' &
 i_timeout=1
 while [ "$check3" == "404" ] || [ "$check4" == "404" ] ;
 do
@@ -116,8 +120,9 @@ check1="404"
 check2="404"
 check3="404"
 check4="404"
-eval 'x_curl_check_timeout_network_x "$RND_NUM" "1"' &
 eval 'x_curl_check_timeout_network_x "$RND_NUM" "2"' &
+sleep 1
+eval 'x_curl_check_timeout_network_x "$RND_NUM" "1"' &
 i_timeout=1
 while [ "$check3" == "404" ] || [ "$check4" == "404" ] ;
 do

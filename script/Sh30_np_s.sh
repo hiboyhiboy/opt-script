@@ -208,9 +208,16 @@ if [ ! -z "$action_nps" ] ; then
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "nps" ] ; then
 		nps_ver_wget="https://github.com/cnlh/nps/releases/download/$nps_version/linux_mipsle_server.tar.gz"
 		wgetcurl_file /opt/bin/nps/linux_mipsle_server.tar.gz "$nps_ver_wget"
+		rm -rf /opt/bin/nps/tmp
+		mkdir -p /opt/bin/nps/tmp
+		tar -xz -C /opt/bin/nps/tmp -f /opt/bin/nps/linux_mipsle_server.tar.gz
+		[ -f /opt/bin/nps/tmp/nps ] && mv -f /opt/bin/nps/tmp/nps $SVC_PATH
+		[ -f /opt/bin/nps/tmp/nps/nps ] && mv -f /opt/bin/nps/tmp/nps/nps $SVC_PATH
+		[ -d /opt/bin/nps/tmp/conf ] && { cd /opt/bin/nps/tmp; tar -cz -f /opt/bin/nps/tmp/tmp.tar.gz ./conf ./web; }
+		[ -d /opt/bin/nps/tmp/nps/conf ] && { cd /opt/bin/nps/tmp/nps; tar -cz -f /opt/bin/nps/tmp/tmp.tar.gz ./conf ./web; }
+		tar -xz -C /opt/bin/nps -f /opt/bin/nps/tmp/tmp.tar.gz
 		rm -f /opt/bin/nps/conf/nps.conf
-		tar -xz -C /opt/bin -f /opt/bin/nps/linux_mipsle_server.tar.gz
-		rm -f /opt/bin/nps/conf/nps.conf /opt/bin/nps/linux_mipsle_server.tar.gz
+		rm -rf /opt/bin/nps/tmp /opt/bin/nps/linux_mipsle_server.tar.gz
 		if [ ! -d /etc/storage/nps/conf ] ; then
 			mkdir -p /etc/storage/nps/
 			cp -rf /opt/bin/nps/conf /etc/storage/nps/
