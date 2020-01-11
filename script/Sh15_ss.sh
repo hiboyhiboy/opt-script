@@ -1404,8 +1404,10 @@ ss_working_port=`nvram get ss_working_port`
 	chinadns_ng_enable="`nvram get app_102`"
 	smartdns_enable="`nvram get app_106`"
 	if [ "$chinadns_ng_enable" == "1" ] && [ "$smartdns_enable" == "1" ] && [ -s /etc/storage/app_23.sh ] ; then
-		grep "^server" /etc/storage/app_23.sh | grep -E -o '([0-9]+\.){3}[0-9]+' | awk '{print "WAN+"$1}' | sort -u  >> /tmp/ss_spec_wan.txt
-		grep "^server" /etc/storage/app_23.sh | grep -E -o 'https://.+/' | awk -F "/" '{print "WAN@"$3}' | sort -u  >> /tmp/ss_spec_wan.txt
+		grep "^server" /etc/storage/app_23.sh | grep office | grep -E -o '([0-9]+\.){3}[0-9]+' | awk '{print "WAN+"$1}' | sort -u  >> /tmp/ss_spec_wan.txt
+		grep "^server" /etc/storage/app_23.sh | grep office | grep -E -o 'https://.+/' | awk -F "/" '{print "WAN@"$3}' | sort -u  >> /tmp/ss_spec_wan.txt
+		grep "^server" /etc/storage/app_23.sh | grep china | grep -E -o '([0-9]+\.){3}[0-9]+' | awk '{print "WAN-"$1}' | sort -u  >> /tmp/ss_spec_wan.txt
+		grep "^server" /etc/storage/app_23.sh | grep china | grep -E -o 'https://.+/' | awk -F "/" '{print "WAN!"$3}' | sort -u  >> /tmp/ss_spec_wan.txt
 	fi
 	
 	rm -f /tmp/ss/wantoss.list
