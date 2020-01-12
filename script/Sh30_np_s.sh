@@ -233,8 +233,9 @@ if [ ! -z "$action_nps" ] ; then
 	else
 		logger -t "【nps】" "找到 $SVC_PATH"
 		chmod 755 $SVC_PATH
-		ln -sf $SVC_PATH /opt/bin/$action_nps
-		chmod 755 /opt/bin/$action_nps
+		#ln -sf $SVC_PATH /opt/bin/$action_nps
+		#cp -f $SVC_PATH /opt/bin/$action_nps
+		chmod 755 /opt/bin/nps/$action_nps
 	fi
 	logger -t "【nps】" "运行 $action_nps"
 	cd /opt/bin/nps
@@ -246,7 +247,7 @@ if [ ! -z "$action_nps" ] ; then
 			echo "auto_reconnection=true" >> $app_15
 		fi
 		cmd_name="$action_nps"
-		eval "./$action_nps -config /etc/storage/app_15.sh $cmd_log" &
+		eval "/opt/bin/nps/$action_nps -config /etc/storage/app_15.sh $cmd_log" &
 		logger -t "【nps】" "客户端配置文件在 /etc/storage/app_15.sh"
 	fi
 	if [ "$action_nps" = "nps" ] ; then
@@ -258,7 +259,7 @@ if [ ! -z "$action_nps" ] ; then
 			logger -t "【nps】" "找不到 /etc/storage/nps/conf/nps.conf , 尝试重新启动" && nps_restart x
 		fi
 		cmd_name="$action_nps"
-		eval "./$action_nps $cmd_log" &
+		eval "/opt/bin/nps/$action_nps $cmd_log" &
 		logger -t "【nps】" "服务端配置文件在 /etc/storage/nps/conf"
 	fi
 	sleep 4
