@@ -59,7 +59,7 @@ if [ "$cmd_cpu_enable" == "1" ] ; then
 if [ -f /tmp/top ] ; then
 rm -f /tmp/top
 else
-top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" > /tmp/top
+top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" | sed -e "s@^@#@g" > /tmp/top
 if [ -s /tmp/top ] ; then
  #21445 21444 admin    R     1972  0.4   2 24.9 COMMAND
  #  810 30601 admin    R     1588  0.3   3  2.2 top -n 1
@@ -67,9 +67,9 @@ if [ -s /tmp/top ] ; then
 while read line
 do
 if [ ! -z "$line" ] ; then
-top_PID="$(echo $line | awk '{print substr($0,1,5)}')"
-top_COMMAND="$(echo ${line: 46: 34})"
-top_CPU="$(echo ${line: 41: 2})"
+top_PID="$(echo "$line" | awk '{print substr($0,2,5)}')"
+top_COMMAND="$(echo ${line: 47: 34})"
+top_CPU="$(echo ${line: 42: 2})"
 threads=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
 [ -z $threads ] && threads=1
 max_cpu=`expr 100 / $threads - 3 `
