@@ -988,7 +988,8 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"streamSettin
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"protocol"];"vmess")')
 fi
 if [ "$vmess_x_tmp" = "ss" ] ; then
-if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] ||[ "$ss_link_method" == "chacha20" ] ||[ "$ss_link_method" == "chacha20-ietf" ] ||[ "$ss_link_method" == "aes-256-gcm" ] ||[ "$ss_link_method" == "aes-128-gcm" ] ||[ "$ss_link_method" == "chacha20-poly1305" ] ||[ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
+ss_link_method=`nvram get app_78`
+if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] || [ "$ss_link_method" == "chacha20" ] || [ "$ss_link_method" == "chacha20-ietf" ] || [ "$ss_link_method" == "aes-256-gcm" ] || [ "$ss_link_method" == "aes-128-gcm" ] || [ "$ss_link_method" == "chacha20-poly1305" ] || [ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
 logger -t "【vmess】" "开始生成ss配置"
 else
 logger -t "【vmess】" "ss配置加密方式不兼容V2Ray"
@@ -2017,7 +2018,7 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 	if [ ! -z "$line" ] ; then
 		add_0
 		add_ss_link "$line"
-		if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] ||[ "$ss_link_method" == "chacha20" ] ||[ "$ss_link_method" == "chacha20-ietf" ] ||[ "$ss_link_method" == "aes-256-gcm" ] ||[ "$ss_link_method" == "aes-128-gcm" ] ||[ "$ss_link_method" == "chacha20-poly1305" ] ||[ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
+		if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] || [ "$ss_link_method" == "chacha20" ] || [ "$ss_link_method" == "chacha20-ietf" ] || [ "$ss_link_method" == "aes-256-gcm" ] || [ "$ss_link_method" == "aes-128-gcm" ] || [ "$ss_link_method" == "chacha20-poly1305" ] || [ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
 		link_echo="$link_echo"'["ss", '
@@ -2056,7 +2057,7 @@ if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
 		add_ssr_link "$line"
 		#SS:-o plain -O origin  
 		if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
-		if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] ||[ "$ss_link_method" == "chacha20" ] ||[ "$ss_link_method" == "chacha20-ietf" ] ||[ "$ss_link_method" == "aes-256-gcm" ] ||[ "$ss_link_method" == "aes-128-gcm" ] ||[ "$ss_link_method" == "chacha20-poly1305" ] ||[ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
+		if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] || [ "$ss_link_method" == "chacha20" ] || [ "$ss_link_method" == "chacha20-ietf" ] || [ "$ss_link_method" == "aes-256-gcm" ] || [ "$ss_link_method" == "aes-128-gcm" ] || [ "$ss_link_method" == "chacha20-poly1305" ] || [ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
 		ss_link_plugin_opts=" -O origin -o plain "
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
