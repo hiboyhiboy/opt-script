@@ -23,7 +23,7 @@ mk_mode_routing=`nvram get app_108`
 [ -z $mk_mode_routing ] && mk_mode_routing=0 && nvram set app_108=0
 lan_ipaddr=`nvram get lan_ipaddr`
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
-if [ "$mk_mode_routing" == "1" ] ; then
+if [ "$v2ray_enable" != 0 ] && [ "$mk_mode_routing" == "1" ] ; then
 v2ray_follow=0 && nvram set v2ray_follow=0
 nvram set app_30="$lan_ipaddr"
 nvram set app_31="1088"
@@ -383,7 +383,7 @@ v2ray_follow=0 && nvram set v2ray_follow=0
 nvram set app_30="$lan_ipaddr"
 nvram set app_31="1088"
 nvram set app_32="$server_addresses"
-Sh39_ipt2socks.sh
+#Sh39_ipt2socks.sh
 fi
 if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
 	NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
@@ -912,61 +912,12 @@ echo '{
           "mark": 255
         }
       }
-    },
-    {
-      "protocol": "freedom",
-      "settings": {},
-      "tag": "direct",
-      "streamSettings": {
-        "sockopt": {
-          "mark": 255
-        }
-      }
-    },
-    {
-      "protocol": "blackhole",
-      "settings": {},
-      "tag": "blocked",
-      "streamSettings": {
-        "sockopt": {
-          "mark": 255
-        }
-      }
     }
   ],
   "routing": {
     "domainStrategy": "AsIs",
     "balancers": [],
     "rules": [
-      {
-        "type": "field",
-        "ip": [
-          "127.0.0.0/8",
-          "::1/128"
-        ],
-        "outboundTag": "blocked"
-      },
-      {
-        "type": "field",
-        "ip": [
-          "8.8.8.8",
-          "8.8.4.4",
-          "208.67.222.222",
-          "208.67.220.220",
-          "1.1.1.1",
-          "1.0.0.1"
-        ],
-        "outboundTag": "outbound_1"
-      },
-      {
-        "type": "field",
-        "ip": [
-          "100.100.100.100/32",
-          "188.188.188.188/32",
-          "110.110.110.110/32"
-        ],
-        "outboundTag": "direct"
-      },
       {
         "type": "field",
         "inboundTag": [
@@ -1037,7 +988,21 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"streamSettin
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"protocol"];"vmess")')
 fi
 if [ "$vmess_x_tmp" = "ss" ] ; then
+if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] ||[ "$ss_link_method" == "chacha20" ] ||[ "$ss_link_method" == "chacha20-ietf" ] ||[ "$ss_link_method" == "aes-256-gcm" ] ||[ "$ss_link_method" == "aes-128-gcm" ] ||[ "$ss_link_method" == "chacha20-poly1305" ] ||[ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
 logger -t "【vmess】" "开始生成ss配置"
+else
+logger -t "【vmess】" "ss配置加密方式不兼容V2Ray"
+logger -t "【vmess】" "V2Ray兼容加密方式列表"
+logger -t "【vmess】" "aes-256-cfb"
+logger -t "【vmess】" "aes-128-cfb"
+logger -t "【vmess】" "chacha20"
+logger -t "【vmess】" "chacha20-ietf"
+logger -t "【vmess】" "aes-256-gcm"
+logger -t "【vmess】" "aes-128-gcm"
+logger -t "【vmess】" "chacha20-poly1305 或 chacha20-ietf-poly1305"
+logger -t "【vmess】" "停止生成ss配置"
+return
+fi
 json_mk_ss_settings
 mk_vmess=$(json_int)
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"settings"];'"$vmess_settings"')')
@@ -2052,6 +2017,7 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 	if [ ! -z "$line" ] ; then
 		add_0
 		add_ss_link "$line"
+		if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] ||[ "$ss_link_method" == "chacha20" ] ||[ "$ss_link_method" == "chacha20-ietf" ] ||[ "$ss_link_method" == "aes-256-gcm" ] ||[ "$ss_link_method" == "aes-128-gcm" ] ||[ "$ss_link_method" == "chacha20-poly1305" ] ||[ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
 		link_echo="$link_echo"'["ss", '
@@ -2073,6 +2039,7 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 		sed -Ei "s@]]@],@g" /www/link/ss.js
 		sed -Ei '/^\]|^$/d' /www/link/ss.js
 		echo "$link_echo" >> /www/link/ss.js
+		fi
 	fi
 	done < /tmp/vmess/link/ss_link.txt
 fi
@@ -2089,6 +2056,7 @@ if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
 		add_ssr_link "$line"
 		#SS:-o plain -O origin  
 		if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
+		if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] ||[ "$ss_link_method" == "chacha20" ] ||[ "$ss_link_method" == "chacha20-ietf" ] ||[ "$ss_link_method" == "aes-256-gcm" ] ||[ "$ss_link_method" == "aes-128-gcm" ] ||[ "$ss_link_method" == "chacha20-poly1305" ] ||[ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
 		ss_link_plugin_opts=" -O origin -o plain "
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
@@ -2111,6 +2079,7 @@ if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
 		sed -Ei "s@]]@],@g" /www/link/ss.js
 		sed -Ei '/^\]|^$/d' /www/link/ss.js
 		echo "$link_echo" >> /www/link/ss.js
+		fi
 		fi
 	fi
 	done < /tmp/vmess/link/ss_link2.txt

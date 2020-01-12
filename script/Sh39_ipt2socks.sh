@@ -118,7 +118,7 @@ if [ "$ipt2socks_enable" = "1" ] ; then
 			port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 			if [ "$port"x = 0x ] ; then
 				logger -t "【ipt2socks】" "检测2:找不到 SS_SPEC 转发规则, 重新添加"
-				ipt2socks_port_dpt &
+				ipt2socks_port_dpt
 			fi
 		fi
 		ss_pdnsd_all=`nvram get ss_pdnsd_all`
@@ -156,7 +156,7 @@ cat >> "/tmp/script/_opt_script_check" <<-OSC
 OSC
 #return
 fi
-
+sleep 30
 while true; do
 	if [ -z "`pidof ipt2socks`" ] ; then
 		logger -t "【ipt2socks】" "重新启动"
@@ -166,7 +166,7 @@ while true; do
 		port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
 		if [ "$port"x = 0x ] ; then
 			logger -t "【ipt2socks】" "检测2:找不到 SS_SPEC 转发规则, 重新添加"
-			ipt2socks_port_dpt &
+			ipt2socks_port_dpt
 		fi
 	fi
 	ss_pdnsd_all=`nvram get ss_pdnsd_all`
@@ -235,6 +235,7 @@ sleep 3
 initopt
 ipt2socks_port_dpt
 #ipt2socks_get_status
+sleep 30
 eval "$scriptfilepath keep &"
 exit 0
 }

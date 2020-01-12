@@ -1103,9 +1103,11 @@ pdnsd -c $pdnsd_conf -p /var/run/pdnsd.pid &
 fi
 if [ "$ss_dnsproxy_x" = "2" ] && [ -s /etc/storage/script/Sh19_chinadns.sh ] ; then
 	/etc/storage/script/Sh19_chinadns.sh stop
+	sleep 1
 	logger -t "【SS】" "使用 dnsmasq ，自动开启 ChinaDNS 防止域名污染"
 	nvram set app_1=1
 	nvram set chinadns_status=""
+	nvram set chinadns_ng_status=""
 	/etc/storage/script/Sh19_chinadns.sh
 	sleep 5
 fi
@@ -1290,9 +1292,9 @@ fi
 iptables -t nat -N SS_SPEC_WAN_DG
 iptables -t nat -A SS_SPEC_WAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
 iptables -t nat -A SS_SPEC_WAN_DG -p tcp $EXT_ARGS_TCP -j SS_SPEC_WAN_AC
-#if [ "$transocks_enable" = "0" ]  ; then
+if [ "$transocks_enable" = "0" ]  ; then
 iptables -t nat -I OUTPUT $wifidognx -p tcp -j SS_SPEC_WAN_DG
-#fi
+fi
 if [ "$koolproxy_enable" != "0" ] ; then
 # 加载 kp过滤方案 规则
 logger -t "【SS】" "设置内网(LAN)访问控制【kp过滤方案】"
@@ -1797,6 +1799,7 @@ include_ac_rules() {
 -A SS_SPEC_LAN_AC -m set --match-set ss_spec_src_chn src -j SS_SPEC_WAN_CHN
 -A SS_SPEC_LAN_AC -m set --match-set ss_spec_src_chn src -j RETURN
 -A SS_SPEC_LAN_AC -j ${LAN_TARGET:=SS_SPEC_WAN_AC}
+-A SS_SPEC_WAN_AC -m mark --mark 0xff -j RETURN
 -A SS_SPEC_WAN_AC -m set --match-set ss_spec_dst_fw dst -j SS_SPEC_WAN_FW
 -A SS_SPEC_WAN_AC -m set --match-set ss_spec_dst_bp dst -j RETURN
 -A SS_SPEC_WAN_AC -j ${MODE_TARGET:=RETURN}
