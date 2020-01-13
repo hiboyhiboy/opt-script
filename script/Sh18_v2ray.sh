@@ -411,8 +411,13 @@ else
 	json_mk_ipt2socks
 	else
 	cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
-	fi
 	json_join_gfwlist
+	fi
+	if [ ! -f "/tmp/vmess/mk_vmess.json" ] || [ ! -s "/tmp/vmess/mk_vmess.json" ] ; then
+	logger -t "【v2ray】" "错误！实际运行配置： /tmp/vmess/mk_vmess.json 文件内容为空"
+	logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
+	sleep 10 && v2ray_restart x
+	fi
 	chmod 777 /tmp/vmess
 	chmod 777 /tmp/vmess/mk_vmess.json
 	chmod 777 /etc/storage/v2ray_config_script.sh
@@ -934,6 +939,7 @@ echo '{
 
 json_mk_ipt2socks () {
 mkdir -p /tmp/vmess
+echo "" > /tmp/vmess/mk_vmess.json
 if [ "$mk_mode_routing" != "1" ] ; then
 	return
 fi
@@ -949,7 +955,24 @@ mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["inbounds",0,"liste
 mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"'$lan_ipaddr'")')
 logger -t "【vmess】" "提取 outbounds 生成 ipt2socks 配置"
 mk_config="$(cat /etc/storage/v2ray_config_script.sh | jq --raw-output '.')"
-mk_config_0=$(echo $mk_config| jq --raw-output 'getpath(["outbounds",0])')
+#mk_config_0=$(echo $mk_config| jq --raw-output 'getpath(["outbounds",0])')
+mk_config_0=$(echo $mk_config| jq --raw-input --raw-output '.outbounds[] | select(.protocol == "vmess")')
+if [ -z "$mk_config_0" ] ; then
+mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "shadowsocks")')
+fi
+if [ -z "$mk_config_0" ] ; then
+mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "socks")')
+fi
+if [ -z "$mk_config_0" ] ; then
+mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "http")')
+fi
+if [ -z "$mk_config_0" ] ; then
+mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "mtproto")')
+fi
+if [ -z "$mk_config_0" ] ; then
+logger -t "【vmess】" "错误 outbounds 提出失败，请填写配正确的出站协议！vmess、shadowsocks、socks、http、mtproto"
+return
+fi
 mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["outbounds",0];'"$mk_config_0"')')
 mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["outbounds",0,"tag"];"outbound_1")')
 echo $mk_ipt2socks | jq --raw-output '.' > /tmp/vmess/mk_vmess.json

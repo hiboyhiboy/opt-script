@@ -37,7 +37,7 @@ fi
 
 if [ "$ipt2socks_enable" == "1" ] ; then
 [ "$transocks_enable" == "0" ] && logger -t "【transocks】" "注意！！！需要关闭 transocks 后才能关闭 ipt2socks"
-transocks_enable=1 && nvram set app_27=1
+[ "$transocks_enable" == "0" ] && transocks_enable=1 && nvram set app_27=1
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ipt2socks)" ]  && [ ! -s /tmp/script/_app20 ]; then
 	mkdir -p /tmp/script
