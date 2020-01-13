@@ -105,6 +105,7 @@ if [ "$ipt2socks_enable" = "1" ] ; then
 	|| { logger -t "【ipt2socks】" "错误！！！请正确填写。"; needed_restart=1; ipt2socks_enable=0; }
 fi
 if [ "$ipt2socks_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
+	[ ! -z "`pidof ipt2socks`" ] && [ "$transocks_enable" != "0" ] && transocks_enable=0 && nvram set app_27=0
 	[ ! -z "`pidof ipt2socks`" ] && logger -t "【ipt2socks】" "停止 ipt2socks" && ipt2socks_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi

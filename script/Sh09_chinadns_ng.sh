@@ -95,6 +95,7 @@ chinadns_ng_check () {
 
 chinadns_ng_get_status
 if [ "$chinadns_ng_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
+	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && [ "$chinadns_enable" != "0" ] && chinadns_enable=0 && nvram set app_1=0
 	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "停止 chinadns_ng" && chinadns_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
