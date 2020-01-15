@@ -956,7 +956,7 @@ mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["inbounds",0,"setti
 logger -t "【vmess】" "提取 outbounds 生成 ipt2socks 配置"
 mk_config="$(cat /etc/storage/v2ray_config_script.sh | jq --raw-output '.')"
 #mk_config_0=$(echo $mk_config| jq --raw-output 'getpath(["outbounds",0])')
-mk_config_0=$(echo $mk_config| jq --raw-input --raw-output '.outbounds[] | select(.protocol == "vmess")')
+mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "vmess")')
 if [ -z "$mk_config_0" ] ; then
 mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "shadowsocks")')
 fi
