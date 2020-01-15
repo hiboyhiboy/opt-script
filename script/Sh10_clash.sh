@@ -759,7 +759,8 @@ Rule:
 EEE
 chmod 755 "$dns_ip"
 Proxy_txt="$(yq r $config_yml Rule | grep DOMAIN | grep telegram | awk -F ',' '{print $3}'| head -n1)"
-[ -z "$Proxy_txt" ] && Proxy_txt="$(yq r $config_yml Rule | grep DOMAIN | grep gmail | awk -F ',' '{print $3}'| head -n1)"
+[ -z "$Proxy_txt" ] && Proxy_txt="$(yq r $config_yml Rule | grep DOMAIN | grep gmail | awk -F ',' '{print $3}'| head -n1 | tr '\' '\\\')"
+[ ! -z "$Proxy_txt" ] && Proxy_txt="$(echo "$Proxy_txt" | sed -e 's/\\/\\\\/g')"
 rm_temp
 if [ ! -z "$Proxy_txt" ] ; then
 logger -t "【clash】" "把 DNS 地址加入规则！ $Proxy_txt ：8.8.8.8,8.8.4.4,208.67.222.222,208.67.220.220"
