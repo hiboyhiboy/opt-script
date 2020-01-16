@@ -84,6 +84,16 @@ rm -f $check_tmp
 check_timeout_network()
 {
 mkdir -p /tmp/check_timeout
+[ "$2" == "check" ] && rm -f /tmp/check_timeout/check
+[ ! -f /tmp/check_timeout/ver_time ] && echo -n "0" > /tmp/check_timeout/ver_time
+if [ $(($(date "+%y%m%d%H%M") - $(cat /tmp/check_timeout/ver_time))) -ge 1 ] || [ ! -s /tmp/check_timeout/check ] ; then
+	echo "check_timeout_network 开始新的检测"
+	echo -n "$(date "+%y%m%d%H%M")" > /tmp/check_timeout/ver_time
+else
+	echo "check_timeout_network 间隔少于1分钟直接返回上次检测值"
+	[ -s /tmp/check_timeout/check ] && source /tmp/check_timeout/check
+	return
+fi
 check1="404"
 check2="404"
 check3="404"
@@ -91,6 +101,7 @@ check4="404"
 if [ "$1" != "wget_check" ] ; then
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -gt 1 ] || RND_NUM="1" ; }
 rm -f /tmp/check_timeout/$RND_NUM
 eval 'x_check_timeout_network_x "$RND_NUM" "2"' &
 sleep 1
@@ -115,6 +126,7 @@ if [ ! -z "$(which curl)" ] ; then
 if [ "$check1" == "404" ] || [ "$check2" == "404" ] ; then 
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -gt 1 ] || RND_NUM="1" ; }
 rm -f /tmp/check_timeout/$RND_NUM
 check1="404"
 check2="404"
@@ -143,6 +155,7 @@ fi
 if [ "$check1" == "404" ] || [ "$check2" == "404" ] ; then 
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -gt 1 ] || RND_NUM="1" ; }
 rm -f /tmp/check_timeout/$RND_NUM
 check1="404"
 check2="404"
@@ -164,6 +177,9 @@ fi
 done
 [ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
 rm -f /tmp/check_timeout/$RND_NUM
+rm -f /tmp/check_timeout/check
+echo "check1=$check1" > /tmp/check_timeout/check
+echo "check2=$check2" >> /tmp/check_timeout/check
 fi
 
 }

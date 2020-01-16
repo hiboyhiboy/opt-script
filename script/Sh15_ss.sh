@@ -972,7 +972,7 @@ if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
 			sleep 1
 			check1="404"
 			check2="404"
-			check_timeout_network "wget_check"
+			check_timeout_network "wget_check" "check"
 			if [ "$check1" == "200" ] || [ "$check2" == "200" ] ; then 
 				[ "$check1" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
 				[ "$check2" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
@@ -2485,7 +2485,7 @@ echo "Debug: $DNS_Server"
 	dnsmasq_tmp_reconf
 	check1=404
 	check2=404
-	check_timeout_network "wget_check"
+	check_timeout_network "wget_check" "check"
 if [ "$check1" != "200" ] || [ "$check2" != "200" ] ; then 
 	[ "$check1" == "200" ] && logger -t "【SS】" "连接到【互联网】正常。"
 	[ "$check2" == "200" ] && logger -t "【SS】" "连接到【Google.com】正常。"
@@ -2722,6 +2722,7 @@ ss_internet=`nvram get ss_internet`
 if [ "$ss_internet" = "1" ] ; then
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 	RND_NUM=`echo $SEED 55 88|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	[ "$RND_NUM" -lt 55 ] && RND_NUM="55" || { [ "$RND_NUM" -gt 55 ] || RND_NUM="55" ; }
 	sleep $RND_NUM
 fi
 #/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
@@ -2914,7 +2915,7 @@ fi
 
 check1=404
 check2=404
-check_timeout_network "wget_check"
+check_timeout_network "wget_check" "check"
 if [ "$check1" == "200" ] ; then
 	echo "[$LOGTIME] Internet have no problem."
 else
@@ -2940,7 +2941,7 @@ if [ -n "`pidof ss-redir`" ] && [ "$ss_enable" = "1" ] && [ "$ss_mode_x" != "3" 
 fi
 check1=404
 check2=404
-check_timeout_network "wget_check"
+check_timeout_network "wget_check" "check"
 if [ "$check2" == "200" ] ; then
 	echo "[$LOGTIME] SS $CURRENT have no problem."
 	rebss="1"
@@ -3004,7 +3005,7 @@ if [ ! -z "$ss_rdd_server" ] ; then
 	sleep 5
 	check1=404
 	check2=404
-	check_timeout_network "wget_check"
+	check_timeout_network "wget_check" "check"
 	if [ "$check2" == "200" ] ; then
 		logger -t "【SS】" " SS 服务器 $Server_ip 【$Server】 连接√"
 		rebss="1"
@@ -3278,6 +3279,7 @@ update)
 	#随机延时
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 	RND_NUM=`echo $SEED 1 600|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -gt 1 ] || RND_NUM="1" ; }
 	# echo $RND_NUM
 	logger -t "【SS】" "$RND_NUM 秒后进入处理状态, 请稍候"
 	sleep $RND_NUM

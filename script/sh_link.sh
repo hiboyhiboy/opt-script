@@ -67,14 +67,12 @@ ss_link_name="$(get_emoji "$(printf $(echo -n $ss_link_name_url | sed 's/\\/\\\\
 link=$(echo -n $link | awk -F '#' '{print $1}')
 fi
 if [ ! -z "$(echo -n "$link" | grep '@')" ] ; then
-	#不将主机名和端口号解析为Base64URL
-	#ss://cmM0LW1kNTpwYXNzd2Q=@192.168.100.1:8888/?plugin=obfs-local%3Bobfs%3Dhttp#Example2
+	#不将主机名和端口号解析为Base64URL ss://cmM0LW1kNTpwYXNzd2Q=@192.168.100.1:8888/?plugin=obfs-local%3Bobfs%3Dhttp#Example2
 	link3=$(echo -n $link | sed -n '1p' | awk -F '@' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d )
 	link4=$(echo -n $link | sed -n '1p' | awk -F '@' '{print $2}')
 	link2="$link3""@""$link4"
 else
-	#部分信息解析为Base64URL
-	#ss://cmM0LW1kNTpwYXNzd2RAMTkyLjE2OC4xMDAuMTo4ODg4Lz9wbHVnaW49b2Jmcy1sb2NhbCUzQm9iZnMlM0RodHRw==#Example2
+	#部分信息解析为Base64URL ss://cmM0LW1kNTpwYXNzd2RAMTkyLjE2OC4xMDAuMTo4ODg4Lz9wbHVnaW49b2Jmcy1sb2NhbCUzQm9iZnMlM0RodHRw==#Example2
 	link2=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d)
 	
 fi
@@ -200,8 +198,6 @@ do
     ss_b="$(echo $line | awk -F $ss_a'=' '{print $2}' )"
     eval "nvram set $ss_a=\"\$ss_b\""
 done < /tmp/ss/link/daochu_2.txt
-#cat /tmp/ss/link/daochu_2.txt | grep '=' | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}' | sed 's/^/nvram set /' | sort -u > /tmp/ss/link/daochu_4.txt
-#[ -s /tmp/ss/link/daochu_4.txt ] && source /tmp/ss/link/daochu_4.txt
 # 保存有效节点数量
 rt_ssnum_x=$(grep rt_ss_name_x /tmp/ss/link/daochu_2.txt | wc -l)
 [ -z $rt_ssnum_x ] && rt_ssnum_x="0"

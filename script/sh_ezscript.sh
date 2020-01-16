@@ -439,8 +439,7 @@ if [ ! -f /tmp/link_matching/link_matching.txt ] || [ ! -s /tmp/link_matching/li
 match="$(nvram get app_95)"
 [ "$match" == "*" ] && match="."
 mismatch="$(nvram get app_96)"
-#[ ! -z "$match" ] && grep -E "$match" /www/link/link.js > /tmp/link_matching/0.txt
-#[ -z "$match" ] && cat /www/link/link.js > /tmp/link_matching/0.txt
+
 cat /www/link/link.js > /tmp/link_matching/0.txt
 echo -n "" > /tmp/link_matching/1.txt
 sed -Ei "/^var ACL2List|^\[\]\]/d" /tmp/link_matching/0.txt
@@ -656,10 +655,7 @@ fi
 fi
 if [ ! -z "$ping_list" ] ; then
 ping_list="$ping_time2""$ping_list"
-#(
-#	flock 161
 echo "$ping_list" >> /tmp/allping.js
-#) 161>/var/lock/161_flock.lock
 fi
 fi
 }
