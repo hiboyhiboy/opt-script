@@ -6,6 +6,7 @@ source /etc/storage/script/init.sh
 [ -f /tmp/script.lock ] && exit 0
 touch /tmp/script.lock
 touch /tmp/script_script_yes
+[ ! -z "$(grep "SPI flash chip" /tmp/syslog.log | grep 32768)" ] && nvram set cmd_reboot_enable=1
 . /etc/storage/script0_script.sh
 ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
 ln -sf "/etc/storage/init.status" "/etc/init.status"
