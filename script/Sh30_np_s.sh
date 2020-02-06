@@ -136,6 +136,7 @@ done
 }
 
 nps_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【nps】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/【npc】|^$/d' /tmp/script/_opt_script_check
 killall nps npc
@@ -241,7 +242,7 @@ if [ ! -z "$action_nps" ] ; then
 	cd /opt/bin/nps
 	if [ "$action_nps" = "npc" ] ; then
 		app_15="/etc/storage/app_15.sh"
-		if [ -z "$(grep "auto_reconnection=true" $app_15)" ] ; then
+		if [ -z "$(cat $app_15 | grep "auto_reconnection=true")" ] ; then
 			logger -t "【nps】" "客户端配置文件添加断线重连 auto_reconnection=true"
 			sed -Ei '/auto_reconnection=/d' $app_15
 			echo "auto_reconnection=true" >> $app_15
@@ -354,9 +355,9 @@ EEE
 	chmod 755 "$app_16"
 fi
 
-	npc_server_addr=$(grep 'server_addr=' $app_15 | awk -F '=' '{print $2;}')
+	npc_server_addr=$(cat $app_15 | grep 'server_addr=' | awk -F '=' '{print $2;}')
 	nvram set npc_server_addr=$npc_server_addr
-	nps_web_port=$(grep 'web_port=' $app_16 | awk -F '=' '{print $2;}')
+	nps_web_port=$(cat $app_16 | grep 'web_port=' | awk -F '=' '{print $2;}')
 	nvram set nps_web_port=$nps_web_port
 }
 

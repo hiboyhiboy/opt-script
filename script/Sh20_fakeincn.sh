@@ -134,6 +134,7 @@ done
 }
 
 fakeincn_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【fakeincn】|^$/d' /tmp/script/_opt_script_check
 iptables -t nat -D PREROUTING -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
 iptables -t nat -D OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
@@ -173,7 +174,7 @@ hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检�
 fi
 update_app
 
-fakeincn_v=$(grep 'fakeincn_v=' /etc/storage/app_1.sh | awk -F '=' '{print $2;}')
+fakeincn_v=$(cat /etc/storage/app_1.sh | grep 'fakeincn_v=' | awk -F '=' '{print $2;}')
 nvram set fakeincn_v="$fakeincn_v"
 logger -t "【fakeincn】" "运行 $fakeincn_path"
 eval "$fakeincn_path $cmd_log" &

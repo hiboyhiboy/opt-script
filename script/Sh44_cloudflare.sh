@@ -132,6 +132,7 @@ done
 
 cloudflare_close () {
 
+kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_cloudflare"
 kill_ps "_cloudflare.sh"
 kill_ps "$scriptname"

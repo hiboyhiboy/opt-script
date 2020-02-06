@@ -9,19 +9,11 @@ if [ "$cow_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #nvramshow=`nvram showall | grep '=' | grep cow | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-kcptun2_enable=`nvram get kcptun2_enable`
-kcptun2_enable2=`nvram get kcptun2_enable2`
 ss_mode_x=`nvram get ss_mode_x`
 ss_s1_local_port=`nvram get ss_s1_local_port`
-ss_s2_local_port=`nvram get ss_s2_local_port`
-ss_rdd_server=`nvram get ss_server2`
 
 [ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
-[ -z $kcptun2_enable ] && kcptun2_enable=0 && nvram set kcptun2_enable=$kcptun2_enable
-[ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
-[ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 [ -z $ss_s1_local_port ] && ss_s1_local_port=1081 && nvram set ss_s1_local_port=$ss_s1_local_port
-[ -z $ss_s2_local_port ] && ss_s2_local_port=1082 && nvram set ss_s2_local_port=$ss_s2_local_port
 cow_renum=`nvram get cow_renum`
 cow_renum=${cow_renum:-"0"}
 cmd_log_enable=`nvram get cmd_log_enable`
@@ -79,7 +71,7 @@ cow_get_status () {
 
 lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get cow_status`
-B_restart="$cow_enable$cow_path$lan_ipaddr$ss_s1_local_port$ss_s2_local_port$ss_mode_x$ss_rdd_server$(cat /etc/storage/cow_script.sh /etc/storage/cow_config_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$cow_enable$cow_path$lan_ipaddr$ss_s1_local_port$ss_mode_x$(cat /etc/storage/cow_script.sh /etc/storage/cow_config_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set cow_status=$B_restart
@@ -131,6 +123,7 @@ done
 }
 
 cow_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【cow】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$cow_path" ] && kill_ps "$cow_path"
 killall cow cow_script.sh
@@ -195,34 +188,17 @@ sed -Ei '/UI设置自动生成/d' /etc/storage/cow_config_script.sh
 sed -Ei '/^$/d' /etc/storage/cow_config_script.sh
 ss_mode_x=`nvram get ss_mode_x`
 ss_mode_x=${ss_mode_x:-"0"}
-ss_rdd_server=`nvram get ss_server2`
-kcptun2_enable=`nvram get kcptun2_enable`
-kcptun2_enable=${kcptun2_enable:-"0"}
-kcptun2_enable2=`nvram get kcptun2_enable2`
-kcptun2_enable2=${kcptun2_enable2:-"0"}
-[ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
-[ "$kcptun2_enable" = "2" ] && ss_rdd_server=""
 ss_run_ss_local=`nvram get ss_run_ss_local`
 ss_s1_local_port=`nvram get ss_s1_local_port`
-ss_s2_local_port=`nvram get ss_s2_local_port`
 ss_s1_local_port=${ss_s1_local_port:-"1081"}
-ss_s2_local_port=${ss_s2_local_port:-"1082"}
 nvram set ss_s1_local_port=$ss_s1_local_port
-nvram set ss_s2_local_port=$ss_s2_local_port
 lan_ipaddr=`nvram get lan_ipaddr`
 sed -Ei "/$lan_ipaddr:$ss_s1_local_port/d" /etc/storage/cow_config_script.sh
-sed -Ei "/$lan_ipaddr:$ss_s2_local_port/d" /etc/storage/cow_config_script.sh
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 cat >> "/etc/storage/cow_config_script.sh" <<-EUI
 # UI设置自动生成 
 proxy = socks5://$lan_ipaddr:$ss_s1_local_port
 EUI
-if [ ! -z $ss_rdd_server ] ; then
-cat >> "/etc/storage/cow_config_script.sh" <<-EUI
-# UI设置自动生成 
-proxy = socks5://$lan_ipaddr:$ss_s2_local_port
-EUI
-fi
 fi
 FOF
 chmod 777 "/etc/storage/cow_script.sh"

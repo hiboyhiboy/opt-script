@@ -174,10 +174,9 @@ done
 }
 
 chinadns_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【chinadns_ng】|【chinadns】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
-ipset -F chnroute
-ipset -F chnroute6
 restart_dhcpd
 [ ! -z "$chinadns_path" ] && eval $(ps -w | grep "$chinadns_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall chinadns chinadns_ng dns2tcp smartdns

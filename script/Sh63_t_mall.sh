@@ -111,6 +111,7 @@ done
 }
 
 tmall_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【天猫精灵】|^$/d' /tmp/script/_opt_script_check
 killall caddy_tmall
 killall -9 caddy_tmall

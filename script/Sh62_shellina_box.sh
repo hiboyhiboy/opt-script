@@ -142,6 +142,7 @@ fi
 
 shellinabox_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【shellinabox】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/【ttyd】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $shellinabox_port -j ACCEPT

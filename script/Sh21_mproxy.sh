@@ -110,6 +110,7 @@ done
 
 mproxy_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【mproxy】|^$/d' /tmp/script/_opt_script_check
 mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v "^#" | grep "mproxy_port=" | sed 's/mproxy_port=//'`)
 [ ! -z "$mproxyport" ] && iptables -t filter -D INPUT -p tcp --dport $mproxyport -j ACCEPT

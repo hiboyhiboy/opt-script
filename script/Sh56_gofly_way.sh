@@ -113,6 +113,7 @@ done
 
 goflyway_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【goflyway】|^$/d' /tmp/script/_opt_script_check
 killall goflyway
 killall -9 goflyway

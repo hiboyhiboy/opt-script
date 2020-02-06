@@ -92,6 +92,7 @@ done
 }
 
 dnspod_close () {
+kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_dnspod"
 kill_ps "_dnspod.sh"
 kill_ps "$scriptname"

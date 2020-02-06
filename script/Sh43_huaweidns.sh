@@ -139,6 +139,7 @@ done
 
 huaweidns_close () {
 
+kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_huaweidns"
 kill_ps "_huaweidns.sh"
 kill_ps "$scriptname"

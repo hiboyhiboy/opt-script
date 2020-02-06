@@ -20,6 +20,7 @@ scriptpath=$(cd "$(dirname "$0")"; pwd)
 scriptname=$(basename $0)
 #echo $scriptname
 cmd_log2=' 2>&1 | awk '"'"'{cmd="logger -t '"'"'"'"'"'"'"'"'【'"'"'$cmd_name'"'"'】'"'"'"'"'"' '"'"' "'"'"'"$0"'"'"'"'"'"' "'"'"';";system(cmd)}'"'" 
+[ -s /dev/null ] && { rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null; }
 chmod 755 /etc/storage/*.sh
 ulimit -HSn 65536
 
@@ -27,16 +28,19 @@ x_check_timeout_network_x()
 {
 [ -z "$(which check_network)" ] && return
 check_tmp="/tmp/check_timeout/$1"
-[ "$2" == "1" ] && ss_link_3="3" 
-[ "$2" == "2" ] && ss_link_3="0"
+[ "$2" == "1" ] && ss_link_3="3" && re_txt=3
+[ "$2" == "2" ] && ss_link_3="0" && re_txt=4
 check_network "$ss_link_3"
 if [ "$?" != "0" ] ; then
 	check_network "$ss_link_3"
-	[ "$?" == "0" ] && echo "check$2=200" >> $check_tmp || echo "check$2=404" >> $check_tmp
+	if [ "$?" == "0" ] ; then
+	echo "check$2=200" >> $check_tmp
+	else
+	echo "check$2=404" >> $check_tmp
+	fi
 else
 	echo "check$2=200" >> $check_tmp
 fi
-re_txt=`expr $2 + 2`
 echo "check$re_txt=200" >> $check_tmp
 sleep 8
 rm -f $check_tmp
@@ -46,16 +50,19 @@ x_wget_check_timeout_network_x()
 {
 [ -z "$(which wget)" ] && return
 check_tmp="/tmp/check_timeout/$1"
-[ "$2" == "1" ] && ss_link_3="$ss_link_1" 
-[ "$2" == "2" ] && ss_link_3="$ss_link_2"
+[ "$2" == "1" ] && ss_link_3="$ss_link_1" && re_txt=3
+[ "$2" == "2" ] && ss_link_3="$ss_link_2" && re_txt=4
 wget --user-agent "$user_agent" -q  -T 3 -t 1 "$ss_link_3" -O /dev/null
 if [ "$?" != "0" ] ; then
 	wget --user-agent "$user_agent" -q  -T 3 -t 2 "$ss_link_3" -O /dev/null
-	[ "$?" == "0" ] && echo "check$2=200" >> $check_tmp || echo "check$2=404" >> $check_tmp
+	if [ "$?" == "0" ] ; then
+	echo "check$2=200" >> $check_tmp
+	else
+	echo "check$2=404" >> $check_tmp
+	fi
 else
 	echo "check$2=200" >> $check_tmp
 fi
-re_txt=`expr $2 + 2`
 echo "check$re_txt=200" >> $check_tmp
 sleep 8
 rm -f $check_tmp
@@ -65,17 +72,19 @@ x_curl_check_timeout_network_x()
 {
 [ -z "$(which curl)" ] && return
 check_tmp="/tmp/check_timeout/$1"
-[ "$2" == "2" ] && ss_link_3="$ss_link_2"
-sleep 1
-[ "$2" == "1" ] && ss_link_3="$ss_link_1" 
+[ "$2" == "1" ] && ss_link_3="$ss_link_1" && re_txt=3
+[ "$2" == "2" ] && ss_link_3="$ss_link_2" && re_txt=4
 check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)"
 if [ "$check_code" != "200" ] ; then
 	check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)"
-	[ "$check_code" == "200" ] && echo "check$2=200" >> $check_tmp || echo "check$2=404" >> $check_tmp
+	if [ "$check_code" == "200" ] ; then
+	echo "check$2=200" >> $check_tmp
+	else
+	echo "check$2=404" >> $check_tmp
+	fi
 else
 	echo "check$2=200" >> $check_tmp
 fi
-re_txt=`expr $2 + 2`
 echo "check$re_txt=200" >> $check_tmp
 sleep 8
 rm -f $check_tmp
@@ -120,6 +129,8 @@ fi
 done
 [ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
 rm -f /tmp/check_timeout/$RND_NUM
+echo "check1=$check1" > /tmp/check_timeout/check
+echo "check2=$check2" >> /tmp/check_timeout/check
 fi
 
 if [ ! -z "$(which curl)" ] ; then 
@@ -149,6 +160,8 @@ fi
 done
 [ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
 rm -f /tmp/check_timeout/$RND_NUM
+echo "check1=$check1" > /tmp/check_timeout/check
+echo "check2=$check2" >> /tmp/check_timeout/check
 fi
 fi
 

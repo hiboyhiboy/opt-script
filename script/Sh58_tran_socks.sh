@@ -24,26 +24,13 @@ nvram set transocks_proxy_mode_x="$transocks_proxy_mode_x"
 transocks_listen_address=`nvram get app_30`
 transocks_listen_port=`nvram get app_31`
 transocks_server="$(nvram get app_32)"
-ss_enable=`nvram get ss_enable`
-[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
-v2ray_enable=`nvram get v2ray_enable`
-[ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
-v2ray_follow=`nvram get v2ray_follow`
-[ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
 if [ "$transocks_enable" != "0" ]  ; then
+ss_tproxy_auser=`nvram get ss_tproxy_auser`
+if [ "Sh58_tran_socks.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" ] ; then
+	logger -t "【transocks】" "错误！！！由于已启用 $ss_tproxy_auser 透明代理，停止启用 transocks 透明代理！"
+	transocks_enable=0 && nvram set app_27=0
+fi
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-	if [ "$ss_enable" != "0" ]  ; then
-		ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
-		[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
-		if [ "$ss_mode_x" != 3 ]  ; then
-			logger -t "【transocks】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 SS 透明代理！"
-			ss_enable=0 && nvram set ss_enable=0
-		fi
-	fi
-	if [ "$v2ray_enable" != 0 ] && [ "$v2ray_follow" != 0 ]  ; then
-		logger -t "【transocks】" "错误！！！由于已启用 transocks ，停止启用 v2ray 透明代理！"
-		v2ray_follow=0 && nvram set v2ray_follow=0
-	fi
 fi
 #if [ "$transocks_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep transocks | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -124,34 +111,6 @@ if [ "$transocks_enable" = "1" ] ; then
 		transocks_start
 	else
 		[ -z "`pidof transocks`" ] && transocks_restart
-		if [ -n "`pidof transocks`" ] ; then
-			port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
-			if [ "$port"x = 0x ] ; then
-				logger -t "【transocks】" "检测2:找不到 SS_SPEC 转发规则, 重新添加"
-				transocks_port_dpt &
-			fi
-		fi
-		ss_pdnsd_all=`nvram get ss_pdnsd_all`
-		if [ "$transocks_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
-			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-			if [ "$port" = 0 ] ; then
-				sleep 10
-				port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-			fi
-			if [ "$port" = 0 ] ; then
-				logger -t "【transocks】" "检测2:找不到 dnsmasq 转发规则, 重新添加"
-				#   #方案三
-				sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-				cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
-no-resolv
-server=127.0.0.1#8053
-dns-forward-max=1000
-min-cache-ttl=1800
-EOF
-				sed -Ei '/accelerated-domains/d' /etc/storage/dnsmasq/dnsmasq.conf
-				[ -s /tmp/ss/accelerated-domains.china.conf ] && echo "conf-file=/tmp/ss/accelerated-domains.china.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
-			fi
-		fi
 	fi
 fi
 }
@@ -172,41 +131,14 @@ while true; do
 		logger -t "【transocks】" "重新启动"
 		transocks_restart
 	fi
-	if [ -n "`pidof transocks`" ] ; then
-		port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
-		if [ "$port"x = 0x ] ; then
-			logger -t "【transocks】" "检测2:找不到 SS_SPEC 转发规则, 重新添加"
-			transocks_port_dpt &
-		fi
-	fi
-	ss_pdnsd_all=`nvram get ss_pdnsd_all`
-	if [ "$transocks_mode_x" = "2" ] || [ "$ss_pdnsd_all" = "1" ] ; then 
-		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-		if [ "$port" = 0 ] ; then
-			sleep 10
-			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-		fi
-		if [ "$port" = 0 ] ; then
-			logger -t "【transocks】" "检测2:找不到 dnsmasq 转发规则, 重新添加"
-			#   #方案三
-			sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-			cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
-no-resolv
-server=127.0.0.1#8053
-dns-forward-max=1000
-min-cache-ttl=1800
-EOF
-			sed -Ei '/accelerated-domains/d' /etc/storage/dnsmasq/dnsmasq.conf
-			[ -s /tmp/ss/accelerated-domains.china.conf ] && echo "conf-file=/tmp/ss/accelerated-domains.china.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
-		fi
-	fi
 sleep 30
 done
 }
 
 transocks_close () {
-/etc/storage/script/Sh15_ss.sh transock_stop
+kill_ps "$scriptname keep"
 sed -Ei '/【transocks】|【ipt2socks】|^$/d' /tmp/script/_opt_script_check
+Sh99_ss_tproxy.sh off_stop "Sh58_tran_socks.sh"
 killall transocks ipt2socks
 killall -9 transocks ipt2socks
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
@@ -246,10 +178,128 @@ sleep 2
 [ ! -z "$(ps -w | grep "transocks" | grep -v grep )" ] && logger -t "【transocks】" "启动成功" && transocks_restart o
 [ -z "$(ps -w | grep "transocks" | grep -v grep )" ] && logger -t "【transocks】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && transocks_restart x
 initopt
-transocks_port_dpt
+Sh99_ss_tproxy.sh auser_check "Sh58_tran_socks.sh"
+ss_tproxy_set "Sh58_tran_socks.sh"
+Sh99_ss_tproxy.sh on_start "Sh58_tran_socks.sh"
+
 #transocks_get_status
 eval "$scriptfilepath keep &"
 exit 0
+}
+
+ss_tproxy_set() {
+ss_tproxy_auser=`nvram get ss_tproxy_auser`
+if [ "$1" != "$ss_tproxy_auser" ] ; then
+	logger -t "【transocks】" "脚本 [Sh99_ss_tproxy.sh] 当前使用者: $auser_b ，跳过 $auser_a 的运行命令"
+	logger -t "【transocks】" "需要停用 $auser_b 后才能使用 $auser_a 运行 [Sh99_ss_tproxy.sh] 脚本"
+	return
+fi
+lan_ipaddr=`nvram get lan_ipaddr`
+ss_tproxy_mode_x=`nvram get app_110`
+[ -z $ss_tproxy_mode_x ] && ss_tproxy_mode_x=0 && nvram set app_110=0
+[ "$ss_tproxy_mode_x" = "0" ] && logger -t "【transocks】" "【自动】设置 ss_tproxy 配置文件，配置导入中..."
+[ "$ss_tproxy_mode_x" = "1" ] && logger -t "【transocks】" "【手动】设置 ss_tproxy 配置文件，跳过配置导入" && return
+ # /etc/storage/app_27.sh
+[ "$transocks_mode_x" == "0" ] && sstp_set mode='chnroute'
+[ "$transocks_mode_x" == "1" ] && sstp_set mode='gfwlist'
+[ "$transocks_mode_x" == "2" ] && sstp_set mode='global'
+[ "$transocks_mode_x" == "3" ] && sstp_set mode='chnlist'
+sstp_set ipv4='true' ; sstp_set ipv6='false' ;
+ # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
+ # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
+sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+sstp_set tcponly='false' # true:仅代理TCP流量; false:代理TCP和UDP流量
+sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
+nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
+sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
+## proxy
+sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
+sstp_set proxy_svrport='1:65535'
+sstp_set proxy_tcpport='1098'
+sstp_set proxy_udpport='1098'
+sstp_set proxy_startcmd='echo'
+sstp_set proxy_stopcmd='echo'
+## dns
+DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+[ -z "$DNS_china" ] && DNS_china="114.114.114.114"
+sstp_set dns_direct="$DNS_china"
+sstp_set dns_direct6='240C::6666'
+sstp_set dns_remote='8.8.8.8#53'
+sstp_set dns_remote6='2001:4860:4860::8888#53'
+[ "$transocks_mode_x" == "3" ] && sstp_set dns_direct='8.8.8.8' # 回国模式
+[ "$transocks_mode_x" == "3" ] && sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
+[ "$transocks_mode_x" == "3" ] && sstp_set dns_remote='114.114.114.114#53' # 回国模式
+[ "$transocks_mode_x" == "3" ] && sstp_set dns_remote6='240C::6666#53' # 回国模式
+sstp_set dns_bind_port='8053'
+## dnsmasq
+sstp_set dnsmasq_bind_port='53'
+sstp_set dnsmasq_conf_dir="/opt/app/ss_tproxy/dnsmasq.d"
+sstp_set dnsmasq_conf_file="/opt/app/ss_tproxy/dnsmasq_conf_file.txt"
+sstp_set dnsmasq_conf_string="/opt/app/ss_tproxy/conf/dnsmasq_conf_string.conf"
+## ipts
+sstp_set lan_ipv4_ipaddr='127.0.0.1'
+sstp_set ipts_set_snat='false'
+sstp_set ipts_set_snat6='false'
+sstp_set ipts_reddns_onstop='false'
+sstp_set ipts_reddns_onstart='true' # ss-tproxy start 后，是否将其它主机发至本机的 DNS 重定向至自定义 IPv4 地址
+ # sstp_set ipts_reddns_onstart='false'
+sstp_set ipts_reddns_ip="$lan_ipaddr" # 自定义 DNS 重定向地址(只支持 IPv4 )
+sstp_set ipts_proxy_dst_port_tcp="1:65535"
+sstp_set ipts_proxy_dst_port_udp="1:65535"
+sstp_set LAN_AC_IP="0"
+## opts
+sstp_set opts_overwrite_resolv='false'
+sstp_set opts_ip_for_check_net=''
+## file
+sstp_set file_gfwlist_txt='/opt/app/ss_tproxy/rule/gfwlist.txt'
+sstp_set file_gfwlist_ext='/opt/app/ss_tproxy/gfwlist.ext'
+sstp_set file_ignlist_ext='/opt/app/ss_tproxy/ignlist.ext'
+sstp_set file_lanlist_ext='/opt/app/ss_tproxy/lanlist.ext'
+sstp_set file_wanlist_ext='/opt/app/ss_tproxy/wanlist.ext'
+sstp_set file_chnroute_txt='/opt/app/ss_tproxy/rule/chnroute.txt'
+sstp_set file_chnroute6_txt='/opt/app/ss_tproxy/rule/chnroute6.txt'
+sstp_set file_chnroute_set='/opt/app/ss_tproxy/chnroute.set'
+sstp_set file_chnroute6_set='/opt/app/ss_tproxy/chnroute6.set'
+sstp_set file_dnsserver_pid='/opt/app/ss_tproxy/.dnsserver.pid'
+
+Sh99_ss_tproxy.sh initconfig
+
+# 写入服务器地址
+echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr4.conf
+echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr6.conf
+# SS
+ss_server=`nvram get ss_server`
+echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+# v2ray
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+# clash
+grep '^  server: ' /etc/storage/app_20.sh | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+kcptun_server=`nvram get kcptun_server`
+echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+# transocks ipt2socks 
+echo "$transocks_server" | sed -e "s@ @\n@g" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+
+# 链接配置文件
+umount -l /opt/app/ss_tproxy/wanlist.ext
+mount --bind /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+umount -l /opt/app/ss_tproxy/lanlist.ext
+mount --bind /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+logger -t "【transocks】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
+}
+
+sstp_set() {
+sstp_conf='/etc/storage/app_27.sh'
+sstp_set_a="$(echo "$1" | awk -F '=' '{print $1}')"
+sstp_set_b="$(echo "$1" | awk -F '=' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"="$i}}}END{print sum}')"
+if [ ! -z "$(grep -Eo $sstp_set_a=.\+\(\ #\) $sstp_conf)" ] ; then
+sed -e "s@^$sstp_set_a=.\+\(\ #\)@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
+else
+sed -e "s@^$sstp_set_a=.\+@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
+fi
+if [ -z "$(cat $sstp_conf | grep "$sstp_set_a=""'""$sstp_set_b""'"" #")" ] ; then
+echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
+fi
 }
 
 initopt () {
@@ -262,6 +312,7 @@ fi
 }
 
 initconfig () {
+[ -z "$(cat /etc/storage/app_9.sh | grep '0\.0\.0\.0:1098')" ] && rm -f /etc/storage/app_9.sh
 	if [ ! -f "/etc/storage/app_9.sh" ] || [ ! -s "/etc/storage/app_9.sh" ] ; then
 cat > "/etc/storage/app_9.sh" <<-\VVR
 #!/bin/sh
@@ -289,14 +340,6 @@ VVR
 }
 
 initconfig
-
-transocks_port_dpt () {
-if [ ! -f "/etc/storage/script/Sh15_ss.sh" ] || [ ! -s "/etc/storage/script/Sh15_ss.sh" ] ; then
-	wgetcurl.sh /etc/storage/script/Sh15_ss.sh "$hiboyscript/script/Sh15_ss.sh" "$hiboyscript2/script/Sh15_ss.sh"
-fi
-
-/etc/storage/script/Sh15_ss.sh transock_start
-}
 
 update_init () {
 source /etc/storage/script/init.sh

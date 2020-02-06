@@ -151,6 +151,7 @@ done
 }
 
 frp_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
 killall frpc frps frp_script.sh
 killall -9 frpc frps frp_script.sh
@@ -348,7 +349,7 @@ fi
 initconfig
 
 # 加载更新程序启动脚本
-if [ ! -f "/etc/storage/www_sh/frp" ] || [ -z "$(grep "更新程序启动脚本" /etc/storage/www_sh/frp)" ] ; then
+if [ ! -f "/etc/storage/www_sh/frp" ] || [ -z "$(cat /etc/storage/www_sh/frp | grep "更新程序启动脚本")" ] ; then
 	wgetcurl.sh /etc/storage/www_sh/frp "$hiboyscript/www_sh/frp" "$hiboyscript2/www_sh/frp"
 fi
 # 更新程序启动脚本

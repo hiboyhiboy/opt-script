@@ -116,6 +116,7 @@ done
 
 verysync_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【verysync】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport 22330 -j ACCEPT
 iptables -t filter -D INPUT -p udp --dport 22331 -j ACCEPT

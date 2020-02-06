@@ -3,7 +3,7 @@
 source /etc/storage/script/init.sh
 
 # 🔐📐|📐🔐
-if [ -z "$( grep "🔐📐" /www/link_d.js )" ] ; then
+if [ -z "$(cat /www/link_d.js | grep "🔐📐")" ] ; then
 name_base64=0
 else
 name_base64=1
@@ -81,10 +81,10 @@ if [ ! -z "$ex_params" ] ; then
 	#存在插件
 	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&]*"  | cut -d '=' -f2)";
 	ex_obfsparam=$(printf $(echo -n $ex_obfsparam | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))
-	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts @')"
+	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts "@' | sed -e 's@$@"@')"
 	link2="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $1}')"
 else
-	ss_link_plugin_opts=" -O origin -o plain "
+	ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
 fi
 
 ss_link_methodpassword=$(echo -n $link2 | sed -n '1p' | awk -F '@' '{print $1}')
@@ -121,8 +121,8 @@ if [ "$ss_link_obfs"x = "tls1.2_ticket_fastauth"x ] ; then
 	ss_link_obfs="tls1.2_ticket_auth"
 fi
 ss_link_protocol="$(echo -n "$ss_link_usage" | cut -d ':' -f3)" # -O
-[ ! -z "$ex_obfsparam" ] && ss_link_obfsparam=" -g $ex_obfsparam" # -g
-[ ! -z "$ex_protoparam" ] && ss_link_protoparam=" -G $ex_protoparam" # -G
+ss_link_obfsparam=" -g $ex_obfsparam" # -g
+ss_link_protoparam=" -G $ex_protoparam" # -G
 
 }
 
@@ -160,7 +160,7 @@ do
 done
 # 删除🔗订阅连接
 cat /tmp/ss/link/daochu_1.txt | sort -u | grep -v "^$" > /tmp/ss/link/daochu_2.txt
-grep "🔗" /tmp/ss/link/daochu_2.txt | cut -d '=' -f1 | awk -F '_x' '{print $2}' | sort -u > /tmp/ss/link/daochu_3.txt
+cat /tmp/ss/link/daochu_2.txt | grep "🔗" | cut -d '=' -f1 | awk -F '_x' '{print $2}' | sort -u > /tmp/ss/link/daochu_3.txt
 if [ ! -s /tmp/ss/link/daochu_3.txt ] ; then
     echo "不含订阅连接"
     rm -rf /tmp/ss/link
@@ -177,7 +177,7 @@ do
     for ss_2ii in $(seq $ss_1i $ss_x)
     do
         ss_3iii=0
-        if [ ! -z "$(grep "rt_ss_name_x$ss_2ii=" $ss_s)" ] ; then
+        if [ ! -z "$(cat $ss_s | grep "rt_ss_name_x$ss_2ii=")" ] ; then
             sed -Ei s/rt_ss_name_x$ss_2ii=/rt_ss_name_x$ss_1i=/g $ss_s
             sed -Ei s/rt_ss_port_x$ss_2ii=/rt_ss_port_x$ss_1i=/g $ss_s
             sed -Ei s/rt_ss_password_x$ss_2ii=/rt_ss_password_x$ss_1i=/g $ss_s
@@ -199,7 +199,7 @@ do
     eval "nvram set $ss_a=\"\$ss_b\""
 done < /tmp/ss/link/daochu_2.txt
 # 保存有效节点数量
-rt_ssnum_x=$(grep rt_ss_name_x /tmp/ss/link/daochu_2.txt | wc -l)
+rt_ssnum_x=$(cat /tmp/ss/link/daochu_2.txt | grep rt_ss_name_x | wc -l)
 [ -z $rt_ssnum_x ] && rt_ssnum_x="0"
 nvram set rt_ssnum_x=$rt_ssnum_x
 # 写入空白记录 nvram unset 
@@ -221,7 +221,7 @@ cat /tmp/ss/link/daochu_2.txt | sort -u | awk -F '=' '{print $1}' > /tmp/ss/link
 rm -rf /tmp/ss/link
 }
 
-do_link () {
+down_link () {
 if [ -z  "$(echo "$ssr_link_i" | grep 'http:\/\/')""$(echo "$ssr_link_i" | grep 'https:\/\/')" ]  ; then
 	logger -t "【SS】" "$ssr_link_i"
 	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
@@ -255,20 +255,61 @@ if [ -s /tmp/ss/link/3_link.txt ] ; then
 	logger -t "【SS】" "警告！！SSR 服务器订阅文件下载包含非 BASE64 编码字符！"
 	logger -t "【SS】" "请检查服务器配置和链接："
 	logger -t "【SS】" "$ssr_link_i"
+	rm -f /tmp/ss/link/3_link.txt /tmp/ss/link/0_link.txt
 	return
 fi
+rm -f /tmp/ss/link/3_link.txt
 # 开始解码订阅节点配置
 cat /tmp/ss/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/ss/link/1_link.txt
 base64 -d /tmp/ss/link/1_link.txt > /tmp/ss/link/2_link.txt
-dos2unix /tmp/ss/link/2_link.txt
-sed -e 's@\r@@g' -i /tmp/ss/link/2_link.txt
-sed -e  's@vmess://@\nvmess:://@g' -i /tmp/ss/link/2_link.txt
-sed -e  's@ssr://@\nssr://@g' -i /tmp/ss/link/2_link.txt
-sed -e  's@ss://@\nss://@g' -i /tmp/ss/link/2_link.txt
-sed -e  's@vmess:://@vmess://@g' -i /tmp/ss/link/2_link.txt
-sed -e '/^$/d' -i /tmp/ss/link/2_link.txt
-echo >> /tmp/ss/link/2_link.txt
+rm -f /tmp/ss/link/0_link.txt /tmp/ss/link/1_link.txt
+if [ ! -z "$(cat /www/link_d.js | grep "app_24.sh")" ] ; then
+ # 批量导入链接节点
+echo >> /etc/storage/app_24.sh
+sed -Ei 's@^@🔗@g' /tmp/ss/link/2_link.txt
+cat /tmp/ss/link/2_link.txt >> /etc/storage/app_24.sh
+sed -Ei '/dellink_ss|^$/d' /etc/storage/app_24.sh
+B_restart=`"$(cat /etc/storage/app_24.sh | grep -v "^🔗")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+nvram set app_24_sh_status=$B_restart
+if [ -s /etc/storage/app_24.sh ] ; then
+ # 备份提取批量导入链接节点
+logger -t "【SS】" "批量导入链接节点：开始解码"
+mkdir -p /tmp/link
+rm -f /tmp/link/link.txt
+do_link "/etc/storage/app_24.sh" "/tmp/link/link.txt"
+logger -t "【SS】" "批量导入链接节点：完成解码"
+fi
+else
+ # js 数据格式保存
+do_link "/tmp/ss/link/2_link.txt" "/www/link/link.js"
+[ -f /www/link/link.js ] && { sed -Ei '/\[\]\]|^$/d' /www/link/link.js ; echo -n '[]]' >> /www/link/link.js ; }
+if [ ! -f /www/link/link.js ] ; then
+# 保存有效节点数量
+rt_ssnum_x=`nvram get rt_ssnum_x`
+[ -z $rt_ssnum_x ] && rt_ssnum_x=0 && nvram set rt_ssnum_x=0
+[ $rt_ssnum_x -lt $do_i ] && nvram set rt_ssnum_x=$do_i
+nvram commit
+fi
+fi
+rm -rf /tmp/ss/link
+}
+
+do_link () {
+
+mkdir -p /tmp/ss/link
+mkdir -p /tmp/link
 rm -f /tmp/ss/link/ssr_link.txt  /tmp/ss/link/ss_link.txt
+cp $1 /tmp/ss/link/do_link.txt
+dos2unix /tmp/ss/link/do_link.txt
+sed -Ei 's@^🔗@@g' /tmp/ss/link/do_link.txt
+sed -e 's@\r@@g' -i /tmp/ss/link/do_link.txt
+sed -e  's@vmess://@\nvmess:://@g' -i /tmp/ss/link/do_link.txt
+sed -e  's@ssr://@\nssr://@g' -i /tmp/ss/link/do_link.txt
+sed -e  's@ss://@\nss://@g' -i /tmp/ss/link/do_link.txt
+sed -e  's@vmess:://@vmess://@g' -i /tmp/ss/link/do_link.txt
+sed -e '/^$/d' -i /tmp/ss/link/do_link.txt
+echo >> /tmp/ss/link/do_link.txt
+
 while read line
 do
 ssr_line=`echo -n $line | sed -n '1p' | grep 'ssr://'`
@@ -279,7 +320,7 @@ ss_line=`echo -n $line | sed -n '1p' |grep '^ss://'`
 if [ ! -z "$ss_line" ] ; then
 	echo  "$ss_line" | awk -F 'ss://' '{print $2}' >> /tmp/ss/link/ss_link.txt
 fi
-done < /tmp/ss/link/2_link.txt
+done < /tmp/ss/link/do_link.txt
 
 #echo > /tmp/ss/link/c_link.txt
 
@@ -300,7 +341,7 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			eval "nvram set rt_ss_port_x$do_i=$ss_link_port"
 			eval "nvram set rt_ss_password_x$do_i=\"$ss_link_password\""
 			eval "nvram set rt_ss_server_x$do_i=$ss_link_server"
-			eval "nvram set rt_ss_usage_x$do_i=\"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam\""
+			eval "nvram set rt_ss_usage_x$do_i=\"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam --plugin --plugin-opts \""
 			eval "nvram set rt_ss_method_x$do_i=$ss_link_method"
 			do_i=$(( do_i + 1 ))
 		else
@@ -313,16 +354,16 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			link_echo="$link_echo"'"", '
 			link_echo="$link_echo"'"", '
 			#link_echo="$link_echo"'"-o '"$ss_link_obfs"' -O '"$ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
-			link_echo="$link_echo"'"'"$(base64encode "-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam")"'", '
+			link_echo="$link_echo"'"'"$(base64encode "-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam --plugin --plugin-opts ")"'", '
 			#SS:-o plain -O origin  
 			if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
 			link_echo="$link_echo"'"ss"], '
 			else
 			link_echo="$link_echo"'"ssr"], '
 			fi
-			echo "$link_echo" >> /www/link/link.js
-			sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-			echo '[]]' >> /www/link/link.js
+			echo "$link_echo" >> $2
+			sed -Ei '/\[\]\]|dellink_ss|^$/d' $2
+			echo '[]]' >> $2
 		fi
 	fi
 	done < /tmp/ss/link/ssr_link2.txt
@@ -355,21 +396,14 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 			link_echo="$link_echo"'"", '
 			link_echo="$link_echo"'"'"$(base64encode "$ss_link_plugin_opts")"'", '
 			link_echo="$link_echo"'"ss"], '
-			echo "$link_echo" >> /www/link/link.js
-			sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-			echo '[]]' >> /www/link/link.js
+			echo "$link_echo" >> $2
+			sed -Ei '/\[\]\]|dellink_ss|^$/d' $2
+			echo '[]]' >> $2
 		fi
 	fi
 	done < /tmp/ss/link/ss_link.txt
 fi
-[ -f /www/link/link.js ] && { sed -Ei '/\[\]\]|^$/d' /www/link/link.js ; echo -n '[]]' >> /www/link/link.js ; }
-if [ ! -f /www/link/link.js ] ; then
-# 保存有效节点数量
-rt_ssnum_x=`nvram get rt_ssnum_x`
-[ -z $rt_ssnum_x ] && rt_ssnum_x=0 && nvram set rt_ssnum_x=0
-[ $rt_ssnum_x -lt $do_i ] && nvram set rt_ssnum_x=$do_i
-nvram commit
-fi
+
 rm -rf /tmp/ss/link
 }
 
@@ -386,7 +420,7 @@ if [ "$rt_ssnum_x_tmp" = "clean" ] ; then
 	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
 	rm -f /www/link/link.js
 	echo "var ACL2List = [[], " > /www/link/link.js
-	echo '["🔗显示测试，请重新更新订阅", "192.168.123.1", "8888", "passwd", "aes-128-gcm", "btn-success", "11 ms", " -O origin -o plain ", "ss"],' >> /www/link/link.js
+	echo '["🔗显示测试，请重新更新订阅", "192.168.123.1", "8888", "passwd", "aes-128-gcm", "btn-success", "11 ms", " -O origin -o plain --plugin --plugin-opts ", "ss"],' >> /www/link/link.js
 	echo '[]]' >> /www/link/link.js
 	nvram set rt_ssnum_x_tmp=0
 	nvram commit
@@ -409,14 +443,6 @@ if [ "$rt_ssnum_x_tmp" = "del" ] ; then
 	exit
 fi
 
-ssr_link="`nvram get ssr_link`"
-ss_link_up=`nvram get ss_link_up`
-ss_link_ping=`nvram get ss_link_ping`
-app_99="$(nvram get app_99)"
-if [ "$app_99" == 1 ] ; then
-	ss_link_ping=0
-	nvram set ss_link_ping=0
-fi
 A_restart="$(nvram get ss_link_status)"
 #B_restart="$ssr_link"
 B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -454,16 +480,18 @@ if [ -f /www/link/link.js ]  ; then
 [ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] && { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; echo '[]]' >> /www/link/link.js ; }
 sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
 rm -f /tmp/link_matching/link_matching.txt
+touch /etc/storage/app_24.sh ;
+sed -Ei '/^🔗/d' /etc/storage/app_24.sh
 fi
 if [ ! -z "$(echo "$ssr_link" | awk -F ' ' '{print $2}')" ] ; then
 	for ssr_link_ii in $ssr_link
 	do
 		ssr_link_i="$ssr_link_ii"
-		do_link
+		down_link
 	done
 else
 	ssr_link_i="$ssr_link"
-	do_link
+	down_link
 fi
 if [ -f /www/link/link.js ]  ; then
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
@@ -479,6 +507,15 @@ fi
 }
 
 check_link () {
+ssr_link="`nvram get ssr_link`"
+ss_link_up=`nvram get ss_link_up`
+ss_link_ping=`nvram get ss_link_ping`
+app_99="$(nvram get app_99)"
+if [ "$app_99" == 1 ] ; then
+	ss_link_ping=0
+	nvram set ss_link_ping=0
+fi
+
 mkdir -p /etc/storage/link
 touch /etc/storage/link/link.js
 if [ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] ; then
@@ -499,6 +536,38 @@ if [ -f /www/link/link.js ] && [ "$(sed -n 1p /www/link/link.js)" != "var ACL2Li
 	echo "var ACL2List = [[], " > /www/link/link.js
 	echo '[]]' >> /www/link/link.js
 fi
+check_app_24
+}
+
+check_app_24 () {
+
+touch /etc/storage/app_24.sh
+if [ -s /etc/storage/app_24.sh ] ; then
+A_restart="$(nvram get app_24_sh_status)"
+B_restart=`cat /etc/storage/app_24.sh | grep -v "^🔗" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+ # 读取批量导入链接节点
+if [ ! -z "$(cat /etc/storage/app_24.sh | grep -v "^#" | grep -v "^$" | grep -v "vmess://" | grep "ss://\|ssr://" )" ] && [ "$(cat /tmp/link/link.txt | grep -v '\[\]\]' | grep -v "ACL2List = " | grep -v "^#" | grep -v "^$" | wc -l)" == "0" ] ; then
+A_restart=""
+fi
+if [ "$A_restart" != "$B_restart" ] ; then
+nvram set app_24_sh_status=$B_restart
+ # 备份提取批量导入链接节点
+logger -t "【SS】" "批量导入链接节点：开始解码"
+mkdir -p /tmp/link
+rm -f /tmp/link/link.txt
+do_link "/etc/storage/app_24.sh" "/tmp/link/link.txt"
+logger -t "【SS】" "批量导入链接节点：完成解码"
+if [ "$1" != "X_allping" ] ; then
+ss_link_ping=`nvram get ss_link_ping`
+if [ "$ss_link_ping" != 1 ] ; then
+	/etc/storage/script/sh_ezscript.sh allping
+else
+	echo "🔗$ss_link_name：停止ping订阅节点"
+fi
+fi
+fi
+fi
+
 }
 
 addlink_ss () {
@@ -523,6 +592,7 @@ dellink_ss () {
 
 shift
 shift
+if [ -z "$(echo "$1" | grep "A")" ] ; then
 while [ $# != 0 ]
 do
 del_x="$1"
@@ -539,8 +609,20 @@ shift
 done
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
 echo '[]]' >> /www/link/link.js
+else
+while [ $# != 0 ]
+do
+del_x="$1"
+del_x="$(echo "$del_x" | tr -d 'A' | tr -d '_' | tr -d ' ')"
+[ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -gt 0 ] || del_x="0" ; }
+[ -s /etc/storage/app_24.sh ] && sed -i "$del_x""c dellink_ss" /etc/storage/app_24.sh
+shift
+done
+sed -Ei '/dellink_ss|^$/d' /etc/storage/app_24.sh
+fi
 }
 
+if [ "$sh_link_sh" != "sh_link_sh" ] ; then
 case $ACTION in
 addlink)
 	check_link
@@ -569,6 +651,9 @@ start_nvram)
 check)
 	check_link
 	;;
+check_app_24)
+	check_app_24
+	;;
 clear_link)
 	clear_link
 	nvram set rt_ssnum_x_tmp=clean
@@ -579,5 +664,4 @@ clear_link)
 	start_link
 	;;
 esac
-
-
+fi

@@ -345,6 +345,7 @@ fi
 
 adbyby_close () {
 
+kill_ps "$scriptname keep"
 nvram set adbybylazy="【adbyby未启动】lazy更新："
 nvram set adbybyvideo="【adbyby未启动】video更新："
 nvram set adbybyuser3="第三方规则行数：行"
@@ -449,12 +450,12 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		if [ ! -z "$c_line" ] ; then
 			logger -t "【Adbyby】" "下载规则:$line"
 			wgetcurl.sh /tmp/bin/data/user2.txt $line $line N
-			grep -v '^!' /tmp/bin/data/user2.txt | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> /tmp/bin/data/user3adblocks.txt
+			cat /tmp/bin/data/user2.txt | grep -v '^!' | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> /tmp/bin/data/user3adblocks.txt
 			rm -f /tmp/bin/data/user2.txt
 		fi
 		done < /tmp/rule_DOMAIN.txt
 	fi
-	grep -v '^!' /etc/storage/adbyby_rules_script.sh | grep -v "^$" > /tmp/bin/data/user_rules.txt
+	cat /etc/storage/adbyby_rules_script.sh | grep -v '^!' | grep -v "^$" > /tmp/bin/data/user_rules.txt
 	# 添加过滤白名单地址
 	if [ "$adbyby_whitehost_x" = "1" ] ; then
 		logger -t "【Adbyby】" "添加过滤白名单地址"
@@ -477,12 +478,12 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		sed -Ei '/ad_byby|sh_adb8118.sh|restart_dhcpd/d' /tmp/bin/adbybyfirst.sh /tmp/bin/adbybyupdate.sh
 	fi
 	# 合并规则
-	grep -v '^!' /tmp/bin/data/user_rules.txt | grep -v "^$" > /tmp/bin/data/user.txt
-	grep -v '^!' /tmp/bin/data/user3adblocks.txt | grep -v "^$" >> /tmp/bin/data/user.txt
+	cat /tmp/bin/data/user_rules.txt | grep -v '^!' | grep -v "^$" > /tmp/bin/data/user.txt
+	cat /tmp/bin/data/user3adblocks.txt | grep -v '^!' | grep -v "^$" >> /tmp/bin/data/user.txt
 	if [ -f "/tmp/bin/data/lazy_B.txt" ] ; then
 		logger -t "【Adbyby】" "加载手动同步更新规则"
-		grep -v '^!' /tmp/bin/data/video_B.txt | grep -v "^$" >> /tmp/bin/data/user.txt
-		grep -v '^!' /tmp/bin/data/lazy_B.txt | grep -v "^$" >> /tmp/bin/data/user.txt
+		cat /tmp/bin/data/video_B.txt | grep -v '^!' | grep -v "^$" >> /tmp/bin/data/user.txt
+		cat /tmp/bin/data/lazy_B.txt |grep -v '^!' | grep -v "^$" >> /tmp/bin/data/user.txt
 		[ -s /tmp/bin/data/lazy_B.txt ] && mv -f /tmp/bin/data/lazy_B.txt /tmp/bin/data/lazy.txt
 		[ -s /tmp/bin/data/video_B.txt ] && mv -f /tmp/bin/data/video_B.txt /tmp/bin/data/video.txt
 	fi
@@ -530,6 +531,8 @@ nvram set adbybyuser="自定义规则行数:  `sed -n '$=' /tmp/bin/data/user_ru
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 logger -t "【Adbyby】" "守护进程启动"
 adbyby_cron_job
+[ ! -s /tmp/adbyby_host_backup.conf ] && cp -f /tmp/adbyby_host.conf /tmp/adbyby_host_backup.conf
+adbyby_cp_rules
 #adbyby_get_status
 eval "$scriptfilepath keep &"
 exit 0
@@ -545,65 +548,38 @@ done
 }
 
 adbyby_cp_rules() {
-[ -s /tmp/adbyby_host_backup.conf ] && cp -f /tmp/adbyby_host_backup.conf /tmp/adbyby_host.conf
-[ ! -s /tmp/adbyby_host_backup.conf ] && cp -f /tmp/adbyby_host.conf /tmp/adbyby_host_backup.conf
-#去除gfw donmain中与 adbyby host 包含的域名，这部分域名交由adbyby处理。
-# 参考的awk指令写法
-#  awk  'NR==FNR{a[$0]}NR>FNR{ if($1 in a) print $0}' file1 file2 #找出两文件中相同的值
-#  awk  'NR==FNR{a[$0]}NR>FNR{ if(!($1 in a)) print $0}' file1 file2 #去除 file2 中file1的内容
-#  awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' file1 file2 #找出两个文件之间的相同部分
-#  awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' file1 file2 #去除 file2 中file1的内容
+[ ! -s /tmp/adbyby_host.conf ] && [ -f /tmp/adbyby_host_backup.conf ] && cp -f /tmp/adbyby_host_backup.conf /tmp/adbyby_host.conf
+# ipset=/opt.cn2qq.com/adbybylist
+# ipset=/opt.cn2qq.com/adbybylist
+# 首先生成匹配的配置文件
+# 再把 adbybylist 加入 ipset 配置，这部分域名交由 sh_ss_tproxy.sh 处理。
 if [ "$adbyby_mode_x" == 1 ] && [ -s /tmp/adbyby_host.conf ] ; then
 logger -t "【iptables】" "添加 ipset 转发规则"
-sed -Ei '/adbyby_host.conf|cflist.conf/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed  "s/\/adbyby_list/\/adbybylist/" -i  /tmp/adbyby_host.conf
-whitehost=`sed -n 's/.*whitehost=\(.*\)/\1/p' /tmp/bin/adhook.ini`
+logger -t "【iptables】" "adbybylist 规则处理开始"
+sed -e '/^\#\|server=/d' -e "s/ipset=\/www\./ipset=\//" -e "s/ipset=\/bbs\./ipset=\//" -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\///" -i /tmp/adbyby_host.conf
+sed -Ei "s/\/.+//"  /tmp/adbyby_host.conf
+cat /tmp/adbyby_host.conf | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("ipset=/%s/adbybylist\n", $1)}' > /tmp/adbyby_host.conf
+adbyby_whitehost=`nvram get adbyby_whitehost`
 [ ! -z $whitehost ] && sed -Ei "/$(echo $whitehost | tr , \|)/d" /tmp/adbyby_host.conf
-[ -f "$confdir$gfwlist" ] && gfw_black=$(grep "/$gfw_black_list" "$confdir$gfwlist" | sed 's/.*\=//g')
-if [ -s "$confdir$gfwlist" ] && [ -s /tmp/adbyby_host.conf ] && [ ! -z "$gfw_black" ] ; then
-	logger -t "【iptables】" "adbybylist 规则处理开始"
-	mkdir -p /tmp/b/
-	sed -e '/^\#/d' -e "s/ipset=\/www\./ipset=\/\./" -e "s/ipset=\/bbs\./ipset=\/\./" -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\//ipset=\/\./" -i /tmp/adbyby_host.conf
-	sed -e '/^\#/d' -e "s/ipset=\/www\./ipset=\/\./" -e "s/ipset=\/bbs\./ipset=\/\./" -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\//ipset=\/\./" -i "$confdir$gfwlist"
-	sed -e '/^\#/d' -e "s/ipset=\///" -e "s/adbybylist//" /tmp/adbyby_host.conf > /tmp/b/adbyby_host去干扰.conf
-	sed -e '/^\#/d' -e "s/ipset=\///" -e "s/$gfw_black_list//" -e "/server=\//d" "$confdir$gfwlist" > /tmp/b/gfwlist去干扰.conf
-	awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' /tmp/b/adbyby_host去干扰.conf /tmp/b/gfwlist去干扰.conf > /tmp/b/host相同行.conf
-	[ -s /tmp/cflist.conf ] && sed -e '/^\#/d' -e "s/ipset=\/\./ipset=\//" -e "s/ipset=\//ipset=\/\./" -e "s/ipset=\/\./\./" -e "s/cflist//" /tmp/cflist.conf >> /tmp/b/host相同行.conf
-	if [ -s /tmp/b/host相同行.conf ] ; then
-		logger -t "【iptables】" "gfwlist 规则处理开始"
-		sed -e "s/^/ipset=\//" -e "s/$/adbybylist/" /tmp/b/host相同行.conf > /tmp/b/host相同行2.conf
-		awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/b/host相同行2.conf /tmp/adbyby_host.conf > /tmp/b/adbyby_host不重复.conf
-		sed -e "s/^/ipset=\//" -e "s/$/$gfw_black_list/" /tmp/b/host相同行.conf > /tmp/b/host相同行2.conf
-		awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/b/host相同行2.conf "$confdir$gfwlist" > /tmp/b/gfwlist不重复.conf
-		sed -e "s/^/ipset=\//" -e "s/$/cflist/" /tmp/b/host相同行.conf > /tmp/b/list重复.conf
-		cp -a -v /tmp/b/adbyby_host不重复.conf /tmp/adbyby_host.conf
-		cp -a -v /tmp/b/gfwlist不重复.conf "$confdir$gfwlist"
-		grep -v '^#' /tmp/b/list重复.conf | sort -u | grep -v "^$" > /tmp/cflist.conf
-		logger -t "【iptables】" "gfwlist 规则处理完毕"
-	fi
-	rm -f $confdir/cflist.conf
-	[ -s /tmp/cflist.conf ] && cp -f /tmp/cflist.conf $confdir/cflist.conf
-	[ -s /tmp/cflist.conf ] && echo "conf-file=/tmp/cflist.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
-fi
-echo "conf-file=/tmp/adbyby_host.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
-ipset flush cflist
+sh_ss_tproxy.sh adbyby_cflist_ipset
+sed -Ei "/\/opt\/app\/ss_tproxy\/dnsmasq.d\/r.gfwlist.conf/d" /etc/storage/dnsmasq/dnsmasq.conf
+[ -s /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf ] && [ -z "$(cat /etc/storage/dnsmasq/dnsmasq.conf | grep "/opt/app/ss_tproxy/dnsmasq.d")" ] && echo "conf-file=/opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 ipset flush adbybylist
 ipset add adbybylist 100.100.100.100
 restart_dhcpd
-logger -t "【iptables】" "adbybylist 规则处理完毕"
-rm -f /tmp/b/*
-fi
 
+logger -t "【iptables】" "gfwlist 规则处理完毕"
+
+fi
 }
 
 adbyby_flush_rules () {
 logger -t "【iptables】" "删除8118转发规则"
 flush_r
 ipset -F adbybylist &> /dev/null
-ipset destroy adbybylist &> /dev/null
-#ipset -F cflist &> /dev/null
+#ipset destroy adbybylist &> /dev/null
 rm -f /tmp/adbyby_host.conf
-sed -Ei '/adbyby_host.conf|cflist.conf/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei "/\/opt\/app\/ss_tproxy\/dnsmasq.d\/r.gfwlist.conf/d" /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 logger -t "【iptables】" "完成删除8118规则"
 }
@@ -618,8 +594,7 @@ create ad_spec_src_fw hash:ip hashsize 64
 create ad_spec_dst_sp hash:net hashsize 64
 $(gen_special_purpose_ip | sed -e "s/^/add ad_spec_dst_sp /")
 EOF
-ipset -! -N cflist iphash
-ipset -! -N adbybylist iphash
+ipset -! -N adbybylist hash:net hashsize 1024 family inet
 lan_ipaddr=`nvram get lan_ipaddr`
 ipset add ad_spec_src_bp $lan_ipaddr
 ipset add ad_spec_src_bp 127.0.0.1
@@ -643,7 +618,7 @@ if [ -n "$AD_LAN_AC_IP" ] ; then
 			;;
 	esac
 fi
-grep -v '^#' /tmp/ad_spec_lan_DOMAIN.txt | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ad_spec_lan.txt
+cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ad_spec_lan.txt
 while read line
 do
 for host in $line; do
@@ -704,7 +679,7 @@ kcptun_enable=`nvram get kcptun_enable`
 kcptun_server=`nvram get kcptun_server`
 if [ "$kcptun_enable" != "0" ] ; then
 if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
+resolveip=`ping -4 -n -q -c1 -w1 -W1 $kcptun_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 kcptun_server=$resolveip
 else
@@ -716,38 +691,19 @@ fi
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=$ss_enable
-[ "$ss_enable" = "0" ] && ss_s1_ip="" && ss_s2_ip=""
-nvram set ss_server1=`nvram get ss_server`
-ss_server1=`nvram get ss_server1`
-ss_server2=`nvram get ss_server2`
-kcptun2_enable=`nvram get kcptun2_enable`
-[ -z $kcptun2_enable ] && kcptun2_enable=0 && nvram set kcptun2_enable=$kcptun2_enable
-kcptun2_enable2=`nvram get kcptun2_enable2`
-[ -z $kcptun2_enable2 ] && kcptun2_enable2=0 && nvram set kcptun2_enable2=$kcptun2_enable2
-[ "$ss_mode_x" != "0" ] && kcptun2_enable=$kcptun2_enable2
-[ "$kcptun2_enable" = "2" ] && ss_server2=""
+[ "$ss_enable" = "0" ] && ss_s1_ip=""
+ss_server=`nvram get ss_server`
 if [ "$ss_enable" != "0" ] ; then
-if [ -z $(echo $ss_server1 | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server1 | sed -n '1p'` 
+if [ -z $(echo $ss_server | grep : | grep -v "\.") ] ; then 
+resolveip=`ping -4 -n -q -c1 -w1 -W1 $ss_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server | sed -n '1p'` 
 ss_s1_ip=$resolveip
 else
 # IPv6
-ss_s1_ip=$ss_server1
-fi
-fi
-if [ ! -z "$ss_server2" ] ; then
-if [ -z $(echo $ss_server2 | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server2 | sed -n '1p'` 
-ss_s2_ip=$resolveip
-else
-# IPv6
-ss_s2_ip=$ss_server2
+ss_s1_ip=$ss_server
 fi
 fi
 ss_s1_ip_echo="`echo "$ss_s1_ip" | grep -v ":" `"
-ss_s2_ip_echo="`echo "$ss_s2_ip" | grep -v ":" `"
 kcptun_server_echo="`echo "$kcptun_server" | grep -v ":" `"
 cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 0.0.0.0/8
@@ -773,7 +729,6 @@ cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 213.183.51.102
 $lan_ipaddr
 $ss_s1_ip_echo
-$ss_s2_ip_echo
 $kcptun_server_echo
 EOF
 
@@ -793,7 +748,6 @@ iptables-restore -n <<-EOF
 -A AD_BYBY_LAN_AC -m set --match-set ad_spec_src_ac src -j AD_BYBY_WAN_AC
 -A AD_BYBY_LAN_AC -j ${LAN_TARGET:=AD_BYBY_WAN_AC}
 -A AD_BYBY_WAN_AC -m set --match-set adbybylist dst -j ${ADBYBYLIST_TARGET:=AD_BYBY_to}
--A AD_BYBY_WAN_AC -m set --match-set cflist dst -j ${ADBYBYLIST_TARGET:=AD_BYBY_to}
 -A AD_BYBY_WAN_AC -j ${WAN_TARGET:=AD_BYBY_to}
 COMMIT
 EOF
@@ -801,7 +755,7 @@ EOF
 }
 
 include_ac_rules2 () {
-grep -v '^#' /tmp/ad_spec_lan_DOMAIN.txt | sort -u | grep -v "^$" | grep -v "\." | sed s/！/!/g > /tmp/ad_spec_lan.txt
+cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -v "\." | sed s/！/!/g > /tmp/ad_spec_lan.txt
 while read line
 do
 for host in $line; do

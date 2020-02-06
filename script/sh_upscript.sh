@@ -48,7 +48,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2020-01-18"
+	nvram set scripto="2020-02-05"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -136,7 +136,7 @@ check_opt () {
 [ ! -f /tmp/scriptsh.txt ] && file_t_check
 for initopt in `ls -p /opt/etc/init.d`
 do
-if [ ! -z `grep "$(echo $initopt | sed 's/\.sh//g')" /tmp/scriptsh.txt)` ] ; then
+if [ ! -z `cat /tmp/scriptsh.txt | grep "$(echo $initopt | sed 's/\.sh//g')")` ] ; then
 	cp -f /etc/storage/script/$initopt /opt/etc/init.d/$initopt 
 fi
 

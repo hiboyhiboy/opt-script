@@ -108,6 +108,7 @@ done
 }
 
 FastDick_close () {
+kill_ps "$scriptname keep"
 killall FastDick_script.sh
 killall -9 FastDick_script.sh
 kill_ps "/opt/FastDick/swjsq"

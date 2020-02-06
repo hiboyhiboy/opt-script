@@ -179,6 +179,7 @@ done
 }
 
 lnmp_close () {
+kill_ps "$scriptname keep"
 echo -n "" > /opt/etc/init.d/S79php-fpm
 echo -n "" > /opt/etc/init.d/S69pdcnlnmpinit
 sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check

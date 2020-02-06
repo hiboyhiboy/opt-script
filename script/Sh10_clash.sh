@@ -1,7 +1,7 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
-TAG="SS_SPEC"		  # iptables tag
+TAG="SSTP"		  # iptables tag
 FWI="/tmp/firewall.clash.pdcn"
 clash_enable=`nvram get app_88`
 [ -z $clash_enable ] && clash_enable=0 && nvram set app_88=0
@@ -17,39 +17,14 @@ clash_optput=`nvram get app_93`
 clash_ui=`nvram get app_94`
 [ -z $clash_ui ] && clash_ui="0.0.0.0:9090" && nvram set app_94="0.0.0.0:9090"
 lan_ipaddr=`nvram get lan_ipaddr`
-v2ray_enable=`nvram get v2ray_enable`
-[ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
-ss_enable=`nvram get ss_enable`
-[ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
-transocks_enable=`nvram get app_27`
-[ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
-v2ray_follow=`nvram get v2ray_follow`
-[ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
-ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
-[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
-if [ "$transocks_enable" != "0" ]  ; then
-	if [ "$ss_enable" != "0" ] && [ "$ss_mode_x" != 3 ]  ; then
-		logger -t "【clash】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 SS 透明代理！"
-		ss_enable=0 && nvram set ss_enable=0
-	fi
-	if [ "$clash_enable" != 0 ] && [ "$clash_follow" != 0 ]  ; then
-		logger -t "【clash】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 clash 透明代理！"
-		clash_follow=0 && nvram set app_92=0
-	fi
-fi
-if [ "$v2ray_enable" != 0 ] && [ "$v2ray_follow" != 0 ]  ; then
-	if [ "$clash_enable" != 0 ] && [ "$clash_follow" != 0 ]  ; then
-		logger -t "【clash】" "错误！！！由于已启用 v2ray 透明代理，停止启用 clash 透明代理！"
-		clash_follow=0 && nvram set app_92=0
-	fi
-fi
-if [ "$ss_enable" != "0" ] && [ "$ss_mode_x" != 3 ]  ; then
-	if [ "$clash_enable" != 0 ] && [ "$clash_follow" != 0 ]  ; then
-		logger -t "【clash】" "错误！！！由于已启用 SS 透明代理，停止启用 clash 透明代理！"
-		clash_follow=0 && nvram set app_92=0
-	fi
-fi
 if [ "$clash_enable" != "0" ] ; then
+if [ "$clash_follow" != 0 ] ; then
+ss_tproxy_auser=`nvram get ss_tproxy_auser`
+	if [ "Sh10_clash.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" ] ; then
+		logger -t "【clash】" "错误！！！由于已启用 $ss_tproxy_auser 透明代理，停止启用 clash 透明代理！"
+		clash_follow=0 && nvram set app_92=0
+	fi
+fi
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 #nvramshow=`nvram showall | grep '=' | grep clash | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
@@ -140,11 +115,7 @@ if [ "$clash_enable" = "1" ] ; then
 	else
 		[ -z "`pidof clash`" ] && clash_restart
 		if [ "$clash_follow" = "1" ] ; then
-		port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
-		if [ "$port" = 0 ] ; then
-			logger -t "【clash】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
-			clash_restart
-		fi
+			echo clash_follow
 		fi
 	fi
 fi
@@ -158,37 +129,13 @@ sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
 	[ -z "\`pidof clash\`" ] || [ ! -s "/opt/bin/clash" ] && nvram set clash_status=00 && logger -t "【clash】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check # 【clash】
 OSC
-#return
+return
 fi
 clash_enable=`nvram get app_88`
 while [ "$clash_enable" = "1" ]; do
 	clash_follow=`nvram get clash_follow`
 	if [ "$clash_follow" = "1" ] ; then
-		port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
-		if [ "$port" = 0 ] ; then
-			logger -t "【clash】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
-			clash_restart
-		fi
-		if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
-			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-			if [ "$port" = 0 ] ; then
-				sleep 10
-				port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-			fi
-			if [ "$port" = 0 ] ; then
-				logger -t "【clash】" "检测:找不到 dnsmasq 转发规则, 重新添加"
-				# 写入dnsmasq配置
-				sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-				cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
-no-resolv
-server=127.0.0.1#8053
-server=::1#8053
-dns-forward-max=1000
-min-cache-ttl=1800
-EOF
-				restart_dhcpd
-			fi
-		fi
+		echo clash_follow
 	fi
 sleep 218
 clash_enable=`nvram get app_88`
@@ -196,8 +143,9 @@ done
 }
 
 clash_close () {
-flush_r
+kill_ps "$scriptname keep"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
+Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
 killall clash
 killall -9 clash
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
@@ -245,14 +193,16 @@ cp -f /etc/storage/app_21.sh $config_dns_yml
 sed -Ei '/^$/d' $config_dns_yml
 yq w -i $config_dns_yml dns.ipv6 true
 rm_temp
-if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
-logger -t "【clash】" "已经启动 chinadns 防止域名污染，变更 clash dns 端口 listen 0.0.0.0:8054"
+if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] || [ "$clash_follow" == 0 ] ; then
+logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8054"
 yq w -i $config_dns_yml dns.listen 0.0.0.0:8054
 rm_temp
+dns_start_dnsproxy='0' # 0:自动开启第三方 DNS 程序(dnsproxy) ;
 else
-logger -t "【clash】" "启动 clash dns 端口 listen 0.0.0.0:8054"
+logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8054"
 yq w -i $config_dns_yml dns.listen 0.0.0.0:8053
 rm_temp
+dns_start_dnsproxy='1' # 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
 fi
 if [ ! -s $config_dns_yml ] ; then
 logger -t "【clash】" "yq 初始化 clash dns 配置错误！请检查配置！"
@@ -365,80 +315,19 @@ nvram set app_86=0
 clash_get_status
 
 if [ "$clash_follow" = "1" ] ; then
-flush_r
-
-# 透明代理
-logger -t "【clash】" "启动 透明代理"
-logger -t "【clash】" "备注：默认配置的透明代理会导致广告过滤失效，需要手动改造配置前置代理过滤软件"
-logger -t "【clash】" "载入 透明代理 转发规则设置"
-#载入iptables模块
-for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
-do
-	modprobe $module
-done 
-
-# rules规则
-json_gen_special_purpose_ip
-ipset -! restore <<-EOF 
-create ss_spec_dst_sp hash:net hashsize 64
-$(gen_special_purpose_ip | sed -e "s/^/add ss_spec_dst_sp /")
-EOF
-
-# 加载 nat 规则
-include_ac_rules nat
-iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports 7892
-get_wifidognx
-gen_prerouting_rules nat tcp $wifidognx
-# iptables -t nat -I OUTPUT -p tcp -j SS_SPEC_CLASH_LAN_DG
-# iptables -t nat -D OUTPUT -p tcp -j SS_SPEC_CLASH_LAN_DG
-
-#iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 7892
-#iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 7892
-
+Sh99_ss_tproxy.sh auser_check "Sh10_clash.sh"
+ss_tproxy_set "Sh10_clash.sh"
+Sh99_ss_tproxy.sh on_start "Sh10_clash.sh"
 # 同时将代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理
-NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
-hash su 2>/dev/null && su_x="1"
-hash su 2>/dev/null || su_x="0"
-if [ "$NUM" -ge "3" ] && [ "$clash_optput" = 1 ] && [ "$su_x" = "1" ] ; then
-
-# logger -t "【clash】" "支持游戏模式（UDP转发）"
-# 加载 mangle 规则
-# ip rule add fwmark 1 table 100
-# ip route add local 0.0.0.0/0 dev lo table 100
-# include_ac_rules mangle
-# iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port 7892 --tproxy-mark 1
-# get_wifidognx_mangle
-# gen_prerouting_rules mangle udp $wifidognx
-
+if [ "$clash_optput" = 1 ] ; then
 logger -t "【clash】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
-	iptables -t nat -D OUTPUT -m owner ! --uid-owner 778 -p tcp -j SS_SPEC_CLASH_LAN_DG
-	iptables -t nat -A OUTPUT -m owner ! --uid-owner 778 -p tcp -j SS_SPEC_CLASH_LAN_DG
 fi
-	logger -t "【clash】" "完成 透明代理 转发规则设置"
-	gen_include &
-
+logger -t "【clash】" "完成 透明代理 转发规则设置"
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 logger -t "【clash】" "已经启动 chinadns 防止域名污染"
 else
 logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
-pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
-pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
-#if [ -s /sbin/dnsproxy ] ; then
-	#/sbin/dnsproxy -d
-#else
-	#dnsproxy -d
-#fi
-#防火墙转发规则加载
-sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
-no-resolv
-server=127.0.0.1#8053
-server=::1#8053
-dns-forward-max=1000
-min-cache-ttl=1800
-EOF
 fi
-
 restart_dhcpd
 # 透明代理
 fi
@@ -448,226 +337,122 @@ eval "$scriptfilepath keep &"
 exit 0
 }
 
-gen_include() {
-[ -n "$FWI" ] || return 0
-cat <<-CAT >>$FWI
-iptables-restore -n <<-EOF
-$(iptables-save | sed  "s/webstr--url/webstr --url/g" | grep -E "$TAG|^\*|^COMMIT" |sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/")
-EOF
-CAT
-return $?
-}
-
-gen_prerouting_rules() {
-	iptables -t $1 -I PREROUTING $3 -p $2 -j SS_SPEC_CLASH_LAN_DG
-}
-
-flush_r() {
-	[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
-	iptables-save -c | sed  "s/webstr--url/webstr --url/g" | grep -v "SS_SPEC" | iptables-restore -c
-	ip rule del fwmark 1 table 100 2>/dev/null
-	ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null
-	for setname in $(ipset -n list | grep -i "SS_SPEC"); do
-		ipset destroy $setname 2>/dev/null
-	done
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 7892
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 7892
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j RETURN
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j RETURN
-	if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
-		sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|server=::1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-	fi
-	restart_dhcpd
-	return 0
-}
-
-gen_special_purpose_ip() {
-cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
-0.0.0.0/8
-10.0.0.0/8
-100.64.0.0/10
-127.0.0.0/8
-169.254.0.0/16
-172.16.0.0/12
-192.0.0.0/24
-192.0.2.0/24
-192.25.61.0/24
-192.31.196.0/24
-192.52.193.0/24
-192.88.99.0/24
-192.168.0.0/16
-192.175.48.0/24
-198.18.0.0/15
-198.51.100.0/24
-203.0.113.0/24
-224.0.0.0/4
-240.0.0.0/4
-255.255.255.255
-100.100.100.100
-188.188.188.188
-110.110.110.110
-$lan_ipaddr
-$ss_s1_ip
-$ss_s2_ip
-$kcptun_server
-$v2ray_server_addresses
-EOF
-}
-
-#-A SS_SPEC_CLASH_LAN_DG -p tcp -m multiport --dports 8118,3000,18309 -j RETURN
-
-include_ac_rules() {
-	iptables-restore -n <<-EOF
-*$1
-:SS_SPEC_CLASH_LAN_DG - [0:0]
-:SS_SPEC_WAN_FW - [0:0]
--A SS_SPEC_CLASH_LAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
--A SS_SPEC_CLASH_LAN_DG -j SS_SPEC_WAN_FW
-COMMIT
-EOF
-
-}
-
-
-get_wifidognx() {
-	wifidognx=""
-	#wifidogn=`iptables -t nat -L PREROUTING --line-number | grep AD_BYBY | awk '{print $1}' | awk 'END{print $1}'`  ## AD_BYBY
-	#if [ -z "$wifidogn" ] ; then
-		wifidogn=`iptables -t nat -L PREROUTING --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## Outgoing
-		if [ -z "$wifidogn" ] ; then
-			wifidogn=`iptables -t nat -L PREROUTING --line-number | grep vserver | awk '{print $1}' | awk 'END{print $1}'`  ## vserver
-			if [ -z "$wifidogn" ] ; then
-				wifidognx=1
-			else
-				wifidognx=`expr $wifidogn + 1`
-			fi
-		else
-			wifidognx=`expr $wifidogn + 1`
-		fi
-	#else
-	#	wifidognx=`expr $wifidogn + 1`
-	#fi
-	wifidognx=$wifidognx
-}
-
-get_wifidognx_mangle() {
-	wifidognx=""
-	wifidogn=`iptables -t mangle -L PREROUTING --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## Outgoing
-		if [ -z "$wifidogn" ] ; then
-			wifidogn=`iptables -t mangle -L PREROUTING --line-number | grep UP | awk '{print $1}' | awk 'END{print $1}'`  ## UP
-			if [ -z "$wifidogn" ] ; then
-				wifidognx=1
-			else
-				wifidognx=`expr $wifidogn + 1`
-			fi
-		else
-			wifidognx=`expr $wifidogn + 1`
-		fi
-	wifidognx=$wifidognx
-}
-
-arNslookup() {
-mkdir -p /tmp/arNslookup
-nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":" > /tmp/arNslookup/$$ &
-I=5
-while [ ! -s /tmp/arNslookup/$$ ] ; do
-		I=$(($I - 1))
-		[ $I -lt 0 ] && break
-		sleep 1
-done
-killall nslookup
-if [ -s /tmp/arNslookup/$$ ] ; then
-cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-rm -f /tmp/arNslookup/$$
-else
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
-		if [ $? -eq 0 ]; then
-		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
-		fi
-	else
-		Address="`curl --user-agent "$user_agent" -s http://119.29.29.29/d?dn=$1`"
-		if [ $? -eq 0 ]; then
-		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
-		fi
-	fi
+ss_tproxy_set() {
+ss_tproxy_auser=`nvram get ss_tproxy_auser`
+if [ "$1" != "$ss_tproxy_auser" ] ; then
+	logger -t "【clash】" "脚本 [Sh99_ss_tproxy.sh] 当前使用者: $auser_b ，跳过 $auser_a 的运行命令"
+	logger -t "【clash】" "需要停用 $auser_b 后才能使用 $auser_a 运行 [Sh99_ss_tproxy.sh] 脚本"
+	return
 fi
-}
+lan_ipaddr=`nvram get lan_ipaddr`
+ss_tproxy_mode_x=`nvram get app_110`
+[ -z $ss_tproxy_mode_x ] && ss_tproxy_mode_x=0 && nvram set app_110=0
+[ "$ss_tproxy_mode_x" = "0" ] && logger -t "【clash】" "【自动】设置 ss_tproxy 配置文件，配置导入中..."
+[ "$ss_tproxy_mode_x" = "1" ] && logger -t "【clash】" "【手动】设置 ss_tproxy 配置文件，跳过配置导入" && return
+ # /etc/storage/app_27.sh
+ # sstp_set mode='gfwlist'
+ # sstp_set mode='chnroute'
+sstp_set mode='global'
+ # sstp_set mode='chnlist'
+sstp_set ipv4='true' ; sstp_set ipv6='false' ;
+ # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
+ # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
+sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+sstp_set tcponly='true' # true:仅代理TCP流量; false:代理TCP和UDP流量
+sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
+nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
+nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
+nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
+[ "$clash_optput" == 1 ] && nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
+[ "$clash_optput" == 0 ] && nvram set app_114="1" # 0:代理本机流量; 1:跳过代理本机流量
+[ "$clash_optput" == 1 ] && sstp_set uid_owner='778' # 非 0 时进行用户ID匹配跳过代理本机流量
+[ "$clash_optput" == 0 ] && sstp_set uid_owner='778' # 非 0 时进行用户ID匹配跳过代理本机流量
+## proxy
+sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
+sstp_set proxy_svrport='1:65535'
+sstp_set proxy_tcpport='7892'
+sstp_set proxy_udpport='7892'
+sstp_set proxy_startcmd='echo'
+sstp_set proxy_stopcmd='echo'
+## dns
+DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+[ -z "$DNS_china" ] && DNS_china="114.114.114.114"
+sstp_set dns_direct="$DNS_china"
+sstp_set dns_direct='114.114.114.114'
+sstp_set dns_direct6='240C::6666'
+sstp_set dns_remote='8.8.8.8#53'
+sstp_set dns_remote6='2001:4860:4860::8888#53'
+ # sstp_set dns_direct='8.8.8.8' # 回国模式
+ # sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
+ # sstp_set dns_remote='114.114.114.114#53' # 回国模式
+ # sstp_set dns_remote6='240C::6666#53' # 回国模式
+sstp_set dns_bind_port='8053'
+## dnsmasq
+sstp_set dnsmasq_bind_port='53'
+sstp_set dnsmasq_conf_dir="/opt/app/ss_tproxy/dnsmasq.d"
+sstp_set dnsmasq_conf_file="/opt/app/ss_tproxy/dnsmasq_conf_file.txt"
+sstp_set dnsmasq_conf_string="/opt/app/ss_tproxy/conf/dnsmasq_conf_string.conf"
+## ipts
+sstp_set lan_ipv4_ipaddr='127.0.0.1'
+sstp_set ipts_set_snat='false'
+sstp_set ipts_set_snat6='false'
+sstp_set ipts_reddns_onstop='false'
+sstp_set ipts_reddns_onstart='true' # ss-tproxy start 后，是否将其它主机发至本机的 DNS 重定向至自定义 IPv4 地址
+ # sstp_set ipts_reddns_onstart='false'
+sstp_set ipts_reddns_ip="$lan_ipaddr" # 自定义 DNS 重定向地址(只支持 IPv4 )
+sstp_set ipts_proxy_dst_port_tcp="1:65535"
+sstp_set ipts_proxy_dst_port_udp="1:65535"
+sstp_set LAN_AC_IP="0"
+## opts
+sstp_set opts_overwrite_resolv='false'
+sstp_set opts_ip_for_check_net=''
+## file
+sstp_set file_gfwlist_txt='/opt/app/ss_tproxy/rule/gfwlist.txt'
+sstp_set file_gfwlist_ext='/opt/app/ss_tproxy/gfwlist.ext'
+sstp_set file_ignlist_ext='/opt/app/ss_tproxy/ignlist.ext'
+sstp_set file_lanlist_ext='/opt/app/ss_tproxy/lanlist.ext'
+sstp_set file_wanlist_ext='/opt/app/ss_tproxy/wanlist.ext'
+sstp_set file_chnroute_txt='/opt/app/ss_tproxy/rule/chnroute.txt'
+sstp_set file_chnroute6_txt='/opt/app/ss_tproxy/rule/chnroute6.txt'
+sstp_set file_chnroute_set='/opt/app/ss_tproxy/chnroute.set'
+sstp_set file_chnroute6_set='/opt/app/ss_tproxy/chnroute6.set'
+sstp_set file_dnsserver_pid='/opt/app/ss_tproxy/.dnsserver.pid'
 
-arNslookup6() {
-mkdir -p /tmp/arNslookup
-nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep ":" > /tmp/arNslookup/$$ &
-I=5
-while [ ! -s /tmp/arNslookup/$$ ] ; do
-		I=$(($I - 1))
-		[ $I -lt 0 ] && break
-		sleep 1
-done
-killall nslookup
-if [ -s /tmp/arNslookup/$$ ] ; then
-	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-	rm -f /tmp/arNslookup/$$
-fi
-}
+Sh99_ss_tproxy.sh initconfig
 
-json_gen_special_purpose_ip() {
-ss_s1_ip=""
-ss_s2_ip=""
-kcptun_server=""
-v2ray_server_addresses=""
-#处理肯定不走通道的目标网段
-kcptun_server=`nvram get kcptun_server`
-kcptun_enable=`nvram get kcptun_enable`
-[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
-[ "$kcptun_enable" = "0" ] && kcptun_server=""
-if [ "$kcptun_enable" != "0" ] ; then
-if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $kcptun_server | grep : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
-[ -z "$resolveip" ] && resolveip=`arNslookup6 $kcptun_server | sed -n '1p'` 
-kcptun_server=$resolveip
-else
-# IPv6
-kcptun_server=$kcptun_server
-fi
-fi
-ss_server1=`nvram get ss_server1`
-if [ "$ss_enable" != "0" ] && [ ! -z "$ss_server1" ] ; then
-if [ -z $(echo $ss_server1 | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $ss_server1 | grep : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server1 | sed -n '1p'` 
-[ -z "$resolveip" ] && resolveip=`arNslookup6 $ss_server1 | sed -n '1p'` 
-ss_s1_ip=$resolveip
-else
-# IPv6
-ss_s1_ip=$ss_server1
-fi
-fi
-ss_server2=`nvram get ss_server2`
-if [ "$ss_enable" != "0" ] && [ ! -z "$ss_server2" ] ; then
-if [ -z $(echo $ss_server2 | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $ss_server2 | grep : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server2 | sed -n '1p'` 
-[ -z "$resolveip" ] && resolveip=`arNslookup6 $ss_server2 | sed -n '1p'` 
-ss_s2_ip=$resolveip
-else
-# IPv6
-ss_s2_ip=$ss_server2
-fi
-fi
+# 写入服务器地址
+echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr4.conf
+echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr6.conf
+# SS
+ss_server=`nvram get ss_server`
+echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+# v2ray
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
-if [ ! -z "$server_addresses" ] ; then
-	resolveip=`/usr/bin/resolveip -4 -t 4 $server_addresses | grep -v : | sed -n '1p'`
-	[ -z "$resolveip" ] && resolveip=`arNslookup $server_addresses | sed -n '1p'` 
-	[ -z "$resolveip" ] && resolveip=`arNslookup6 $server_addresses | sed -n '1p'` 
-	server_addresses=$resolveip
-	v2ray_server_addresses="$server_addresses"
+echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+# clash
+grep '^  server: ' /etc/storage/app_20.sh | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+kcptun_server=`nvram get kcptun_server`
+echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+
+# 链接配置文件
+umount -l /opt/app/ss_tproxy/wanlist.ext
+mount --bind /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+umount -l /opt/app/ss_tproxy/lanlist.ext
+mount --bind /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+logger -t "【clash】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
+}
+
+sstp_set() {
+sstp_conf='/etc/storage/app_27.sh'
+sstp_set_a="$(echo "$1" | awk -F '=' '{print $1}')"
+sstp_set_b="$(echo "$1" | awk -F '=' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"="$i}}}END{print sum}')"
+if [ ! -z "$(grep -Eo $sstp_set_a=.\+\(\ #\) $sstp_conf)" ] ; then
+sed -e "s@^$sstp_set_a=.\+\(\ #\)@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
 else
-	v2ray_server_addresses=""
+sed -e "s@^$sstp_set_a=.\+@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
+fi
+if [ -z "$(cat $sstp_conf | grep "$sstp_set_a=""'""$sstp_set_b""'"" #")" ] ; then
+echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
 fi
 }
 
@@ -782,20 +567,19 @@ fi
 config_nslookup_server () {
 [ -z "$mismatch" ] && return
 mkdir -p /tmp/clash
-grep '^  server: ' $1 > /tmp/clash/server.txt
+cat $1 | grep '^  server: ' > /tmp/clash/server.txt
 ilox=$(cat /tmp/clash/server.txt | wc -l)
 do_i=0
 while read Proxy_server1
 do
-Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server://g' | sed -e 's/ //g' | grep -E "$mismatch")"
+Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -E "$mismatch")"
 if [ -z $(echo "$Proxy_server2" | grep -E -o '([0-9]+\.){3}[0-9]+') ] && [ ! -z "$Proxy_server2" ] ; then 
 ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
 [ "$ilog" -gt 100 ] && ilog=100
 [ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp % 【$Proxy_server2】"
 if [ -z $(echo "$Proxy_server2" | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $Proxy_server2 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $Proxy_server2 | sed -n '1p'` 
-[ -z "$resolveip" ] && resolveip=`arNslookup6 $Proxy_server2 | sed -n '1p'` 
+resolveip=`ping -4 -n -q -c1 -w1 -W1 $Proxy_server2 | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+[ -z "$resolveip" ] && resolveip=`ping -6 -n -q -c1 -w1 -W1 $Proxy_server2 | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'` 
 Proxy_server3=$resolveip
 sed -e 's/^  server: '"$Proxy_server2"'/  server: '"$Proxy_server3"'/g' -i $1
 fi

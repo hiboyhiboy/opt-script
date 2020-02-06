@@ -135,6 +135,7 @@ done
 
 qcloud_close () {
 
+kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_qcloud"
 kill_ps "_qcloud.sh"
 kill_ps "$scriptname"

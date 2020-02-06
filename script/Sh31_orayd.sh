@@ -150,6 +150,7 @@ done
 }
 
 phddns_close () {
+kill_ps "$scriptname keep"
 killall oraynewph oraysl
 killall -9 oraynewph oraysl
 kill_ps "/tmp/script/_orayd"

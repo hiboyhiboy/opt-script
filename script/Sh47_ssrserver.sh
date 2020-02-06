@@ -115,6 +115,7 @@ done
 }
 
 ssrserver_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【SSR_server】|^$/d' /tmp/script/_opt_script_check
 kill_ps "manyuser/shadowsocks/server"
 kill_ps "/tmp/script/_ssrserver"

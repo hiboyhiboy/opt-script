@@ -149,6 +149,7 @@ done
 
 kcptun_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$kcptun_path" ] && kill_ps "$kcptun_path"
 killall client_linux_mipsle kcptun_script.sh sh_kcpkeep.sh
@@ -188,8 +189,8 @@ logger -t "【kcptun】" "kcptun-version: $kcptun_v"
 logger -t "【kcptun】" "运行 kcptun_script"
 
 if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $kcptun_server | grep : | sed -n '1p'`
+resolveip=`ping -4 -n -q -c1 -w1 -W1 $kcptun_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+[ -z "$resolveip" ] && resolveip=`ping -6 -n -q -c1 -w1 -W1 $kcptun_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 [ -z "$resolveip" ] && resolveip=`arNslookup6 $kcptun_server | sed -n '1p'` 
 kcptun_s_server=$resolveip

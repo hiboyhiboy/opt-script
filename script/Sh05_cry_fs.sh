@@ -128,6 +128,7 @@ done
 }
 
 cryfs_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【cryfs】|^$/d' /tmp/script/_opt_script_check
 set_app_list_stop
 killall cryfs app_18.sh
@@ -269,7 +270,7 @@ EEE
 
 fi
 
-grep -v '^#' /etc/storage/app_17.sh | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/cryfs_app_list.txt
+cat /etc/storage/app_17.sh | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/cryfs_app_list.txt
 
 }
 

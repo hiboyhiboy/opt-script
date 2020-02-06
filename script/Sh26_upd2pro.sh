@@ -176,6 +176,7 @@ done
 }
 
 upd2pro_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check
 # restart_dhcpd
 killall app_3.sh app_4.sh udp2raw speeder speederv2
@@ -194,7 +195,7 @@ optupd2pro="0"
 [ "$upd2pro3_enable" = "1" ] && { hash speederv2 2>/dev/null || optupd2pro="3" ; }
 if [ "$optupd2pro" != "0" ] ; then
 	# 找不到 udp2raw 、speeder 或 speederv2，安装opt
-	logger -t "【SS】" "找不到 udp2raw 、speeder 或 speederv2，挂载opt"
+	logger -t "【upd2pro】" "找不到 udp2raw 、speeder 或 speederv2，挂载opt"
 	/tmp/script/_mountopt start
 	initopt
 fi
@@ -205,7 +206,7 @@ chmod 777 "/opt/bin/udp2raw"
 hash udp2raw 2>/dev/null || optupd2pro="1"
 if [ "$optupd2pro" = "1" ] ; then
 	[ ! -s /opt/bin/udp2raw ] && wgetcurl_file "/opt/bin/udp2raw" "$hiboyfile/udp2raw" "$hiboyfile2/udp2raw"
-hash udp2raw 2>/dev/null || { logger -t "【SS】" "找不到 udp2raw, 请检查系统"; upd2pro_restart x ; }
+hash udp2raw 2>/dev/null || { logger -t "【upd2pro】" "找不到 udp2raw, 请检查系统"; upd2pro_restart x ; }
 fi
 fi
 optupd2pro="0"
@@ -215,7 +216,7 @@ chmod 777 "/opt/bin/speeder"
 hash speeder 2>/dev/null || optupd2pro="2"
 if [ "$optupd2pro" = "2" ] ; then
 	[ ! -s /opt/bin/speeder ] && wgetcurl_file "/opt/bin/speeder" "$hiboyfile/speeder" "$hiboyfile2/speeder"
-hash speeder 2>/dev/null || { logger -t "【SS】" "找不到 speeder, 请检查系统"; upd2pro_restart x ; }
+hash speeder 2>/dev/null || { logger -t "【upd2pro】" "找不到 speeder, 请检查系统"; upd2pro_restart x ; }
 fi
 fi
 optupd2pro="0"
@@ -225,7 +226,7 @@ chmod 777 "/opt/bin/speederv2"
 hash speederv2 2>/dev/null || optupd2pro="3"
 if [ "$optupd2pro" = "3" ] ; then
 	[ ! -s /opt/bin/speederv2 ] && wgetcurl_file "/opt/bin/speederv2" "$hiboyfile/speederv2" "$hiboyfile2/speederv2"
-hash speederv2 2>/dev/null || { logger -t "【SS】" "找不到 speederv2, 请检查系统"; upd2pro_restart x ; }
+hash speederv2 2>/dev/null || { logger -t "【upd2pro】" "找不到 speederv2, 请检查系统"; upd2pro_restart x ; }
 fi
 fi
 

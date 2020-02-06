@@ -123,6 +123,7 @@ done
 
 ssserver_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【SS_server】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT

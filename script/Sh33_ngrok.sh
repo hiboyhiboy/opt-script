@@ -127,6 +127,7 @@ done
 }
 
 ngrok_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
 killall ngrokc ngrok_script.sh
 killall -9 ngrokc ngrok_script.sh

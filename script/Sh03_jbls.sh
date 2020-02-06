@@ -1,5 +1,8 @@
 #!/bin/sh
 #copyright by hiboy
+# 失效清理
+echo "Sh03_jbls.sh"
+exit
 source /etc/storage/script/init.sh
 jbls_enable=`nvram get jbls_enable`
 [ -z $jbls_enable ] && jbls_enable=0 && nvram set jbls_enable=0
@@ -43,6 +46,7 @@ done
 }
 
 jbls_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/txt-record=_jetbrains-license-server.lan/d' /etc/storage/dnsmasq/dnsmasq.conf
 killall jblicsvr jbls_script.sh
@@ -119,7 +123,7 @@ fi
 
 }
 
-initconfig
+#initconfig
 
 case $ACTION in
 start)

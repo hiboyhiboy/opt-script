@@ -43,6 +43,7 @@ done
 }
 
 kms_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf; restart_dhcpd;
 killall vlmcsd vlmcsdini_script.sh

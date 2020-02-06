@@ -116,6 +116,7 @@ done
 }
 
 serverchan_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【微信推送】|^$/d' /tmp/script/_opt_script_check
 killall serverchan_script.sh
 killall -9 serverchan_script.sh

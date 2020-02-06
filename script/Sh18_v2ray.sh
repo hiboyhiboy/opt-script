@@ -2,14 +2,12 @@
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
-TAG="SS_SPEC"		  # iptables tag
+TAG="SSTP"		  # iptables tag
 FWI="/tmp/firewall.v2ray.pdcn"
 v2ray_enable=`nvram get v2ray_enable`
 [ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
-transocks_enable=`nvram get app_27`
-[ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
 v2ray_follow=`nvram get v2ray_follow`
 [ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
 mk_mode_x="`nvram get app_69`"
@@ -21,29 +19,25 @@ mk_mode_dns="`nvram get app_105`"
 [ -z $mk_mode_dns ] && mk_mode_dns=0 && nvram set app_105=0
 mk_mode_routing=`nvram get app_108`
 [ -z $mk_mode_routing ] && mk_mode_routing=0 && nvram set app_108=0
+transocks_mode_x=`nvram get app_28`
+[ -z $transocks_mode_x ] && transocks_mode_x=0 && nvram set app_28=0
 lan_ipaddr=`nvram get lan_ipaddr`
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
-if [ "$v2ray_enable" != 0 ] && [ "$mk_mode_routing" == "1" ] ; then
-v2ray_follow=0 && nvram set v2ray_follow=0
-nvram set app_30="$lan_ipaddr"
-nvram set app_31="1088"
-nvram set app_32="$server_addresses"
-fi
-if [ "$transocks_enable" != "0" ]  ; then
-	if [ "$ss_enable" != "0" ]  ; then
-		ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
-		[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
-		if [ "$ss_mode_x" != 3 ]  ; then
-			logger -t "【v2ray】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 SS 透明代理！"
-			ss_enable=0 && nvram set ss_enable=0
-		fi
-	fi
-	if [ "$v2ray_enable" != 0 ] && [ "$v2ray_follow" != 0 ]  ; then
-		logger -t "【v2ray】" "错误！！！由于已启用 transocks 或 ipt2socks ，停止启用 v2ray 透明代理！"
+if [ "$v2ray_enable" != "0" ] ; then
+app_98="$(nvram get app_98)"
+app_95="$(nvram get app_95)"
+ss_matching_enable="$(nvram get ss_matching_enable)"
+[ -z $ss_matching_enable ] && ss_matching_enable=0 && nvram set ss_matching_enable=0
+[ "$ss_matching_enable" == "0" ] && [ -z "$app_95" ] && app_95="." && nvram set app_95="."
+[ "$ss_matching_enable" == "1" ] && [ ! -z "$app_95" ] && app_95="" && nvram set app_95=""
+if [ "$v2ray_follow" != 0 ] ; then
+ss_tproxy_auser=`nvram get ss_tproxy_auser`
+	if [ "Sh18_v2ray.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" ] ; then
+		logger -t "【v2ray】" "错误！！！由于已启用 $ss_tproxy_auser 透明代理，停止启用 v2ray 透明代理！"
 		v2ray_follow=0 && nvram set v2ray_follow=0
 	fi
 fi
-if [ "$v2ray_enable" != "0" ] ; then
+[ "$v2ray_follow" == 0 ] && mk_mode_routing=0
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 #nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 v2ray_optput=`nvram get v2ray_optput`
@@ -135,6 +129,7 @@ fi
 v2ray_check () {
 
 check_link
+check_app_25
 ping_vmess_link
 start_vmess_link
 json_mk_vmess
@@ -150,11 +145,7 @@ if [ "$v2ray_enable" = "1" ] ; then
 	else
 		[ -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && v2ray_restart
 		if [ "$v2ray_follow" = "1" ] ; then
-		port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
-		if [ "$port" = 0 ] ; then
-			logger -t "【v2ray】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
-			v2ray_restart
-		fi
+			echo v2ray_follow
 		fi
 	fi
 fi
@@ -162,7 +153,6 @@ fi
 
 v2ray_keep () {
 logger -t "【v2ray】" "守护进程启动"
-[ "$mk_mode_routing" == "1" ] && nvram set app_104=1 && Sh39_ipt2socks.sh # 启用 ipt2socks
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
@@ -175,7 +165,7 @@ cat >> "/tmp/script/_opt_script_check" <<-OSC
 OSC
 #return
 fi
-sleep 60
+sleep 20
 v2ray_enable=`nvram get v2ray_enable`
 while [ "$v2ray_enable" = "1" ]; do
 	NUM=`ps -w | grep "$v2ray_path" | grep -v grep |wc -l`
@@ -183,44 +173,73 @@ while [ "$v2ray_enable" = "1" ]; do
 		logger -t "【v2ray】" "重新启动$NUM"
 		v2ray_restart
 	fi
+	v2ray_enable=`nvram get v2ray_enable`
 	v2ray_follow=`nvram get v2ray_follow`
 	if [ "$v2ray_follow" = "1" ] ; then
-		port=$(iptables -t nat -L | grep 'SS_SPEC' | wc -l)
-		if [ "$port" = 0 ] ; then
-			logger -t "【v2ray】" "检测:找不到 SS_SPEC 转发规则, 重新添加"
-			v2ray_restart
-		fi
-		if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
-			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-			if [ "$port" = 0 ] ; then
-				sleep 10
-				port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-			fi
-			if [ "$port" = 0 ] ; then
-				logger -t "【v2ray】" "检测:找不到 dnsmasq 转发规则, 重新添加"
-				# 写入dnsmasq配置
-				sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-				cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
-no-resolv
-server=127.0.0.1#8053
-dns-forward-max=1000
-min-cache-ttl=1800
-EOF
-				restart_dhcpd
-			fi
-		fi
+# 自动故障转移(透明代理时生效)
+check1=404
+check2=404
+check_timeout_network "wget_check"
+if [ "$check2" == "200" ] ; then
+	echo "[$LOGTIME] v2ray $app_98 have no problem."
+	sleep_rnd
+	#跳出当前循环
+	continue
+fi
+
+check1=404
+check2=404
+check_timeout_network "wget_check" "check"
+if [ "$check1" == "200" ] ; then
+	echo "[$LOGTIME] Internet have no problem."
+else
+	logger -t "【v2ray】" " Internet 问题, 请检查您的服务供应商."
+	restart_dhcpd
+fi
+
+#404
+Sh99_ss_tproxy.sh auser_check "Sh18_v2ray.sh"
+ss_tproxy_set "Sh18_v2ray.sh"
+Sh99_ss_tproxy.sh x_resolve_svraddr "Sh18_v2ray.sh"
+Sh99_ss_tproxy.sh s_ss_tproxy_check "Sh18_v2ray.sh"
+sleep 5
+check1=404
+check2=404
+check_timeout_network "wget_check" "check"
+if [ "$check2" == "200" ] ; then
+	echo "[$LOGTIME] v2ray $app_98 have no problem."
+	sleep_rnd
+	#跳出当前循环
+	continue
+fi
+#404
+if [ ! -z "$app_95" ] ; then
+	logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"
+	logger -t "【v2ray】" "匹配关键词自动选用节点故障转移 /tmp/link_v2_matching/link_v2_matching.txt"
+	v2ray_link_v2_matching
+	sleep 10
+	#跳出当前循环
+	continue
+fi
+
+#404
+logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"
+restart_dhcpd
+#/etc/storage/crontabs_script.sh &
+		sleep 30
+	else
+		sleep 60
 	fi
-sleep 218
-v2ray_enable=`nvram get v2ray_enable`
+	v2ray_enable=`nvram get v2ray_enable`
 done
 }
 
 v2ray_close () {
-flush_r
-if [ "$ss_enable" = "1" ] ; then
-/etc/storage/script/Sh15_ss.sh &
-fi
+kill_ps "$scriptname keep"
+kill_ps "$scriptname"
+kill_ps "Sh18_v2ray.sh"
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
+Sh99_ss_tproxy.sh off_stop "Sh18_v2ray.sh"
 [ ! -z "$v2ray_path" ] && kill_ps "$v2ray_path"
 killall v2ray v2ctl v2ray_script.sh
 killall -9 v2ray v2ctl v2ray_script.sh
@@ -235,8 +254,7 @@ v2ray_wget_v2ctl () {
 v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
 wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
 if [ "$mk_mode_routing" == "1" ] ; then
-	#rm -f /opt/bin/geoip.dat /opt/bin/geosite.dat
-	echo "mk_mode_routing"
+	logger -t "【v2ray】" "使用 ss_tproxy 分流(降低负载，适合低配路由)"
 else
 	geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
 	wgetcurl_file $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
@@ -285,7 +303,7 @@ logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
 sleep 10 && v2ray_restart x
 fi
 if [ -s "/etc/storage/v2ray_config_script.sh" ] ; then
-if [ ! -z "$(grep '"inbound"'  /etc/storage/v2ray_config_script.sh)" ] || [ ! -z "$(grep '"outbound"'  /etc/storage/v2ray_config_script.sh)" ] ; then
+if [ ! -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"inbound"')" ] || [ ! -z "$(grep '"outbound"'  /etc/storage/v2ray_config_script.sh)" ] ; then
 logger -t "【v2ray】" "注意！！！v4.22.0及以上版本不再兼容旧的v2ray json配置格式（如：inbound {}，outbound {}格式。）"
 logger -t "【v2ray】" "请尽快使用 inbounds []，outbounds []格式替换。"
 fi
@@ -315,7 +333,7 @@ if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 		if [ "$mk_mode_routing" == "1" ] ; then
 			rm -f /opt/bin/geoip.dat /opt/bin/geosite.dat /opt/opt_backup/bin/geoip.dat /opt/opt_backup/bin/geosite.dat
 		else
-			logger -t "【v2ray】" "建议使用 ipt2socks 分流(降低负载，适合低配路由)"
+			logger -t "【v2ray】" "建议使用 ss_tproxy 分流(降低负载，适合低配路由)"
 		fi
 	fi
 fi
@@ -369,38 +387,22 @@ chmod 777 /etc/ssl/certs
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
 su_cmd="eval"
-if [ "$mk_mode_routing" == "1" ] ; then
-# 停止 ipt2socks
-/etc/storage/script/Sh15_ss.sh transock_stop
-sed -Ei '/【transocks】|【ipt2socks】|^$/d' /tmp/script/_opt_script_check
-killall transocks ipt2socks
-killall -9 transocks ipt2socks
-kill_ps "/tmp/script/_app10"
-kill_ps "_tran_socks.sh"
-kill_ps "/tmp/script/_app20"
-kill_ps "_ipt2socks.sh"
-v2ray_follow=0 && nvram set v2ray_follow=0
-nvram set app_30="$lan_ipaddr"
-nvram set app_31="1088"
-nvram set app_32="$server_addresses"
-#Sh39_ipt2socks.sh
-fi
-if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
-	NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
-	hash su 2>/dev/null && su_x="1"
-	hash su 2>/dev/null || su_x="0"
-	[ "$su_x" != "1" ] && logger -t "【v2ray】" "缺少 su 命令"
-	[ "$NUM" -ge "3" ] || logger -t "【v2ray】" "缺少 iptables -m owner 模块"
-	if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
-		adduser -u 777 v2 -D -S -H -s /bin/sh
-		killall v2ray
-		su_cmd="su v2 -c "
-	else
-		logger -t "【v2ray】" "停止路由自身流量走透明代理"
-		v2ray_optput=0
-		nvram set v2ray_optput=0
-	fi
-fi
+# if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
+	# NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
+	# hash su 2>/dev/null && su_x="1"
+	# hash su 2>/dev/null || su_x="0"
+	# [ "$su_x" != "1" ] && logger -t "【v2ray】" "缺少 su 命令"
+	# [ "$NUM" -ge "3" ] || logger -t "【v2ray】" "缺少 iptables -m owner 模块"
+	# if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
+		# adduser -u 777 v2 -D -S -H -s /bin/sh
+		# killall v2ray
+		# su_cmd="su v2 -c "
+	# else
+		# logger -t "【v2ray】" "停止路由自身流量走透明代理"
+		# v2ray_optput=0
+		# nvram set v2ray_optput=0
+	# fi
+# fi
 v2ray_v=`v2ray -version | grep V2Ray`
 nvram set v2ray_v="$v2ray_v"
 if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
@@ -408,10 +410,14 @@ if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
 	[ "$v2ray_http_format" = "2" ] && su_cmd2="$v2ray_path -format pb  -config $v2ray_http_config"
 else
 	if [ "$mk_mode_routing" != "0" ]  ; then
-	json_mk_ipt2socks
+	json_mk_ss_tproxy
 	else
 	cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
 	json_join_gfwlist
+	fi
+	if [ ! -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] && [ "$v2ray_follow" == "0" ] ; then
+		logger -t "【v2ray】" "不是透明代理模式，变更配置含内置 DNS 端口 listen 0.0.0.0:8055"
+		sed -Ei s/8053/8055/g /tmp/vmess/mk_vmess.json
 	fi
 	if [ ! -f "/tmp/vmess/mk_vmess.json" ] || [ ! -s "/tmp/vmess/mk_vmess.json" ] ; then
 	logger -t "【v2ray】" "错误！实际运行配置： /tmp/vmess/mk_vmess.json 文件内容为空"
@@ -436,93 +442,43 @@ initopt
 
 
 if [ "$v2ray_follow" = "1" ] ; then
-flush_r
 
 # 透明代理
 logger -t "【v2ray】" "启动 透明代理"
 logger -t "【v2ray】" "备注：默认配置的透明代理会导致广告过滤失效，需要手动改造配置前置代理过滤软件"
-if [ ! -z "$(grep '"port": 8053' /etc/storage/v2ray_config_script.sh)" ] ; then
+if [ ! -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] && [ "$mk_mode_routing" == "0" ] ; then
 	logger -t "【v2ray】" "配置含内置 DNS outbound 功能，让 V2Ray 充当 DNS 服务。"
-	chinadns_enable=0 && nvram set app_1=0
+	chinadns_enable=0
 	nvram set app_102=0
-	Sh09_chinadns_ng.sh
-	Sh19_chinadns.sh
+	nvram set app_1=0
+	nvram set chinadns_status=""
+	nvram set chinadns_ng_status=""
+	Sh09_chinadns_ng.sh stop &
+	Sh19_chinadns.sh stop &
+	dns_start_dnsproxy='1' # 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
+else
+	dns_start_dnsproxy='0' # 0:自动开启第三方 DNS 程序(dnsproxy) ;
 fi
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
 logger -t "【v2ray】" "chinadns 已经启动 防止域名污染"
 else
-pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
-pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
-if [ -z "$(grep '"port": 8053' /etc/storage/v2ray_config_script.sh)" ] ; then
+if [ -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] ; then
 logger -t "【v2ray】" "启动 dnsproxy 防止域名污染"
-if [ -s /sbin/dnsproxy ] ; then
-	/sbin/dnsproxy -d
-else
-	dnsproxy -d
 fi
-fi
-#防火墙转发规则加载
-sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
-no-resolv
-server=127.0.0.1#8053
-dns-forward-max=1000
-min-cache-ttl=1800
-EOF
 fi
 
-restart_dhcpd
+Sh99_ss_tproxy.sh auser_check "Sh18_v2ray.sh"
+ss_tproxy_set "Sh18_v2ray.sh"
+Sh99_ss_tproxy.sh on_start "Sh18_v2ray.sh"
+#restart_dhcpd
 
 logger -t "【v2ray】" "载入 透明代理 转发规则设置"
-#载入iptables模块
-for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
-do
-	modprobe $module
-done 
-
-# rules规则
-json_gen_special_purpose_ip
-ipset -! restore <<-EOF 
-create ss_spec_dst_sp hash:net hashsize 64
-$(gen_special_purpose_ip | sed -e "s/^/add ss_spec_dst_sp /")
-EOF
-
-# 加载 nat 规则
-include_ac_rules nat
-iptables -t nat -A SS_SPEC_WAN_FW -p tcp -j REDIRECT --to-ports $v2ray_door
-get_wifidognx
-gen_prerouting_rules nat tcp $wifidognx
-# iptables -t nat -I OUTPUT -p tcp -j SS_SPEC_V2RAY_LAN_DG
-# iptables -t nat -D OUTPUT -p tcp -j SS_SPEC_V2RAY_LAN_DG
-
-
-
-if [ -z "$(grep '"port": 8053' /etc/storage/v2ray_config_script.sh)" ] ; then
-iptables -t nat -I OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $v2ray_door
-iptables -t nat -I OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $v2ray_door
-fi
 
 # 同时将代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理
-NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
-hash su 2>/dev/null && su_x="1"
-hash su 2>/dev/null || su_x="0"
-if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
-
-# logger -t "【v2ray】" "支持游戏模式（UDP转发）"
-# 加载 mangle 规则
-# ip rule add fwmark 1 table 100
-# ip route add local 0.0.0.0/0 dev lo table 100
-# include_ac_rules mangle
-# iptables -t mangle -A SS_SPEC_WAN_FW -p udp -j TPROXY --on-port $v2ray_door --tproxy-mark 1
-# get_wifidognx_mangle
-# gen_prerouting_rules mangle udp $wifidognx
-
+if [ "$v2ray_optput" = 1 ] ; then
 logger -t "【v2ray】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
-	iptables -t nat -D OUTPUT -m owner ! --uid-owner 777 -p tcp -j SS_SPEC_V2RAY_LAN_DG
-	iptables -t nat -A OUTPUT -m owner ! --uid-owner 777 -p tcp -j SS_SPEC_V2RAY_LAN_DG
 fi
-	logger -t "【v2ray】" "完成 透明代理 转发规则设置"
-	gen_include &
+logger -t "【v2ray】" "完成 透明代理 转发规则设置"
 
 # 透明代理
 fi
@@ -532,133 +488,132 @@ eval "$scriptfilepath keep &"
 exit 0
 }
 
-gen_include() {
-[ -n "$FWI" ] || return 0
-cat <<-CAT >>$FWI
-iptables-restore -n <<-EOF
-$(iptables-save | sed  "s/webstr--url/webstr --url/g" | grep -E "$TAG|^\*|^COMMIT" |sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/")
-EOF
-CAT
-return $?
+ss_tproxy_set() {
+ss_tproxy_auser=`nvram get ss_tproxy_auser`
+if [ "$1" != "$ss_tproxy_auser" ] ; then
+	logger -t "【v2ray】" "脚本 [Sh99_ss_tproxy.sh] 当前使用者: $auser_b ，跳过 $auser_a 的运行命令"
+	logger -t "【v2ray】" "需要停用 $auser_b 后才能使用 $auser_a 运行 [Sh99_ss_tproxy.sh] 脚本"
+	return
+fi
+lan_ipaddr=`nvram get lan_ipaddr`
+ss_tproxy_mode_x=`nvram get app_110`
+[ -z $ss_tproxy_mode_x ] && ss_tproxy_mode_x=0 && nvram set app_110=0
+[ "$ss_tproxy_mode_x" = "0" ] && logger -t "【v2ray】" "【自动】设置 ss_tproxy 配置文件，配置导入中..."
+[ "$ss_tproxy_mode_x" = "1" ] && logger -t "【v2ray】" "【手动】设置 ss_tproxy 配置文件，跳过配置导入" && return
+ # /etc/storage/app_27.sh
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "0" ] && sstp_set mode='chnroute'
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "1" ] && sstp_set mode='gfwlist'
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "2" ] && sstp_set mode='global'
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set mode='chnlist'
+[ "$mk_mode_routing" == "0" ] && sstp_set mode='global'
+sstp_set ipv4='true' ; sstp_set ipv6='false' ;
+ # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
+ # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
+sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+sstp_set tcponly='true' # true:仅代理TCP流量; false:代理TCP和UDP流量
+sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
+nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
+nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
+nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
+[ "$v2ray_optput" == 1 ] && nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
+[ "$v2ray_optput" == 0 ] && nvram set app_114="1" # 0:代理本机流量; 1:跳过代理本机流量
+sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
+## proxy
+sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
+sstp_set proxy_svrport='1:65535'
+sstp_set proxy_tcpport='1099'
+sstp_set proxy_udpport='1099'
+sstp_set proxy_startcmd='echo'
+sstp_set proxy_stopcmd='echo'
+## dns
+DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+[ -z "$DNS_china" ] && DNS_china="114.114.114.114"
+sstp_set dns_direct="$DNS_china"
+sstp_set dns_direct6='240C::6666'
+sstp_set dns_remote='8.8.8.8#53'
+sstp_set dns_remote6='2001:4860:4860::8888#53'
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_direct='8.8.8.8' # 回国模式
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_remote='114.114.114.114#53' # 回国模式
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_remote6='240C::6666#53' # 回国模式
+sstp_set dns_bind_port='8053'
+## dnsmasq
+sstp_set dnsmasq_bind_port='53'
+sstp_set dnsmasq_conf_dir="/opt/app/ss_tproxy/dnsmasq.d"
+sstp_set dnsmasq_conf_file="/opt/app/ss_tproxy/dnsmasq_conf_file.txt"
+sstp_set dnsmasq_conf_string="/opt/app/ss_tproxy/conf/dnsmasq_conf_string.conf"
+## ipts
+sstp_set lan_ipv4_ipaddr='127.0.0.1'
+sstp_set ipts_set_snat='false'
+sstp_set ipts_set_snat6='false'
+sstp_set ipts_reddns_onstop='false'
+sstp_set ipts_reddns_onstart='true' # ss-tproxy start 后，是否将其它主机发至本机的 DNS 重定向至自定义 IPv4 地址
+ # sstp_set ipts_reddns_onstart='false'
+sstp_set ipts_reddns_ip="$lan_ipaddr" # 自定义 DNS 重定向地址(只支持 IPv4 )
+sstp_set ipts_proxy_dst_port_tcp="1:65535"
+sstp_set ipts_proxy_dst_port_udp="1:65535"
+sstp_set LAN_AC_IP="0"
+## opts
+sstp_set opts_overwrite_resolv='false'
+sstp_set opts_ip_for_check_net=''
+## file
+sstp_set file_gfwlist_txt='/opt/app/ss_tproxy/rule/gfwlist.txt'
+sstp_set file_gfwlist_ext='/opt/app/ss_tproxy/gfwlist.ext'
+sstp_set file_ignlist_ext='/opt/app/ss_tproxy/ignlist.ext'
+sstp_set file_lanlist_ext='/opt/app/ss_tproxy/lanlist.ext'
+sstp_set file_wanlist_ext='/opt/app/ss_tproxy/wanlist.ext'
+sstp_set file_chnroute_txt='/opt/app/ss_tproxy/rule/chnroute.txt'
+sstp_set file_chnroute6_txt='/opt/app/ss_tproxy/rule/chnroute6.txt'
+sstp_set file_chnroute_set='/opt/app/ss_tproxy/chnroute.set'
+sstp_set file_chnroute6_set='/opt/app/ss_tproxy/chnroute6.set'
+sstp_set file_dnsserver_pid='/opt/app/ss_tproxy/.dnsserver.pid'
+
+Sh99_ss_tproxy.sh initconfig
+
+# 写入服务器地址
+echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr4.conf
+echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr6.conf
+# SS
+ss_server=`nvram get ss_server`
+echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+# v2ray
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+# clash
+grep '^  server: ' /etc/storage/app_20.sh | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+kcptun_server=`nvram get kcptun_server`
+echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+
+# 链接配置文件
+umount -l /opt/app/ss_tproxy/wanlist.ext
+mount --bind /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+umount -l /opt/app/ss_tproxy/lanlist.ext
+mount --bind /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+logger -t "【v2ray】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 
-gen_prerouting_rules() {
-	iptables -t $1 -I PREROUTING $3 -p $2 -j SS_SPEC_V2RAY_LAN_DG
+sstp_set() {
+sstp_conf='/etc/storage/app_27.sh'
+sstp_set_a="$(echo "$1" | awk -F '=' '{print $1}')"
+sstp_set_b="$(echo "$1" | awk -F '=' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"="$i}}}END{print sum}')"
+if [ ! -z "$(grep -Eo $sstp_set_a=.\+\(\ #\) $sstp_conf)" ] ; then
+sed -e "s@^$sstp_set_a=.\+\(\ #\)@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
+else
+sed -e "s@^$sstp_set_a=.\+@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
+fi
+if [ -z "$(cat $sstp_conf | grep "$sstp_set_a=""'""$sstp_set_b""'"" #")" ] ; then
+echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
+fi
 }
 
-flush_r() {
-	[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
-	iptables-save -c | sed  "s/webstr--url/webstr --url/g" | grep -v "SS_SPEC" | iptables-restore -c
-	ip rule del fwmark 1 table 100 2>/dev/null
-	ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null
-	for setname in $(ipset -n list | grep -i "SS_SPEC"); do
-		ipset destroy $setname 2>/dev/null
-	done
-	v2ray_door_tmp=`nvram get v2ray_door_tmp`
-	[ -z $v2ray_door_tmp ] && v2ray_door_tmp=$v2ray_door && nvram set v2ray_door_tmp=$v2ray_door_tmp
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $v2ray_door_tmp
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $v2ray_door_tmp
-	[ "$v2ray_door_tmp"x != "$v2ray_door"x ] && v2ray_door_tmp=$v2ray_door && nvram set v2ray_door_tmp=$v2ray_door_tmp
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports $v2ray_door
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports $v2ray_door
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 1090
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 1090
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j REDIRECT --to-ports 1091
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j REDIRECT --to-ports 1091
-	iptables -t nat -D OUTPUT -p tcp -d 8.8.8.8,8.8.4.4 --dport 53 -j RETURN
-	iptables -t nat -D OUTPUT -p tcp -d 208.67.222.222,208.67.220.220 --dport 443 -j RETURN
-	if [ "$chinadns_enable" = "0" ] || [ "$chinadns_port" != "8053" ] ; then
-		sed -Ei '/no-resolv|server=|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
-	fi
-	[ "$ss_enable" != "1" ] && sed -Ei '/github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
-	restart_dhcpd
-	return 0
-}
-
-gen_special_purpose_ip() {
-cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
-0.0.0.0/8
-10.0.0.0/8
-100.64.0.0/10
-127.0.0.0/8
-169.254.0.0/16
-172.16.0.0/12
-192.0.0.0/24
-192.0.2.0/24
-192.25.61.0/24
-192.31.196.0/24
-192.52.193.0/24
-192.88.99.0/24
-192.168.0.0/16
-192.175.48.0/24
-198.18.0.0/15
-198.51.100.0/24
-203.0.113.0/24
-224.0.0.0/4
-240.0.0.0/4
-255.255.255.255
-100.100.100.100
-188.188.188.188
-110.110.110.110
-$lan_ipaddr
-$ss_s1_ip
-$ss_s2_ip
-$kcptun_server
-$v2ray_server_addresses
-EOF
-}
-
-#-A SS_SPEC_V2RAY_LAN_DG -p tcp -m multiport --dports 8118,3000,18309 -j RETURN
-
-include_ac_rules() {
-	iptables-restore -n <<-EOF
-*$1
-:SS_SPEC_V2RAY_LAN_DG - [0:0]
-:SS_SPEC_WAN_FW - [0:0]
--A SS_SPEC_V2RAY_LAN_DG -m mark --mark 0xff -j RETURN
--A SS_SPEC_V2RAY_LAN_DG -m set --match-set ss_spec_dst_sp dst -j RETURN
--A SS_SPEC_V2RAY_LAN_DG -j SS_SPEC_WAN_FW
-COMMIT
-EOF
-
-}
-
-
-get_wifidognx() {
-	wifidognx=""
-	#wifidogn=`iptables -t nat -L PREROUTING --line-number | grep AD_BYBY | awk '{print $1}' | awk 'END{print $1}'`  ## AD_BYBY
-	#if [ -z "$wifidogn" ] ; then
-		wifidogn=`iptables -t nat -L PREROUTING --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## Outgoing
-		if [ -z "$wifidogn" ] ; then
-			wifidogn=`iptables -t nat -L PREROUTING --line-number | grep vserver | awk '{print $1}' | awk 'END{print $1}'`  ## vserver
-			if [ -z "$wifidogn" ] ; then
-				wifidognx=1
-			else
-				wifidognx=`expr $wifidogn + 1`
-			fi
-		else
-			wifidognx=`expr $wifidogn + 1`
-		fi
-	#else
-	#	wifidognx=`expr $wifidogn + 1`
-	#fi
-	wifidognx=$wifidognx
-}
-
-get_wifidognx_mangle() {
-	wifidognx=""
-	wifidogn=`iptables -t mangle -L PREROUTING --line-number | grep Outgoing | awk '{print $1}' | awk 'END{print $1}'`  ## Outgoing
-		if [ -z "$wifidogn" ] ; then
-			wifidogn=`iptables -t mangle -L PREROUTING --line-number | grep UP | awk '{print $1}' | awk 'END{print $1}'`  ## UP
-			if [ -z "$wifidogn" ] ; then
-				wifidognx=1
-			else
-				wifidognx=`expr $wifidogn + 1`
-			fi
-		else
-			wifidognx=`expr $wifidogn + 1`
-		fi
-	wifidognx=$wifidognx
+sleep_rnd () {
+sleep 10
+#随机延时
+SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+RND_NUM=`echo $SEED 66 77|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+[ "$RND_NUM" -lt 66 ] && RND_NUM="66" || { [ "$RND_NUM" -gt 66 ] || RND_NUM="66" ; }
+sleep $RND_NUM
+#/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 }
 
 initopt () {
@@ -739,36 +694,8 @@ if [ -s /tmp/arNslookup/$$ ] ; then
 fi
 }
 
-down_gfwlist() {
-mkdir -p /tmp/vmess
-if [ ! -s "/tmp/vmess/r.gfwlist.conf" ] ; then
-wgetcurl_checkmd5 /tmp/vmess/gfwlist.b64 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt N
-	base64 -d  /tmp/vmess/gfwlist.b64 > /tmp/vmess/gfwlist.txt
-	cat /tmp/vmess/gfwlist.txt | sort -u |
-	sed '/^$\|@@/d'|
-	sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
-	sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d' |
-	sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
-	grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##'  | sort -u > /tmp/vmess/gfwlist_domain.txt
-touch /tmp/vmess/gfwlist_domain.txt
-if [[ "$(cat /tmp/vmess/gfwlist_domain.txt | wc -l)" -lt 1000 ]] ; then
-	logger -t "【v2ray】" "下载失败！ gfwlist.txt 数据不足1000条"
-	logger -t "【v2ray】" "使用内置 gfwlist_domain"
-	rm -f /tmp/vmess/gfwlist_domain.txt
-fi
-touch /etc/storage/shadowsocks_mydomain_script.sh /tmp/vmess/gfwlist_domain.txt
-cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u > /tmp/vmess/gfwlist_0.txt
-cat /etc/storage/basedomain.txt /tmp/vmess/gfwlist_0.txt /tmp/vmess/gfwlist_domain.txt | 
-	sort -u > /tmp/vmess/gfwall_domain.txt
-cat /tmp/vmess/gfwall_domain.txt | sort -u | grep -v "^$" | grep '\.' | grep -v '\-\-\-' > /tmp/vmess/all_domain.txt
-rm -f /tmp/vmess/gfw*
-awk '{printf("\,\"%s\"", $1, $1 )}' /tmp/vmess/all_domain.txt > /tmp/vmess/r.gfwlist.conf
-rm -f /tmp/vmess/all_domain.txt
-fi
-}
-
 json_join_gfwlist() {
-[ -z "$(grep gfwall.com /tmp/vmess/mk_vmess.json)" ] && return
+[ -z "$(cat /tmp/vmess/mk_vmess.json | grep gfwall.com)" ] && return
 if [ "$mk_mode_x" = "0" ] || [ "$mk_mode_x" = "1" ] ; then
 mkdir -p /tmp/vmess
 if [ ! -s "/tmp/vmess/r.gfwlist.conf" ] ; then
@@ -788,7 +715,6 @@ fi
 
 json_gen_special_purpose_ip() {
 ss_s1_ip=""
-ss_s2_ip=""
 kcptun_server=""
 v2ray_server_addresses=""
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
@@ -799,8 +725,8 @@ kcptun_enable=`nvram get kcptun_enable`
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 if [ "$kcptun_enable" != "0" ] ; then
 if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $kcptun_server | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $kcptun_server | grep : | sed -n '1p'`
+resolveip=`ping -4 -n -q -c1 -w1 -W1 $kcptun_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+[ -z "$resolveip" ] && resolveip=`ping -6 -n -q -c1 -w1 -W1 $kcptun_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
 [ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
 [ -z "$resolveip" ] && resolveip=`arNslookup6 $kcptun_server | sed -n '1p'` 
 kcptun_server=$resolveip
@@ -809,36 +735,23 @@ else
 kcptun_server=$kcptun_server
 fi
 fi
-ss_server1=`nvram get ss_server1`
-if [ "$ss_enable" != "0" ] && [ ! -z "$ss_server1" ] ; then
-if [ -z $(echo $ss_server1 | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server1 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $ss_server1 | grep : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server1 | sed -n '1p'` 
-[ -z "$resolveip" ] && resolveip=`arNslookup6 $ss_server1 | sed -n '1p'` 
+ss_server=`nvram get ss_server`
+if [ "$ss_enable" != "0" ] && [ ! -z "$ss_server" ] ; then
+if [ -z $(echo $ss_server | grep : | grep -v "\.") ] ; then 
+resolveip=`ping -4 -n -q -c1 -w1 -W1 $ss_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+[ -z "$resolveip" ] && resolveip=`ping -6 -n -q -c1 -w1 -W1 $ss_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server | sed -n '1p'` 
+[ -z "$resolveip" ] && resolveip=`arNslookup6 $ss_server | sed -n '1p'` 
 ss_s1_ip=$resolveip
 else
 # IPv6
-ss_s1_ip=$ss_server1
-fi
-fi
-ss_server2=`nvram get ss_server2`
-if [ "$ss_enable" != "0" ] && [ ! -z "$ss_server2" ] ; then
-if [ -z $(echo $ss_server2 | grep : | grep -v "\.") ] ; then 
-resolveip=`/usr/bin/resolveip -4 -t 4 $ss_server2 | grep -v : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`/usr/bin/resolveip -6 -t 4 $ss_server2 | grep : | sed -n '1p'`
-[ -z "$resolveip" ] && resolveip=`arNslookup $ss_server2 | sed -n '1p'` 
-[ -z "$resolveip" ] && resolveip=`arNslookup6 $ss_server2 | sed -n '1p'` 
-ss_s2_ip=$resolveip
-else
-# IPv6
-ss_s2_ip=$ss_server2
+ss_s1_ip=$ss_server
 fi
 fi
 [ ! -z "$vmess_link_add" ] && server_addresses="$vmess_link_add"
 [ ! -z "$ss_link_add" ] && server_addresses="$ss_link_add"
 if [ ! -z "$server_addresses" ] ; then
-	resolveip=`/usr/bin/resolveip -4 -t 4 $server_addresses | grep -v : | sed -n '1p'`
+	resolveip=`ping -4 -n -q -c1 -w1 -W1 $server_addresses | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
 	[ -z "$resolveip" ] && resolveip=`arNslookup $server_addresses | sed -n '1p'` 
 	[ -z "$resolveip" ] && resolveip=`arNslookup6 $server_addresses | sed -n '1p'` 
 	server_addresses=$resolveip
@@ -872,7 +785,7 @@ fi
 fi
 }
 
-json_int_ipt2socks () {
+json_int_ss_tproxy () {
 echo '{
   "log": {
     "error": "/tmp/syslog.log",
@@ -881,14 +794,32 @@ echo '{
   "inbounds": [
     {
       "port": 1088,
-      "listen": "192.168.123.1",
+      "listen": "0.0.0.0",
       "protocol": "socks",
       "settings": {
         "auth": "noauth",
         "udp": true,
-        "ip": "192.168.123.1"
+        "ip": "127.0.0.1"
       },
       "tag": "local_1088",
+      "sniffing": {
+        "enabled": false,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    },
+    {
+      "port": "1099",
+      "listen": "0.0.0.0",
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "tcp,udp",
+        "timeout": 30,
+        "followRedirect": true
+      },
+      "tag": "redir_1099",
       "sniffing": {
         "enabled": false,
         "destOverride": [
@@ -917,6 +848,16 @@ echo '{
           "mark": 255
         }
       }
+    },
+    {
+      "protocol": "freedom",
+      "settings": {},
+      "tag": "direct",
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255
+        }
+      }
     }
   ],
   "routing": {
@@ -929,6 +870,13 @@ echo '{
           "local_1088"
         ],
         "outboundTag": "outbound_1"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "redir_1099"
+        ],
+        "outboundTag": "outbound_1"
       }
     ]
   }
@@ -937,7 +885,7 @@ echo '{
 
 }
 
-json_mk_ipt2socks () {
+json_mk_ss_tproxy () {
 mkdir -p /tmp/vmess
 echo "" > /tmp/vmess/mk_vmess.json
 if [ "$mk_mode_routing" != "1" ] ; then
@@ -949,11 +897,11 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	return 1
 fi
 fi
-logger -t "【vmess】" "开始生成 ipt2socks 配置"
-mk_ipt2socks=$(json_int_ipt2socks)
-mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["inbounds",0,"listen"];"'$lan_ipaddr'")')
-mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"'$lan_ipaddr'")')
-logger -t "【vmess】" "提取 outbounds 生成 ipt2socks 配置"
+logger -t "【vmess】" "开始生成 ss_tproxy 配置"
+mk_ss_tproxy=$(json_int_ss_tproxy)
+mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["inbounds",0,"listen"];"0.0.0.0")')
+mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"127.0.0.1")')
+logger -t "【vmess】" "提取 outbounds 生成 ss_tproxy 配置"
 mk_config="$(cat /etc/storage/v2ray_config_script.sh | jq --raw-output '.')"
 #mk_config_0=$(echo $mk_config| jq --raw-output 'getpath(["outbounds",0])')
 mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "vmess")')
@@ -973,13 +921,13 @@ if [ -z "$mk_config_0" ] ; then
 logger -t "【vmess】" "错误 outbounds 提出失败，请填写配正确的出站协议！vmess、shadowsocks、socks、http、mtproto"
 return
 fi
-mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["outbounds",0];'"$mk_config_0"')')
-mk_ipt2socks=$(echo $mk_ipt2socks| jq --raw-output 'setpath(["outbounds",0,"tag"];"outbound_1")')
-echo $mk_ipt2socks | jq --raw-output '.' > /tmp/vmess/mk_vmess.json
+mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["outbounds",0];'"$mk_config_0"')')
+mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["outbounds",0,"tag"];"outbound_1")')
+echo $mk_ss_tproxy | jq --raw-output '.' > /tmp/vmess/mk_vmess.json
 if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
-	logger -t "【vmess】" "错误！生成透明代理路由规则使用 ipt2socks 方式的 V2Ray 配置为空，请看看哪里问题？"
+	logger -t "【vmess】" "错误！生成透明代理路由规则使用 ss_tproxy 方式的 V2Ray 配置为空，请看看哪里问题？"
 else
-	logger -t "【vmess】" "完成！生成透明代理路由规则使用 ipt2socks 方式的 V2Ray 配置，"
+	logger -t "【vmess】" "完成！生成透明代理路由规则使用 ss_tproxy 方式的 V2Ray 配置，"
 fi
 
 }
@@ -1033,11 +981,10 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"settings"];'
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"streamSettings"];'"$vmess_streamSettings"')')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"protocol"];"shadowsocks")')
 fi
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"listen"];"'$lan_ipaddr'")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"'$lan_ipaddr'")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"listen"];"0.0.0.0")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"127.0.0.1")')
 json_gen_special_purpose_ip
 [ ! -z "$ss_s1_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",0];"'$ss_s1_ip'")')
-[ ! -z "$ss_s2_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",1];"'$ss_s2_ip'")')
 [ ! -z "$kcptun_server" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",2];"'$kcptun_server'")')
 [ ! -z "$v2ray_server_addresses" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",3];"'$v2ray_server_addresses'")')
 mk_mode_x="`nvram get app_69`"
@@ -1306,12 +1253,12 @@ echo '{
   "inbounds": [
     {
       "port": 1088,
-      "listen": "192.168.123.1",
+      "listen": "0.0.0.0",
       "protocol": "socks",
       "settings": {
         "auth": "noauth",
         "udp": true,
-        "ip": "192.168.123.1"
+        "ip": "127.0.0.1"
       },
       "tag": "local_1088",
       "sniffing": {
@@ -1557,20 +1504,26 @@ if [ ! -z "$vmess_x_tmp" ] ; then
 nvram set app_83=""
 fi
 [ ! -f /www/link/vmess.js ] && logger -t "【vmess】" "错误！找不到 /www/link/vmess.js" && return 1
-ilox="$(grep -v '^\]'  /www/link/vmess.js | grep -v "ACL3List = " |wc -l)"
-[ "$ilox" == "0" ] && ilox="$(grep -v '^\]'  /www/link/ss.js | grep -v "ACL4List = " |wc -l)"
+ilox="$(cat /www/link/vmess.js | grep -v '^\]' | grep -v "ACL3List = " |wc -l)"
+[ "$ilox" == "0" ] && ilox="$(cat /www/link/ss.js | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
+[ "$ilox" == "0" ] && ilox="$(cat /tmp/link/link_vmess.txt | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
+[ "$ilox" == "0" ] && ilox="$(cat /tmp/link/link_ss.txt | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
 [ "$ilox" == "0" ] && logger -t "【ping】" "错误！节点列表为空" && return
 logger -t "【ping】" "开始 ping"
 allping 3
 allping 4
 logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
-
+app_99="$(nvram get app_99)"
+if [ "$app_99" == 1 ] ; then
+v2ray_link_v2_matching
+fi
 
 }
+
 allping () {
 
-[ "$1" == "3" ] && js_vmess="vmess.js"
-[ "$1" == "4" ] && js_vmess="ss.js"
+[ "$1" == "3" ] && js_vmess="vmess.js" && js_t_vmess="vmess.txt"
+[ "$1" == "4" ] && js_vmess="ss.js" && js_t_vmess="ss.txt"
 mkdir -p /tmp/allping_$1
 rm -f /tmp/allping_$1/?.txt
 rm -f /tmp/ping_server_error.txt
@@ -1578,7 +1531,9 @@ touch /tmp/ping_server_error.txt
 rm -f /tmp/allping_$1.js
 touch /tmp/allping_$1.js
 i_x_ping=2
-ilox="$(grep -v '^\]'  /www/link/$js_vmess | grep -v "ACL""$1""List = " |wc -l)"
+ilox="$(cat /www/link/$js_vmess | grep -v '^\]' | grep -v "ACL""$1""List = " |wc -l)"
+[ "$ilox" == "0" ] && [ ! -s /etc/storage/app_25.sh ] && return
+if [ "$ilox" != "0" ] ; then
 while read line
 do
 if [ -z "$(echo "$line" | grep "ACL""$1""List = ")" ] && [ -z "$(echo "$line" | grep '^\]')" ] ; then
@@ -1618,13 +1573,86 @@ sed -i "$(cat /tmp/allping_$1/1.txt |wc -l)""s/\"\],$/\"\]/g" /tmp/allping_$1/1.
 echo "]" >> /tmp/allping_$1/1.txt
 cp -f /tmp/allping_$1/1.txt /www/link/$js_vmess
 rm -f /tmp/allping_$1/?.txt /tmp/allping_$1.js
+fi
+allping_app_25 $1
+}
+allping_app_25 () {
 
+[ ! -s /etc/storage/app_25.sh ] && return
+if [ "$1" == "3" ] ; then
+js_vmess="vmess.js"
+js_t_vmess="vmess.txt"
+[ -z "$(cat /etc/storage/app_25.sh | grep "vmess://" )" ] && return
+fi
+if [ "$1" == "4" ] ; then
+js_vmess="ss.js"
+js_t_vmess="ss.txt"
+[ -z "$(cat /etc/storage/app_25.sh | grep -v "vmess://" | grep "ss://\|ssr://" )" ] && return
+fi
+mkdir -p /tmp/link
+rm -f /tmp/link/ping_$js_t_vmess
+touch /tmp/link/ping_$js_t_vmess
+mkdir -p /tmp/allping_$1
+rm -f /tmp/allping_$1/?.txt
+rm -f /tmp/ping_server_error.txt
+touch /tmp/ping_server_error.txt
+rm -f /tmp/allping_$1.js
+touch /tmp/allping_$1.js
+i_x_ping=2
+ilox="$(cat /tmp/link/link_$js_t_vmess | grep -v '^\]' | grep -v "ACL""$1""List = " |wc -l)"
+[ "$ilox" == "0" ] && return
+echo -n 'var ping_data_'"$1"' = "' >> /tmp/link/ping_$js_t_vmess
+while read line
+do
+if [ -z "$(echo "$line" | grep "ACL""$1""List = ")" ] && [ -z "$(echo "$line" | grep '^\]')" ] ; then
+if [ ! -z "$line" ] ; then
+echo "$line" > /tmp/allping_$1/$i_x_ping
+fi
+i_x_ping=`expr $i_x_ping + 1`
+fi
+done < /tmp/link/link_$js_t_vmess
+while [ "$(ls /tmp/allping_$1 | head -1)" != "" ];
+do
+x_ping_x $1 "1" &
+usleep 100000
+i_ping="$(cat /tmp/allping_$1.js | grep -v "^$" |wc -l)"
+done
+i_x_ping=1
+while [ "$i_ping" != "$ilox" ];
+do
+sleep 1
+i_ping="$(cat /tmp/allping_$1.js | grep -v "^$" |wc -l)"
+i_x_ping=`expr $i_x_ping + 1`
+if [ "$i_x_ping" -gt 30 ] ; then
+logger -t "【ping】" "刷新 ping 失败！超时 30 秒！ 请重新按【ping】按钮再次尝试。"
+return
+fi
+done
+echo -n '"' >> /tmp/link/ping_$js_t_vmess
+# 排序节点
+rm -f /tmp/allping_$1/?.txt
+cat /tmp/allping_$1.js | sort | grep -v "^$" > /tmp/allping_$1/0.txt
+echo "var ACL""$1""List = [ " > /tmp/allping_$1/1.txt
+while read line
+do
+echo ${line:4} >> /tmp/allping_$1/1.txt
+done < /tmp/allping_$1/0.txt
+sed -i "s/\"\]$/\"\],/g" /tmp/allping_$1/1.txt
+sed -i "$(cat /tmp/allping_$1/1.txt |wc -l)""s/\"\],$/\"\]/g" /tmp/allping_$1/1.txt
+echo "]" >> /tmp/allping_$1/1.txt
+cp -f /tmp/allping_$1/1.txt /tmp/link/link_$js_t_vmess
+rm -f /www/link/ping_$js_vmess
+cp -f /tmp/link/ping_$js_t_vmess /www/link/ping_$js_vmess
+rm -f /tmp/allping_$1/?.txt /tmp/allping_$1.js
 }
 
 x_ping_x () {
-	
+
+mk_ping_txt="$2"
 [ "$1" == "3" ] && js_1_ping="4" && js_2_ping="3"
 [ "$1" == "4" ] && js_1_ping="3" && js_2_ping="2"
+[ "$1" == "3" ] && js_vmess="vmess.js" && js_t_vmess="vmess.txt"
+[ "$1" == "4" ] && js_vmess="ss.js" && js_t_vmess="ss.txt"
 ping_txt_list="$(ls /tmp/allping_$1 | head -1)"
 if [ ! -z "$ping_txt_list" ] ; then
 ping_list="$(cat /tmp/allping_$1/$ping_txt_list)"
@@ -1634,7 +1662,7 @@ ss_server_x="$(base64decode "$ss_server_x")"
 if [ ! -z "$ss_server_x" ] ; then
 ss_name_x="$(echo $ping_list | cut -d',' -f "$js_2_ping" | sed -e "s@"'"'"\|"'\['"@@g")"
 ss_name_x="$(base64decode "$ss_name_x")"
-if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
+if [ ! -z "$(cat /tmp/ping_server_error.txt | grep "error_""$ss_server_x""_error")" ] ; then
 ping_text=""
 else
 ping_text=`ping -4 $ss_server_x -w 3 -W 3 -q`
@@ -1660,6 +1688,7 @@ else
 	ping_time2="1000"
 	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
 fi
+[ "$mk_ping_txt" == "1" ] && [ -z "$(cat /tmp/link/ping_$js_t_vmess | grep "🔗$ss_server_x=")" ] && echo -n "🔗$ss_server_x=$ping_time🔗" >> /tmp/link/ping_$js_t_vmess
 if [ ! -z "$(echo $ping_list | grep -E -o \"btn-.+\ ms\",)" ] ; then
 	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_time ms"'"'"@g")
 	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f1 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_list_btn"'"'"@g")
@@ -1678,6 +1707,12 @@ fi
 }
 
 check_link () {
+vmess_link_ping=`nvram get app_68`
+app_99="$(nvram get app_99)"
+if [ "$app_99" == 1 ] ; then
+	vmess_link_ping=0
+	nvram set app_68=0
+fi
 mkdir -p /etc/storage/link
 touch /etc/storage/link/vmess.js
 touch /etc/storage/link/ss.js
@@ -1763,15 +1798,17 @@ vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | s
 vmess_link_i=""
 [ -f /www/link/vmess.js ] && echo "var ACL3List = [ " > /www/link/vmess.js && echo ']' >> /www/link/vmess.js
 [ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
+touch /etc/storage/app_25.sh ;
+sed -Ei '/^🔗/d' /etc/storage/app_25.sh
 if [ ! -z "$(echo "$vmess_link" | awk -F ' ' '{print $2}')" ] ; then
 	for vmess_link_ii in $vmess_link
 	do
 		vmess_link_i="$vmess_link_ii"
-		do_link
+		down_link
 	done
 else
 	vmess_link_i="$vmess_link"
-	do_link
+	down_link
 fi
 sed -Ei "s@]]@]@g" /www/link/vmess.js
 sed -Ei '/^\]|^$/d' /www/link/vmess.js
@@ -1791,7 +1828,7 @@ fi
 }
 
 # 🔐📐|📐🔐
-if [ -z "$( grep "🔐📐" /www/link_d.js )" ] ; then
+if [ -z "$(cat /www/link_d.js | grep "🔐📐")" ] ; then
 name_base64=0
 else
 name_base64=1
@@ -1886,10 +1923,10 @@ if [ ! -z "$ex_params" ] ; then
 	#存在插件
 	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&]*"  | cut -d '=' -f2)";
 	ex_obfsparam=$(printf $(echo -n $ex_obfsparam | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))
-	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts @')"
+	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts "@' | sed -e 's@$@"@')"
 	link2="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $1}')"
 else
-	ss_link_plugin_opts=" -O origin -o plain "
+	ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
 fi
 
 ss_link_methodpassword=$(echo -n $link2 | sed -n '1p' | awk -F '@' '{print $1}')
@@ -1946,7 +1983,7 @@ vmess_link_add=""
 vmess_link_ps=""
 }
 
-do_link () {
+down_link () {
 
 mkdir -p /tmp/vmess/link
 #logger -t "【vmess】" "订阅文件下载: $vmess_link_i"
@@ -1980,14 +2017,47 @@ fi
 # 开始解码订阅节点配置
 cat /tmp/vmess/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/vmess/link/1_link.txt
 base64 -d /tmp/vmess/link/1_link.txt > /tmp/vmess/link/2_link.txt
-dos2unix /tmp/vmess/link/2_link.txt
-sed -e 's@\r@@g' -i /tmp/vmess/link/2_link.txt
-sed -e  's@vmess://@\nvmess:://@g' -i /tmp/ss/link/2_link.txt
-sed -e  's@ssr://@\nssr://@g' -i /tmp/ss/link/2_link.txt
-sed -e  's@ss://@\nss://@g' -i /tmp/ss/link/2_link.txt
-sed -e  's@vmess:://@vmess://@g' -i /tmp/ss/link/2_link.txt
-sed -e '/^$/d' -i /tmp/ss/link/2_link.txt
-echo >> /tmp/vmess/link/2_link.txt
+rm -f /tmp/vmess/0_link.txt /tmp/vmess/1_link.txt
+
+if [ ! -z "$(cat /www/link_d.js | grep "app_25.sh")" ] ; then
+echo >> /etc/storage/app_25.sh
+sed -Ei 's@^@🔗@g' /tmp/vmess/link/2_link.txt
+cat /tmp/vmess/link/2_link.txt >> /etc/storage/app_25.sh
+sed -Ei '/dellink_ss|^$/d' /etc/storage/app_25.sh
+B_restart=`"$(cat /etc/storage/app_25.sh | grep -v "^🔗")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+nvram set app_25_sh_status=$B_restart
+if [ -s /etc/storage/app_25.sh ] ; then
+ # 备份提取批量导入链接节点
+logger -t "【v2ray】" "批量导入链接节点：开始解码"
+mkdir -p /tmp/link
+rm -f /tmp/link/link_vmess.txt
+rm -f /tmp/link/link_ss.txt
+do_link "/etc/storage/app_25.sh" "app_25"
+logger -t "【v2ray】" "批量导入链接节点：完成解码"
+fi
+else
+do_link "/tmp/vmess/link/2_link.txt"
+fi
+rm -rf /tmp/vmess/link/*
+
+
+
+
+}
+
+do_link () {
+
+mkdir -p /tmp/vmess/link
+mkdir -p /tmp/link
+cp $1 /tmp/vmess/link/do_link.txt
+dos2unix /tmp/vmess/link/do_link.txt
+sed -e 's@\r@@g' -i /tmp/vmess/link/do_link.txt
+sed -e  's@vmess://@\nvmess:://@g' -i /tmp/vmess/link/do_link.txt
+sed -e  's@ssr://@\nssr://@g' -i /tmp/vmess/link/do_link.txt
+sed -e  's@ss://@\nss://@g' -i /tmp/vmess/link/do_link.txt
+sed -e  's@vmess:://@vmess://@g' -i /tmp/vmess/link/do_link.txt
+sed -e '/^$/d' -i /tmp/vmess/link/do_link.txt
+echo >> /tmp/vmess/link/do_link.txt
 rm -f /tmp/vmess/link/vmess_link.txt /tmp/vmess/link/ss_link.txt /tmp/vmess/link/ssr_link.txt
 while read line
 do
@@ -2003,15 +2073,16 @@ ssr_line=`echo -n $line | sed -n '1p' |grep '^ssr://'`
 if [ ! -z "$ssr_line" ] ; then
 	echo  "$ssr_line" | awk -F 'ssr://' '{print $2}' >> /tmp/vmess/link/ssr_link.txt
 fi
-done < /tmp/vmess/link/2_link.txt
+done < /tmp/vmess/link/do_link.txt
 if [ -f /tmp/vmess/link/vmess_link.txt ] ; then
 sed -e 's/$/&==/g' -i /tmp/vmess/link/vmess_link.txt
 sed -e "s/_/\//g" -i /tmp/vmess/link/vmess_link.txt
 sed -e "s/\-/\+/g" -i /tmp/vmess/link/vmess_link.txt
-	awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/vmess/link/vmess_link.txt > /tmp/vmess/link/vmess2_link.txt
+	#awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/vmess/link/vmess_link.txt > /tmp/vmess/link/vmess2_link.txt
 	while read line
 	do
 	if [ ! -z "$line" ] ; then
+		line="$(echo "$line" | awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}')"
 		vmess_link_add=""
 		vmess_link_ps=""
 		vmess_link_add="$(echo -n $line | jq --raw-output '.add')"
@@ -2027,11 +2098,17 @@ sed -e "s/\-/\+/g" -i /tmp/vmess/link/vmess_link.txt
 		link_echo="$link_echo"'"", '
 		link_echo="$link_echo"'"", '
 		link_echo="$link_echo"'"end"]]'
+		if [ "$2" == "app_25" ] ; then
+		sed -Ei "s@]]@],@g" /tmp/link/link_vmess.txt
+		sed -Ei '/^\]|^$/d' /tmp/link/link_vmess.txt
+		echo "$link_echo" >> /tmp/link/link_vmess.txt
+		else
 		sed -Ei "s@]]@],@g" /www/link/vmess.js
 		sed -Ei '/^\]|^$/d' /www/link/vmess.js
 		echo "$link_echo" >> /www/link/vmess.js
+		fi
 	fi
-	done < /tmp/vmess/link/vmess2_link.txt
+	done < /tmp/vmess/link/vmess_link.txt
 fi
 
 if [ -f /tmp/vmess/link/ss_link.txt ] ; then
@@ -2060,9 +2137,15 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 		link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
 		link_echo="$link_echo"'"0", '
 		link_echo="$link_echo"'"end"]]'
+		if [ "$2" == "app_25" ] ; then
+		sed -Ei "s@]]@],@g" /tmp/link/link_ss.txt
+		sed -Ei '/^\]|^$/d' /tmp/link/link_ss.txt
+		echo "$link_echo" >> /tmp/link/link_ss.txt
+		else
 		sed -Ei "s@]]@],@g" /www/link/ss.js
 		sed -Ei '/^\]|^$/d' /www/link/ss.js
 		echo "$link_echo" >> /www/link/ss.js
+		fi
 		fi
 	fi
 	done < /tmp/vmess/link/ss_link.txt
@@ -2081,7 +2164,7 @@ if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
 		#SS:-o plain -O origin  
 		if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
 		if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] || [ "$ss_link_method" == "chacha20" ] || [ "$ss_link_method" == "chacha20-ietf" ] || [ "$ss_link_method" == "aes-256-gcm" ] || [ "$ss_link_method" == "aes-128-gcm" ] || [ "$ss_link_method" == "chacha20-poly1305" ] || [ "$ss_link_method" == "chacha20-ietf-poly1305" ] ; then
-		ss_link_plugin_opts=" -O origin -o plain "
+		ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
 		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/vmess/link/c_link.txt
 		link_echo=""
 		link_echo="$link_echo"'["ss", '
@@ -2100,9 +2183,15 @@ if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
 		link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
 		link_echo="$link_echo"'"0", '
 		link_echo="$link_echo"'"end"]]'
+		if [ "$2" == "app_25" ] ; then
+		sed -Ei "s@]]@],@g" /tmp/link/link_ss.txt
+		sed -Ei '/^\]|^$/d' /tmp/link/link_ss.txt
+		echo "$link_echo" >> /tmp/link/link_ss.txt
+		else
 		sed -Ei "s@]]@],@g" /www/link/ss.js
 		sed -Ei '/^\]|^$/d' /www/link/ss.js
 		echo "$link_echo" >> /www/link/ss.js
+		fi
 		fi
 		fi
 	fi
@@ -2110,6 +2199,193 @@ if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
 fi
 
 rm -rf /tmp/vmess/link/*
+}
+
+check_app_25 () {
+
+touch /etc/storage/app_25.sh
+if [ -s /etc/storage/app_25.sh ] ; then
+A_restart="$(nvram get app_25_sh_status)"
+B_restart=`cat /etc/storage/app_25.sh | grep -v "^🔗" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+ # 读取批量导入链接节点
+if [ ! -z "$(cat /etc/storage/app_25.sh | grep -v "^#" | grep -v "^$" | grep "vmess://\|ss://\|ssr://" )" ] && [ -z "$(cat /tmp/link/link_vmess.txt /tmp/link/link_ss.txt | grep -v "^#" | grep -v '^\]' | grep -v "ACL3List = " | grep -v "ACL4List = " | grep -v "^$")" ] ; then
+A_restart=""
+fi
+if [ "$A_restart" != "$B_restart" ] ; then
+nvram set app_25_sh_status=$B_restart
+ # 备份提取批量导入链接节点
+logger -t "【v2ray】" "批量导入链接节点：开始解码"
+mkdir -p /tmp/link
+rm -f /tmp/link/link_vmess.txt
+rm -f /tmp/link/link_ss.txt
+do_link "/etc/storage/app_25.sh" "app_25"
+logger -t "【v2ray】" "批量导入链接节点：完成解码"
+vmess_link_ping=`nvram get app_68`
+vmess_x_tmp="`nvram get app_83`"
+if [ "$vmess_x_tmp" != "ping_link" ] ; then
+if [ "$vmess_link_ping" != 1 ] ; then
+	allping 3
+	allping 4
+else
+	echo "$ss_link_name：停止ping订阅节点"
+fi
+app_99="$(nvram get app_99)"
+if [ "$app_99" == 1 ] ; then
+v2ray_link_v2_matching
+fi
+fi
+fi
+fi
+
+}
+
+v2ray_link_v2_matching(){
+
+[ ! -f /www/link/link.js ] && logger -t "【自动选用节点】" "错误！找不到 /www/link/link.js" && return 1
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+json_jq_check
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	return 1
+fi
+fi
+# 排序节点
+mkdir -p /tmp/link_v2_matching
+if [ ! -f /tmp/link_v2_matching/link_v2_matching.txt ] || [ ! -s /tmp/link_v2_matching/link_v2_matching.txt ] ; then
+match="$(nvram get app_95)"
+[ "$match" == "*" ] && match="."
+mismatch="$(nvram get app_96)"
+
+cat /www/link/ss.js /www/link/vmess.js > /tmp/link_v2_matching/0.txt
+echo -n "" > /tmp/link_v2_matching/1.txt
+[ -s /tmp/link/link_ss.txt ] && cat /tmp/link/link_ss.txt >> /tmp/link_v2_matching/0.txt
+[ -s /tmp/link/link_vmess.txt ] && cat /tmp/link/link_vmess.txt >> /tmp/link_v2_matching/0.txt
+sed -Ei "/^var ACL2List|^\[\]\]/d" /tmp/link_v2_matching/0.txt
+sed -Ei "/^var ACL3List|^\]/d" /tmp/link_v2_matching/0.txt
+sed -Ei "/^var ACL4List|^$/d" /tmp/link_v2_matching/0.txt
+sed -Ei "s@]]@],@g" /tmp/link_v2_matching/0.txt
+while read line
+do
+if [ ! -z "$(echo -n "$line" | grep "🔐📐")" ] ; then
+	# 解码base64
+	line0="$(echo -n "$line" | awk -F "🔐📐" '{print $2}' | awk -F "📐🔐" '{print $1}')"
+	line0="$(base64decode 🔐📐"$line0"📐🔐)"'",'
+else
+	line0="$line"
+fi
+[ ! -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" )"
+[ -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" )"
+[ -z "$match" ] && line3="line3"
+line4="line4" ; line2="" ; 
+if [ ! -z "$line3" ] ; then
+line2_type="$(echo "$line" | sed -e "s@\ @@g" | awk -F '"' '{ print($2) }')"
+[ "$line2_type" == "ss" ] && line2_server_type=3
+[ "$line2_type" == "vmess" ] && line2_server_type=4
+line2_server="$(echo "$line" | sed -e "s@\ @@g" | awk -F ',' '{ print($'$line2_server_type') }' | sed -e 's@\"@@g')"
+[ ! -z "$line2_server" ] && line2="$(cat /opt/storage/link/ping_$line2_type.js | sed -e "s@\ @@g" | awk -F "$line2_server=" '{ print($2) }' | awk -F "🔗" '{ print($1) }')"
+[ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-success.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
+[ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-warning.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
+[ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-danger.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
+[ ! -z "$line2" ] && line2="00000""$line2" && echo -n "${line2:0-4}" >> /tmp/link_v2_matching/1.txt && line4=""
+[ ! -z "$line4" ] && line2="0000" && echo -n "$line2" >> /tmp/link_v2_matching/1.txt
+echo -n "$line" >> /tmp/link_v2_matching/1.txt
+echo "" >> /tmp/link_v2_matching/1.txt
+fi
+done < /tmp/link_v2_matching/0.txt
+cat /tmp/link_v2_matching/1.txt | sort  | grep -v "^$" > /tmp/link_v2_matching/2.txt
+echo -n "" > /tmp/link_v2_matching/link_v2_matching.txt
+while read line
+do
+line="$(echo $line | sed -e 's/],/]/g' )"
+echo ${line:4} >> /tmp/link_v2_matching/link_v2_matching.txt
+done < /tmp/link_v2_matching/2.txt
+rm -f /tmp/link_v2_matching/?.txt
+logger -t "【自动选用节点】" "重新生成自动选用节点列表： /tmp/link_v2_matching/link_v2_matching.txt"
+fi
+# 选用节点
+if [ -z "$(cat /tmp/link_v2_matching/link_v2_matching.txt | grep -v 已经自动选用节点)" ] ; then
+sed -e 's/已经自动选用节点//g' -i /tmp/link_v2_matching/link_v2_matching.txt
+fi
+i_matching=1
+while read line
+do
+line2="$(echo "$line" | grep -v "已经自动选用节点" )"
+if [ ! -z "$line2" ] ; then
+line2_type="$(echo "$line" | sed -e "s@\ @@g" | awk -F '"' '{ print($2) }')"
+if [ "$line2_type" == "ss" ] ; then
+app_98="$(echo $line| jq --compact-output --raw-output 'getpath([1])')"
+app_98="$(base64decode "$app_98")"
+ss_server="$(echo $line| jq --compact-output --raw-output 'getpath([2])')"
+ss_server_port="$(echo $line| jq --compact-output --raw-output 'getpath([3])')"
+ss_key="$(echo $line| jq --compact-output --raw-output 'getpath([4])')"
+ss_key="$(base64decode "$ss_key")"
+ss_method="$(echo $line| jq --compact-output --raw-output 'getpath([5])')"
+#ss_usage="$(echo $line| jq --compact-output --raw-output 'getpath([8])')"
+#ss_usage="$(base64decode "$ss_usage")"
+[ -z "$app_98" ] && app_98="♯$ss_server"
+logger -t "【自动选用节点】" "已经自动选用节点： [ss]$app_98"
+[ -z "$ss_server" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_server 数据为空 " && break
+[ -z "$ss_server_port" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_server_port 数据为空 " && break
+[ -z "$ss_key" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_key 数据为空 " && break
+[ -z "$ss_method" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_method 数据为空 " && break
+#[ -z "$ss_usage" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_usage 数据为空 " && break
+nvram set app_98="[ss]$app_98"
+sed -i $i_matching's/^/已经自动选用节点/' /tmp/link_v2_matching/link_v2_matching.txt
+nvram set app_72="$app_98"
+nvram set app_73="$ss_server"
+nvram set app_74="$ss_server_port"
+nvram set app_75="$ss_key"
+nvram set app_78="$ss_method"
+nvram set app_77=""
+nvram set app_79="0"
+nvram set app_82="ss"
+nvram set app_71=""
+nvram set app_76=""
+nvram set app_80=""
+nvram set app_81=""
+fi
+if [ "$line2_type" == "vmess" ] ; then
+obj_v="$(echo $line| jq --compact-output --raw-output 'getpath([1])')"
+obj_ps="$(echo $line| jq --compact-output --raw-output 'getpath([2])')"
+obj_ps="$(base64decode "$obj_ps")"
+obj_add="$(echo $line| jq --compact-output --raw-output 'getpath([3])')"
+obj_port="$(echo $line| jq --compact-output --raw-output 'getpath([4])')"
+obj_id="$(echo $line| jq --compact-output --raw-output 'getpath([5])')"
+obj_aid="$(echo $line| jq --compact-output --raw-output 'getpath([6])')"
+obj_net="$(echo $line| jq --compact-output --raw-output 'getpath([7])')"
+obj_type="$(echo $line| jq --compact-output --raw-output 'getpath([8])')"
+obj_host="$(echo $line| jq --compact-output --raw-output 'getpath([9])')"
+obj_path="$(echo $line| jq --compact-output --raw-output 'getpath([10])')"
+obj_tls="$(echo $line| jq --compact-output --raw-output 'getpath([11])')"
+app_98="$obj_ps";
+logger -t "【自动选用节点】" "已经自动选用节点： [vmess]$app_98"
+[ -z "$obj_add" ] && logger -t "【自动选用节点】" "错误！！！获取 add 数据为空 " && break
+[ -z "$obj_port" ] && logger -t "【自动选用节点】" "错误！！！获取 port 数据为空 " && break
+#[ -z "$obj_id" ] && logger -t "【自动选用节点】" "错误！！！获取 id 数据为空 " && break
+#[ -z "$obj_aid" ] && logger -t "【自动选用节点】" "错误！！！获取 aid 数据为空 " && break
+[ -z "$obj_net" ] && logger -t "【自动选用节点】" "错误！！！获取 net 数据为空 " && break
+nvram set app_98="[vmess]$app_98"
+sed -i $i_matching's/^/已经自动选用节点/' /tmp/link_v2_matching/link_v2_matching.txt
+nvram set app_71="$obj_v"
+nvram set app_72="$obj_ps"
+nvram set app_73="$obj_add"
+nvram set app_74="$obj_port"
+nvram set app_75="$obj_id"
+nvram set app_76="$obj_aid"
+nvram set app_77="$obj_net"
+nvram set app_78="$obj_type"
+nvram set app_79="$obj_host"
+nvram set app_80="$obj_path"
+nvram set app_81="$obj_tls"
+nvram set app_82="vmess"
+fi
+# 重启v2ray
+[ "$v2ray_enable" == "0" ] && return
+eval "Sh18_v2ray.sh &"
+break
+fi
+i_matching=`expr $i_matching + 1`
+done < /tmp/link_v2_matching/link_v2_matching.txt
+
 }
 
 case $ACTION in
@@ -2150,6 +2426,12 @@ del_link)
 ping_link)
 	nvram set app_83="ping_link"
 	v2ray_check
+	;;
+check_app_25)
+	check_app_25
+	;;
+v2ray_link_v2_matching)
+	v2ray_link_v2_matching
 	;;
 *)
 	v2ray_check

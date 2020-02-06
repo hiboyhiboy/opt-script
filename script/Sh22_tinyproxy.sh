@@ -117,6 +117,7 @@ done
 
 tinyproxy_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【tinyproxy】|^$/d' /tmp/script/_opt_script_check
 tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 [ ! -z "$tinyproxyport" ] && iptables -t filter -D INPUT -p tcp --dport $tinyproxyport -j ACCEPT

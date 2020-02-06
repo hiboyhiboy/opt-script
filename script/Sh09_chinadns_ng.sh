@@ -12,9 +12,9 @@ smartdns_enable="`nvram get app_106`"
 #nvramshow=`nvram showall | grep '=' | grep chinadns_ng | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
 if [ "$chinadns_ng_enable" == "1" ] || [ "$smartdns_enable" == "1" ] ; then
-[ "$chinadns_enable" == "0" ] && logger -t "【chinadns】" "注意！！！需要关闭 smartdns、ChinaDNS-NG 后才能关闭 ChinaDNS"
-[ "$chinadns_enable" == "0" ] && chinadns_enable=1 && nvram set app_1=1
-[ "$chinadns_ng_enable" == "0" ] && chinadns_ng_enable=1 && nvram set app_102=1
+[ "$chinadns_enable" == "0" ] && logger -t "【chinadns_ng】" "注意！！！需要关闭 smartdns、ChinaDNS-NG 后才能关闭 ChinaDNS"
+[ "$chinadns_enable" == "0" ] && { chinadns_enable="1" ; nvram set app_1="1" ; }
+[ "$chinadns_ng_enable" == "0" ] && { chinadns_ng_enable="1" ; nvram set app_102="1" ; }
 fi
 
 chinadns_ng_usage=`nvram get app_103`
@@ -95,8 +95,8 @@ chinadns_ng_check () {
 
 chinadns_ng_get_status
 if [ "$chinadns_ng_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && [ "$chinadns_enable" != "0" ] && chinadns_enable=0 && nvram set app_1=0
-	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "停止 chinadns_ng" && chinadns_close
+	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "停止 chinadns" && [ "$chinadns_enable" != "0" ] && chinadns_enable=0 && nvram set app_1=0
+	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "停止 chinadns_ng" && chinadns_ng_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$chinadns_ng_enable" = "1" ] ; then
@@ -192,10 +192,9 @@ done
 }
 
 chinadns_ng_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【chinadns_ng】|【chinadns】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
-ipset -F chnroute
-ipset -F chnroute6
 restart_dhcpd
 killall chinadns chinadns_ng dns2tcp smartdns
 killall -9 chinadns chinadns_ng dns2tcp smartdns
@@ -242,8 +241,6 @@ logger -t "【chinadns_ng】" "运行 /opt/bin/dns2tcp"
 cmd_name="dns2tcp"
 eval "/opt/bin/dns2tcp -L0.0.0.0#55353 -R8.8.8.8#53 $cmd_log" &
 fi
-[ ! -f /opt/app/chinadns_ng/chnlist.txt ] && update_chnlist
-[ ! -f /opt/app/chinadns_ng/gfwlist.txt ] && update_gfwlist
 # 配置参数 '/opt/bin/chinadns_ng -l 8053  -n -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 -g /opt/app/chinadns_ng/gfwlist.txt  '
 usage=" -l $chinadns_ng_port "
 if [ "$smartdns_enable" == "1" ] ; then
@@ -255,6 +252,16 @@ update_app
 chinadns_ng_v=`chinadns_ng -V | awk -F ' ' '{print $2;}'`
 nvram set chinadns_ng_v="$chinadns_ng_v"
 
+[ ! -f /opt/app/chinadns_ng/gfwlist.txt ] && update_gfwlist
+[ ! -f /opt/app/chinadns_ng/chnlist.txt ] && update_chnlist
+[ ! -f /opt/app/ss_tproxy/rule/chnroute.txt ] && update_chnroute
+chnroute_Number=$(ipset list chnroute -t | awk -F: '/Number/{print $2}' | sed -e s/\ //g)
+[ "$chnroute_Number" == "0" ] || [ "$chnroute_Number" == "" ] && update_chnroute
+[ -f /opt/app/ss_tproxy/rule/chnroute6.txt ] && update_chnroute6
+chnroute6_Number=$(ipset list chnroute6 -t | awk -F: '/Number/{print $2}' | sed -e s/\ //g)
+[ "$chnroute6_Number" == "0" ] || [ "$chnroute6_Number" == "" ] && update_chnroute6
+
+
 killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 killall pdnsd && killall -9 pdnsd 2>/dev/null
 killall chinadns && killall -9 chinadns 2>/dev/null
@@ -262,9 +269,6 @@ logger -t "【chinadns_ng】" "运行 $SVC_PATH"
 cmd_name="chinadns_ng"
 eval "/opt/bin/chinadns_ng $usage $cmd_log" &
 sleep 2
-[ ! -f /opt/app/chinadns_ng/chnroute.ipset ] && update_chnroute || { ipset -F chnroute; ipset -R -exist </opt/app/chinadns_ng/chnroute.ipset; }
-[ ! -f /opt/app/chinadns_ng/chnroute6.ipset ] && update_chnroute6 || { ipset -F chnroute6; ipset -R -exist </opt/app/chinadns_ng/chnroute6.ipset; }
-
 if [ "$smartdns_enable" == "1" ] ; then
 [ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && [ ! -z "$(ps -w | grep "/opt/bin/smartdns" | grep -v grep )" ] && logger -t "【chinadns_ng】" "启动成功 $chinadns_ng_v " && chinadns_ng_restart o
 [ -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/chinadns_ng 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
@@ -294,56 +298,31 @@ exit 0
 }
 
 update_chnlist () {
-[ -z "$(echo "$chinadns_ng_usage$smartdns_usage" | grep "/opt/app/chinadns_ng/chnlist.txt")" ] && return
-url='https://raw.github.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
-wgetcurl.sh /opt/app/chinadns_ng/chnlist.tmp "$url" "$url" N
-[ ! -s /opt/app/chinadns_ng/chnlist.tmp ] && logger -t "【chinadns_ng】" "错误！ chnlist.txt 下载失败" && return
-cat /opt/app/chinadns_ng/chnlist.tmp | awk -F/ '{print $2}' | sort | uniq >/opt/app/chinadns_ng/chnlist.txt
-rm -f /opt/app/chinadns_ng/chnlist.tmp
+nvram set app_111=4 && Sh99_ss_tproxy.sh
+cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/chinadns_ng/chnlist.txt
+
 }
 
 update_gfwlist () {
-wgetcurl_checkmd5 /opt/app/chinadns_ng/gfwlist.b64 https://raw.github.com/gfwlist/gfwlist/master/gfwlist.txt https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt N
-	base64 -d  /opt/app/chinadns_ng/gfwlist.b64 > /opt/app/chinadns_ng/gfwlist.txt
-	cat /opt/app/chinadns_ng/gfwlist.txt | sort -u |
-			sed '/^$\|@@/d'|
-			sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
-			sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d' |
-			sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
-			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##'  | sort -u > /opt/app/chinadns_ng/gfwlist_domain.txt
-echo "whatsapp.net" >> /opt/app/chinadns_ng/gfwlist_domain.txt
-	printf "opt.cn2qq.com\n" >> /opt/app/chinadns_ng/gfwlist_domain.txt
-	printf "twimg.edgesuite.net\n" >> /opt/app/chinadns_ng/gfwlist_domain.txt
-	printf "blogspot.ae\nblogspot.al\nblogspot.am\nblogspot.ba\nblogspot.be\nblogspot.bg\nblogspot.bj\nblogspot.ca\nblogspot.cat\nblogspot.cf\nblogspot.ch\nblogspot.cl\nblogspot.co.at\nblogspot.co.id\nblogspot.co.il\nblogspot.co.ke\nblogspot.com\nblogspot.com.ar\nblogspot.com.au\nblogspot.com.br\nblogspot.com.by\nblogspot.com.co\nblogspot.com.cy\nblogspot.com.ee\nblogspot.com.eg\nblogspot.com.es\nblogspot.com.mt\nblogspot.com.ng\nblogspot.com.tr\nblogspot.com.uy\nblogspot.co.nz\nblogspot.co.uk\nblogspot.co.za\nblogspot.cv\nblogspot.cz\nblogspot.de\nblogspot.dk\nblogspot.fi\nblogspot.fr\nblogspot.gr\nblogspot.hk\nblogspot.hr\nblogspot.hu\nblogspot.ie\nblogspot.in\nblogspot.is\nblogspot.it\nblogspot.jp\nblogspot.kr\nblogspot.li\nblogspot.lt\nblogspot.lu\nblogspot.md\nblogspot.mk\nblogspot.mr\nblogspot.mx\nblogspot.my\nblogspot.nl\nblogspot.no\nblogspot.pe\nblogspot.pt\nblogspot.qa\nblogspot.re\nblogspot.ro\nblogspot.rs\nblogspot.ru\nblogspot.se\nblogspot.sg\nblogspot.si\nblogspot.sk\nblogspot.sn\nblogspot.td\nblogspot.tw\nblogspot.ug\nblogspot.vn\n" >> /opt/app/chinadns_ng/gfwlist_domain.txt
-	printf "dns.google\ngoogle.ac\ngoogle.ad\ngoogle.ae\ngoogle.al\ngoogle.am\ngoogle.as\ngoogle.at\ngoogle.az\ngoogle.ba\ngoogle.be\ngoogle.bf\ngoogle.bg\ngoogle.bi\ngoogle.bj\ngoogle.bs\ngoogle.bt\ngoogle.by\ngoogle.ca\ngoogle.cat\ngoogle.cc\ngoogle.cd\ngoogle.cf\ngoogle.cg\ngoogle.ch\ngoogle.ci\ngoogle.cl\ngoogle.cm\ngoogle.cn\ngoogle.co.ao\ngoogle.co.bw\ngoogle.co.ck\ngoogle.co.cr\ngoogle.co.id\ngoogle.co.il\ngoogle.co.in\ngoogle.co.jp\ngoogle.co.ke\ngoogle.co.kr\ngoogle.co.ls\ngoogle.com\ngoogle.co.ma\ngoogle.com.af\ngoogle.com.ag\ngoogle.com.ai\ngoogle.com.ar\ngoogle.com.au\ngoogle.com.bd\ngoogle.com.bh\ngoogle.com.bn\ngoogle.com.bo\ngoogle.com.br\ngoogle.com.bz\ngoogle.com.co\ngoogle.com.cu\ngoogle.com.cy\ngoogle.com.do\ngoogle.com.ec\ngoogle.com.eg\ngoogle.com.et\ngoogle.com.fj\ngoogle.com.gh\ngoogle.com.gi\ngoogle.com.gt\ngoogle.com.hk\ngoogle.com.jm\ngoogle.com.kh\ngoogle.com.kw\ngoogle.com.lb\ngoogle.com.lc\ngoogle.com.ly\ngoogle.com.mm\ngoogle.com.mt\ngoogle.com.mx\ngoogle.com.my\ngoogle.com.na\ngoogle.com.nf\ngoogle.com.ng\ngoogle.com.ni\ngoogle.com.np\ngoogle.com.om\ngoogle.com.pa\ngoogle.com.pe\ngoogle.com.pg\ngoogle.com.ph\ngoogle.com.pk\ngoogle.com.pr\ngoogle.com.py\ngoogle.com.qa\ngoogle.com.sa\ngoogle.com.sb\ngoogle.com.sg\ngoogle.com.sl\ngoogle.com.sv\ngoogle.com.tj\ngoogle.com.tr\ngoogle.com.tw\ngoogle.com.ua\ngoogle.com.uy\ngoogle.com.vc\ngoogle.com.vn\ngoogle.co.mz\ngoogle.co.nz\ngoogle.co.th\ngoogle.co.tz\ngoogle.co.ug\ngoogle.co.uk\ngoogle.co.uz\ngoogle.co.ve\ngoogle.co.vi\ngoogle.co.za\ngoogle.co.zm\ngoogle.co.zw\ngoogle.cv\ngoogle.cz\ngoogle.de\ngoogle.dj\ngoogle.dk\ngoogle.dm\ngoogle.dz\ngoogle.ee\ngoogle.es\ngoogle.fi\ngoogle.fm\ngoogle.fr\ngoogle.ga\ngoogle.ge\ngoogle.gf\ngoogle.gg\ngoogle.gl\ngoogle.gm\ngoogle.gp\ngoogle.gr\ngoogle.gy\ngoogle.hn\ngoogle.hr\ngoogle.ht\ngoogle.hu\ngoogle.ie\ngoogle.im\ngoogle.io\ngoogle.iq\ngoogle.is\ngoogle.it\ngoogle.je\ngoogle.jo\ngoogle.kg\ngoogle.ki\ngoogle.kz\ngoogle.la\ngoogle.li\ngoogle.lk\ngoogle.lt\ngoogle.lu\ngoogle.lv\ngoogle.md\ngoogle.me\ngoogle.mg\ngoogle.mk\ngoogle.ml\ngoogle.mn\ngoogle.ms\ngoogle.mu\ngoogle.mv\ngoogle.mw\ngoogle.ne\ngoogle.net\ngoogle.nl\ngoogle.no\ngoogle.nr\ngoogle.nu\ngoogle.org\ngoogle.pl\ngoogle.pn\ngoogle.ps\ngoogle.pt\ngoogle.ro\ngoogle.rs\ngoogle.ru\ngoogle.rw\ngoogle.sc\ngoogle.se\ngoogle.sh\ngoogle.si\ngoogle.sk\ngoogle.sm\ngoogle.sn\ngoogle.so\ngoogle.sr\ngoogle.st\ngoogle.td\ngoogle.tg\ngoogle.tk\ngoogle.tl\ngoogle.tm\ngoogle.tn\ngoogle.to\ngoogle.tt\ngoogle.vg\ngoogle.vu\ngoogle.ws\n" >> /opt/app/chinadns_ng/gfwlist_domain.txt
-grep -v '^#' /etc/storage/basedomain.txt | sort -u | grep -v "^$" > /opt/app/chinadns_ng/gfwlist.txt
-grep -v '^#' /opt/app/chinadns_ng/gfwlist_domain.txt | sort -u | grep -v "^$" >> /opt/app/chinadns_ng/gfwlist.txt
-rm -f /opt/app/chinadns_ng/gfwlist.b64 /opt/app/chinadns_ng/gfwlist_domain.txt
+nvram set app_111=3 && Sh99_ss_tproxy.sh
+cat /etc/storage/basedomain.txt | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/chinadns_ng/gfwlist.txt
 
 }
 
 update_chnroute () {
-echo "create chnroute hash:net family inet" >/opt/app/chinadns_ng/chnroute.ipset
-url='http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
-wgetcurl.sh /opt/app/chinadns_ng/chnroute.tmp "$url" "$url" N
-[ ! -s /opt/app/chinadns_ng/chnroute.tmp ] && logger -t "【chinadns_ng】" "错误！ chnroute.ipset 下载失败" && return
-cat /opt/app/chinadns_ng/chnroute.tmp | grep CN | grep ipv4 | awk -F'|' '{printf("add chnroute %s/%d\n", $4, 32-log($5)/log(2))}' >>/opt/app/chinadns_ng/chnroute.ipset
-rm -f /opt/app/chinadns_ng/chnroute.tmp
-ipset -F chnroute
-ipset -R -exist </opt/app/chinadns_ng/chnroute.ipset
+nvram set app_111=2 && Sh99_ss_tproxy.sh
+ipset -! -N chnroute hash:net family inet
+ipset -! create chnroute hash:net family inet
+cat /etc/storage/china_ip_list.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A chnroute &/g" | ipset -! restore
 
 
 }
 
 update_chnroute6 () {
-echo "create chnroute6 hash:net family inet6" >/opt/app/chinadns_ng/chnroute6.ipset
-url='http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
-wgetcurl.sh /opt/app/chinadns_ng/chnroute6.tmp "$url" "$url" N
-[ ! -s /opt/app/chinadns_ng/chnroute6.tmp ] && logger -t "【chinadns_ng】" "错误！ chnroute6.ipset 下载失败" && return
-cat /opt/app/chinadns_ng/chnroute6.tmp | grep CN | grep ipv6 | awk -F'|' '{printf("add chnroute6 %s/%d\n", $4, $5)}' >>/opt/app/chinadns_ng/chnroute6.ipset
-rm -f /opt/app/chinadns_ng/chnroute6.tmp
-ipset -F chnroute6
-ipset -R -exist </opt/app/chinadns_ng/chnroute6.ipset
+[ ! -s /opt/app/ss_tproxy/rule/chnroute6.txt ] && return
+ipset -! -N chnroute6 hash:net family inet6
+ipset -! create chnroute6 hash:net family inet6
+cat /etc/storage/china_ip_list.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A chnroute6 &/g" | ipset -! restore
 
 }
 

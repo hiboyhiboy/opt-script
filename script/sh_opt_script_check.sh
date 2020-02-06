@@ -9,7 +9,7 @@ if [ ! -s /tmp/script/_opt_script_check ] && [ ! -z "$(echo $scriptfilepath | gr
 	exit
 fi
 
-syslog_tmp="`grep "EMI\?\|dnsmasq is missing," /tmp/syslog.log `"
+syslog_tmp="`cat /tmp/syslog.log | grep "EMI\?\|dnsmasq is missing,"`"
 dnsmasq_tmp="`echo $syslog_tmp | grep 'dnsmasq is missing,'`"
 if [ ! -z "$dnsmasq_tmp" ] ; then
 	dnsmasq_tmp2="`echo $dnsmasq_tmp | grep 'dnsmasq is missing, start again!'`"
@@ -18,7 +18,7 @@ if [ ! -z "$dnsmasq_tmp" ] ; then
 	else
 		echo -n 0 >> /tmp/dnsmasq_missing0.txt
 	fi
-	if [ ! -z "`grep "1111" /tmp/dnsmasq_missing1.txt `" ] ; then
+	if [ ! -z "`cat /tmp/dnsmasq_missing1.txt | grep "1111"`" ] ; then
 		logger -t "script_check" "检测到【dnsmasq】错误【dnsmasq is missing】"
 		logger -t "script_check" "重置【dnsmasq配置】等待人类排查错误！"
 		rm -rf /etc/storage/dnsmasq/*
@@ -30,7 +30,7 @@ if [ ! -z "$dnsmasq_tmp" ] ; then
 		sleep 1
 		sed  "s/dnsmasq is missing,/【dnsmasq is missing】,/" -Ei /tmp/syslog.log
 	else
-		if [ ! -z "`grep "0000000000" /tmp/dnsmasq_missing0.txt `" ] ; then
+		if [ ! -z "`cat /tmp/dnsmasq_missing0.txt | grep "0000000000"`" ] ; then
 			rm -f /tmp/dnsmasq_missing0.txt /tmp/dnsmasq_missing1.txt
 			echo -n "" > /tmp/dnsmasq_missing0.txt
 			echo -n "" > /tmp/dnsmasq_missing1.txt
@@ -74,7 +74,7 @@ threads=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
 [ -z $threads ] && threads=1
 max_cpu=`expr 100 / $threads - 3 `
 if [ $max_cpu -lt $top_CPU ] ; then
-if [ -z "$(grep $top_PID© /tmp/top_run)" ] ; then
+if [ -z "$(cat /tmp/top_run | grep $top_PID©)" ] ; then
 logger -t "script_check" "检测到进程 PID【$top_PID】使用CPU $top_CPU% 进入防卡CPU检测序列 $top_COMMAND"
 #©§
 echo "$top_PID©$top_CPU©§1§$top_COMMAND" >> /tmp/top_run
@@ -90,7 +90,7 @@ if [ ! -z "$line" ] ; then
 top_PID="$(echo $line | awk -F '©' '{print $1}')"
 top_CPU="$(echo $line | awk -F '©' '{print $2}')"
 top_COMMAND="$(echo $line | awk -F '§' '{print $3}')"
-if [ -z "$(grep "$top_PID " /tmp/top)" ] ; then
+if [ -z "$(cat /tmp/top | grep "$top_PID ")" ] ; then
 sed -Ei "/^$top_PID©/d" /tmp/top_run
 break
 #continue

@@ -1,12 +1,14 @@
 #!/bin/sh
 #copyright by hiboy
+sh_link_sh="sh_link_sh"
+source /etc/storage/script/sh_link.sh
 source /etc/storage/script/init.sh
 
 # 按钮名称可自定义
 ad=`nvram get button_script_1_s`
 [ -z "$ad" ] && ad="Adbyby" && nvram set button_script_1_s="Adbyby"
 ss=`nvram get button_script_2_s`
-[ -z "$ss" ] && ss="SS_[1]" && nvram set button_script_2_s="SS_[1]"
+[ -z "$ss" ] && ss="SS" && nvram set button_script_2_s="SS"
 
 ipt2socks_enable=`nvram get app_104`
 [ -z $ipt2socks_enable ] && ipt2socks_enable=0 && nvram set app_104=0
@@ -38,9 +40,8 @@ if [ "$ss_enable" != "0" ]  ; then
 	[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
 	if [ "$ss_mode_x" != 3 ]  ; then
 		ss_working_port=`nvram get ss_working_port`
-		[ $ss_working_port == 1090 ] && ss_info="SS_[1]"
-		[ $ss_working_port == 1091 ] && ss_info="SS_[2]"
-		[ ${ss_info:=SS_[1]} ] && [ "$ss" != "$ss_info" ] && { ss="$ss_info" ; nvram set button_script_2_s="$ss"; }
+		[ $ss_working_port == 1090 ] && ss_info="SS"
+		[ ${ss_info:=SS} ] && [ "$ss" != "$ss_info" ] && { ss="$ss_info" ; nvram set button_script_2_s="$ss"; }
 	fi
 	if [ "$ss_mode_x" = 3 ]  ; then
 		[ "$ss" != "SS" ] && [ "$ss" != "V2Ray" ] && [ "$ss" != "clash" ] && [ "$ss" != "Tsocks" ] && [ "$ss" != "2socks" ] && { ss="SS" ; nvram set button_script_2_s="$ss"; }
@@ -137,7 +138,7 @@ button2=`nvram get button_script_2_s`
 logger -t "【按钮②】" "$button2"
 apply=`nvram get button_script_2`
 
-if [ "$ss" = "SS_[1]" ] || [ "$ss" = "SS_[2]" ] ; then
+if [ "$ss" = "SS" ] ; then
 if [ ! -s /tmp/script/_ss ] ; then
 	logger -t "【按钮②】" "请稍等 SS 脚本初始化！"
 	return
@@ -283,7 +284,7 @@ else
 	nvram set button_script_1="0"
 fi
 PROCESS=""
-if [ "$ss" = "SS_[1]" ] || [ "$ss" = "SS_[2]" ] ; then
+if [ "$ss" = "SS" ] ; then
 	PROCESS=$(ps -w | grep "ss-redir" | grep -v "grep")
 elif [ "$ss" = "SS" ] ; then
 	PROCESS=$(ps -w | grep "ss-local" | grep -v "grep")
@@ -307,20 +308,7 @@ fi
 cleanss () {
 
 # 重置 SS IP 规则文件并重启 SS
-logger -t "【按钮】" "重置 SS IP 规则文件并重启 SS"
-/tmp/script/_ss stop
-rm -f /tmp/ss/dnsmasq.d/*
-restart_dhcpd
-rm -rf /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt /tmp/ss/*
-[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
-[ ! -f /etc/storage/basedomain.txt ] && tar -xzvf /etc_ro/basedomain.tgz -C /tmp && ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
-nvram set ss_status="cleanss"
-nvram set kcptun_status="cleanss"
-	rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
-	rm -f /opt/bin/ss0-redir /opt/bin/ssr0-redir /opt/bin/ss0-local /opt/bin/ssr0-local
-	rm -f /opt/bin/pdnsd /opt/bin/dnsproxy
-sleep 5
-/tmp/script/_ss &
+/tmp/script/_ss update_optss &
 }
 
 timesystem () {
@@ -442,6 +430,7 @@ mismatch="$(nvram get app_96)"
 
 cat /www/link/link.js > /tmp/link_matching/0.txt
 echo -n "" > /tmp/link_matching/1.txt
+[ -s /tmp/link/link.txt ] && cat /tmp/link/link.txt >> /tmp/link_matching/0.txt
 sed -Ei "/^var ACL2List|^\[\]\]/d" /tmp/link_matching/0.txt
 while read line
 do
@@ -455,13 +444,13 @@ fi
 [ ! -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" )"
 [ -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" )"
 [ -z "$match" ] && line3="line3"
-line4="line4"
+line4="line4" ; line2="" ; 
 if [ ! -z "$line3" ] ; then
-line2="$(echo "$line" | grep -E -o \"btn-success.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
-[ ! -z "$line2" ] && line2="00000""$line2" && echo -n "${line2:0-4}" >> /tmp/link_matching/1.txt && line4=""
-line2="$(echo "$line" | grep -E -o \"btn-warning.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
-[ ! -z "$line2" ] && line2="00000""$line2" && echo -n "${line2:0-4}" >> /tmp/link_matching/1.txt && line4=""
-line2="$(echo "$line" | grep -E -o \"btn-danger.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
+line2_server="$(echo "$line" | sed -e "s@\ @@g" | awk -F '","' '{ print($2) }')"
+[ ! -z "$line2_server" ] && line2="$(cat /opt/storage/link/ping.js | sed -e "s@\ @@g" | awk -F "$line2_server=" '{ print($2) }' | awk -F "🔗" '{ print($1) }')"
+[ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-success.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
+[ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-warning.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
+[ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-danger.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
 [ ! -z "$line2" ] && line2="00000""$line2" && echo -n "${line2:0-4}" >> /tmp/link_matching/1.txt && line4=""
 [ ! -z "$line4" ] && line2="0000" && echo -n "$line2" >> /tmp/link_matching/1.txt
 echo -n "$line" >> /tmp/link_matching/1.txt
@@ -489,25 +478,31 @@ line2="$(echo "$line" | grep -v "已经自动选用节点" )"
 if [ ! -z "$line2" ] ; then
 app_97="$(echo $line| jq --compact-output --raw-output 'getpath([0])')"
 app_97="$(base64decode "$app_97")"
-ss_server=$(echo $line| jq --compact-output --raw-output 'getpath([1])')
-ss_server_port=$(echo $line| jq --compact-output --raw-output 'getpath([2])')
-ss_key=$(echo $line| jq --compact-output --raw-output 'getpath([3])')
+ss_server="$(echo $line| jq --compact-output --raw-output 'getpath([1])')"
+ss_server_port="$(echo $line| jq --compact-output --raw-output 'getpath([2])')"
+ss_key="$(echo $line| jq --compact-output --raw-output 'getpath([3])')"
 ss_key="$(base64decode "$ss_key")"
-ss_method=$(echo $line| jq --compact-output --raw-output 'getpath([4])')
+ss_method="$(echo $line| jq --compact-output --raw-output 'getpath([4])')"
 ss_usage="$(echo $line| jq --compact-output --raw-output 'getpath([7])')"
 ss_usage="$(base64decode "$ss_usage")"
 ss_type_tmp="$(echo $line| jq --compact-output --raw-output 'getpath([8])')"
+logger -t "【自动选用节点】" "已经自动选用节点： [$ss_type_tmp]$app_97"
+[ -z "$ss_server" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_server 数据为空 " && break
+[ -z "$ss_server_port" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_server_port 数据为空 " && break
+[ -z "$ss_key" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_key 数据为空 " && break
+[ -z "$ss_method" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_method 数据为空 " && break
+#[ -z "$ss_usage" ] && logger -t "【自动选用节点】" "错误！！！获取 ss_usage 数据为空 " && break
+nvram set app_97="[$ss_type_tmp]$app_97"
+sed -i $i_matching's/^/已经自动选用节点/' /tmp/link_matching/link_matching.txt
 [ "$ss_type_tmp" == "ssr" ] && nvram set ss_type="1"
 [ "$ss_type_tmp" == "ss" ] && nvram set ss_type="0"
-sed -i $i_matching's/^/已经自动选用节点/' /tmp/link_matching/link_matching.txt
-logger -t "【自动选用节点】" "已经自动选用节点： $app_97"
-nvram set app_97="$app_97"
 nvram set ss_server="$ss_server"
 nvram set ss_server_port="$ss_server_port"
 nvram set ss_key="$ss_key"
 nvram set ss_method="$ss_method"
 nvram set ss_usage="$ss_usage"
 # 重启SS
+[ "$ss_enable" == "0" ] && return
 eval "Sh15_ss.sh &"
 break
 fi
@@ -528,8 +523,9 @@ rm -f /tmp/allping.js
 touch /tmp/allping.js
 rm -f /tmp/link_matching/link_matching.txt
 i_x_ping=2
-ilox="$(grep -v '\[\]\]'  /www/link/link.js | grep -v "ACL2List = " |wc -l)"
-[ "$ilox" == "0" ] && logger -t "【ping】" "错误！节点列表为空" && return
+ilox="$(cat /www/link/link.js | grep -v '\[\]\]'  | grep -v "ACL2List = " |wc -l)"
+[ "$ilox" == "0" ] && [ ! -s /etc/storage/app_24.sh ] && logger -t "【ping】" "错误！节点列表为空" && return
+if [ "$ilox" != "0" ] ; then
 app_100="$(nvram get app_100)"
 if [ "$app_100" == "1" ] ; then
 logger -t "【ping】" "默认排序节点"
@@ -574,7 +570,8 @@ done < /tmp/allping/0.txt
 echo "[]]" >> /tmp/allping/1.txt
 cp -f /tmp/allping/1.txt /www/link/link.js
 rm -f /tmp/allping/?.txt /tmp/allping.js
-
+fi
+allping_app_24
 
 logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
 app_99="$(nvram get app_99)"
@@ -582,6 +579,66 @@ if [ "$app_99" == 1 ] ; then
 logger -t "【ping】" "服务器订阅：更新后自动选用节点 /tmp/link_matching/link_matching.txt"
 /etc/storage/script/sh_ezscript.sh ss_link_matching & 
 fi
+}
+
+allping_app_24 () {
+
+[ ! -s /etc/storage/app_24.sh ] && return 1
+mkdir -p /tmp/allping
+mkdir -p /tmp/link
+rm -f /tmp/link/ping.txt 
+touch /tmp/link/ping.txt
+rm -f /tmp/allping/?.txt
+rm -f /tmp/ping_server_error.txt
+touch /tmp/ping_server_error.txt
+rm -f /tmp/allping.js
+touch /tmp/allping.js
+rm -f /tmp/link_matching/link_matching.txt
+i_x_ping=2
+ilox="$(cat /tmp/link/link.txt | grep -v '\[\]\]' | grep -v "ACL2List = " |wc -l)"
+[ "$ilox" == "0" ] && return
+echo -n 'var ping_data = "' >> /tmp/link/ping.txt
+while read line
+do
+if [ -z "$(echo "$line" | grep "ACL2List = ")" ] && [ -z "$(echo "$line" | grep '\[\]\]')" ] ; then
+if [ ! -z "$line" ] ; then
+echo "$line" > /tmp/allping/$i_x_ping
+fi
+i_x_ping=`expr $i_x_ping + 1`
+fi
+done < /tmp/link/link.txt
+while [ "$(ls /tmp/allping | head -1)" != "" ];
+do
+x_ping_x "1" &
+usleep 100000
+i_ping="$(cat /tmp/allping.js | grep -v "^$" |wc -l)"
+done
+i_x_ping=1
+while [ "$i_ping" != "$ilox" ];
+do
+sleep 1
+i_ping="$(cat /tmp/allping.js | grep -v "^$" |wc -l)"
+i_x_ping=`expr $i_x_ping + 1`
+if [ "$i_x_ping" -gt 30 ] ; then
+logger -t "【ping】" "刷新 ping 失败！超时 30 秒！ 请重新按【ping】按钮再次尝试。"
+return
+fi
+done
+echo -n '"' >> /tmp/link/ping.txt
+# 排序节点
+rm -f /tmp/allping/?.txt
+cat /tmp/allping.js | sort | grep -v "^$" > /tmp/allping/0.txt
+echo "var ACL2List = [[], " > /tmp/allping/1.txt
+while read line
+do
+echo ${line:4} >> /tmp/allping/1.txt
+done < /tmp/allping/0.txt
+echo "[]]" >> /tmp/allping/1.txt
+cp -f /tmp/allping/1.txt /tmp/link/link.txt
+rm -f /www/link/ping.js
+cp -f /tmp/link/ping.txt /www/link/ping.js
+rm -f /tmp/allping/?.txt /tmp/allping.js
+
 }
 
 
@@ -602,6 +659,7 @@ fi
 
 x_ping_x () {
 	
+mk_ping_txt="$1"
 ping_txt_list="$(ls /tmp/allping | head -1)"
 if [ ! -z "$ping_txt_list" ] ; then
 ping_list="$(cat /tmp/allping/$ping_txt_list)"
@@ -610,7 +668,7 @@ ss_server_x=$(echo $ping_list | cut -d',' -f2 | sed -e "s@"'"'"\| \|"'\['"@@g")
 if [ ! -z "$ss_server_x" ] ; then
 ss_name_x="$(echo $ping_list | cut -d',' -f1 | sed -e "s@"'"'"\|"'\['"@@g")"
 ss_name_x="$(base64decode "$ss_name_x")"
-if [ ! -z "$(grep "error_""$ss_server_x""_error" /tmp/ping_server_error.txt)" ] ; then
+if [ ! -z "$(cat /tmp/ping_server_error.txt | grep "error_""$ss_server_x""_error")" ] ; then
 ping_text=""
 else
 ping_text=`ping -4 $ss_server_x -w 3 -W 3 -q`
@@ -646,6 +704,7 @@ else
 	fi
 	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
 fi
+[ "$mk_ping_txt" == "1" ] && [ -z "$(cat /tmp/link/ping.txt | grep "🔗$ss_server_x=")" ] && echo -n "🔗$ss_server_x=$ping_time🔗" >> /tmp/link/ping.txt
 if [ ! -z "$(echo $ping_list | grep -E -o \"btn-.+\ ms\",)" ] ; then
 	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_time ms"'"'"@g")
 	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f1 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_list_btn"'"'"@g")
@@ -709,9 +768,11 @@ ping)
   echo "ping"
   ;;
 allping)
+  check_app_24 "X_allping"
   allping &
   ;;
 ss_link_matching)
+  check_app_24  "X_allping"
   ss_link_matching &
   ;;
 reszUID)

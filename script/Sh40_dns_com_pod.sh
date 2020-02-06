@@ -117,6 +117,7 @@ done
 }
 
 dns_com_pod_close () {
+kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_dns_com_pod"
 kill_ps "_dns_com_pod.sh"
 kill_ps "$scriptname"

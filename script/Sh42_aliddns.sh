@@ -135,6 +135,7 @@ done
 
 aliddns_close () {
 
+kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_aliddns"
 kill_ps "_aliddns.sh"
 kill_ps "$scriptname"

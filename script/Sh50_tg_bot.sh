@@ -137,6 +137,7 @@ done
 }
 
 tgbot_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【tgbot推送】|^$/d' /tmp/script/_opt_script_check
 killall app_10.sh
 killall -9 app_10.sh
@@ -374,7 +375,7 @@ mkdir -p /opt/app/tgbot
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/tgbot/Advanced_Extensions_tgbot.asp
 fi
-[ -z "$(grep tgbot_api /etc/storage/app_10.sh)" ] && rm -f /etc/storage/app_10.sh
+[ -z "$(cat /etc/storage/app_10.sh | grep tgbot_api)" ] && rm -f /etc/storage/app_10.sh
 initconfig
 
 # 加载程序配置页面

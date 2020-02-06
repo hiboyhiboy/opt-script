@@ -127,6 +127,7 @@ done
 }
 
 speedup_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【speedup】|^$/d' /tmp/script/_opt_script_check
 killall speedup
 killall -9 speedup
@@ -158,7 +159,7 @@ fi
 
 update_app
 speedup_vv=2017-10-25
-speedup_v=$(grep 'speedup_vv=' /etc/storage/script/Sh27_speedup.sh | grep -v 'speedup_v=' | awk -F '=' '{print $2;}')
+speedup_v=$(cat /etc/storage/script/Sh27_speedup.sh | grep 'speedup_vv=' | grep -v 'speedup_v=' | awk -F '=' '{print $2;}')
 nvram set speedup_v="$speedup_v"
 logger -t "【speedup】" "运行 $speedup_path"
 ln -sf /etc/storage/script/Sh27_speedup.sh /opt/app/speedup/speedup

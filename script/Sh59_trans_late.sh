@@ -151,6 +151,7 @@ logger -t "【translate】" "完成translate"
 
 translate_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【translate】|^$/d' /tmp/script/_opt_script_check
 kill_ps "/tmp/script/_app11"
 kill_ps "_trans_late.sh"

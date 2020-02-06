@@ -109,8 +109,9 @@ done
 
 guestkit_close () {
 
-iptables -t filter -D INPUT -p tcp --dport 7575 -j ACCEPT
+kill_ps "$scriptname keep"
 sed -Ei '/【guestkit】|^$/d' /tmp/script/_opt_script_check
+iptables -t filter -D INPUT -p tcp --dport 7575 -j ACCEPT
 killall guestkit
 killall -9 guestkit
 kill_ps "/tmp/script/_app9"

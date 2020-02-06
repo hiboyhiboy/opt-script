@@ -120,6 +120,7 @@ done
 
 filemanager_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 killall filemanager caddy_filebrowser
@@ -221,7 +222,7 @@ iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 filemanager_upanPath="$upanPath"
 nvram set filemanager_upanPath="$upanPath"
 mkdir -p /tmp/AiDisk_00/filebrowser
-if [ -z "$(grep filebrowser /etc/storage/app_11.sh)" ] ; then
+if [ -z "$(cat /etc/storage/app_11.sh | grep filebrowser)" ] ; then
 	logger -t "【filemanager】" "使用新版 caddy_filebrowser 更新配置文件 ，请使用默认密码登录重新配置"
 	rm -f /etc/storage/app_11.sh
 	initconfig

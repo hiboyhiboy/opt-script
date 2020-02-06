@@ -112,6 +112,7 @@ done
 
 vpnproxy_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【vpnproxy】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $vpnproxy_wan_port -j ACCEPT
 killall nvpproxy

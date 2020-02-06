@@ -135,6 +135,7 @@ done
 
 syncthing_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check
 killall syncthing
 killall -9 syncthing

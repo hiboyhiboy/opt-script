@@ -118,6 +118,7 @@ done
 
 softether_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【softether】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p udp --destination-port 500 -j ACCEPT
 iptables -t filter -D INPUT -p udp --destination-port 4500 -j ACCEPT

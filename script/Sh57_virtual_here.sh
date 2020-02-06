@@ -111,8 +111,9 @@ done
 
 virtualhere_close () {
 
-iptables -t filter -D INPUT -p tcp --dport 7575 -j ACCEPT
+kill_ps "$scriptname keep"
 sed -Ei '/【virtualhere】|^$/d' /tmp/script/_opt_script_check
+iptables -t filter -D INPUT -p tcp --dport 7575 -j ACCEPT
 killall virtualhere
 killall -9 virtualhere
 kill_ps "/tmp/script/_app8"

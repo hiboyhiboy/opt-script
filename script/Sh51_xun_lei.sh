@@ -140,6 +140,7 @@ done
 }
 
 xunlei_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【迅雷下载】|^$/d' /tmp/script/_opt_script_check
 killall ETMDaemon EmbedThunderManager vod_httpserver portal
 killall -9 ETMDaemon EmbedThunderManager vod_httpserver portal

@@ -145,6 +145,7 @@ done
 }
 
 mentohust_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【mentohust】|^$/d' /tmp/script/_opt_script_check
 killall mentohust
 killall -9 mentohust

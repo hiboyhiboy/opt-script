@@ -145,6 +145,7 @@ done
 }
 
 wifidog_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【wifidog】|^$/d' /tmp/script/_opt_script_check
 echo "Stopping Wifidog ... "
 if $WD_DIR/wdctl status 2> /dev/null

@@ -118,6 +118,8 @@ done
 }
 
 AdGuardHome_close () {
+kill_ps "$scriptname keep"
+sed -Ei '/【AdGuardHome】|^$/d' /tmp/script/_opt_script_check
 port=$(grep "#server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 sed -Ei '/server=127.0.0.1#5353/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
@@ -128,7 +130,6 @@ if [ "$port" != 0 ] ; then
 	logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 恢复 server=127.0.0.1#8053"
 fi
 restart_dhcpd
-sed -Ei '/【AdGuardHome】|^$/d' /tmp/script/_opt_script_check
 killall AdGuardHome
 killall -9 AdGuardHome
 kill_ps "/tmp/script/_app17"
