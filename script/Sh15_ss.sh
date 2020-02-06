@@ -501,6 +501,7 @@ fi
 ss_usage_custom="$(echo "$ss_usage" | grep -Eo '\-\-plugin\-opts[ ]+[^丨]+')"
 if [ ! -z "$ss_usage_custom" ] ; then 
 	ss_plugin_config="$(echo $ss_usage_custom | sed -e "s@^--plugin-opts@@g" | sed -e "s@ @@g")"
+	ss_plugin_config="$(echo $ss_plugin_config | sed -e 's@^"@@g' | sed -e 's@"$@@g')"
 	logger -t "【SS】" "高级启动参数选项内容含有 --plugin-opts $ss_plugin_config ，优先使用此 插件参数"
 fi
 
@@ -733,6 +734,8 @@ kill_ps "ss-local_"
 swap_ss_redir()
 {
 
+kill_ps "$scriptname keep"
+kill_ps "$scriptname"
 # 重载 ipset 规则
 Sh99_ss_tproxy.sh auser_check "Sh15_ss.sh"
 ss_tproxy_set "Sh15_ss.sh"
@@ -1638,6 +1641,7 @@ fi
 initconfig () {
 
 shadowsocks_ss_spec_lan="/etc/storage/shadowsocks_ss_spec_lan.sh"
+[ -z "$(cat $shadowsocks_ss_spec_lan | grep "ss_tproxy")"] && rm -f $shadowsocks_ss_spec_lan
 if [ ! -f "$shadowsocks_ss_spec_lan" ] || [ ! -s "$shadowsocks_ss_spec_lan" ] ; then
 	cat > "$shadowsocks_ss_spec_lan" <<-\EEE
 # 内网(LAN)IP设定行为设置, 格式如 b,192.168.1.23, 每一行一个配置
@@ -1668,6 +1672,7 @@ EEE
 fi
 
 shadowsocks_ss_spec_wan="/etc/storage/shadowsocks_ss_spec_wan.sh"
+[ -z "$(cat $shadowsocks_ss_spec_wan | grep "ss_tproxy")"] && rm -f $shadowsocks_ss_spec_wan
 if [ ! -f "$shadowsocks_ss_spec_wan" ] || [ ! -s "$shadowsocks_ss_spec_wan" ] ; then
 	cat > "$shadowsocks_ss_spec_wan" <<-\EEE
 # 外网(WAN)IP设定行为设置, 格式如 b,192.168.1.23, 每一行一个配置
