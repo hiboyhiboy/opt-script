@@ -17,6 +17,17 @@ ss_pdnsd_all=`nvram get ss_pdnsd_all`
 [ -z $ss_pdnsd_all ] && ss_pdnsd_all=0 && nvram set ss_pdnsd_all=0
 ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
+ss_3p_enable=`nvram get ss_3p_enable`
+ss_3p_gfwlist=`nvram get ss_3p_gfwlist`
+ss_3p_kool=`nvram get ss_3p_kool`
+ss_sub1=`nvram get ss_sub1`
+ss_sub2=`nvram get ss_sub2`
+ss_sub3=`nvram get ss_sub3`
+ss_sub4=`nvram get ss_sub4`
+ss_sub5=`nvram get ss_sub5`
+ss_sub6=`nvram get ss_sub6`
+ss_sub7=`nvram get ss_sub7`
+ss_sub8=`nvram get ss_sub8`
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_port=`nvram get app_6`
@@ -109,7 +120,7 @@ ss_tproxy_get_status () {
 
 A_restart=`nvram get ss_tproxy_status`
 B_restart="$ss_tproxy_enable$ss_tproxy_mode_x$ss_pdnsd_all$ss_dnsproxy_x$chinadns_enable$(cat /etc/storage/app_27.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
-C_restart="$ss_pdnsd_all$ss_dnsproxy_x$dns_start_dnsproxy$ss_pdnsd_cn_all$output_return$koolproxy_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
+C_restart="$dns_start_dnsproxy$ss_pdnsd_cn_all$output_return$ss_pdnsd_all$ss_dnsproxy_x$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$chinadns_enable$chinadns_port$koolproxy_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then

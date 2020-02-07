@@ -751,7 +751,9 @@ update_gfwlist_ipset() {
 		is_true "$ipv6" && cat /opt/app/ss_tproxy/rule/gfwlist_dns.txt | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$dns6_fw_type"'\n", $1)}' >> /opt/app/ss_tproxy/dnsmasq.d/r.sub.conf
 		fi
 		if [ -s /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt ] ; then
-		DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+		wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
+		[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+		[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="$dns_direct"
 		is_true "$ipv4" && cat /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$DNS_china"'\n", $1)}' >> /opt/app/ss_tproxy/dnsmasq.d/r.sub.conf
 		is_true "$ipv6" && cat /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$dns_direct6"'\n", $1)}' >> /opt/app/ss_tproxy/dnsmasq.d/r.sub.conf
@@ -917,7 +919,9 @@ update_chnlist_ipset() {
 		if [ -s /opt/app/ss_tproxy/rule/chnlist.txt ] ; then
 		logger -t "【update_chnlist】" "开始加载 chnlist 规则...."
 		logger -t "【update_chnlist】" "加速国内 dns 访问"
-		DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+		wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
+		[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+		[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="$dns_direct"
 		is_true "$ipv4" && cat /opt/app/ss_tproxy/rule/chnlist.txt | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$DNS_china"'\n", $1)}' > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		is_true "$ipv6" && cat /opt/app/ss_tproxy/rule/chnlist.txt | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$dns_direct6"'\n", $1)}' > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
@@ -1604,6 +1608,7 @@ flush_dnscache() {
 }
 
 modify_resolvconf() {
+	return
 	if is_false "$opts_overwrite_resolv"; then
 		while umount /etc/resolv.conf &>/dev/null; do true; done
 		local temp_resolv_conf="/opt/app/ss_tproxy/resolv.conf"
@@ -1623,6 +1628,7 @@ modify_resolvconf() {
 }
 
 restore_resolvconf() {
+	return
 	if is_false "$opts_overwrite_resolv"; then
 		while umount /etc/resolv.conf &>/dev/null; do true; done
 	else
