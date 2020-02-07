@@ -582,7 +582,8 @@ update_gfwlist_file() {
 			logger -t "【update_gfwlist】" "正在获取官方 gfwlist...."
 			local url='https://raw.github.com/gfwlist/gfwlist/master/gfwlist.txt'
 			wgetcurl_checkmd5 $tmp_gfwlist "$url" "$url" N 5
-			base64 -d  $tmp_gfwlist > $tmp_down_file
+			base64 -d $tmp_gfwlist > $tmp_down_file
+			rm -f $tmp_gfwlist 
 			cat $tmp_down_file | sort -u |
 				sed '/^$\|@@/d'|
 				sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
