@@ -1641,7 +1641,7 @@ fi
 initconfig () {
 
 shadowsocks_ss_spec_lan="/etc/storage/shadowsocks_ss_spec_lan.sh"
-[ -z "$(cat $shadowsocks_ss_spec_lan | grep "ss_tproxy")"] && rm -f $shadowsocks_ss_spec_lan
+[ -z "$(cat $shadowsocks_ss_spec_lan | grep "ss_tproxy")" ] && rm -f $shadowsocks_ss_spec_lan
 if [ ! -f "$shadowsocks_ss_spec_lan" ] || [ ! -s "$shadowsocks_ss_spec_lan" ] ; then
 	cat > "$shadowsocks_ss_spec_lan" <<-\EEE
 # 内网(LAN)IP设定行为设置, 格式如 b,192.168.1.23, 每一行一个配置
@@ -1672,7 +1672,7 @@ EEE
 fi
 
 shadowsocks_ss_spec_wan="/etc/storage/shadowsocks_ss_spec_wan.sh"
-[ -z "$(cat $shadowsocks_ss_spec_wan | grep "ss_tproxy")"] && rm -f $shadowsocks_ss_spec_wan
+[ -z "$(cat $shadowsocks_ss_spec_wan | grep "ss_tproxy")" ] && rm -f $shadowsocks_ss_spec_wan
 if [ ! -f "$shadowsocks_ss_spec_wan" ] || [ ! -s "$shadowsocks_ss_spec_wan" ] ; then
 	cat > "$shadowsocks_ss_spec_wan" <<-\EEE
 # 外网(WAN)IP设定行为设置, 格式如 b,192.168.1.23, 每一行一个配置

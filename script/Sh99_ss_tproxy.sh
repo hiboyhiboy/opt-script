@@ -267,7 +267,7 @@ ss_tproxy_rules_update () {
 [ "$ss_tproxy_update" == "0" ] && return
 nvram set app_111=0 ; nvram commit ;
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
-
+rm -f /opt/app/ss_tproxy/tmp/*.md5
 if [ "$ss_tproxy_update" == "1" ] ; then
 	logger -t "【ss_tproxy】" "更新 gfwlist + chnroute 规则" 
 	sh_ss_tproxy.sh update_gfwlist
@@ -299,6 +299,20 @@ fi
 if [ "$ss_tproxy_update" == "6" ] ; then
 	logger -t "【ss_tproxy】" "更新脚本" 
 	sh_upscript.sh upscript
+fi
+if [ "$ss_tproxy_update" == "7" ] ; then
+	logger -t "【ss_tproxy】" "重置 ss_tproxy 数据(出错了？重置试试)" 
+	nvram set ss_tproxy_auser=""
+	nvram set ss_3p_enable=0
+	nvram set ss_pdnsd_all=0
+	nvram set ss_DNS_Redirect=0
+	rm -f /opt/app/ss_tproxy/conf/*
+	rm -f /opt/app/ss_tproxy/dnsmasq.d/*
+	rm -f /opt/app/ss_tproxy/rule/*
+	rm -f /opt/app/ss_tproxy/tmp/*
+	rm -f /etc/storage/app_27.sh
+	initconfig
+	logger -t "【ss_tproxy】" "完成重置。"
 fi
 }
 
