@@ -180,7 +180,9 @@ while [ "$v2ray_enable" = "1" ]; do
 	fi
 	v2ray_enable=`nvram get v2ray_enable`
 	v2ray_follow=`nvram get v2ray_follow`
-	if [ "$v2ray_follow" = "1" ] ; then
+	ss_keep_check=`nvram get ss_keep_check`
+	v2ray_optput=`nvram get v2ray_optput`
+	if [ "$v2ray_follow" = "1" ] && [ "$ss_keep_check" == "1" ] && [ "$v2ray_optput" == 1 ] ; then
 # 自动故障转移(透明代理时生效)
 check1=404
 check2=404
