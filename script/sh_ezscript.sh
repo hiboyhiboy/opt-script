@@ -414,6 +414,8 @@ fi
 
 ss_link_matching(){
 
+mkdir -p /etc/storage/link
+touch /etc/storage/link/link.js
 [ ! -f /www/link/link.js ] && logger -t "【自动选用节点】" "错误！找不到 /www/link/link.js" && return 1
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 jq_check
@@ -513,6 +515,8 @@ done < /tmp/link_matching/link_matching.txt
 
 allping () {
 
+mkdir -p /etc/storage/link
+touch /etc/storage/link/link.js
 [ ! -f /www/link/link.js ] && logger -t "【ping】" "错误！找不到 /www/link/link.js" && return 1
 logger -t "【ping】" "开始 ping"
 mkdir -p /tmp/allping

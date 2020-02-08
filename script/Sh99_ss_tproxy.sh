@@ -430,8 +430,8 @@ proxy_svraddr6="/opt/app/ss_tproxy/conf/proxy_svraddr6.conf" # 服务器的 IPv6
 proxy_svrport='1:65535'   # 服务器的监听端口，可填多个端口，格式同 ipts_proxy_dst_port
 proxy_tcpport='1090'      # ss/ssr/v2ray 等本机进程的 TCP 监听端口，该端口支持透明代理
 proxy_udpport='1090'      # ss/ssr/v2ray 等本机进程的 UDP 监听端口，该端口支持透明代理
-proxy_startcmd='echo'     # 用于启动本机代理进程的 shell 命令，该命令应该能立即执行完毕
-proxy_stopcmd='echo'      # 用于关闭本机代理进程的 shell 命令，该命令应该能立即执行完毕
+proxy_startcmd='date'     # 用于启动本机代理进程的 shell 命令，该命令应该能立即执行完毕
+proxy_stopcmd='date'      # 用于关闭本机代理进程的 shell 命令，该命令应该能立即执行完毕
 
 ## dns
 dns_direct='114.114.114.114'          # 本地 IPv4 DNS，不能指定端口，也可以填组织、公司内部 DNS

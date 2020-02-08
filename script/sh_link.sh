@@ -540,11 +540,17 @@ check_app_24
 }
 
 check_app_24 () {
-
+a1_tmp="$1"
+mkdir -p /etc/storage/link
+touch /etc/storage/link/link.js
 touch /etc/storage/app_24.sh
 if [ -s /etc/storage/app_24.sh ] ; then
 A_restart="$(nvram get app_24_sh_status)"
 B_restart=`cat /etc/storage/app_24.sh | grep -v "^🔗" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+if [ "$A_restart" == "$B_restart" ] ; then
+ # 文件没更新，停止ping
+a1_tmp="X_allping"
+fi
  # 读取批量导入链接节点
 if [ ! -z "$(cat /etc/storage/app_24.sh | grep -v "^#" | grep -v "^$" | grep -v "vmess://" | grep "ss://\|ssr://" )" ] && [ "$(cat /tmp/link/link.txt | grep -v '\[\]\]' | grep -v "ACL2List = " | grep -v "^#" | grep -v "^$" | wc -l)" == "0" ] ; then
 A_restart=""
@@ -557,7 +563,7 @@ mkdir -p /tmp/link
 rm -f /tmp/link/link.txt
 do_link "/etc/storage/app_24.sh" "/tmp/link/link.txt"
 logger -t "【SS】" "批量导入链接节点：完成解码"
-if [ "$1" != "X_allping" ] ; then
+if [ "$a1_tmp" != "X_allping" ] ; then
 ss_link_ping=`nvram get ss_link_ping`
 if [ "$ss_link_ping" != 1 ] ; then
 	/etc/storage/script/sh_ezscript.sh allping

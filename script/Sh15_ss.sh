@@ -273,8 +273,8 @@ sstp_set proxy_svrport='1:65535'
 sstp_set proxy_tcpport='1090'
 [ "$ss_threads" == 0 ] && sstp_set proxy_udpport='1090'
 [ "$ss_threads" != 0 ] && sstp_set proxy_udpport='1092'
-sstp_set proxy_startcmd='echo'
-sstp_set proxy_stopcmd='echo'
+sstp_set proxy_startcmd='date'
+sstp_set proxy_stopcmd='date'
 ## dns
 DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="114.114.114.114"
@@ -1353,6 +1353,7 @@ check_setting()
 {
 check_webui_yes
 needed_restart=0
+sh_link.sh check_app_24
 ss_get_status
 if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "停止 ss-redir" && stop_SS

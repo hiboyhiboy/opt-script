@@ -530,8 +530,8 @@ sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'
 sstp_set proxy_tcpport='1099'
 sstp_set proxy_udpport='1099'
-sstp_set proxy_startcmd='echo'
-sstp_set proxy_stopcmd='echo'
+sstp_set proxy_startcmd='date'
+sstp_set proxy_stopcmd='date'
 ## dns
 DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="114.114.114.114"
@@ -1507,6 +1507,7 @@ vmess_x_tmp="`nvram get app_83`"
 if [ "$vmess_x_tmp" != "ping_link" ] ; then
 	return
 fi
+check_app_25 "X_allping"
 if [ ! -z "$vmess_x_tmp" ] ; then
 nvram set app_83=""
 fi
@@ -2209,11 +2210,21 @@ rm -rf /tmp/vmess/link/*
 }
 
 check_app_25 () {
-
+a1_tmp="$1"
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+json_jq_check
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	return 1
+fi
+fi
 touch /etc/storage/app_25.sh
 if [ -s /etc/storage/app_25.sh ] ; then
 A_restart="$(nvram get app_25_sh_status)"
 B_restart=`cat /etc/storage/app_25.sh | grep -v "^🔗" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+if [ "$A_restart" == "$B_restart" ] ; then
+ # 文件没更新，停止ping
+a1_tmp="X_allping"
+fi
  # 读取批量导入链接节点
 if [ ! -z "$(cat /etc/storage/app_25.sh | grep -v "^#" | grep -v "^$" | grep "vmess://\|ss://\|ssr://" )" ] && [ -z "$(cat /tmp/link/link_vmess.txt /tmp/link/link_ss.txt | grep -v "^#" | grep -v '^\]' | grep -v "ACL3List = " | grep -v "ACL4List = " | grep -v "^$")" ] ; then
 A_restart=""
@@ -2227,6 +2238,7 @@ rm -f /tmp/link/link_vmess.txt
 rm -f /tmp/link/link_ss.txt
 do_link "/etc/storage/app_25.sh" "app_25"
 logger -t "【v2ray】" "批量导入链接节点：完成解码"
+if [ "$a1_tmp" != "X_allping" ] ; then
 vmess_link_ping=`nvram get app_68`
 vmess_x_tmp="`nvram get app_83`"
 if [ "$vmess_x_tmp" != "ping_link" ] ; then
@@ -2243,12 +2255,13 @@ fi
 fi
 fi
 fi
+fi
 
 }
 
 v2ray_link_v2_matching(){
 
-[ ! -f /www/link/link.js ] && logger -t "【自动选用节点】" "错误！找不到 /www/link/link.js" && return 1
+check_app_25 "X_allping"
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then

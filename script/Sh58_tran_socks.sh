@@ -219,8 +219,8 @@ sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'
 sstp_set proxy_tcpport='1098'
 sstp_set proxy_udpport='1098'
-sstp_set proxy_startcmd='echo'
-sstp_set proxy_stopcmd='echo'
+sstp_set proxy_startcmd='date'
+sstp_set proxy_stopcmd='date'
 ## dns
 DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="114.114.114.114"
