@@ -198,6 +198,8 @@ sstp_set ipv4='true' ; sstp_set ipv6='false' ;
 sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
 sstp_set tcponly='false' # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
+nvram set app_112="0"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
+nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
 sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
 ## proxy
