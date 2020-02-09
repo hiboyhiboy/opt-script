@@ -1758,7 +1758,7 @@ check_dnsredir() {
 	[ ! -z "$ipts_reddns_ip" ] && is_ipv4_ipts $1 && direct_dns_ip="$ipts_reddns_ip"
 
 	$1 -t nat -N SSTP_PREROUTING  &>/dev/null
-	$1 -t nat -A SSTP_PREROUTING  -m addrtype ! --src-type LOCAL --dst-type LOCAL -p udp --dport 53 -j DNAT --to-destination $direct_dns_ip
+	$1 -t nat -A SSTP_PREROUTING  -m addrtype ! --src-type LOCAL -p udp --dport 53 -j DNAT --to-destination $direct_dns_ip
 	$1 -t nat -N SSTP_POSTROUTING &>/dev/null
 	$1 -t nat -A SSTP_POSTROUTING -m addrtype ! --src-type LOCAL -p udp -d $direct_dns_ip --dport 53 -j MASQUERADE &>/dev/null
 }
@@ -1771,7 +1771,7 @@ check_startdnsredir() {
 	[ ! -z "$ipts_reddns_ip" ] && is_ipv4_ipts $1 && direct_dns_ip="$ipts_reddns_ip"
 
 	$1 -t nat -N SSTP_PREROUTING  &>/dev/null
-	$1 -t nat -I SSTP_PREROUTING  -m addrtype ! --src-type LOCAL --dst-type LOCAL -p udp --dport 53 -j DNAT --to-destination $direct_dns_ip
+	$1 -t nat -I SSTP_PREROUTING  -m addrtype ! --src-type LOCAL -p udp --dport 53 -j DNAT --to-destination $direct_dns_ip
 }
 
 check_snatrule() {

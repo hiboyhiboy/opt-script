@@ -1,4 +1,4 @@
-sh_ss_tproxy=63e9c083822a546419e96e1d2efc684b
+sh_ss_tproxy=7b3e42d2a09024070bab8b079ed07e8b
 sh_opt_script_check=4034dd1f0038cdf0f3717f6f8cabd730
 sh_link=b9c9a6a503bdc77a5d658b39cbba12d3
 sh_ezscript=5f31f6a5deb3e1bb8534d1fca8b12de5
@@ -63,6 +63,6 @@ Sh04_mento_hust=88f831f653d30163cce83ba10e64f17f
 Sh03_jbls=cdb022feac984d086359c963a8743561
 Sh02_kms=73c0fefab4e8acf09098784a5dc93c84
 Sh01_mountopt=bb6cfc96ed867444a01f42fbc77f9c9e
-sh_upscript=c6c01a1c4c884a0dc4d933e310d59368
-scriptt=2020-02-09
+sh_upscript=89be83ec2c20d7bb0a5fc62a4d74e60f
+scriptt=2020-02-09a
 nvram set pdcn_uuid_enable=0 # 关闭固件使用情况统计
