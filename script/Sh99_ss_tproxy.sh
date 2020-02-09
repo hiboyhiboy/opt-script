@@ -345,16 +345,31 @@ exit 0
 ipt_m_check () {
 NUM=`iptables -m addrtype -h 2>&1 | grep 'type\ type' | wc -l`
 if [ "$NUM" == "0" ] ; then
+rm -f /tmp/webui_yes
 logger -t "【ss_tproxy】" "【错误】！！！固件缺少 iptables -m addrtype 模块"
 logger -t "【ss_tproxy】" "【错误】！！！需要升级固件才能使用 ss_tproxy 脚本"
-ss_tproxy_enable=0
-nvram set app_109=0
+rm -f /tmp/script/_opt_script_check
+kill_ps "_opt_script_check"
+kill_ps "Sh99_ss_tproxy.sh"
+kill_ps "sh_ss_tproxy.sh"
+kill_ps "Sh09_chinadns_ng.sh"
+kill_ps "Sh10_clash.sh"
+kill_ps "Sh15_ss.sh"
+kill_ps "Sh18_v2ray.sh"
+kill_ps "Sh39_ipt2socks.sh"
+kill_ps "Sh58_tran_socks.sh"
 logger -t "【ss_tproxy】" "现在退回固件的原始脚本"
 # 解压脚本
 tar -xzvf /etc_ro/script.tgz -C /etc/storage/
 [ -s /etc/storage/script/init.sh ] && chmod 777 /etc/storage/script -R
-# 重置防火墙
-restart_firewall
+sync;echo 3 > /proc/sys/vm/drop_caches
+[ -s /dev/null ] && { rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null; }
+# 重启脚本功能
+rm -f /tmp/script.lock
+sh_0_script.sh &
+ss_tproxy_enable=0
+nvram set app_109=0
+nvram save
 exit
 fi
 }

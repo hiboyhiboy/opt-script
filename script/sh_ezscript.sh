@@ -276,7 +276,6 @@ button_3 &
 button_3 () {
 
 # 按钮状态检测子程序
-sleep 1
 port=$(iptables -t nat -L | grep 'AD_BYBY_to' | wc -l)
 if [ "$port" -ge 1 ] ; then
 	nvram set button_script_1="1"

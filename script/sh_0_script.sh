@@ -4,9 +4,12 @@
 #/etc/storage/script_script.sh
 source /etc/storage/script/init.sh
 [ -f /tmp/script.lock ] && exit 0
+kill_ps "sh_0_script.sh"
+rm -f /tmp/webui_yes
+rm -f /tmp/script/_opt_script_check
 touch /tmp/script.lock
 touch /tmp/script_script_yes
-[ ! -z "$(cat /tmp/syslog.log | grep "SPI flash chip"| grep 32768)" ] && nvram set cmd_reboot_enable=1
+[ ! -z "$(cat /tmp/syslog.log | grep "SPI flash chip"| grep 32768)" ] && { nvram set cmd_reboot_enable=1 ; nvram save ; }
 . /etc/storage/script0_script.sh
 ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
 ln -sf "/etc/storage/init.status" "/etc/init.status"
@@ -21,7 +24,7 @@ sed -Ei '/github|ipip.net|_vlmcs._tcp|txt-record=_jetbrains-license-server.lan|a
 sed -Ei "/\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 rm -f /tmp/ss/dnsmasq.d/*
 killall crond
-restart_dhcpd ; sleep 1
+restart_dhcpd
 [ -f /tmp/menu_title_re ] && /etc/storage/www_sh/menu_title.sh re &
 mkdir -p /tmp/script
 { echo '#!/bin/sh' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' ; } > /tmp/script/_mountopt
