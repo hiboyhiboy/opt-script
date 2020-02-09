@@ -507,6 +507,8 @@ fi
 }
 
 check_link () {
+
+a2_tmp="$1"
 ssr_link="`nvram get ssr_link`"
 ss_link_up=`nvram get ss_link_up`
 ss_link_ping=`nvram get ss_link_ping`
@@ -536,13 +538,14 @@ if [ -f /www/link/link.js ] && [ "$(sed -n 1p /www/link/link.js)" != "var ACL2Li
 	echo "var ACL2List = [[], " > /www/link/link.js
 	echo '[]]' >> /www/link/link.js
 fi
+if [ "$a2_tmp" != "X_check_app_24" ] ; then
 check_app_24
+fi
 }
 
 check_app_24 () {
 a1_tmp="$1"
-mkdir -p /etc/storage/link
-touch /etc/storage/link/link.js
+check_link "X_check_app_24"
 touch /etc/storage/app_24.sh
 if [ -s /etc/storage/app_24.sh ] ; then
 A_restart="$(nvram get app_24_sh_status)"
