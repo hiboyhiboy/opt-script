@@ -60,7 +60,7 @@ exit 0
 guestkit_get_status () {
 
 A_restart=`nvram get guestkit_status`
-B_restart="$guestkit_enable"
+B_restart="$guestkit_enable$(cat /etc/storage/app_28.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set guestkit_status=$B_restart
@@ -162,7 +162,55 @@ fi
 }
 
 initconfig () {
-echo "initconfig"
+
+app_28="/etc/storage/app_28.sh"
+if [ ! -f "$app_28" ] || [ ! -s "$app_28" ] ; then
+	cat > "$app_28" <<-\EEE
+#!/bin/sh
+# 此脚本路径：/etc/storage/app_28.sh
+POST_DATA=`nvram get app_28_post`
+# 更多自定义命令请自行参考添加修改
+# "1" 数字是亮度值，当设定值匹配时运行代码，1-100可用
+if [ "$POST_DATA" = "1" ]; then
+  radio2_guest_enable
+  radio5_guest_enable
+  REPLY_DATA="打开网络"
+fi
+
+if [ "$POST_DATA" = "2" ]; then
+  radio2_guest_disable
+  radio5_guest_disable
+  REPLY_DATA="停用网络"
+fi
+
+if [ "$POST_DATA" = "3" ]; then
+  # 下面的00:00:00:00:00:00改为电脑网卡地址即可唤醒
+  ether-wake -b -i br0 00:00:00:00:00:00
+  REPLY_DATA="打开电脑"
+fi
+
+if [ "$POST_DATA" = "4" ]; then
+  nvram set ss_status=0
+  nvram set ss_enable=1
+  nvram commit
+  /tmp/script/Sh15_ss.sh &
+  REPLY_DATA="打开代理"
+fi
+
+if [ "$POST_DATA" = "5" ]; then
+  nvram set ss_status=1
+  nvram set ss_enable=0
+  nvram commit
+  /tmp/script/Sh15_ss.sh &
+  REPLY_DATA="关闭代理"
+fi
+
+logger -t "【guestkit】" "运行 $POST_DATA $REPLY_DATA"
+
+EEE
+	chmod 755 "$app_28"
+fi
+
 }
 
 initconfig
