@@ -358,18 +358,21 @@ kill_ps "Sh15_ss.sh"
 kill_ps "Sh18_v2ray.sh"
 kill_ps "Sh39_ipt2socks.sh"
 kill_ps "Sh58_tran_socks.sh"
-logger -t "【ss_tproxy】" "现在退回固件的原始脚本"
-# 解压脚本
-tar -xzvf /etc_ro/script.tgz -C /etc/storage/
-[ -s /etc/storage/script/init.sh ] && chmod 777 /etc/storage/script -R
-sync;echo 3 > /proc/sys/vm/drop_caches
-[ -s /dev/null ] && { rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null; }
-# 重启脚本功能
-rm -f /tmp/script.lock
-sh_0_script.sh &
+logger -t "【ss_tproxy】" "现在自动更新固件"
+rm -f /tmp/webui_yes
+rm -f /tmp/script/_opt_script_check
+mtd_storage.sh save
+nvram set upscript_enable=0
 ss_tproxy_enable=0
 nvram set app_109=0
 nvram save
+#一键自动更新固件脚本
+wget -q -O- https://opt.cn2qq.com/opt-script/up.sh > /tmp/up.sh && bash < /tmp/up.sh
+sleep 5
+mtd_write -r unlock mtd1
+sleep 5
+reboot
+sleep 5
 exit
 fi
 }
