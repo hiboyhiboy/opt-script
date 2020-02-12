@@ -181,31 +181,17 @@ if [ "$cmd_log_enable" = "1" ] || [ "$ss_renum" -gt "0" ] ; then
 fi
 fi
 
-#检查 ssrr 协议
-if [ "$ss_type" != "1" ] ; then
-ssrr_type=0
-else
-ssrr_custom="$(echo $ss_usage | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
-if [ ! -z "$ssrr_custom" ] ; then 
-ssrr_type=1
-fi
-fi
-
 #SS插件参数
-if [ "$ss_type" != "1" ] ; then 
-	ss_plugin_name="`nvram get ss_plugin_name`"
-	ss_plugin_config="`nvram get ss_plugin_config`"
-	[ ! -z "$(echo "$ss_plugin_config" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
-	[ ! -z "$(echo "$ss_usage" | grep gq-client)" ] && ss_plugin_name="gq-client" && nvram set ss_plugin_name="gq-client"
-	[ ! -z "$(echo "$ss_usage" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
-	[ ! -z "$(echo "$ss_usage" | grep ck-client)" ] && ss_plugin_name="ck-client" && nvram set ss_plugin_name="ck-client"
-	[ ! -z "$(echo "$ss_usage" | grep kcptun)" ] && ss_plugin_name="kcptun" && nvram set ss_plugin_name="kcptun"
-	[ ! -z "$(echo "$ss_usage" | grep v2ray-plugin)" ] && ss_plugin_name="v2ray-plugin" && nvram set ss_plugin_name="v2ray-plugin"
-	[ -z "$ss_plugin_config" ] && ss_plugin_name="" && nvram set ss_plugin_name=""
-else
-	ss_plugin_name=""
-		ss_plugin_config=""
-	fi
+ss_plugin_name="`nvram get ss_plugin_name`"
+ss_plugin_config="`nvram get ss_plugin_config`"
+[ ! -z "$(echo "$ss_plugin_config" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
+[ ! -z "$(echo "$ss_usage" | grep gq-client)" ] && ss_plugin_name="gq-client" && nvram set ss_plugin_name="gq-client"
+[ ! -z "$(echo "$ss_usage" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
+[ ! -z "$(echo "$ss_usage" | grep ck-client)" ] && ss_plugin_name="ck-client" && nvram set ss_plugin_name="ck-client"
+[ ! -z "$(echo "$ss_usage" | grep kcptun)" ] && ss_plugin_name="kcptun" && nvram set ss_plugin_name="kcptun"
+[ ! -z "$(echo "$ss_usage" | grep v2ray-plugin)" ] && ss_plugin_name="v2ray-plugin" && nvram set ss_plugin_name="v2ray-plugin"
+[ -z "$ss_plugin_config" ] && ss_plugin_name="" && nvram set ss_plugin_name=""
+
 
 if [ "$ss_enable" != "0" ] ; then
 	kcptun_server=`nvram get kcptun_server`
@@ -459,7 +445,10 @@ fi
 
 # 高级启动参数分割
 ss_usage="$(usage_switch "$ss_usage")"
-if [ "$ss_type" = "1" ] ; then 
+ssr_obfs=""
+ssr_protocol=""
+ssr_type_obfs_custom=""
+ssr_type_protocol_custom=""
 # 混淆插件方式
 ss_usage_custom="$(echo "$ss_usage" | grep -Eo '\-o[ ]+[^丨]+')"
 if [ ! -z "$ss_usage_custom" ] ; then
@@ -472,26 +461,42 @@ if [ ! -z "$ss_usage_custom" ] ; then
 	ssr_protocol="$(echo $ss_usage_custom | sed -e "s@^-O@@g" | sed -e "s@ @@g")"
 	logger -t "【SS】" "ssr协议插件方式: $ssr_protocol"
 fi
-# 混淆参数
-ssr_type_obfs_custom="`nvram get ssr_type_obfs_custom`"
-ss_usage_obfs_custom="$(echo "$ss_usage" | grep -Eo '\-g[ ]+[^丨]+')"
-if [ ! -z "$ss_usage_obfs_custom" ] ; then 
-	ssr_type_obfs_custom="$(echo $ss_usage_obfs_custom | sed -e "s@^-g@@g" | sed -e "s@^ @@g")"
-	logger -t "【SS】" "高级启动参数选项内容含有 -g $ssr_type_obfs_custom ，优先使用此 混淆参数"
-fi
-# 协议参数
-ssr_type_protocol_custom="`nvram get ssr_type_protocol_custom`"
-ss_usage_protocol_custom="$(echo "$ss_usage" | grep -Eo '\-G[ ]+[^丨]+')"
-if [ ! -z "$ss_usage_protocol_custom" ] ; then 
-	ssr_type_protocol_custom="$(echo $ss_usage_protocol_custom | sed -e "s@^-G@@g" | sed -e "s@ @@g")"
-	logger -t "【SS】" "高级启动参数选项内容含有 -G $ssr_type_protocol_custom ，优先使用此 协议参数"
-fi
+
+[ -z "$ssr_obfs" ] && ssr_obfs="plain"
+[ -z "$ssr_protocol" ] && ssr_protocol="origin"
+if [ "$ssr_obfs" == "plain" ] && [ "$ssr_protocol" == "origin" ] ; then
+ # SS 原本协议
+ ss_type=0
+ nvram set ss_type=$ss_type
+	ssr_obfs=""
+	ssr_protocol=""
+	ssr_type_obfs_custom=""
+	ssr_type_protocol_custom=""
 else
-ssr_type_obfs_custom=""
-ssr_type_protocol_custom=""
-ssr_protocol=""
-ssr_obfs=""
+ # SSR 协议
+ ss_type=1
+ nvram set ss_type=$ss_type
+ ssrr_custom="$(echo $ssr_protocol | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
+ if [ ! -z "$ssrr_custom" ] ; then 
+	# SSRR 协议
+	ssrr_type=1
+ fi
+	# 混淆参数
+	ssr_type_obfs_custom="`nvram get ssr_type_obfs_custom`"
+	ss_usage_obfs_custom="$(echo "$ss_usage" | grep -Eo '\-g[ ]+[^丨]+')"
+	if [ ! -z "$ss_usage_obfs_custom" ] ; then 
+		ssr_type_obfs_custom="$(echo $ss_usage_obfs_custom | sed -e "s@^-g@@g" | sed -e "s@^ @@g")"
+		logger -t "【SS】" "高级启动参数选项内容含有 -g $ssr_type_obfs_custom ，优先使用此 混淆参数"
+	fi
+	# 协议参数
+	ssr_type_protocol_custom="`nvram get ssr_type_protocol_custom`"
+	ss_usage_protocol_custom="$(echo "$ss_usage" | grep -Eo '\-G[ ]+[^丨]+')"
+	if [ ! -z "$ss_usage_protocol_custom" ] ; then 
+		ssr_type_protocol_custom="$(echo $ss_usage_protocol_custom | sed -e "s@^-G@@g" | sed -e "s@ @@g")"
+		logger -t "【SS】" "高级启动参数选项内容含有 -G $ssr_type_protocol_custom ，优先使用此 协议参数"
+	fi
 fi
+
 # 插件名称
 ss_usage_custom="$(echo "$ss_usage" | grep -Eo '\-\-plugin[ ]+[^丨]+')"
 if [ ! -z "$ss_usage_custom" ] ; then

@@ -746,10 +746,13 @@ fi
 initconfig
 
 mount_check () {
-(
-	flock 101
+kill_ps "$scriptname"
+kill_ps "Sh01_mountopt.sh"
+kill_ps "_mountopt"
+ #(
+ #	flock 101
 mount_check_lock
-) 101>/var/lock/101_flock.lock
+ #) 101>/var/lock/101_flock.lock
 
 }
 
