@@ -247,6 +247,12 @@ fi
 dos2unix /tmp/ss/link/0_link.txt
 sed -e 's@\r@@g' -i /tmp/ss/link/0_link.txt
 sed -e '/^$/d' -i /tmp/ss/link/0_link.txt
+if [ ! -z "$(cat /tmp/ss/link/0_link.txt | grep "ssd://")" ] ; then
+	logger -t "【SS】" "解码【ssd://】订阅文件"
+	ssd_link /tmp/ss/link/0_link.txt /www/link/link.js
+	[ -f /www/link/link.js ] && { sed -Ei '/\[\]\]|^$/d' /www/link/link.js ; echo -n '[]]' >> /www/link/link.js ; }
+	return
+fi
 sed -e 's/$/&==/g' -i /tmp/ss/link/0_link.txt
 sed -e "s/_/\//g" -i /tmp/ss/link/0_link.txt
 sed -e "s/\-/\+/g" -i /tmp/ss/link/0_link.txt
@@ -404,6 +410,45 @@ if [ -f /tmp/ss/link/ss_link.txt ] ; then
 	done < /tmp/ss/link/ss_link.txt
 fi
 
+rm -rf /tmp/ss/link
+}
+
+ssd_link () {
+
+mkdir -p /tmp/ss/link
+mkdir -p /tmp/link
+rm -f /tmp/ss/link/ssd_link.txt
+cp $1 /tmp/ss/link/ssd_link.txt
+sed -e  's@ssd://@@g' -i /tmp/ss/link/ssd_link.txt
+ssd_jq_link="$(cat /tmp/ss/link/ssd_link.txt | sed -n '1p' | base64 -d)"
+ssd_port="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
+ssd_password="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
+ssd_encryption="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
+ssd_expiry="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["expiry"])')" # 时间
+ssd_airport="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["airport"])')" # 名称
+ssd_length="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers"]) | length')" # 数量
+ssd_length=$(( ssd_length - 1 ))
+if [ "$ssd_length" -gt 0 ] ; then
+	for ssd_x in $(seq 0 $ssd_length)
+	do
+	ssd_server="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"',"server"])')" # 服务器
+	ssd_remarks="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"',"remarks"])')" # 节点名称
+	ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
+	link_echo=""
+	link_echo="$link_echo"'["'"🔗$(base64encode "$ssd_remarks")"'", '
+	link_echo="$link_echo"'"'"$ssd_server"'", '
+	link_echo="$link_echo"'"'"$ssd_port"'", '
+	link_echo="$link_echo"'"'"$(base64encode "$ssd_password")"'", '
+	link_echo="$link_echo"'"'"$ssd_encryption"'", '
+	link_echo="$link_echo"'"", '
+	link_echo="$link_echo"'"", '
+	link_echo="$link_echo"'"'"$(base64encode "$ss_link_plugin_opts")"'", '
+	link_echo="$link_echo"'"ss"], '
+	echo "$link_echo" >> $2
+	sed -Ei '/\[\]\]|dellink_ss|^$/d' $2
+	echo '[]]' >> $2
+	done
+fi
 rm -rf /tmp/ss/link
 }
 

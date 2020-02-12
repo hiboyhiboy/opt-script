@@ -2021,6 +2021,11 @@ fi
 dos2unix /tmp/vmess/link/0_link.txt
 sed -e 's@\r@@g' -i /tmp/vmess/link/0_link.txt
 sed -e '/^$/d' -i /tmp/vmess/link/0_link.txt
+if [ ! -z "$(cat /tmp/vmess/link/0_link.txt | grep "ssd://")" ] ; then
+	logger -t "【SS】" "解码【ssd://】订阅文件"
+	ssd_link /tmp/vmess/link/0_link.txt /www/link/ss.js
+	return
+fi
 sed -e 's/$/&==/g' -i /tmp/vmess/link/0_link.txt
 sed -e "s/_/\//g" -i /tmp/vmess/link/0_link.txt
 sed -e "s/\-/\+/g" -i /tmp/vmess/link/0_link.txt
@@ -2215,6 +2220,53 @@ if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
 	done < /tmp/vmess/link/ss_link2.txt
 fi
 
+rm -rf /tmp/vmess/link/*
+}
+ssd_link () {
+
+mkdir -p /tmp/vmess/link
+mkdir -p /tmp/link
+rm -f /tmp/vmess/link/ssd_link.txt
+cp $1 /tmp/vmess/link/ssd_link.txt
+sed -e  's@ssd://@@g' -i /tmp/vmess/link/ssd_link.txt
+ssd_jq_link="$(cat /tmp/vmess/link/ssd_link.txt | sed -n '1p' | base64 -d)"
+ssd_encryption="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
+if [ "$ssd_encryption" == "aes-256-cfb" ] || [ "$ssd_encryption" == "aes-128-cfb" ] || [ "$ssd_encryption" == "chacha20" ] || [ "$ssd_encryption" == "chacha20-ietf" ] || [ "$ssd_encryption" == "aes-256-gcm" ] || [ "$ssd_encryption" == "aes-128-gcm" ] || [ "$ssd_encryption" == "chacha20-poly1305" ] || [ "$ssd_encryption" == "chacha20-ietf-poly1305" ] ; then
+ssd_port="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
+ssd_password="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
+ssd_expiry="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["expiry"])')" # 时间
+ssd_airport="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["airport"])')" # 名称
+ssd_length="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers"]) | length')" # 数量
+ssd_length=$(( ssd_length - 1 ))
+if [ "$ssd_length" -gt 0 ] ; then
+	for ssd_x in $(seq 0 $ssd_length)
+	do
+	ssd_server="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"',"server"])')" # 服务器
+	ssd_remarks="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"',"remarks"])')" # 节点名称
+	ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
+		link_echo=""
+		link_echo="$link_echo"'["ss", '
+		vmess_link_ps="$ssd_remarks"
+		ss_link_name="$(base64encode "$ssd_remarks")"
+		link_echo="$link_echo"'"'"$ss_link_name"'", '
+		link_echo="$link_echo"'"'"$ssd_server"'", '
+		vmess_link_add="$ssd_server"
+		link_echo="$link_echo"'"'"$ssd_port"'", '
+		ss_link_password="$(base64encode "$ssd_password")"
+		link_echo="$link_echo"'"'"$ss_link_password"'", '
+		link_echo="$link_echo"'"'"$ssd_encryption"'", '
+		link_echo="$link_echo"'"", '
+		link_echo="$link_echo"'"", '
+		ss_link_plugin_opts="$(base64encode "$ss_link_plugin_opts")"
+		link_echo="$link_echo"'"'"$ss_link_plugin_opts"'", '
+		link_echo="$link_echo"'"0", '
+		link_echo="$link_echo"'"end"]]'
+		sed -Ei "s@]]@],@g" /www/link/ss.js
+		sed -Ei '/^\]|^$/d' /www/link/ss.js
+		echo "$link_echo" >> /www/link/ss.js
+	done
+fi
+fi
 rm -rf /tmp/vmess/link/*
 }
 
