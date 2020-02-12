@@ -17,6 +17,8 @@ clash_optput=`nvram get app_93`
 clash_ui=`nvram get app_94`
 [ -z $clash_ui ] && clash_ui="0.0.0.0:9090" && nvram set app_94="0.0.0.0:9090"
 lan_ipaddr=`nvram get lan_ipaddr`
+app_default_config=`nvram get app_115`
+[ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
@@ -89,7 +91,7 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch"
+B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch$app_default_config"
 B_restart="$B_restart""$(cat /etc/storage/app_20.sh /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -185,6 +187,15 @@ if [ ! -d "/opt/app/clash/clash_webs" ] ; then
 	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
 fi
 
+if [ "$app_default_config" = "1" ] ; then
+logger -t "【clash】" "不改写配置，直接使用原始配置启动！（有可能端口不匹配导致功能失效）"
+logger -t "【clash】" "请手动修改配置， HTTP 代理端口：7890"
+logger -t "【clash】" "请手动修改配置， SOCKS5 代理端口：7891"
+logger -t "【clash】" "请手动修改配置，透明代理端口：7892"
+mkdir -p /opt/app/clash/config
+cp -f /etc/storage/app_20.sh /opt/app/clash/config/config.yaml
+else
+ # 改写配置适配脚本
 logger -t "【clash】" "初始化 clash dns 配置"
 mkdir -p /tmp/clash
 config_dns_yml="/tmp/clash/dns.yml"
@@ -269,7 +280,8 @@ logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与
 cat /tmp/clash/dns.yml >> $config_yml
 #yq m -x -i $config_yml /tmp/clash/dns.yml
 #rm_temp
-merge_dns_ip
+#merge_dns_ip
+fi
 fi
 logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
 if [ ! -s /opt/app/clash/config/Country.mmdb ] ; then
@@ -669,7 +681,7 @@ update_app () {
 update_init
 mkdir -p /opt/app/clash
 if [ "$1" = "del" ] ; then
-	rm -rf /opt/app/clash/Advanced_Extensions_clash.asp /opt/bin/clash /opt/app/clash/config/Country.mmdb /opt/app/clash/clash_webs
+	rm -rf /opt/app/clash/Advanced_Extensions_clash.asp /opt/bin/clash /opt/app/clash/config/Country.mmdb /opt/app/clash/config/Country_mmdb /opt/app/clash/clash_webs
 fi
 
 initconfig

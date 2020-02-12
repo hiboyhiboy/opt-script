@@ -630,6 +630,7 @@ off_stop)
 	nvram set app_109=0
 	nvram set ss_tproxy_status=""
 	nvram set ss_tproxy_auser=""
+	auser_a=""
 	ss_tproxy_check
 	exit
 	;;

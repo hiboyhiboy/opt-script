@@ -22,6 +22,8 @@ mk_mode_routing=`nvram get app_108`
 transocks_mode_x=`nvram get app_28`
 [ -z $transocks_mode_x ] && transocks_mode_x=0 && nvram set app_28=0
 lan_ipaddr=`nvram get lan_ipaddr`
+app_default_config=`nvram get app_115`
+[ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 if [ "$v2ray_enable" != "0" ] ; then
 app_98="$(nvram get app_98)"
@@ -116,7 +118,7 @@ exit 0
 v2ray_get_status () {
 
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$chinadns_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$chinadns_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set v2ray_status=$B_restart
@@ -416,6 +418,12 @@ if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
 	[ "$v2ray_http_format" = "1" ] && su_cmd2="$v2ray_path -format json -config $v2ray_http_config"
 	[ "$v2ray_http_format" = "2" ] && su_cmd2="$v2ray_path -format pb  -config $v2ray_http_config"
 else
+	if [ "$app_default_config" = "1" ] ; then
+	logger -t "【v2ray】" "不改写配置，直接使用原始配置启动！（有可能端口不匹配导致功能失效）"
+	logger -t "【v2ray】" "请手动修改配置，透明代理端口：$v2ray_door"
+	cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
+	else
+	# 改写配置适配脚本
 	if [ "$mk_mode_routing" != "0" ]  ; then
 	json_mk_ss_tproxy
 	else
@@ -425,6 +433,7 @@ else
 	if [ ! -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] && [ "$v2ray_follow" == "0" ] ; then
 		logger -t "【v2ray】" "不是透明代理模式，变更配置含内置 DNS 端口 listen 0.0.0.0:8055"
 		sed -Ei s/8053/8055/g /tmp/vmess/mk_vmess.json
+	fi
 	fi
 	if [ ! -f "/tmp/vmess/mk_vmess.json" ] || [ ! -s "/tmp/vmess/mk_vmess.json" ] ; then
 	logger -t "【v2ray】" "错误！实际运行配置： /tmp/vmess/mk_vmess.json 文件内容为空"
@@ -528,8 +537,8 @@ sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'
-sstp_set proxy_tcpport='1099'
-sstp_set proxy_udpport='1099'
+sstp_set proxy_tcpport="$v2ray_door"
+sstp_set proxy_udpport="$v2ray_door"
 sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
