@@ -135,8 +135,6 @@ ss_upd_rules=`nvram get ss_upd_rules`
 
 ss_usage=" `nvram get ss_usage`"
 
-
-touch /etc/storage/shadowsocks_mydomain_script.sh
 LAN_AC_IP=`nvram get LAN_AC_IP`
 [ -z $LAN_AC_IP ] && LAN_AC_IP=0 && nvram set LAN_AC_IP=$LAN_AC_IP
 
@@ -1674,7 +1672,6 @@ if [ ! -f "$shadowsocks_ss_spec_lan" ] || [ ! -s "$shadowsocks_ss_spec_lan" ] ; 
 #@1,099B9A909FD9
 #@2,A9:CB:3A:5F:1F:C7
 
-
 EEE
 	chmod 755 "$shadowsocks_ss_spec_lan"
 fi
@@ -1692,13 +1689,13 @@ if [ ! -f "$shadowsocks_ss_spec_wan" ] || [ ! -s "$shadowsocks_ss_spec_wan" ] ; 
 # 网址域名：必须以 @ 符号开头，如 @b,abc.net，匹配 abc.net、*.abc.net
 # 注意：修改此文件需重启 ss_tproxy 生效，另外请删除每行首尾多余的空白符
 # 注释：以井号开头的行以及空行都视为注释行
-
+# 
 # DNS
 g,8.8.8.8
 g,8.8.4.4
 g,208.67.222.222
 g,208.67.220.220
-
+# 
 # Telegram IPv4
 g,91.108.4.0/22
 g,91.108.8.0/22
@@ -1728,11 +1725,11 @@ g,109.239.140.0/24
 g,67.198.55.0/24
 g,91.108.56.172
 g,149.154.175.50
-
+# 
 # Telegram IPv6
 ~g,2001:67c:4e8::/48
 ~g,2001:0b28:f23d::/48
-
+# 
 # api
 @g,api.telegram.org
 @g,raw.githubusercontent.com
@@ -1745,7 +1742,7 @@ g,149.154.175.50
 @b,www.ipip.net
 @b,alidns.aliyuncs.com
 @b,services.googleapis.cn
-
+# 
 # 以下样板是四个网段分别对应BLZ的美/欧/韩/台服
 #g,24.105.0.0/18
 #g,80.239.208.0/20
@@ -1755,6 +1752,14 @@ g,149.154.175.50
 EEE
 	chmod 755 "$shadowsocks_ss_spec_wan"
 fi
+
+# 删除空行
+echo "" >> $shadowsocks_ss_spec_wan
+echo "" >> $shadowsocks_ss_spec_lan
+echo "" >> /etc/storage/shadowsocks_mydomain_script.sh
+sed -Ei '/^$/d' $shadowsocks_ss_spec_wan
+sed -Ei '/^$/d' $shadowsocks_ss_spec_lan
+sed -Ei '/^$/d' /etc/storage/shadowsocks_mydomain_script.sh
 
 }
 
