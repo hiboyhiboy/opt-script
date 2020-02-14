@@ -676,10 +676,10 @@ echo '[]]' >> /www/link/link.js
 dellink_ss () {
 
 shift
-shift
-if [ -z "$(echo "$1" | grep "A")" ] ; then
+
 while [ $# != 0 ]
 do
+if [ -z "$(echo "$1" | grep "A")" ] && [ -z "$(echo "$1" | grep "ss")" ] && [ ! -z "$1" ] ; then
 del_x="$1"
 del_x="$(echo "$del_x" | tr -d '_' | tr -d ' ')"
 [ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -gt 0 ] || del_x="0" ; }
@@ -690,21 +690,19 @@ if [ "$del_x" -gt 1 ] ; then
 		sed -i "$del_x"'{N;s/🔗//}' /www/link/link.js
 	fi
 fi
-shift
-done
-sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-echo '[]]' >> /www/link/link.js
-else
-while [ $# != 0 ]
-do
+
+fi
+if [ ! -z "$(echo "$1" | grep "A")" ] && [ -z "$(echo "$1" | grep "ss")" ] && [ ! -z "$1" ] ; then
 del_x="$1"
 del_x="$(echo "$del_x" | tr -d 'A' | tr -d '_' | tr -d ' ')"
 [ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -gt 0 ] || del_x="0" ; }
 [ -s /etc/storage/app_24.sh ] && sed -i "$del_x""c dellink_ss" /etc/storage/app_24.sh
+fi
 shift
 done
+sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
+echo '[]]' >> /www/link/link.js
 sed -Ei '/dellink_ss|^$/d' /etc/storage/app_24.sh
-fi
 }
 
 if [ "$sh_link_sh" != "sh_link_sh" ] ; then
@@ -717,7 +715,7 @@ addlink)
 dellink)
 	check_link
 	logger -t "【SS】" "dellink： $@"
-	[ "$2" = "ss" ] || [ "$2" = "ssr" ]  && { [ -f /www/link/link.js ] && dellink_ss $@ ; }
+	[ -f /www/link/link.js ] && dellink_ss $@
 	;;
 stop)
 	check_link

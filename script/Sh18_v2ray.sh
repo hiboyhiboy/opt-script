@@ -118,7 +118,7 @@ exit 0
 v2ray_get_status () {
 
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$chinadns_enable$ss_link_2$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$chinadns_enable$ss_link_2$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set v2ray_status=$B_restart
