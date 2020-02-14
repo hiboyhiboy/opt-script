@@ -362,11 +362,11 @@ if [ -f /tmp/ss/link/ssr_link.txt ] ; then
 			#link_echo="$link_echo"'"-o '"$ss_link_obfs"' -O '"$ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
 			link_echo="$link_echo"'"'"$(base64encode "-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam --plugin --plugin-opts ")"'", '
 			#SS:-o plain -O origin  
-			if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
-			link_echo="$link_echo"'"ss"], '
-			else
+			#if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
+			#link_echo="$link_echo"'"ss"], '
+			#else
 			link_echo="$link_echo"'"ssr"], '
-			fi
+			#fi
 			echo "$link_echo" >> $2
 			sed -Ei '/\[\]\]|dellink_ss|^$/d' $2
 			echo '[]]' >> $2
@@ -415,6 +415,13 @@ rm -rf /tmp/ss/link
 
 ssd_link () {
 
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+jq_check
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【SS】" "错误！找不到 jq 程序"
+	return 1
+fi
+fi
 mkdir -p /tmp/ss/link
 mkdir -p /tmp/link
 rm -f /tmp/ss/link/ssd_link.txt
@@ -622,6 +629,30 @@ fi
 fi
 fi
 
+}
+
+jq_check () {
+
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
+	/tmp/script/_mountopt start
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
+	rm -f /opt/bin/jq
+	/tmp/script/_mountopt optwget
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	opkg update
+	opkg install jq
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【jq_check】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
+	return 1
+fi
+fi
+fi
+fi
+fi
 }
 
 addlink_ss () {

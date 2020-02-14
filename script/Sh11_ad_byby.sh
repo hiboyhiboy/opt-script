@@ -11,7 +11,6 @@ if [ "$adbyby_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep adbyby | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 adbyby_mode_x=`nvram get adbyby_mode_x`
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
-ss_link_1=`nvram get ss_link_1`
 adbyby_update=`nvram get adbyby_update`
 adbyby_update_hour=`nvram get adbyby_update_hour`
 adbyby_update_min=`nvram get adbyby_update_min`
@@ -177,7 +176,7 @@ exit 0
 adbyby_get_status () {
 
 A_restart=`nvram get adbyby_status`
-B_restart="$adbyby_enable$ss_link_1$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$adbyby_whitehost_x$adbyby_whitehost$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adbyby_enable$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$adbyby_whitehost_x$adbyby_whitehost$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set adbyby_status=$B_restart
@@ -239,30 +238,15 @@ killall -9 sh_ad_byby_keey_k.sh
 /tmp/sh_ad_byby_keey_k.sh &
 
 rm -f /tmp/cron_adb.lock
-reb="1"
-[ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
-[ -z $ss_link_1 ] && ss_link_1="www.miui.com" && nvram set ss_link_1="www.miui.com"
-[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 while true; do
 adbyby_enable=`nvram get adbyby_enable`
 [ "$adbyby_enable" != "1" ] && exit
 [ ! -s "/tmp/bin/adbyby" ] && logger -t "【Adbyby】" "重新启动" && adbyby_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
-	if [ "$reb" -gt 5 ] && [ "$(cat /tmp/reb.lock)x" == "1x" ] ; then
-		LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
-		echo '['$LOGTIME'] 网络连接中断['$reb']，reboot.' >> /opt/log.txt 2>&1
-		sleep 5
-		reboot
-	fi
-	check1="404"
-	check2="404"
-	check_timeout_network "wget_check"
-	if [ "$check1" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
-		reb=1
+	if [ ! -f /tmp/cron_adb.lock ] ; then
 		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 
-			logger -t "【Adbyby】" "网络连接正常"
 			logger -t "【Adbyby】" "找不到进程, 重启 adbyby"
 			adbyby_flush_rules
 			killall -15 adbyby
@@ -270,7 +254,6 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			sleep 3
 			/tmp/bin/adbyby &
 			sleep 20
-			reb=`expr $reb + 1`
 		fi
 		if [ "$PIDS" -gt 2 ] ; then 
 			logger -t "【Adbyby】" "进程重复, 重启 adbyby"
@@ -296,22 +279,6 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 				logger -t "【Adbyby】" "找不到AD_BYBY_to转发规则, 重新添加"
 				adbyby_add_rules
 			fi
-	else
-		# logger -t "【Adbyby】" "网络连接中断 $reb, 关闭 adbyby"
-		port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
-		while [[ "$port" != 0 ]] 
-		do
-			logger -t "【Adbyby】" "网络连接中断 $reb, 关闭 adbyby"
-			adbyby_flush_rules
-			port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
-			sleep 5
-		done
-		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | wc -l)
-		if [ "$PIDS" != 0 ] ; then 
-			killall -15 adbyby
-			killall -9 adbyby
-		fi
-		reb=`expr $reb + 1`
 	fi
 	sleep 211
 fi

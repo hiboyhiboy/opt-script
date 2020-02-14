@@ -19,6 +19,7 @@ clash_ui=`nvram get app_94`
 lan_ipaddr=`nvram get lan_ipaddr`
 app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
+[ -s /etc/storage/script/Sh99_ss_tproxy.sh ] && /etc/storage/script/Sh99_ss_tproxy.sh initconfig
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`

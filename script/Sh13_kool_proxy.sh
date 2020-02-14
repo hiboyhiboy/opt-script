@@ -11,7 +11,6 @@ if [ "$koolproxy_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep koolproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 adbyby_mode_x=`nvram get adbyby_mode_x`
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
-ss_link_1=`nvram get ss_link_1`
 koolproxy_auto=`nvram get koolproxy_auto`
 koolproxy_video=`nvram get koolproxy_video`
 lan_ipaddr=`nvram get lan_ipaddr`
@@ -21,7 +20,6 @@ koolproxy_adblock=`nvram get koolproxy_adblock`
 adbyby_CPUAverages=`nvram get adbyby_CPUAverages`
 ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
 ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
-ss_link_1=`nvram get ss_link_1`
 adbyby_enable=`nvram get adbyby_enable`
 adm_enable=`nvram get adm_enable`
 ss_enable=`nvram get ss_enable`
@@ -184,7 +182,7 @@ exit 0
 koolproxy_get_status () {
 
 A_restart=`nvram get koolproxy_status`
-B_restart="$koolproxy_enable$ss_link_1$koolproxy_auto$koolproxy_video$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$koolproxy_enable$koolproxy_auto$koolproxy_video$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set koolproxy_status=$B_restart
@@ -244,10 +242,6 @@ killall -9 sh_ad_kp_keey_k.sh
 /tmp/sh_ad_kp_keey_k.sh &
 
 rm -f /tmp/cron_adb.lock
-reb="1"
-[ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
-[ -z $ss_link_1 ] && ss_link_1="www.miui.com" && nvram set ss_link_1="www.miui.com"
-[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 while true; do
 koolproxy_enable=`nvram get koolproxy_enable`
@@ -260,20 +254,9 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			[ -z "$(ps -w | grep koolproxy | grep mark)" ] && logger -t "【koolproxy】" "mark！重新启动" && koolproxy_restart
 		fi
 	fi
-	if [ "$reb" -gt 5 ] && [ "$(cat /tmp/reb.lock)x" == "1x" ] ; then
-		LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
-		echo '['$LOGTIME'] 网络连接中断['$reb']，reboot.' >> /opt/log.txt 2>&1
-		sleep 5
-		reboot
-	fi
-	check1="404"
-	check2="404"
-	check_timeout_network "wget_check"
-	if [ "$check1" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
-		reb=1
+	if [ ! -f /tmp/cron_adb.lock ] ; then
 		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 
-			logger -t "【koolproxy】" "网络连接正常"
 			logger -t "【koolproxy】" "找不到进程, 重启 koolproxy"
 			koolproxy_flush_rules
 			killall -15 koolproxy
@@ -282,7 +265,6 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			cd /tmp/7620koolproxy/
 			/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
 			sleep 20
-			reb=`expr $reb + 1`
 		fi
 		if [ "$PIDS" -gt 2 ] ; then 
 			logger -t "【koolproxy】" "进程重复, 重启 koolproxy"
@@ -309,22 +291,6 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 				logger -t "【koolproxy】" "找不到AD_BYBY_to转发规则, 重新添加"
 				koolproxy_add_rules
 			fi
-	else
-		# logger -t "【koolproxy】" "网络连接中断 $reb, 关闭 koolproxy"
-		port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
-		while [[ "$port" != 0 ]] 
-		do
-			logger -t "【koolproxy】" "网络连接中断 $reb, 关闭 koolproxy"
-			koolproxy_flush_rules
-			port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
-			sleep 5
-		done
-		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
-		if [ "$PIDS" != 0 ] ; then 
-			killall -15 koolproxy
-			killall -9 koolproxy
-		fi
-		reb=`expr $reb + 1`
 	fi
 	sleep 213
 fi
@@ -966,6 +932,9 @@ if [ ! -f "$koolproxy_rules_list" ] || [ ! -s "$koolproxy_rules_list" ] ; then
 0|koolproxy.txt|https://kprule.com/koolproxy.txt|
 0|daily.txt|https://kprule.com/daily.txt|
 0|kp.dat|https://kprule.com/kp.dat|
+0|koolproxy.txt|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/koolproxy.txt|
+0|daily.txt|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/daily.txt|
+0|kp.dat|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/kp.dat|
 1|user.txt||
 
 EEE

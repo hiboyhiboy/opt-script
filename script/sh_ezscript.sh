@@ -418,6 +418,7 @@ check_link "X_check_app_24"
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 jq_check
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【自动选用节点】" "错误！找不到 jq 程序"
 	return 1
 fi
 fi

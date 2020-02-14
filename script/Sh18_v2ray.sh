@@ -118,7 +118,7 @@ exit 0
 v2ray_get_status () {
 
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$chinadns_enable$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$chinadns_enable$ss_link_2$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set v2ray_status=$B_restart
@@ -168,10 +168,7 @@ OSC
 #return
 fi
 sleep 20
-ss_link_1=`nvram get ss_link_1`
 ss_link_2=`nvram get ss_link_2`
-[ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
-[ -z $ss_link_1 ] && ss_link_1="www.miui.com" && nvram set ss_link_1="www.miui.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 v2ray_enable=`nvram get v2ray_enable`
 while [ "$v2ray_enable" = "1" ]; do
@@ -186,7 +183,6 @@ while [ "$v2ray_enable" = "1" ]; do
 	v2ray_optput=`nvram get v2ray_optput`
 	if [ "$v2ray_follow" = "1" ] && [ "$ss_keep_check" == "1" ] && [ "$v2ray_optput" == 1 ] ; then
 # 自动故障转移(透明代理时生效)
-check1=404
 check2=404
 check_timeout_network "wget_check"
 if [ "$check2" == "200" ] ; then
@@ -196,23 +192,10 @@ if [ "$check2" == "200" ] ; then
 	continue
 fi
 
-check1=404
-check2=404
-check_timeout_network "wget_check" "check"
-if [ "$check1" == "200" ] ; then
-	echo "[$LOGTIME] Internet have no problem."
-else
-	logger -t "【v2ray】" " Internet 问题, 请检查您的服务供应商."
-	restart_dhcpd
-fi
-
 #404
 Sh99_ss_tproxy.sh auser_check "Sh18_v2ray.sh"
-ss_tproxy_set "Sh18_v2ray.sh"
-Sh99_ss_tproxy.sh x_resolve_svraddr "Sh18_v2ray.sh"
 Sh99_ss_tproxy.sh s_ss_tproxy_check "Sh18_v2ray.sh"
 sleep 5
-check1=404
 check2=404
 check_timeout_network "wget_check" "check"
 if [ "$check2" == "200" ] ; then
@@ -306,8 +289,7 @@ fi
 if [ "$v2ray_http_enable" != "1" ] && [ ! -f /opt/bin/v2ray_config.pb ] ; then
 if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
 logger -t "【v2ray】" "错误！ v2ray 配置文件 内容为空"
-logger -t "【v2ray】" "请在服务端运行一键安装脚本："
-logger -t "【v2ray】" "bash <(curl -L -s https://opt.cn2qq.com/opt-script/v2ray.sh)"
+logger -t "【v2ray】" "请在导入节点或配置后，选择一个节点【应用】并点击【应用本页面设置】待配置生成"
 logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
 sleep 10 && v2ray_restart x
 fi
@@ -315,6 +297,11 @@ if [ -s "/etc/storage/v2ray_config_script.sh" ] ; then
 if [ ! -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"inbound"')" ] || [ ! -z "$(grep '"outbound"'  /etc/storage/v2ray_config_script.sh)" ] ; then
 logger -t "【v2ray】" "注意！！！v4.22.0及以上版本不再兼容旧的v2ray json配置格式（如：inbound {}，outbound {}格式。）"
 logger -t "【v2ray】" "请尽快使用 inbounds []，outbounds []格式替换。"
+if [ ! -z "$(grep '"outbound"'  /etc/storage/v2ray_config_script.sh)" ] ; then
+logger -t "【v2ray】" "错误！！！outbound {}格式不兼容【使用 ss_tproxy 分流】。"
+logger -t "【v2ray】" "错误！！！outbound {}格式不兼容【使用 ss_tproxy 分流】。 "
+logger -t "【v2ray】" "错误！！！outbound {}格式不兼容【使用 ss_tproxy 分流】。  "
+fi
 fi
 fi
 fi
@@ -434,6 +421,10 @@ else
 		logger -t "【v2ray】" "不是透明代理模式，变更配置含内置 DNS 端口 listen 0.0.0.0:8055"
 		sed -Ei s/8053/8055/g /tmp/vmess/mk_vmess.json
 	fi
+	# 改写错误日志路径
+	cat /tmp/vmess/mk_vmess.json| jq --raw-output 'setpath(["log","error"];"/tmp/syslog.log")' > /tmp/vmess/mk_vmess2.json
+	[ -s /tmp/vmess/mk_vmess2.json ] && cp -f /tmp/vmess/mk_vmess2.json /tmp/vmess/mk_vmess.json
+	rm -f /tmp/vmess/mk_vmess2.json
 	fi
 	if [ ! -f "/tmp/vmess/mk_vmess.json" ] || [ ! -s "/tmp/vmess/mk_vmess.json" ] ; then
 	logger -t "【v2ray】" "错误！实际运行配置： /tmp/vmess/mk_vmess.json 文件内容为空"
@@ -717,6 +708,7 @@ mkdir -p /tmp/vmess
 if [ ! -s "/tmp/vmess/r.gfwlist.conf" ] ; then
 touch /etc/storage/shadowsocks_mydomain_script.sh /tmp/vmess/gfwlist_domain.txt
 cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u > /tmp/vmess/gfwlist_0.txt
+cat /opt/app/ss_tproxy/rule/gfwlist.txt | sort -u | grep -v "^$" | grep '\.' | grep -v '\-\-\-' >> /tmp/vmess/gfwlist_0.txt
 cat /etc/storage/basedomain.txt /tmp/vmess/gfwlist_0.txt /tmp/vmess/gfwlist_domain.txt | 
 	sort -u > /tmp/vmess/gfwall_domain.txt
 cat /tmp/vmess/gfwall_domain.txt | sort -u | grep -v "^$" | grep '\.' | grep -v '\-\-\-' > /tmp/vmess/all_domain.txt
@@ -2275,6 +2267,7 @@ a1_tmp="$1"
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【v2ray】" "错误！找不到 jq 程序"
 	return 1
 fi
 fi

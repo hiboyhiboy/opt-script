@@ -60,7 +60,6 @@ v2ray_path=`nvram get v2ray_path`
 
 koolproxy_enable=`nvram get koolproxy_enable`
 ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
-ss_link_1=`nvram get ss_link_1`
 ss_link_2=`nvram get ss_link_2`
 ss_update=`nvram get ss_update`
 ss_update_hour=`nvram get ss_update_hour`
@@ -146,8 +145,6 @@ ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 ss_check=`nvram get ss_check`
 ss_updatess=`nvram get ss_updatess`
 [ -z $ss_updatess ] && ss_updatess=0 && nvram set ss_updatess=$ss_updatess
-[ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
-[ -z $ss_link_1 ] && ss_link_1="www.miui.com" && nvram set ss_link_1="www.miui.com"
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
@@ -443,10 +440,10 @@ fi
 
 # 高级启动参数分割
 ss_usage="$(usage_switch "$ss_usage")"
-ssr_obfs=""
-ssr_protocol=""
+
 ssr_type_obfs_custom=""
 ssr_type_protocol_custom=""
+
 # 混淆插件方式
 ss_usage_custom="$(echo "$ss_usage" | grep -Eo '\-o[ ]+[^丨]+')"
 if [ ! -z "$ss_usage_custom" ] ; then
@@ -459,40 +456,35 @@ if [ ! -z "$ss_usage_custom" ] ; then
 	ssr_protocol="$(echo $ss_usage_custom | sed -e "s@^-O@@g" | sed -e "s@ @@g")"
 	logger -t "【SS】" "ssr协议插件方式: $ssr_protocol"
 fi
+# 混淆参数
+ss_usage_obfs_custom="$(echo "$ss_usage" | grep -Eo '\-g[ ]+[^丨]+')"
+if [ ! -z "$ss_usage_obfs_custom" ] ; then 
+	ssr_type_obfs_custom="$(echo $ss_usage_obfs_custom | sed -e "s@^-g@@g" | sed -e "s@^ @@g")"
+	logger -t "【SS】" "高级启动参数选项内容含有 -g $ssr_type_obfs_custom ，优先使用此 混淆参数"
+fi
+# 协议参数
+ss_usage_protocol_custom="$(echo "$ss_usage" | grep -Eo '\-G[ ]+[^丨]+')"
+if [ ! -z "$ss_usage_protocol_custom" ] ; then 
+	ssr_type_protocol_custom="$(echo $ss_usage_protocol_custom | sed -e "s@^-G@@g" | sed -e "s@ @@g")"
+	logger -t "【SS】" "高级启动参数选项内容含有 -G $ssr_type_protocol_custom ，优先使用此 协议参数"
+fi
 
 [ -z "$ssr_obfs" ] && ssr_obfs="plain"
 [ -z "$ssr_protocol" ] && ssr_protocol="origin"
-if [ "$ssr_obfs" == "plain" ] && [ "$ssr_protocol" == "origin" ] ; then
- # SS 原本协议
- ss_type=0
- nvram set ss_type=$ss_type
-	ssr_obfs=""
-	ssr_protocol=""
-	ssr_type_obfs_custom=""
-	ssr_type_protocol_custom=""
-else
- # SSR 协议
- ss_type=1
- nvram set ss_type=$ss_type
- ssrr_custom="$(echo $ssr_protocol | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
- if [ ! -z "$ssrr_custom" ] ; then 
+
+if [ "$ssr_obfs" != "plain" ] || [ "$ssr_protocol" != "origin" ] ; then
+	# SSR 协议
+	ss_type=1
+fi
+if [ ! -z "$ssr_type_obfs_custom" ] || [ ! -z "$ssr_type_protocol_custom" ] ; then
+	ss_type=1
+fi
+ssrr_custom="$(echo $ssr_protocol | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
+if [ ! -z "$ssrr_custom" ] ; then 
 	# SSRR 协议
 	ssrr_type=1
- fi
-	# 混淆参数
-	ssr_type_obfs_custom="`nvram get ssr_type_obfs_custom`"
-	ss_usage_obfs_custom="$(echo "$ss_usage" | grep -Eo '\-g[ ]+[^丨]+')"
-	if [ ! -z "$ss_usage_obfs_custom" ] ; then 
-		ssr_type_obfs_custom="$(echo $ss_usage_obfs_custom | sed -e "s@^-g@@g" | sed -e "s@^ @@g")"
-		logger -t "【SS】" "高级启动参数选项内容含有 -g $ssr_type_obfs_custom ，优先使用此 混淆参数"
-	fi
-	# 协议参数
-	ssr_type_protocol_custom="`nvram get ssr_type_protocol_custom`"
-	ss_usage_protocol_custom="$(echo "$ss_usage" | grep -Eo '\-G[ ]+[^丨]+')"
-	if [ ! -z "$ss_usage_protocol_custom" ] ; then 
-		ssr_type_protocol_custom="$(echo $ss_usage_protocol_custom | sed -e "s@^-G@@g" | sed -e "s@ @@g")"
-		logger -t "【SS】" "高级启动参数选项内容含有 -G $ssr_type_protocol_custom ，优先使用此 协议参数"
-	fi
+	ss_type=1
+	nvram set ss_type=$ss_type
 fi
 
 # 插件名称
@@ -541,10 +533,9 @@ fi
 start_ss_redir_check()
 {
 
-sleep 2
+sleep 1
 [ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动成功" && ss_restart o
 [ -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
-[ "$ss_mode_x" != "3" ] && check_ip $1
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	[ "$ss_mode_x" = "3" ] && killall_ss_redir
 	[ ! -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动成功" && ss_restart o
@@ -749,7 +740,7 @@ Sh99_ss_tproxy.sh x_resolve_svraddr "Sh15_ss.sh"
 # 启动新进程
 start_ss_redir
 start_ss_redir_threads
-start_ss_redir_check # "check_ip"
+start_ss_redir_check
 [ "$ss_mode_x" = "3" ] && return
 
 }
@@ -812,67 +803,6 @@ else
 	fi
 fi
 fi
-}
-
-check_ip()
-{
-if [ "$ss_check" = "1" ] || [ "$1" = "check_ip" ] ; then
-	# 检查主服务器是否能用
-	Server_ip="$(ping -4 -nq -c1 -w1 -W1 $ss_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}')"
-	[ -z "$Server_ip" ] && { logger -t "【check_ip】" "[错误!!] 未找到服务器 IPv4 地址， check_ip 跳过检查"; return; }
-	dnsmasq_tmp_reconf
-	checkip=0
-	action_port="1090"
-	action_ssip=$Server_ip
-	if [ ! -z "$action_ssip" ] ; then
-		logger -t "【ss-redir】" "check_ip 检查 SS 服务器$action_port是否能用"
-		lan_ipaddr=`nvram get lan_ipaddr`
-		BP_IP="$(echo "$action_ssip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+')"
-		[ ! -z "$kcptun_server" ] && [ "$kcptun_enable" != "0" ] && BP_IP="$(echo "$action_ssip" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+'),$(echo "$kcptun_server" | grep -v ":"  | grep -E -o '([0-9]+\.){3}[0-9]+')"
-		ss-rules -f
-		ss-rules -s "$action_ssip" -l "$action_port" -b $BP_IP -d "RETURN" -a "g,$lan_ipaddr" -e '-m multiport --dports 80,8080,53,443' -o -O
-		check1="404"
-		check2="404"
-		check_timeout_network "wget_check" "check"
-		if [ "$check1" == "200" ] || [ "$check2" == "200" ] ; then 
-			[ "$check1" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
-			[ "$check2" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
-			[ "$check1" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_1】连接有问题！！！"
-			[ "$check2" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_2】连接有问题！！！"
-			logger -t "【ss-redir】" "check_ip 检查 SS 服务器 【$app_97】【$action_port】 代理连接成功"
-			checkip=1
-			ss-rules -f
-			return
-		else
-			[ "$check1" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_1】正常。"
-			[ "$check2" == "200" ] && logger -t "【ss-redir】" "check_ip 连接到【$ss_link_2】正常。"
-			[ "$check1" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_1】连接有问题！！！"
-			[ "$check2" != "200" ] && logger -t "【ss-redir】" "check_ip 错误！【$ss_link_2】连接有问题！！！"
-			logger -t "【ss-redir】" "check_ip 检查 SS 服务器 【$app_97】【$action_port】 代理连接失败"
-			ss-rules -f
-			nvram set ss_status=""
-			if [ ! -z "$app_95" ] ; then 
-				logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
-				/etc/storage/script/sh_ezscript.sh ss_link_matching &
-				sleep 20
-				exit 0
-			else
-				checkip=0
-			fi
-		fi
-	fi
-	ss-rules -f
-	echo "checkip: "$checkip
-	if [ "$checkip" == "0" ] ; then
-		logger -t "【ss-redir】" "check_ip 检查 SS 服务器代理连接失败, 请检查配置, 10 秒后重启shadowsocks"
-		killall_ss_local
-		killall_ss_redir
-		sleep 10
-		clean_SS 
-		exit 0
-	fi
-fi
-
 }
 
 clean_ss_rules()
@@ -939,39 +869,6 @@ return $?
 
 
 #================华丽的分割线====================================
-
-dnsmasq_tmp_reconf()
-{
-if [ -s /sbin/dnsproxy ] ; then
-	ln -sf /sbin/dnsproxy /tmp/dns_tmp_proxy
-	# 启用临时DNS
-	killall dns_tmp_proxy
-	/tmp/dns_tmp_proxy -d -p 8353
-	# 把检测域名加入临时DNS
-	rm -f $confdir/r.wantoss.conf
-	cat >> "$confdir/r.wantoss.conf" <<-\_CONF
-server=/githubusercontent.com/127.0.0.1#8353
-server=/github.io/127.0.0.1#8353
-server=/opt.cn2qq.com/127.0.0.1#8353
-_CONF
-	echo "server=/$ss_link_2/127.0.0.1#8353" >> $confdir/r.wantoss.conf
-	sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
-	[ ! -z "$confdir" ] && echo "conf-dir=$confdir" >> /etc/storage/dnsmasq/dnsmasq.conf
-	restart_dhcpd
-fi
-}
-
-dnsmasq_end_reconf()
-{
-if [ -s /sbin/dnsproxy ] ; then
-	# 恢复域名DNS
-	rm -f $confdir/r.wantoss.conf
-	sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
-	restart_dhcpd
-	# 停用临时DNS
-	killall  dns_tmp_proxy
-fi
-}
 
 start_SS()
 {
@@ -1160,7 +1057,7 @@ echo "Debug: $DNS_Server"
 	logger -t "【SS】" "###############启动程序###############"
 	if [ "$ss_mode_x" = "3" ] ; then
 		start_ss_redir
-		start_ss_redir_check # "check_ip"
+		start_ss_redir_check
 		Sh99_ss_tproxy.sh off_stop "Sh15_ss.sh"
 		nvram set gfwlist3="ss-local start.【$app_97】"
 		logger -t "【ss-local】" "本地代理启动. 可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用."
@@ -1173,21 +1070,16 @@ echo "Debug: $DNS_Server"
 	fi
 	start_ss_redir
 	start_ss_redir_threads
-	start_ss_redir_check # "check_ip"
+	start_ss_redir_check
 	Sh99_ss_tproxy.sh auser_check "Sh15_ss.sh"
 	ss_tproxy_set "Sh15_ss.sh"
 	Sh99_ss_tproxy.sh on_start "Sh15_ss.sh"
 	#检查网络
 	logger -t "【SS】" "SS 检查网络连接"
-#	dnsmasq_tmp_reconf
-	check1=404
 	check2=404
 	check_timeout_network "wget_check" "check"
-if [ "$check1" != "200" ] || [ "$check2" != "200" ] ; then 
-	[ "$check1" == "200" ] && logger -t "【SS】" "连接到【互联网】正常。"
-	[ "$check2" == "200" ] && logger -t "【SS】" "连接到【Google.com】正常。"
-	[ "$check1" != "200" ] && logger -t "【SS】" "错误！【互联网】连接有问题！！！"
-	[ "$check2" != "200" ] && logger -t "【SS】" "错误！【Google.com】连接有问题！！！"
+if [ "$check2" != "200" ] ; then 
+	logger -t "【SS】" "错误！【Google.com】连接有问题！！！"
 	logger -t "【SS】" "网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
 	logger -t "【SS】" "如果是本地组网可忽略此错误！！"
 	logger -t "【SS】" "否则需启用【首次时连接检测】、【运行时持续检测】才能自动故障转移"
@@ -1202,7 +1094,6 @@ fi
 	nvram set ss_internet="1"
 	ss_cron_job
 	#ss_get_status
-	dnsmasq_end_reconf
 if [ "$ss_dnsproxy_x" = "2" ] ; then
 	logger -t "【SS】" "使用 dnsmasq ，开启 ChinaDNS 防止域名污染"
 	if [ -f "/etc/storage/script/Sh19_chinadns.sh" ] || [ -s "/etc/storage/script/Sh19_chinadns.sh" ] ; then
@@ -1322,7 +1213,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_plugin_name$ss_plugin_config$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_plugin_name$ss_plugin_config$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
@@ -1527,7 +1418,6 @@ ss_udp_enable=`nvram get ss_udp_enable` #udp转发  0、停用；1、启动
 ss_upd_rules=`nvram get ss_upd_rules`
 ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代理
 
-check1=404
 check2=404
 check_timeout_network "wget_check"
 if [ "$check2" == "200" ] ; then
@@ -1539,24 +1429,9 @@ if [ "$check2" == "200" ] ; then
 	continue
 fi
 
-check1=404
-check2=404
-check_timeout_network "wget_check" "check"
-if [ "$check1" == "200" ] ; then
-	echo "[$LOGTIME] Internet have no problem."
-else
-	logger -t "【SS】" " Internet 问题, 请检查您的服务供应商."
-	rebss=`expr $rebss + 1`
-	restart_dhcpd
-fi
-
 #404
 Sh99_ss_tproxy.sh auser_check "Sh15_ss.sh"
-ss_tproxy_set "Sh15_ss.sh"
-Sh99_ss_tproxy.sh x_resolve_svraddr "Sh15_ss.sh"
 Sh99_ss_tproxy.sh s_ss_tproxy_check "Sh15_ss.sh"
-sleep 5
-check1=404
 check2=404
 check_timeout_network "wget_check" "check"
 if [ "$check2" == "200" ] ; then

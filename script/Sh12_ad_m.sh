@@ -11,7 +11,6 @@ if [ "$adm_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep adm | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 adbyby_mode_x=`nvram get adbyby_mode_x`
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
-ss_link_1=`nvram get ss_link_1`
 adm_update=`nvram get adm_update`
 adm_update_hour=`nvram get adm_update_hour`
 adm_update_min=`nvram get adm_update_min`
@@ -178,7 +177,7 @@ exit 0
 adm_get_status () {
 
 A_restart=`nvram get adm_status`
-B_restart="$adm_enable$ss_link_1$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adm_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adm_enable$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adm_rules_script.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set adm_status=$B_restart
@@ -232,30 +231,15 @@ killall -9 sh_ad_m_keey_k.sh
 /tmp/sh_ad_m_keey_k.sh &
 
 rm -f /tmp/cron_adb.lock
-reb="1"
-[ ! -z "$(echo $ss_link_1 | grep 163.com)" ] && ss_link_1=""
-[ -z $ss_link_1 ] && ss_link_1="www.miui.com" && nvram set ss_link_1="www.miui.com"
-[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 while true; do
 adm_enable=`nvram get adm_enable`
 [ "$adm_enable" != "1" ] && exit
 [ ! -s "/tmp/7620adm/adm" ] && logger -t "【ADM】" "重新启动" && adm_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
-	if [ "$reb" -gt 5 ] && [ "$(cat /tmp/reb.lock)x" == "1x" ] ; then
-		LOGTIME=$(date "+%Y-%m-%d %H:%M:%S")
-		echo '['$LOGTIME'] 网络连接中断['$reb']，reboot.' >> /opt/log.txt 2>&1
-		sleep 5
-		reboot
-	fi
-	check1="404"
-	check2="404"
-	check_timeout_network "wget_check"
-	if [ "$check1" == "200" ] && [ ! -f /tmp/cron_adb.lock ] ; then
-		reb=1
+	if [ ! -f /tmp/cron_adb.lock ] ; then
 		PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
 		if [ "$PIDS" = 0 ] ; then 
-			logger -t "【ADM】" "网络连接正常"
 			logger -t "【ADM】" "找不到进程, 重启 adm"
 			adm_flush_rules
 			killall -15 adm
@@ -263,7 +247,6 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 			sleep 3
 			/tmp/7620adm/adm &
 			sleep 20
-			reb=`expr $reb + 1`
 		fi
 		if [ "$PIDS" -gt 2 ] ; then 
 			logger -t "【ADM】" "进程重复, 重启 adm"
@@ -289,22 +272,6 @@ if [ ! -f /tmp/cron_adb.lock ] ; then
 				logger -t "【ADM】" "找不到AD_BYBY_to转发规则, 重新添加"
 				adm_add_rules
 			fi
-	else
-		# logger -t "【ADM】" "网络连接中断 $reb, 关闭 adm"
-		port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
-		while [[ "$port" != 0 ]] 
-		do
-			logger -t "【ADM】" "网络连接中断 $reb, 关闭 adm"
-			adm_flush_rules
-			port=$(iptables -t nat -L | grep 'ports 18309' | wc -l)
-			sleep 5
-		done
-		PIDS=$(ps -w | grep "/tmp/7620adm/adm" | grep -v "grep" | wc -l)
-		if [ "$PIDS" != 0 ] ; then 
-			killall -15 adm
-			killall -9 adm
-		fi
-		reb=`expr $reb + 1`
 	fi
 	sleep 212
 fi
