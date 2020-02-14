@@ -427,6 +427,7 @@ mkdir -p /tmp/link
 rm -f /tmp/ss/link/ssd_link.txt
 cp $1 /tmp/ss/link/ssd_link.txt
 sed -e  's@ssd://@@g' -i /tmp/ss/link/ssd_link.txt
+sed -e  's@$@==@g' -i /tmp/ss/link/ssd_link.txt
 ssd_jq_link="$(cat /tmp/ss/link/ssd_link.txt | sed -n '1p' | base64 -d)"
 ssd_port="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
 ssd_password="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
