@@ -305,10 +305,10 @@ kcptun_server=`nvram get kcptun_server`
 echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 
 # 链接配置文件
-umount -l /opt/app/ss_tproxy/wanlist.ext
-mount --bind /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
-umount -l /opt/app/ss_tproxy/lanlist.ext
-mount --bind /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+umount  /opt/app/ss_tproxy/wanlist.ext
+umount  /opt/app/ss_tproxy/lanlist.ext
+cp -f /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+cp -f /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【SS】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 
@@ -762,6 +762,8 @@ logger -t "【SS】" "高级启动参数选项内容含有 ssrr 协议: $ssrr_cu
 ssrr_type=1
 ss_type=1
 fi
+umount  /usr/sbin/ss-redir
+umount  /usr/sbin/ss-local
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
 if [ "$ss_type" != "1" ] ; then
@@ -1176,6 +1178,8 @@ rm -f /tmp/sh_sskeey_k.sh
 [ -f /opt/etc/init.d/S27pcap-dnsproxy ] && { rm -f /var/log/pcap-dnsproxy.lock; /opt/etc/init.d/S27pcap-dnsproxy stop& }
 nvram set gfwlist3="SS stop."
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+umount  /usr/sbin/ss-redir
+umount  /usr/sbin/ss-local
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
 kill_ps "sh_ezscript.sh"

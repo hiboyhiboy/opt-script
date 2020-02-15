@@ -539,10 +539,10 @@ touch $proxy_all_svraddr $proxy_svraddr4 $proxy_svraddr6 $chinadns_privaddr4 $ch
 touch $file_gfwlist_txt $file_gfwlist_ext $file_ignlist_ext $file_lanlist_ext $file_wanlist_ext
 touch $file_chnroute_txt $file_chnroute6_txt $file_chnroute_set $file_chnroute6_set
 # 链接配置文件
-umount -l /opt/app/ss_tproxy/wanlist.ext
-mount --bind /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
-umount -l /opt/app/ss_tproxy/lanlist.ext
-mount --bind /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+umount  /opt/app/ss_tproxy/wanlist.ext
+umount  /opt/app/ss_tproxy/lanlist.ext
+cp -f /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+cp -f /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 
 }
 

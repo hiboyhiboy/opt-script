@@ -301,10 +301,10 @@ echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 echo "$transocks_server" | sed -e "s@ @\n@g" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 
 # 链接配置文件
-umount -l /opt/app/ss_tproxy/wanlist.ext
-mount --bind /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
-umount -l /opt/app/ss_tproxy/lanlist.ext
-mount --bind /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+umount  /opt/app/ss_tproxy/wanlist.ext
+umount  /opt/app/ss_tproxy/lanlist.ext
+cp -f /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+cp -f /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【$tran_c_socks】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 
