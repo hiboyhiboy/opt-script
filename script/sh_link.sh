@@ -432,22 +432,46 @@ ssd_jq_link="$(cat /tmp/ss/link/ssd_link.txt | sed -n '1p' | base64 -d)"
 ssd_port="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
 ssd_password="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
 ssd_encryption="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
+ssd_plugin="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
+ssd_options="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
 ssd_expiry="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["expiry"])')" # 时间
 ssd_airport="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["airport"])')" # 名称
 ssd_length="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers"]) | length')" # 数量
+[ "$ssd_port" == "null" ] && ssd_port=""
+[ "$ssd_encryption" == "null" ] && ssd_encryption=""
+[ "$ssd_password" == "null" ] && ssd_password=""
+[ "$ssd_plugin" == "null" ] && ssd_plugin=""
+[ "$ssd_options" == "null" ] && ssd_options=""
+logger -t "【SSD订阅】" "【$ssd_airport】过期时间： $ssd_expiry ；节点数量： $ssd_length"
 ssd_length=$(( ssd_length - 1 ))
 if [ "$ssd_length" -gt 0 ] ; then
 	for ssd_x in $(seq 0 $ssd_length)
 	do
-	ssd_server="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"',"server"])')" # 服务器
-	ssd_remarks="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"',"remarks"])')" # 节点名称
-	ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
+	ssd_jq_x_link="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"'])')"
+	ssd_server="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["server"])')" # 服务器
+	ssd_remarks="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["remarks"])')" # 节点名称
+	[ ! -z "$(echo $ssd_jq_x_link | grep '"port"')" ] && ssd_x_port="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
+	[ ! -z "$(echo $ssd_jq_x_link | grep '"encryption"')" ] && ssd_x_encryption="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
+	[ ! -z "$(echo $ssd_jq_x_link | grep '"password"')" ] && ssd_x_password="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
+	[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin"')" ] && ssd_x_plugin="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
+	[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin_options"')" ] && ssd_x_options="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
+	[ "$ssd_x_port" == "null" ] && ssd_x_port=""
+	[ "$ssd_x_encryption" == "null" ] && ssd_x_encryption=""
+	[ "$ssd_x_password" == "null" ] && ssd_x_password=""
+	[ "$ssd_x_plugin" == "null" ] && ssd_x_plugin=""
+	[ "$ssd_x_options" == "null" ] && ssd_x_options=""
+	[ -z "$ssd_x_port" ] && ssd_x_port="$ssd_port"
+	[ -z "$ssd_x_encryption" ] && ssd_x_encryption="$ssd_encryption"
+	[ -z "$ssd_x_password" ] && ssd_x_password="$ssd_password"
+	[ -z "$ssd_x_plugin" ] && ssd_x_plugin="$ssd_plugin"
+	[ -z "$ssd_x_options" ] && ssd_x_options="$ssd_options"
+	ss_link_plugin_opts=" -O origin -o plain --plugin $ssd_x_plugin --plugin-opts $ssd_x_options "
 	link_echo=""
 	link_echo="$link_echo"'["'"🔗$(base64encode "$ssd_remarks")"'", '
 	link_echo="$link_echo"'"'"$ssd_server"'", '
-	link_echo="$link_echo"'"'"$ssd_port"'", '
-	link_echo="$link_echo"'"'"$(base64encode "$ssd_password")"'", '
-	link_echo="$link_echo"'"'"$ssd_encryption"'", '
+	link_echo="$link_echo"'"'"$ssd_x_port"'", '
+	link_echo="$link_echo"'"'"$(base64encode "$ssd_x_password")"'", '
+	link_echo="$link_echo"'"'"$ssd_x_encryption"'", '
 	link_echo="$link_echo"'"", '
 	link_echo="$link_echo"'"", '
 	link_echo="$link_echo"'"'"$(base64encode "$ss_link_plugin_opts")"'", '

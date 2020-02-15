@@ -673,7 +673,11 @@ ss_name_x="$(base64decode "$ss_name_x")"
 if [ ! -z "$(cat /tmp/ping_server_error.txt | grep "error_""$ss_server_x""_error")" ] ; then
 ping_text=""
 else
+if [ ! -z "$(echo "$ss_name_x" | grep -Eo "剩余流量|过期时间")" ] ; then
+ping_text=""
+else
 ping_text=`ping -4 $ss_server_x -w 3 -W 3 -q`
+fi
 fi
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`

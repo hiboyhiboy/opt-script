@@ -129,6 +129,8 @@ iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
 killall ss-server obfs-server gq-server
 killall -9 ss-server obfs-server gq-server
+ss_plugin_server_name="$(nvram get ss_plugin_server_name)"
+[ ! -z "$ss_plugin_server_name" ] && { kill_ps "$ss_plugin_server_name" ; ss_plugin_server_name="" ; nvram set ss_plugin_server_name="" ; }
 kill_ps "/tmp/script/_ssserver"
 kill_ps "_ssserver.sh"
 kill_ps "$scriptname"
@@ -153,29 +155,74 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【SS_server】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ssserver_restart x
 fi
-if [ ! -z "echo $ssserver_usage | grep obfs-server" ] ; then
-	if [ ! -s "/opt/bin/obfs-server" ] ; then
-		logger -t "【SS_server】" "找不到 /opt/bin/obfs-server，安装 opt 程序"
-		/tmp/script/_mountopt start
-		initopt
-	fi
-	wgetcurl_file /opt/bin/obfs-server "$hiboyfile/obfs-server" "$hiboyfile2/obfs-server"
+
+ss_plugin_server_name="$(nvram get ss_plugin_server_name)"
+[ ! -z "$ss_plugin_server_name" ] && { kill_ps "$ss_plugin_server_name" ; ss_plugin_server_name="" ; nvram set ss_plugin_server_name="" ; }
+
+# 高级启动参数分割
+ssserver_usage="$(usage_switch "$ssserver_usage")"
+
+# 插件名称
+ssserver_usage_custom="$(echo "$ssserver_usage" | grep -Eo '\-\-plugin[ ]+[^丨]+')"
+if [ ! -z "$ssserver_usage_custom" ] ; then
+	ss_plugin_name="$(echo $ssserver_usage_custom | sed -e "s@^--plugin@@g" | sed -e "s@ @@g")"
+	logger -t "【SS_server】" "高级启动参数选项内容含有 --plugin $ss_plugin_name ，优先使用此 插件名称"
 fi
-if [ ! -z "echo $ssserver_usage | grep gq-server" ] ; then
-	if [ ! -s "/opt/bin/gq-server" ] ; then
-		logger -t "【SS_server】" "找不到 /opt/bin/gq-server，安装 opt 程序"
+
+# 插件参数
+ssserver_usage_custom="$(echo "$ssserver_usage" | grep -Eo '\-\-plugin\-opts[ ]+[^丨]+')"
+if [ ! -z "$ssserver_usage_custom" ] ; then 
+	ss_plugin_config="$(echo $ssserver_usage_custom | sed -e "s@^--plugin-opts@@g" | sed -e "s@ @@g")"
+	ss_plugin_config="$(echo $ss_plugin_config | sed -e 's@^"@@g' | sed -e 's@"$@@g')"
+	logger -t "【SS_server】" "高级启动参数选项内容含有 --plugin-opts $ss_plugin_config ，优先使用此 插件参数"
+fi
+
+# 插件名称 插件参数 调整名称
+[ ! -z "$(echo "$ss_plugin_name" | grep "simple-obfs")" ] && ss_plugin_name="obfs-server"
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs-host")" ] && ss_plugin_name="obfs-server"
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs=tls")" ] && ss_plugin_name="obfs-server"
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs=http")" ] && ss_plugin_name="obfs-server"
+[ ! -z "$(echo "$ss_plugin_name" | grep "GoQuiet")" ] && ss_plugin_name="gq-server"
+[ ! -z "$(echo "$ss_plugin_name" | grep "goquiet")" ] && ss_plugin_name="gq-server"
+[ ! -z "$(echo "$ss_plugin_name" | grep "kcptun")" ] && ss_plugin_name="ss_server_kcptun"
+[ ! -z "$(echo "$ss_plugin_name" | grep "server_linux_mipsle")" ] && ss_plugin_name="ss_server_kcptun"
+[ ! -z "$(echo "$ss_plugin_name" | grep "Cloak")" ] && ss_plugin_name="ck-server"
+[ ! -z "$(echo "$ss_plugin_name" | grep "cloak")" ] && ss_plugin_name="ck-server"
+[ ! -z "$(echo "$ss_plugin_name" | grep "v2ray")" ] && ss_plugin_name="v2ray-plugin"
+[ ! -z "$(echo "$ss_plugin_name" | grep "V2ray")" ] && ss_plugin_name="v2ray-plugin"
+[ ! -z "$ss_plugin_name" ] && { ss_plugin_server_name="$ss_plugin_name" ; nvram set ss_plugin_server_name="$ss_plugin_server_name" ; }
+[ ! -z "$ss_plugin_server_name" ] && kill_ps "$ss_plugin_server_name"
+
+# 删除混淆、协议、分割符号
+options1="$(echo "$ssserver_usage" | sed -r 's/\ --plugin-opts[ ]+[^丨]+//g' | sed -r 's/\ --plugin[ ]+[^丨]+//g' | sed -e "s@丨@@g" | sed -e "s@  @ @g" | sed -e "s@  @ @g")"
+# 高级启动参数分割完成
+if [ ! -z "$ss_plugin_name" ] ; then
+options1="$options1 --plugin $ss_plugin_name "
+fi
+if [ ! -z "$ss_plugin_config" ] ; then
+options1="$options1 --plugin-opts $ss_plugin_config "
+fi
+options1="$(echo "$options1" | sed -e "s@  @ @g" | sed -e "s@  @ @g")"
+
+
+optssredir="0"
+if [ ! -z "$ss_plugin_name" ] ; then
+	[ ! -z "$ss_plugin_name" ] && { hash $ss_plugin_name 2>/dev/null || optssredir="4" ; }
+	if [ "$optssredir" != "0" ] ; then
+		logger -t "【SS_server】" "找不到 /opt/bin/$ss_plugin_name，安装 opt 程序"
 		/tmp/script/_mountopt start
 		initopt
 	fi
-	wgetcurl_file /opt/bin/gq-server "$hiboyfile/gq-server" "$hiboyfile2/gq-server"
+	wgetcurl_file /opt/bin/$ss_plugin_name "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
 fi
 logger -t "【SS_server】" "启动 ss-server 服务"
 if [ "$ssserver_udp" == "1" ] ; then
 	ssserver_udp_u="-u"
+	logger -t "【SS_server】" "UDP转发可能会导致连接失败，如果连接失败，请关闭UDP转发再测试"
 else
 	ssserver_udp_u=""
 fi
-eval "ss-server -s 0.0.0.0 -s ::0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_udp_u $ssserver_usage $cmd_log" &
+eval "ss-server -s 0.0.0.0 -s ::0 -p $ssserver_port -k $ssserver_password -m $ssserver_method -t $ssserver_time $ssserver_udp_u $options1 $cmd_log" &
 
 
 sleep 4
@@ -187,6 +234,46 @@ ssserver_port_dpt
 #ssserver_get_status
 eval "$scriptfilepath keep &"
 exit 0
+}
+
+usage_switch()
+{
+
+# 高级启动参数分割
+echo -n "$1" \
+ | sed -e 's@ -s @ 丨 -s @g' \
+ | sed -e 's@ -p @ 丨 -p @g' \
+ | sed -e 's@ -l @ 丨 -l @g' \
+ | sed -e 's@ -k @ 丨 -k @g' \
+ | sed -e 's@ -m @ 丨 -m @g' \
+ | sed -e 's@ -a @ 丨 -a @g' \
+ | sed -e 's@ -f @ 丨 -f @g' \
+ | sed -e 's@ -t @ 丨 -t @g' \
+ | sed -e 's@ -c @ 丨 -c @g' \
+ | sed -e 's@ -n @ 丨 -n @g' \
+ | sed -e 's@ -i @ 丨 -i @g' \
+ | sed -e 's@ -b @ 丨 -b @g' \
+ | sed -e 's@ -u @ 丨 -u @g' \
+ | sed -e 's@ -U @ 丨 -U @g' \
+ | sed -e 's@ -6 @ 丨 -6 @g' \
+ | sed -e 's@ -d @ 丨 -d @g' \
+ | sed -e 's@ --reuse-port @ 丨 --reuse-port @g' \
+ | sed -e 's@ --fast-open @ 丨 --fast-open @g' \
+ | sed -e 's@ --acl @ 丨 --acl @g' \
+ | sed -e 's@ --mtu @ 丨 --mtu @g' \
+ | sed -e 's@ --mptcp @ 丨 --mptcp @g' \
+ | sed -e 's@ --no-delay @ 丨 --no-delay @g' \
+ | sed -e 's@ --key @ 丨 --key @g' \
+ | sed -e 's@ --plugin @ 丨 --plugin  @g' \
+ | sed -e 's@ --plugin-opts @ 丨 --plugin-opts  @g' \
+ | sed -e 's@ -v @@g' \
+ | sed -e 's@ -h @@g' \
+ | sed -e 's@ --help @@g' \
+ | sed -e 's@ -o @ 丨 -o  @g' \
+ | sed -e 's@ -O @ 丨 -O  @g' \
+ | sed -e 's@ -g @ 丨 -g  @g' \
+ | sed -e 's@ -G @ 丨 -G  @g'
+ 
 }
 
 initopt () {

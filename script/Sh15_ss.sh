@@ -176,18 +176,6 @@ if [ "$cmd_log_enable" = "1" ] || [ "$ss_renum" -gt "0" ] ; then
 fi
 fi
 
-#SS插件参数
-ss_plugin_name="`nvram get ss_plugin_name`"
-ss_plugin_config="`nvram get ss_plugin_config`"
-[ ! -z "$(echo "$ss_plugin_config" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
-[ ! -z "$(echo "$ss_usage" | grep gq-client)" ] && ss_plugin_name="gq-client" && nvram set ss_plugin_name="gq-client"
-[ ! -z "$(echo "$ss_usage" | grep obfs-host)" ] && ss_plugin_name="obfs-local" && nvram set ss_plugin_name="obfs-local"
-[ ! -z "$(echo "$ss_usage" | grep ck-client)" ] && ss_plugin_name="ck-client" && nvram set ss_plugin_name="ck-client"
-[ ! -z "$(echo "$ss_usage" | grep kcptun)" ] && ss_plugin_name="kcptun" && nvram set ss_plugin_name="kcptun"
-[ ! -z "$(echo "$ss_usage" | grep v2ray-plugin)" ] && ss_plugin_name="v2ray-plugin" && nvram set ss_plugin_name="v2ray-plugin"
-[ -z "$ss_plugin_config" ] && ss_plugin_name="" && nvram set ss_plugin_name=""
-
-
 if [ "$ss_enable" != "0" ] ; then
 	kcptun_server=`nvram get kcptun_server`
 	if [ "$kcptun_enable" != "0" ] ; then
@@ -406,6 +394,8 @@ echo -n "$1" \
  | sed -e 's@ -b @ 丨 -b @g' \
  | sed -e 's@ -u @ 丨 -u @g' \
  | sed -e 's@ -U @ 丨 -U @g' \
+ | sed -e 's@ -6 @ 丨 -6 @g' \
+ | sed -e 's@ -d @ 丨 -d @g' \
  | sed -e 's@ --reuse-port @ 丨 --reuse-port @g' \
  | sed -e 's@ --fast-open @ 丨 --fast-open @g' \
  | sed -e 's@ --acl @ 丨 --acl @g' \
@@ -431,6 +421,9 @@ echo -n "$1" \
 
 start_ss_redir()
 {
+
+ss_plugin_client_name="$(nvram get ss_plugin_client_name)"
+[ ! -z "$ss_plugin_client_name" ] && { kill_ps "$ss_plugin_client_name" ; ss_plugin_client_name="" ; nvram set ss_plugin_client_name="" ; }
 [ -z "$ss_server" ] && { logger -t "【SS】" "[错误!!] SS服务器没有设置"; stop_SS; clean_SS; } 
 if [ "$ss_udp_enable" == 1 ] ; then
 ss_usage=" $ss_usage -u "
@@ -501,6 +494,22 @@ if [ ! -z "$ss_usage_custom" ] ; then
 	ss_plugin_config="$(echo $ss_plugin_config | sed -e 's@^"@@g' | sed -e 's@"$@@g')"
 	logger -t "【SS】" "高级启动参数选项内容含有 --plugin-opts $ss_plugin_config ，优先使用此 插件参数"
 fi
+
+# 插件名称 插件参数 调整名称
+[ ! -z "$(echo "$ss_plugin_name" | grep "simple-obfs")" ] && ss_plugin_name="obfs-local"
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs-host")" ] && ss_plugin_name="obfs-local"
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs=tls")" ] && ss_plugin_name="obfs-local"
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs=http")" ] && ss_plugin_name="obfs-local"
+[ ! -z "$(echo "$ss_plugin_name" | grep "GoQuiet")" ] && ss_plugin_name="gq-client"
+[ ! -z "$(echo "$ss_plugin_name" | grep "goquiet")" ] && ss_plugin_name="gq-client"
+[ ! -z "$(echo "$ss_plugin_name" | grep "kcptun")" ] && ss_plugin_name="ss_kcptun"
+[ ! -z "$(echo "$ss_plugin_name" | grep "client_linux_mipsle")" ] && ss_plugin_name="ss_kcptun"
+[ ! -z "$(echo "$ss_plugin_name" | grep "Cloak")" ] && ss_plugin_name="ck-client"
+[ ! -z "$(echo "$ss_plugin_name" | grep "cloak")" ] && ss_plugin_name="ck-client"
+[ ! -z "$(echo "$ss_plugin_name" | grep "v2ray")" ] && ss_plugin_name="v2ray-plugin"
+[ ! -z "$(echo "$ss_plugin_name" | grep "V2ray")" ] && ss_plugin_name="v2ray-plugin"
+[ ! -z "$ss_plugin_name" ] && { ss_plugin_client_name="$ss_plugin_name" ; nvram set ss_plugin_client_name="$ss_plugin_client_name" ; }
+[ ! -z "$ss_plugin_client_name" ] && kill_ps "$ss_plugin_client_name"
 
 # 删除混淆、协议、分割符号
 options1="$(echo "$ss_usage" | sed -r 's/\ -g[ ]+[^丨]+//g' | sed -r 's/\ -G[ ]+[^丨]+//g' | sed -r 's/\ -o[ ]+[^丨]+//g' | sed -r 's/\ -O[ ]+[^丨]+//g' | sed -r 's/\ --plugin-opts[ ]+[^丨]+//g' | sed -r 's/\ --plugin[ ]+[^丨]+//g' | sed -e "s@丨@@g" | sed -e "s@  @ @g" | sed -e "s@  @ @g")"
@@ -1157,6 +1166,8 @@ sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 killall_ss_redir
 killall_ss_local
+ss_plugin_client_name="$(nvram get ss_plugin_client_name)"
+[ ! -z "$ss_plugin_client_name" ] && { kill_ps "$ss_plugin_client_name" ; ss_plugin_client_name="" ; nvram set ss_plugin_client_name="" ; }
 killall pdnsd dnsproxy sh_sskeey_k.sh
 killall -9 pdnsd dnsproxy sh_sskeey_k.sh
 rm -f /tmp/sh_sskeey_k.sh

@@ -1674,7 +1674,11 @@ ss_name_x="$(base64decode "$ss_name_x")"
 if [ ! -z "$(cat /tmp/ping_server_error.txt | grep "error_""$ss_server_x""_error")" ] ; then
 ping_text=""
 else
+if [ ! -z "$(echo "$ss_name_x" | grep -Eo "剩余流量|过期时间")" ] ; then
+ping_text=""
+else
 ping_text=`ping -4 $ss_server_x -w 3 -W 3 -q`
+fi
 fi
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
@@ -2221,21 +2225,46 @@ mkdir -p /tmp/link
 rm -f /tmp/vmess/link/ssd_link.txt
 cp $1 /tmp/vmess/link/ssd_link.txt
 sed -e  's@ssd://@@g' -i /tmp/vmess/link/ssd_link.txt
+sed -e  's@$@==@g' -i /tmp/vmess/link/ssd_link.txt
 ssd_jq_link="$(cat /tmp/vmess/link/ssd_link.txt | sed -n '1p' | base64 -d)"
-ssd_encryption="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
-if [ "$ssd_encryption" == "aes-256-cfb" ] || [ "$ssd_encryption" == "aes-128-cfb" ] || [ "$ssd_encryption" == "chacha20" ] || [ "$ssd_encryption" == "chacha20-ietf" ] || [ "$ssd_encryption" == "aes-256-gcm" ] || [ "$ssd_encryption" == "aes-128-gcm" ] || [ "$ssd_encryption" == "chacha20-poly1305" ] || [ "$ssd_encryption" == "chacha20-ietf-poly1305" ] ; then
 ssd_port="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
 ssd_password="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
+ssd_encryption="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
+ssd_plugin="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
+ssd_options="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
 ssd_expiry="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["expiry"])')" # 时间
 ssd_airport="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["airport"])')" # 名称
 ssd_length="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers"]) | length')" # 数量
+[ "$ssd_port" == "null" ] && ssd_port=""
+[ "$ssd_encryption" == "null" ] && ssd_encryption=""
+[ "$ssd_password" == "null" ] && ssd_password=""
+[ "$ssd_plugin" == "null" ] && ssd_plugin=""
+[ "$ssd_options" == "null" ] && ssd_options=""
+logger -t "【SSD订阅】" "【$ssd_airport】过期时间： $ssd_expiry"
 ssd_length=$(( ssd_length - 1 ))
 if [ "$ssd_length" -gt 0 ] ; then
 	for ssd_x in $(seq 0 $ssd_length)
 	do
-	ssd_server="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"',"server"])')" # 服务器
-	ssd_remarks="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"',"remarks"])')" # 节点名称
-	ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
+	ssd_jq_x_link="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"'])')"
+	[ ! -z "$(echo $ssd_jq_x_link | grep '"encryption"')" ] && ssd_x_encryption="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
+	[ "$ssd_x_encryption" == "null" ] && ssd_x_encryption=""
+	[ -z "$ssd_x_encryption" ] && ssd_x_encryption="$ssd_encryption"
+	if [ "$ssd_x_encryption" == "aes-256-cfb" ] || [ "$ssd_x_encryption" == "aes-128-cfb" ] || [ "$ssd_x_encryption" == "chacha20" ] || [ "$ssd_x_encryption" == "chacha20-ietf" ] || [ "$ssd_x_encryption" == "aes-256-gcm" ] || [ "$ssd_x_encryption" == "aes-128-gcm" ] || [ "$ssd_x_encryption" == "chacha20-poly1305" ] || [ "$ssd_x_encryption" == "chacha20-ietf-poly1305" ] ; then
+		ssd_server="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["server"])')" # 服务器
+		ssd_remarks="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["remarks"])')" # 节点名称
+		[ ! -z "$(echo $ssd_jq_x_link | grep '"port"')" ] && ssd_x_port="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
+		[ ! -z "$(echo $ssd_jq_x_link | grep '"password"')" ] && ssd_x_password="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
+		[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin"')" ] && ssd_x_plugin="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
+		[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin_options"')" ] && ssd_x_options="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
+		[ "$ssd_x_port" == "null" ] && ssd_x_port=""
+		[ "$ssd_x_password" == "null" ] && ssd_x_password=""
+		[ "$ssd_x_plugin" == "null" ] && ssd_x_plugin=""
+		[ "$ssd_x_options" == "null" ] && ssd_x_options=""
+		[ -z "$ssd_x_port" ] && ssd_x_port="$ssd_port"
+		[ -z "$ssd_x_password" ] && ssd_x_password="$ssd_password"
+		[ -z "$ssd_x_plugin" ] && ssd_x_plugin="$ssd_plugin"
+		[ -z "$ssd_x_options" ] && ssd_x_options="$ssd_options"
+		ss_link_plugin_opts=" -O origin -o plain --plugin $ssd_x_plugin --plugin-opts $ssd_x_options "
 		link_echo=""
 		link_echo="$link_echo"'["ss", '
 		vmess_link_ps="$ssd_remarks"
@@ -2243,10 +2272,10 @@ if [ "$ssd_length" -gt 0 ] ; then
 		link_echo="$link_echo"'"'"$ss_link_name"'", '
 		link_echo="$link_echo"'"'"$ssd_server"'", '
 		vmess_link_add="$ssd_server"
-		link_echo="$link_echo"'"'"$ssd_port"'", '
-		ss_link_password="$(base64encode "$ssd_password")"
+		link_echo="$link_echo"'"'"$ssd_x_port"'", '
+		ss_link_password="$(base64encode "$ssd_x_password")"
 		link_echo="$link_echo"'"'"$ss_link_password"'", '
-		link_echo="$link_echo"'"'"$ssd_encryption"'", '
+		link_echo="$link_echo"'"'"$ssd_x_encryption"'", '
 		link_echo="$link_echo"'"", '
 		link_echo="$link_echo"'"", '
 		ss_link_plugin_opts="$(base64encode "$ss_link_plugin_opts")"
@@ -2256,8 +2285,8 @@ if [ "$ssd_length" -gt 0 ] ; then
 		sed -Ei "s@]]@],@g" /www/link/ss.js
 		sed -Ei '/^\]|^$/d' /www/link/ss.js
 		echo "$link_echo" >> /www/link/ss.js
+	fi
 	done
-fi
 fi
 rm -rf /tmp/vmess/link/*
 }
