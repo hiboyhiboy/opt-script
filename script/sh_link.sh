@@ -450,11 +450,15 @@ if [ "$ssd_length" -gt 0 ] ; then
 	ssd_jq_x_link="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"'])')"
 	ssd_server="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["server"])')" # 服务器
 	ssd_remarks="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["remarks"])')" # 节点名称
+	ssd_x_ratio="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["ratio"])')" # ratio
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"port"')" ] && ssd_x_port="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"encryption"')" ] && ssd_x_encryption="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"password"')" ] && ssd_x_password="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin"')" ] && ssd_x_plugin="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin_options"')" ] && ssd_x_options="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
+	[ "$ssd_x_ratio" == "null" ] && ssd_x_ratio=""
+	[ "$ssd_x_ratio" == "1" ] && ssd_x_ratio=""
+	[ ! -z "$ssd_x_ratio" ] && ssd_x_ratio="「$ssd_x_ratio」"
 	[ "$ssd_x_port" == "null" ] && ssd_x_port=""
 	[ "$ssd_x_encryption" == "null" ] && ssd_x_encryption=""
 	[ "$ssd_x_password" == "null" ] && ssd_x_password=""
@@ -467,7 +471,7 @@ if [ "$ssd_length" -gt 0 ] ; then
 	[ -z "$ssd_x_options" ] && ssd_x_options="$ssd_options"
 	ss_link_plugin_opts=" -O origin -o plain --plugin $ssd_x_plugin --plugin-opts $ssd_x_options "
 	link_echo=""
-	link_echo="$link_echo"'["'"🔗$(base64encode "$ssd_remarks")"'", '
+	link_echo="$link_echo"'["'"🔗$(base64encode "$ssd_remarks $ssd_x_ratio")"'", '
 	link_echo="$link_echo"'"'"$ssd_server"'", '
 	link_echo="$link_echo"'"'"$ssd_x_port"'", '
 	link_echo="$link_echo"'"'"$(base64encode "$ssd_x_password")"'", '

@@ -5,6 +5,8 @@ transocks_enable=`nvram get app_27`
 [ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
 ipt2socks_enable=`nvram get app_104`
 [ -z $ipt2socks_enable ] && ipt2socks_enable=0 && nvram set app_104=0
+kumasocks_enable=`nvram get app_116`
+[ -z $kumasocks_enable ] && kumasocks_enable=0 && nvram set app_116=0
 
 if [ "$ipt2socks_enable" == "1" ] ; then
 #logger -t "【transocks】" "跳过启用，已经启用 ipt2socks"
@@ -18,6 +20,12 @@ transocks_mode_x=`nvram get app_28`
 [ -z $transocks_mode_x ] && transocks_mode_x=0 && nvram set app_28=0
 transocks_proxy_mode=`nvram get app_29`
 [ -z $transocks_proxy_mode ] && transocks_proxy_mode="0" && nvram set app_29="0"
+if [ "$kumasocks_enable" == "1" ] ; then
+tran_c_socks="kumasocks"
+[ "$transocks_proxy_mode" != 0 ] && transocks_proxy_mode="0" && nvram set app_29="0"
+else
+tran_c_socks="transocks"
+fi
 [ "$transocks_proxy_mode" == 0 ] && transocks_proxy_mode_x="socks5"
 [ "$transocks_proxy_mode" == 1 ] && transocks_proxy_mode_x="http"
 nvram set transocks_proxy_mode_x="$transocks_proxy_mode_x"
@@ -27,7 +35,7 @@ transocks_server="$(nvram get app_32)"
 if [ "$transocks_enable" != "0" ]  ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
 if [ "Sh58_tran_socks.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" ] ; then
-	logger -t "【transocks】" "错误！！！由于已启用 $ss_tproxy_auser 透明代理，停止启用 transocks 透明代理！"
+	logger -t "【$tran_c_socks】" "错误！！！由于已启用 $ss_tproxy_auser 透明代理，停止启用 transocks 透明代理！"
 	transocks_enable=0 && nvram set app_27=0
 fi
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
@@ -52,7 +60,7 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
-		logger -t "【transocks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【$tran_c_socks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
 	transocks_renum=${transocks_renum:-"0"}
@@ -61,7 +69,7 @@ if [ "$1" = "x" ] ; then
 	if [ "$transocks_renum" -gt "2" ] ; then
 		I=19
 		echo $I > $relock
-		logger -t "【transocks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		logger -t "【$tran_c_socks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		while [ $I -gt 0 ]; do
 			I=$(($I - 1))
 			echo $I > $relock
@@ -95,14 +103,15 @@ transocks_check () {
 
 transocks_get_status
 if [ "$transocks_enable" = "1" ] ; then
-	[ ! -z "$transocks_server" ] || logger -t "【transocks】" "远端服务器IP地址:未填写"
-	[ $transocks_listen_address ] || logger -t "【transocks】" "透明重定向的代理服务器IP地址:未填写"
-	[ $transocks_listen_port ] || logger -t "【transocks】" "透明重定向的代理服务器端口:未填写"
+	[ ! -z "$transocks_server" ] || logger -t "【$tran_c_socks】" "远端服务器IP地址:未填写"
+	[ $transocks_listen_address ] || logger -t "【$tran_c_socks】" "透明重定向的代理服务器IP地址:未填写"
+	[ $transocks_listen_port ] || logger -t "【$tran_c_socks】" "透明重定向的代理服务器端口:未填写"
 	[ ! -z "$transocks_server" ] && [ $transocks_listen_address ] && [ $transocks_listen_port ] \
-	|| { logger -t "【transocks】" "错误！！！请正确填写。"; needed_restart=1; transocks_enable=0; }
+	|| { logger -t "【$tran_c_socks】" "错误！！！请正确填写。"; needed_restart=1; transocks_enable=0; }
 fi
 if [ "$transocks_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "`pidof transocks`" ] && logger -t "【transocks】" "停止 transocks" && transocks_close
+	[ ! -z "`pidof transocks`" ] && logger -t "【$tran_c_socks】" "停止 transocks" && transocks_close
+	[ ! -z "`pidof kumasocks`" ] && logger -t "【$tran_c_socks】" "停止 kumasocks" && transocks_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$transocks_enable" = "1" ] ; then
@@ -110,25 +119,25 @@ if [ "$transocks_enable" = "1" ] ; then
 		transocks_close
 		transocks_start
 	else
-		[ -z "`pidof transocks`" ] && transocks_restart
+		[ -z "`pidof $tran_c_socks`" ] && transocks_restart
 	fi
 fi
 }
 
 transocks_keep () {
-logger -t "【transocks】" "守护进程启动"
+logger -t "【$tran_c_socks】" "守护进程启动"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【transocks】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof transocks\`" ] && nvram set transocks_status=00 && logger -t "【transocks】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【transocks】|^$/d' /tmp/script/_opt_script_check # 【transocks】
+[ -z "\`pidof $tran_c_socks\`" ] && nvram set transocks_status=00 && logger -t "【transocks】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【transocks】|^$/d' /tmp/script/_opt_script_check # 【transocks】
 OSC
 #return
 fi
 
 while true; do
-	if [ -z "`pidof transocks`" ] ; then
-		logger -t "【transocks】" "重新启动"
+	if [ -z "`pidof $tran_c_socks`" ] ; then
+		logger -t "【$tran_c_socks】" "重新启动"
 		transocks_restart
 	fi
 sleep 30
@@ -139,8 +148,8 @@ transocks_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【transocks】|【ipt2socks】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh58_tran_socks.sh"
-killall transocks ipt2socks
-killall -9 transocks ipt2socks
+killall transocks ipt2socks kumasocks
+killall -9 transocks ipt2socks kumasocks
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app10"
 kill_ps "_tran_socks.sh"
@@ -152,31 +161,40 @@ kill_ps "$scriptname"
 transocks_start () {
 
 check_webui_yes
-SVC_PATH="/opt/bin/transocks"
+if [ "$kumasocks_enable" == "1" ] ; then
+tran_c_socks="kumasocks"
+else
+tran_c_socks="transocks"
+fi
+SVC_PATH="/opt/bin/$tran_c_socks"
 if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【transocks】" "找不到 $SVC_PATH，安装 opt 程序"
+	logger -t "【$tran_c_socks】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
-wgetcurl_file "$SVC_PATH" "$hiboyfile/transocks" "$hiboyfile2/transocks"
-[[ "$(transocks -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/transocks
+wgetcurl_file "$SVC_PATH" "$hiboyfile/$tran_c_socks" "$hiboyfile2/$tran_c_socks"
+[[ "$($tran_c_socks -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf "$SVC_PATH"
 if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【transocks】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【transocks】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && transocks_restart x
+	logger -t "【$tran_c_socks】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
+	logger -t "【$tran_c_socks】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && transocks_restart x
 fi
 chmod 777 "$SVC_PATH"
-transocks_v=$(transocks -h 2>&1  | grep transocks_ver | sed -n '1p')
+transocks_v=$($tran_c_socks -h 2>&1  | grep "$tran_c_socks"_ver | sed -n '1p')
 nvram set transocks_v="$transocks_v"
-logger -t "【transocks】" "运行 transocks"
+logger -t "【$tran_c_socks】" "运行 $tran_c_socks"
 
 #运行脚本启动/opt/bin/transocks
 /etc/storage/app_9.sh
-cd $(dirname `which transocks`)
-killall -9 transocks
+cd $(dirname `which $tran_c_socks`)
+killall -9 $tran_c_socks
+if [ "$kumasocks_enable" == "1" ] ; then
+kumasocks -c /tmp/kumasocks.toml &
+else
 transocks -f /tmp/transocks.toml &
+fi
 
 sleep 2
-[ ! -z "$(ps -w | grep "transocks" | grep -v grep )" ] && logger -t "【transocks】" "启动成功" && transocks_restart o
-[ -z "$(ps -w | grep "transocks" | grep -v grep )" ] && logger -t "【transocks】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && transocks_restart x
+[ ! -z "$(ps -w | grep "$tran_c_socks" | grep -v grep )" ] && logger -t "【$tran_c_socks】" "启动成功" && transocks_restart o
+[ -z "$(ps -w | grep "$tran_c_socks" | grep -v grep )" ] && logger -t "【$tran_c_socks】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && transocks_restart x
 initopt
 Sh99_ss_tproxy.sh auser_check "Sh58_tran_socks.sh"
 ss_tproxy_set "Sh58_tran_socks.sh"
@@ -190,15 +208,15 @@ exit 0
 ss_tproxy_set() {
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
 if [ "$1" != "$ss_tproxy_auser" ] ; then
-	logger -t "【transocks】" "脚本 [Sh99_ss_tproxy.sh] 当前使用者: $auser_b ，跳过 $auser_a 的运行命令"
-	logger -t "【transocks】" "需要停用 $auser_b 后才能使用 $auser_a 运行 [Sh99_ss_tproxy.sh] 脚本"
+	logger -t "【$tran_c_socks】" "脚本 [Sh99_ss_tproxy.sh] 当前使用者: $auser_b ，跳过 $auser_a 的运行命令"
+	logger -t "【$tran_c_socks】" "需要停用 $auser_b 后才能使用 $auser_a 运行 [Sh99_ss_tproxy.sh] 脚本"
 	return
 fi
 lan_ipaddr=`nvram get lan_ipaddr`
 ss_tproxy_mode_x=`nvram get app_110`
 [ -z $ss_tproxy_mode_x ] && ss_tproxy_mode_x=0 && nvram set app_110=0
-[ "$ss_tproxy_mode_x" = "0" ] && logger -t "【transocks】" "【自动】设置 ss_tproxy 配置文件，配置导入中..."
-[ "$ss_tproxy_mode_x" = "1" ] && logger -t "【transocks】" "【手动】设置 ss_tproxy 配置文件，跳过配置导入" && return
+[ "$ss_tproxy_mode_x" = "0" ] && logger -t "【$tran_c_socks】" "【自动】设置 ss_tproxy 配置文件，配置导入中..."
+[ "$ss_tproxy_mode_x" = "1" ] && logger -t "【$tran_c_socks】" "【手动】设置 ss_tproxy 配置文件，跳过配置导入" && return
  # /etc/storage/app_27.sh
 [ "$transocks_mode_x" == "0" ] && sstp_set mode='chnroute'
 [ "$transocks_mode_x" == "1" ] && sstp_set mode='gfwlist'
@@ -287,7 +305,7 @@ umount -l /opt/app/ss_tproxy/wanlist.ext
 mount --bind /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 umount -l /opt/app/ss_tproxy/lanlist.ext
 mount --bind /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
-logger -t "【transocks】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
+logger -t "【$tran_c_socks】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 
 sstp_set() {
@@ -315,6 +333,7 @@ fi
 
 initconfig () {
 [ -z "$(cat /etc/storage/app_9.sh | grep '0\.0\.0\.0:1098')" ] && rm -f /etc/storage/app_9.sh
+[ -z "$(cat /etc/storage/app_9.sh | grep 'kumasocks')" ] && rm -f /etc/storage/app_9.sh
 	if [ ! -f "/etc/storage/app_9.sh" ] || [ ! -s "/etc/storage/app_9.sh" ] ; then
 cat > "/etc/storage/app_9.sh" <<-\VVR
 #!/bin/sh
@@ -322,16 +341,23 @@ lan_ipaddr=`nvram get lan_ipaddr`
 transocks_listen_address=`nvram get app_30`
 transocks_listen_port=`nvram get app_31`
 transocks_proxy_mode_x=`nvram get transocks_proxy_mode_x`
+# transocks 配置
 cat > "/tmp/transocks.toml" <<-TTR
 # listening address of transocks.
-listen = "$lan_ipaddr:1098"
-
+listen = "0.0.0.0:1098"
 proxy_url = "$transocks_proxy_mode_x://$transocks_listen_address:$transocks_listen_port"
-
 [log]
 filename = "/tmp/syslog.log"
 level = "error"               # critical", error, warning, info, debug
 format = "plain"              # plain, logfmt, json
+
+TTR
+# kumasocks 配置
+cat > "/tmp/kumasocks.toml" <<-TTR
+# listening address of transocks.
+listen-addr = "0.0.0.0:1098"
+proxy-addr = "socks5://$transocks_listen_address:$transocks_listen_port"
+io-copy-hack = false
 
 TTR
 
@@ -361,7 +387,7 @@ update_init
 mkdir -p /opt/app/transocks
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/transocks/Advanced_Extensions_transocks.asp
-	[ -f /opt/bin/transocks ] && rm -f /opt/bin/transocks /opt/opt_backup/bin/transocks
+	[ -f /opt/bin/transocks ] && rm -f /opt/bin/transocks /opt/opt_backup/bin/transocks /opt/bin/kumasocks /opt/opt_backup/bin/kumasocks
 fi
 
 initconfig
@@ -390,8 +416,8 @@ stop)
 	;;
 updateapp10)
 	transocks_restart o
-	[ "$transocks_enable" = "1" ] && nvram set transocks_status="updatetransocks" && logger -t "【transocks】" "重启" && transocks_restart
-	[ "$transocks_enable" != "1" ] && nvram set transocks_v="" && logger -t "【transocks】" "更新" && update_app del
+	[ "$transocks_enable" = "1" ] && nvram set transocks_status="updatetransocks" && logger -t "【$tran_c_socks】" "重启" && transocks_restart
+	[ "$transocks_enable" != "1" ] && nvram set transocks_v="" && logger -t "【$tran_c_socks】" "更新" && update_app del
 	;;
 update_app)
 	update_app

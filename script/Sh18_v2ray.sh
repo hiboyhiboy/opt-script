@@ -2252,10 +2252,14 @@ if [ "$ssd_length" -gt 0 ] ; then
 	if [ "$ssd_x_encryption" == "aes-256-cfb" ] || [ "$ssd_x_encryption" == "aes-128-cfb" ] || [ "$ssd_x_encryption" == "chacha20" ] || [ "$ssd_x_encryption" == "chacha20-ietf" ] || [ "$ssd_x_encryption" == "aes-256-gcm" ] || [ "$ssd_x_encryption" == "aes-128-gcm" ] || [ "$ssd_x_encryption" == "chacha20-poly1305" ] || [ "$ssd_x_encryption" == "chacha20-ietf-poly1305" ] ; then
 		ssd_server="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["server"])')" # 服务器
 		ssd_remarks="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["remarks"])')" # 节点名称
+		ssd_x_ratio="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["ratio"])')" # ratio
 		[ ! -z "$(echo $ssd_jq_x_link | grep '"port"')" ] && ssd_x_port="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
 		[ ! -z "$(echo $ssd_jq_x_link | grep '"password"')" ] && ssd_x_password="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
 		[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin"')" ] && ssd_x_plugin="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
 		[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin_options"')" ] && ssd_x_options="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
+		[ "$ssd_x_ratio" == "null" ] && ssd_x_ratio=""
+		[ "$ssd_x_ratio" == "1" ] && ssd_x_ratio=""
+		[ ! -z "$ssd_x_ratio" ] && ssd_x_ratio="「$ssd_x_ratio」"
 		[ "$ssd_x_port" == "null" ] && ssd_x_port=""
 		[ "$ssd_x_password" == "null" ] && ssd_x_password=""
 		[ "$ssd_x_plugin" == "null" ] && ssd_x_plugin=""
@@ -2268,7 +2272,7 @@ if [ "$ssd_length" -gt 0 ] ; then
 		link_echo=""
 		link_echo="$link_echo"'["ss", '
 		vmess_link_ps="$ssd_remarks"
-		ss_link_name="$(base64encode "$ssd_remarks")"
+		ss_link_name="$(base64encode "$ssd_remarks $ssd_x_ratio")"
 		link_echo="$link_echo"'"'"$ss_link_name"'", '
 		link_echo="$link_echo"'"'"$ssd_server"'", '
 		vmess_link_add="$ssd_server"
