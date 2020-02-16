@@ -448,7 +448,7 @@ fi
 line4="line4" ; line2="" ; 
 if [ ! -z "$line3" ] ; then
 line2_server="$(echo "$line" | sed -e "s@\ @@g" | awk -F '","' '{ print($2) }')"
-[ ! -z "$line2_server" ] && line2="$(cat /opt/storage/link/ping.js | sed -e "s@\ @@g" | awk -F "$line2_server=" '{ print($2) }' | awk -F "🔗" '{ print($1) }')"
+[ ! -z "$line2_server" ] && line2="$(cat /etc/storage/link/ping.js | sed -e "s@\ @@g" | awk -F "$line2_server=" '{ print($2) }' | awk -F "🔗" '{ print($1) }')"
 [ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-success.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
 [ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-warning.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
 [ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-danger.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"

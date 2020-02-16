@@ -567,8 +567,8 @@ sstp_set opts_ip_for_check_net=''
 sstp_set file_gfwlist_txt='/opt/app/ss_tproxy/rule/gfwlist.txt'
 sstp_set file_gfwlist_ext='/opt/app/ss_tproxy/gfwlist.ext'
 sstp_set file_ignlist_ext='/opt/app/ss_tproxy/ignlist.ext'
-sstp_set file_lanlist_ext='/opt/app/ss_tproxy/lanlist.ext'
-sstp_set file_wanlist_ext='/opt/app/ss_tproxy/wanlist.ext'
+sstp_set file_lanlist_ext='/etc/storage/shadowsocks_ss_spec_lan.sh'
+sstp_set file_wanlist_ext='/etc/storage/shadowsocks_ss_spec_wan.sh'
 sstp_set file_chnroute_txt='/opt/app/ss_tproxy/rule/chnroute.txt'
 sstp_set file_chnroute6_txt='/opt/app/ss_tproxy/rule/chnroute6.txt'
 sstp_set file_chnroute_set='/opt/app/ss_tproxy/chnroute.set'
@@ -592,10 +592,10 @@ kcptun_server=`nvram get kcptun_server`
 echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 
 # 链接配置文件
-umount  /opt/app/ss_tproxy/wanlist.ext
-umount  /opt/app/ss_tproxy/lanlist.ext
-cp -f /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
-cp -f /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+rm -f /opt/app/ss_tproxy/wanlist.ext
+rm -f /opt/app/ss_tproxy/lanlist.ext
+ln -sf /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【v2ray】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 
@@ -2388,7 +2388,7 @@ line2_type="$(echo "$line" | sed -e "s@\ @@g" | awk -F '"' '{ print($2) }')"
 [ "$line2_type" == "ss" ] && line2_server_type=3
 [ "$line2_type" == "vmess" ] && line2_server_type=4
 line2_server="$(echo "$line" | sed -e "s@\ @@g" | awk -F ',' '{ print($'$line2_server_type') }' | sed -e 's@\"@@g')"
-[ ! -z "$line2_server" ] && line2="$(cat /opt/storage/link/ping_$line2_type.js | sed -e "s@\ @@g" | awk -F "$line2_server=" '{ print($2) }' | awk -F "🔗" '{ print($1) }')"
+[ ! -z "$line2_server" ] && line2="$(cat /etc/storage/link/ping_$line2_type.js | sed -e "s@\ @@g" | awk -F "$line2_server=" '{ print($2) }' | awk -F "🔗" '{ print($1) }')"
 [ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-success.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
 [ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-warning.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"
 [ -z "$line2" ] && line2="$(echo "$line" | grep -E -o \"btn-danger.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | grep -Eo [0-9]+ )"

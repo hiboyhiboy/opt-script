@@ -515,8 +515,8 @@ opts_ip_for_check_net='114.114.114.114' # 检测外网是否可访问的 IP，pi
 file_gfwlist_txt='/opt/app/ss_tproxy/rule/gfwlist.txt' # gfwlist/chnlist 模式预置文件
 file_gfwlist_ext='/opt/app/ss_tproxy/gfwlist.ext'      # gfwlist/chnlist 模式扩展文件
 file_ignlist_ext='/opt/app/ss_tproxy/ignlist.ext'      # global/chnroute 模式扩展文件
-file_lanlist_ext='/opt/app/ss_tproxy/lanlist.ext'      # 内网(LAN)IP行为 模式扩展文件
-file_wanlist_ext='/opt/app/ss_tproxy/wanlist.ext'      # 外网(WAN)IP行为 模式扩展文件
+file_lanlist_ext='/etc/storage/shadowsocks_ss_spec_lan.sh'      # 内网(LAN)IP行为 模式扩展文件
+file_wanlist_ext='/etc/storage/shadowsocks_ss_spec_wan.sh'      # 外网(WAN)IP行为 模式扩展文件
 file_chnroute_txt='/opt/app/ss_tproxy/rule/chnroute.txt'   # chnroute 地址段文件(文件里面每一行一个IP)
 file_chnroute6_txt='/opt/app/ss_tproxy/rule/chnroute6.txt' # chnroute 地址段文件(文件里面每一行一个IP)
 file_chnroute_set='/opt/app/ss_tproxy/chnroute.set'    # chnroute 地址段文件 (iptables)
@@ -539,10 +539,10 @@ touch $proxy_all_svraddr $proxy_svraddr4 $proxy_svraddr6 $chinadns_privaddr4 $ch
 touch $file_gfwlist_txt $file_gfwlist_ext $file_ignlist_ext $file_lanlist_ext $file_wanlist_ext
 touch $file_chnroute_txt $file_chnroute6_txt $file_chnroute_set $file_chnroute6_set
 # 链接配置文件
-umount  /opt/app/ss_tproxy/wanlist.ext
-umount  /opt/app/ss_tproxy/lanlist.ext
-cp -f /opt/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
-cp -f /opt/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+rm -f /opt/app/ss_tproxy/wanlist.ext
+rm -f /opt/app/ss_tproxy/lanlist.ext
+ln -sf /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 
 }
 
