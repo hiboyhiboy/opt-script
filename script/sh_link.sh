@@ -503,6 +503,8 @@ if [ "$rt_ssnum_x_tmp" = "clean" ] ; then
 	echo "var ACL2List = [[], " > /www/link/link.js
 	echo '["🔗显示测试，请重新更新订阅", "192.168.123.1", "8888", "passwd", "aes-128-gcm", "btn-success", "11 ms", " -O origin -o plain --plugin --plugin-opts ", "ss"],' >> /www/link/link.js
 	echo '[]]' >> /www/link/link.js
+	echo '🔗ss://YWVzLTEyOC1nY206dGVzdA==@192.168.100.1:8888#Example1' > /etc/storage/app_24.sh
+	echo '🔗ss://cmM0LW1kNTpwYXNzd2Q=@192.168.100.1:8888/?plugin=obfs-local%3Bobfs%3Dhttp#Example2' >> /etc/storage/app_24.sh
 	nvram set rt_ssnum_x_tmp=0
 	nvram commit
 	logger -t "【SS】" "完成重置订阅文件，请重新更新订阅"
@@ -516,6 +518,7 @@ if [ "$rt_ssnum_x_tmp" = "del" ] ; then
 	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
 	#echo -n '' > /www/link/link.js
 	sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
+	sed -Ei '/🔗|dellink_ss|^$/d' /etc/storage/app_24.sh
 	clear_link
 	nvram set rt_ssnum_x_tmp=0
 	nvram commit

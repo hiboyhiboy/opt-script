@@ -89,6 +89,12 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
+		if [ ! -z "$app_95" ] ; then
+			[ -f $relock ] && rm -f $relock
+			logger -t "【v2ray_restart】" "匹配关键词自动选用节点故障转移 /tmp/link_v2_matching/link_v2_matching.txt"
+			v2ray_link_v2_matching
+			sleep 10
+		fi
 		logger -t "【v2ray】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
@@ -1764,6 +1770,7 @@ if [ "$vmess_x_tmp" = "del_link" ] ; then
 	rm -f /www/link/ss.js
 	echo "var ACL4List = [ " > /www/link/ss.js
 	echo ']' >> /www/link/ss.js
+	sed -Ei '/🔗|dellink_ss|^$/d' /etc/storage/app_25.sh
 	vmess_x_tmp=""
 	logger -t "【vmess】" "完成清空上次订阅节点配置 请按【F5】刷新 web 查看"
 	return

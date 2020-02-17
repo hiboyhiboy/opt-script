@@ -415,6 +415,7 @@ ss_link_matching(){
 
 check_link "X_check_app_24"
 [ ! -f /www/link/link.js ] && logger -t "【自动选用节点】" "错误！找不到 /www/link/link.js" && return 1
+kill_ps "Sh15_ss.sh"
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 jq_check
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then

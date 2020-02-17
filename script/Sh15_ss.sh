@@ -762,6 +762,179 @@ logger -t "【SS】" "高级启动参数选项内容含有 ssrr 协议: $ssrr_cu
 ssrr_type=1
 ss_type=1
 fi
+
+optssredir="0"
+if [ "$ss_type" != "1" ] ; then
+# SS
+if [ "$ss_mode_x" != "3" ] ; then
+	hash ss-redir 2>/dev/null || optssredir="1"
+else
+	hash ss-local 2>/dev/null || optssredir="2"
+fi
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+	hash ss-local 2>/dev/null || optssredir="3"
+fi
+# SS
+fi
+
+if [ "$ss_type" = "1" ] ; then
+if [ "$ssrr_type" = "1" ] ; then
+# SSRR
+if [ "$ss_mode_x" != "3" ] ; then
+	hash ssrr-redir 2>/dev/null || optssredir="1"
+else
+	hash ssrr-local 2>/dev/null || optssredir="2"
+fi
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+	hash ssrr-local 2>/dev/null || optssredir="3"
+fi
+# SSRR
+else
+# SSR
+if [ "$ss_mode_x" != "3" ] ; then
+	hash ssr-redir 2>/dev/null || optssredir="1"
+else
+	hash ssr-local 2>/dev/null || optssredir="2"
+fi
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+	hash ssr-local 2>/dev/null || optssredir="3"
+fi
+fi
+# SSR
+fi
+if [ "$ss_dnsproxy_x" = "0" ] ; then
+hash dnsproxy 2>/dev/null || optssredir="5"
+elif [ "$ss_dnsproxy_x" = "1" ] ; then
+hash pdnsd 2>/dev/null || optssredir="5"
+fi
+[ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
+[ ! -z "$ss_plugin_name" ] && { hash $ss_plugin_name 2>/dev/null || optssredir="4" ; }
+if [ "$optssredir" != "0" ] ; then
+	# 找不到ss-redir，安装opt
+	logger -t "【SS】" "找不到 ss-redir 、 ss-local 、 $ss_plugin_name 或 obfs-local ，挂载opt"
+	/tmp/script/_mountopt start
+	initopt
+fi
+optssredir="0"
+
+if [ "$ss_type" != "1" ] ; then
+# SS
+if [ "$ss_mode_x" != "3" ] ; then
+chmod 777 "/usr/sbin/ss-redir"
+	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
+	hash ss-redir 2>/dev/null || optssredir="1"
+else
+chmod 777 "/usr/sbin/ss-local"
+	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
+	hash ss-local 2>/dev/null || optssredir="2"
+fi
+if [ "$optssredir" = "1" ] ; then
+	[ ! -s /opt/bin/ss-redir ] && wgetcurl_file "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
+	hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
+fi
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+chmod 777 "/usr/sbin/ss-local"
+	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
+	hash ss-local 2>/dev/null || optssredir="3"
+fi
+if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
+	[ ! -s /opt/bin/ss-local ] && wgetcurl_file "/opt/bin/ss-local" "$hiboyfile/$libsodium_so/ss-local" "$hiboyfile2/$libsodium_so/ss-local"
+	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; ss_restart x ; }
+fi
+# SS
+fi
+
+if [ "$ss_type" = "1" ] ; then
+if [ "$ssrr_type" = "1" ] ; then
+# SSRR
+if [ "$ss_mode_x" != "3" ] ; then
+chmod 777 "/opt/bin/ssrr-redir"
+	[[ "$(ssrr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-redir
+	hash ssrr-redir 2>/dev/null || optssredir="1"
+else
+chmod 777 "/opt/bin/ssrr-local"
+	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
+	hash ssrr-local 2>/dev/null || optssredir="2"
+fi
+if [ "$optssredir" = "1" ] ; then
+	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl_file "/opt/bin/ssrr-redir" "$hiboyfile/$libsodium_so/ssrr-redir" "$hiboyfile2/$libsodium_so/ssrr-redir"
+	hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
+fi
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+chmod 777 "/opt/bin/ssrr-local"
+	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
+	hash ssrr-local 2>/dev/null || optssredir="3"
+fi
+if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
+	[ ! -s /opt/bin/ssrr-local ] && wgetcurl_file "/opt/bin/ssrr-local" "$hiboyfile/$libsodium_so/ssrr-local" "$hiboyfile2/$libsodium_so/ssrr-local"
+	hash ssrr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-local, 请检查系统"; ss_restart x ; }
+fi
+# SSRR
+else
+# SSR
+if [ "$ss_mode_x" != "3" ] ; then
+chmod 777 "/usr/sbin/ssr-redir"
+	[[ "$(ssr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-redir
+	hash ssr-redir 2>/dev/null || optssredir="1"
+else
+chmod 777 "/usr/sbin/ssr-local"
+	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
+	hash ssr-local 2>/dev/null || optssredir="2"
+fi
+if [ "$optssredir" = "1" ] ; then
+	[ ! -s /opt/bin/ssr-redir ] && wgetcurl_file "/opt/bin/ssr-redir" "$hiboyfile/$libsodium_so/ssr-redir" "$hiboyfile2/$libsodium_so/ssr-redir"
+	hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
+fi
+if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+chmod 777 "/usr/sbin/ssr-local"
+	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
+	hash ssr-local 2>/dev/null || optssredir="3"
+fi
+if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
+	[ ! -s /opt/bin/ssr-local ] && wgetcurl_file "/opt/bin/ssr-local" "$hiboyfile/$libsodium_so/ssr-local" "$hiboyfile2/$libsodium_so/ssr-local"
+	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; ss_restart x ; }
+fi
+# SSR
+fi
+fi
+# 下载插件程序
+if [ ! -z "$ss_plugin_name" ] ; then
+	hash $ss_plugin_name 2>/dev/null || optssredir="4"
+	if [ "$optssredir" = "4" ] ; then
+		[ ! -s /opt/bin/$ss_plugin_name ] && wgetcurl_file "/opt/bin/$ss_plugin_name" "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
+		hash $ss_plugin_name 2>/dev/null || optssredir="44"
+	fi
+	if [ "$optssredir" = "44" ] ; then
+		logger -t "【SS】" "找不到 ss_plugin_name :  $ss_plugin_name, 请检查系统"; ss_restart x ;
+	fi
+fi
+# 下载 dnsproxy 程序
+if [ "$ss_dnsproxy_x" = "0" ] ; then
+hash dnsproxy 2>/dev/null && dnsproxy_x="1"
+hash dnsproxy 2>/dev/null || dnsproxy_x="0"
+if [ "$dnsproxy_x" = "0" ] ; then
+	logger -t "【SS】" "找不到 dnsproxy. opt ，挂载opt"
+	/tmp/script/_mountopt start
+	initopt
+	if [ ! -s /opt/bin/dnsproxy ] ; then
+		wgetcurl_file "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
+	fi
+	hash dnsproxy 2>/dev/null || { logger -t "【SS】" "找不到 dnsproxy, 请检查系统"; ss_restart x ; }
+fi
+elif [ "$ss_dnsproxy_x" = "1" ] ; then
+hash pdnsd 2>/dev/null && dnsproxy_x="1"
+hash pdnsd 2>/dev/null || dnsproxy_x="0"
+if [ "$dnsproxy_x" = "0" ] ; then
+	logger -t "【SS】" "找不到 pdnsd. opt ，挂载opt"
+	/tmp/script/_mountopt start
+	initopt
+	if [ ! -s /opt/bin/pdnsd ] ; then
+		wgetcurl_file "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
+	fi
+	hash pdnsd 2>/dev/null || { logger -t "【SS】" "找不到 pdnsd, 请检查系统"; ss_restart x ; }
+fi
+fi
+
 umount  /usr/sbin/ss-redir
 umount  /usr/sbin/ss-local
 umount -l /usr/sbin/ss-redir
@@ -888,182 +1061,8 @@ check_webui_yes
 	logger -t "【SS】" "ss-redir start.【$app_97】"
 	nvram set gfwlist3="ss-redir start.【$app_97】"
 	nvram set ss_internet="2"
-	optssredir="0"
 	rm -f /tmp/check_timeout/*
-if [ "$ss_type" != "1" ] ; then
-# SS
-if [ "$ss_mode_x" != "3" ] ; then
-	hash ss-redir 2>/dev/null || optssredir="1"
-else
-	hash ss-local 2>/dev/null || optssredir="2"
-fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
-	hash ss-local 2>/dev/null || optssredir="3"
-fi
-[ ! -z "$ss_plugin_name" ] && { hash $ss_plugin_name 2>/dev/null || optssredir="4" ; }
-# SS
-fi
 
-if [ "$ss_type" = "1" ] ; then
-if [ "$ssrr_type" = "1" ] ; then
-# SSRR
-if [ "$ss_mode_x" != "3" ] ; then
-	hash ssrr-redir 2>/dev/null || optssredir="1"
-else
-	hash ssrr-local 2>/dev/null || optssredir="2"
-fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
-	hash ssrr-local 2>/dev/null || optssredir="3"
-fi
-# SSRR
-else
-# SSR
-if [ "$ss_mode_x" != "3" ] ; then
-	hash ssr-redir 2>/dev/null || optssredir="1"
-else
-	hash ssr-local 2>/dev/null || optssredir="2"
-fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
-	hash ssr-local 2>/dev/null || optssredir="3"
-fi
-fi
-# SSR
-fi
-if [ "$ss_dnsproxy_x" = "0" ] ; then
-hash dnsproxy 2>/dev/null || optssredir="5"
-elif [ "$ss_dnsproxy_x" = "1" ] ; then
-hash pdnsd 2>/dev/null || optssredir="5"
-fi
-[ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
-if [ "$optssredir" != "0" ] ; then
-	# 找不到ss-redir，安装opt
-	logger -t "【SS】" "找不到 ss-redir 、 ss-local 或 obfs-local ，挂载opt"
-	/tmp/script/_mountopt start
-	initopt
-fi
-optssredir="0"
-
-if [ "$ss_type" != "1" ] ; then
-# SS
-if [ "$ss_mode_x" != "3" ] ; then
-chmod 777 "/usr/sbin/ss-redir"
-	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
-	hash ss-redir 2>/dev/null || optssredir="1"
-else
-chmod 777 "/usr/sbin/ss-local"
-	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
-	hash ss-local 2>/dev/null || optssredir="2"
-fi
-if [ "$optssredir" = "1" ] ; then
-	[ ! -s /opt/bin/ss-redir ] && wgetcurl_file "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
-	hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
-fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
-chmod 777 "/usr/sbin/ss-local"
-	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
-	hash ss-local 2>/dev/null || optssredir="3"
-fi
-if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	[ ! -s /opt/bin/ss-local ] && wgetcurl_file "/opt/bin/ss-local" "$hiboyfile/$libsodium_so/ss-local" "$hiboyfile2/$libsodium_so/ss-local"
-	hash ss-local 2>/dev/null || { logger -t "【SS】" "找不到 ss-local, 请检查系统"; ss_restart x ; }
-fi
-if [ ! -z "$ss_plugin_name" ] ; then
-	hash $ss_plugin_name 2>/dev/null || optssredir="4"
-	if [ "$optssredir" = "4" ] ; then
-		[ ! -s /opt/bin/$ss_plugin_name ] && wgetcurl_file "/opt/bin/$ss_plugin_name" "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
-	fi
-fi
-if [ ! -z "$ss_plugin_name" ] ; then
-	hash $ss_plugin_name 2>/dev/null || optssredir="44"
-	if [ "$optssredir" = "44" ] ; then
-		logger -t "【SS】" "找不到 ss_plugin_name :  $ss_plugin_name, 请检查系统"; ss_restart x ;
-	fi
-fi
-# SS
-fi
-
-if [ "$ss_type" = "1" ] ; then
-if [ "$ssrr_type" = "1" ] ; then
-# SSRR
-if [ "$ss_mode_x" != "3" ] ; then
-chmod 777 "/opt/bin/ssrr-redir"
-	[[ "$(ssrr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-redir
-	hash ssrr-redir 2>/dev/null || optssredir="1"
-else
-chmod 777 "/opt/bin/ssrr-local"
-	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
-	hash ssrr-local 2>/dev/null || optssredir="2"
-fi
-if [ "$optssredir" = "1" ] ; then
-	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl_file "/opt/bin/ssrr-redir" "$hiboyfile/$libsodium_so/ssrr-redir" "$hiboyfile2/$libsodium_so/ssrr-redir"
-	hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
-fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
-chmod 777 "/opt/bin/ssrr-local"
-	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
-	hash ssrr-local 2>/dev/null || optssredir="3"
-fi
-if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	[ ! -s /opt/bin/ssrr-local ] && wgetcurl_file "/opt/bin/ssrr-local" "$hiboyfile/$libsodium_so/ssrr-local" "$hiboyfile2/$libsodium_so/ssrr-local"
-	hash ssrr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-local, 请检查系统"; ss_restart x ; }
-fi
-# SSRR
-else
-# SSR
-if [ "$ss_mode_x" != "3" ] ; then
-chmod 777 "/usr/sbin/ssr-redir"
-	[[ "$(ssr-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-redir
-	hash ssr-redir 2>/dev/null || optssredir="1"
-else
-chmod 777 "/usr/sbin/ssr-local"
-	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
-	hash ssr-local 2>/dev/null || optssredir="2"
-fi
-if [ "$optssredir" = "1" ] ; then
-	[ ! -s /opt/bin/ssr-redir ] && wgetcurl_file "/opt/bin/ssr-redir" "$hiboyfile/$libsodium_so/ssr-redir" "$hiboyfile2/$libsodium_so/ssr-redir"
-
-	hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
-fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
-chmod 777 "/usr/sbin/ssr-local"
-	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
-	hash ssr-local 2>/dev/null || optssredir="3"
-fi
-if [ "$optssredir" = "2" ] || [ "$optssredir" = "3" ]; then
-	[ ! -s /opt/bin/ssr-local ] && wgetcurl_file "/opt/bin/ssr-local" "$hiboyfile/$libsodium_so/ssr-local" "$hiboyfile2/$libsodium_so/ssr-local"
-	hash ssr-local 2>/dev/null || { logger -t "【SS】" "找不到 ssr-local, 请检查系统"; ss_restart x ; }
-fi
-# SSR
-fi
-fi
-
-if [ "$ss_dnsproxy_x" = "0" ] ; then
-hash dnsproxy 2>/dev/null && dnsproxy_x="1"
-hash dnsproxy 2>/dev/null || dnsproxy_x="0"
-if [ "$dnsproxy_x" = "0" ] ; then
-	logger -t "【SS】" "找不到 dnsproxy. opt ，挂载opt"
-	/tmp/script/_mountopt start
-	initopt
-	if [ ! -s /opt/bin/dnsproxy ] ; then
-		wgetcurl_file "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
-	fi
-	hash dnsproxy 2>/dev/null || { logger -t "【SS】" "找不到 dnsproxy, 请检查系统"; ss_restart x ; }
-fi
-elif [ "$ss_dnsproxy_x" = "1" ] ; then
-hash pdnsd 2>/dev/null && dnsproxy_x="1"
-hash pdnsd 2>/dev/null || dnsproxy_x="0"
-if [ "$dnsproxy_x" = "0" ] ; then
-	logger -t "【SS】" "找不到 pdnsd. opt ，挂载opt"
-	/tmp/script/_mountopt start
-	initopt
-	if [ ! -s /opt/bin/pdnsd ] ; then
-		wgetcurl_file "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
-	fi
-	hash pdnsd 2>/dev/null || { logger -t "【SS】" "找不到 pdnsd, 请检查系统"; ss_restart x ; }
-fi
-fi
-
-check_ssr
 echo "Debug: $DNS_Server"
 	logger -t "【SS】" "###############启动程序###############"
 	if [ "$ss_mode_x" = "3" ] ; then
@@ -1198,6 +1197,12 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
+		if [ ! -z "$app_95" ] ; then
+			[ -f $relock ] && rm -f $relock
+			logger -t "【SS_restart】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
+			/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+			sleep 10
+		fi
 		logger -t "【ss】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
@@ -1228,7 +1233,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_plugin_name$ss_plugin_config$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
