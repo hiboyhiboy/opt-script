@@ -257,7 +257,11 @@ else
 	geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
 	wgetcurl_file $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
 	geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
+	if [ "$Mem_total" -lt "200000" ] ; then
 	wgetcurl_file $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
+	else
+	wgetcurl_file $geosite_path "$hiboyfile/geosite_s.dat" "$hiboyfile2/geosite_s.dat"
+	fi
 fi
 if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	mkdir -p /opt/app/ipk/
@@ -328,6 +332,7 @@ killall -9 v2ray v2ctl v2ray_script.sh
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
 Mem_lt=100000
+[ "$Mem_total" -lt 66 ] && Mem_total="66" || { [ "$Mem_total" -gt 66 ] || Mem_total="66" ; }
 if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 	[ ! -z "$optPath" ] && logger -t "【v2ray】" " /opt/ 在内存储存"
 	if [ "$Mem_total" -lt "$Mem_lt" ] ; then
