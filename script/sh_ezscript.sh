@@ -683,11 +683,13 @@ fi
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 i2log="$(expr $(cat /tmp/allping.js | grep -v "^$" |wc -l) + 1)"
-ilog="$(expr $i2log \* 100 / $ilox \* 100 / 100)"
+ilog=""
+[ "$i2log" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$i2log,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
+[ "$ilog" == "" ] && ilog="  0"
 [ "$ilog" -gt 100 ] && ilog=100
 if [ ! -z "$ping_time" ] ; then
-	echo "ping_$ilog%：$ping_time ms ✔️ $ss_server_x"
-	logger -t "【ping_$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
+	echo "ping$ilog%：$ping_time ms ✔️ $ss_server_x"
+	logger -t "【ping$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
 	[ "$ping_time" -le 250 ] && ping_list_btn="btn-success"
 	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list_btn="btn-warning"
 	[ "$ping_time" -gt 500 ] && ping_list_btn="btn-danger"
@@ -700,8 +702,8 @@ if [ ! -z "$ping_time" ] ; then
 	fi
 else
 	ping_list_btn="btn-danger"
-	echo "ping_$ilog%：>1000 ms ❌ $ss_server_x"
-	logger -t "【ping_$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
+	echo "ping$ilog%：>1000 ms ❌ $ss_server_x"
+	logger -t "【ping$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
 	ping_time=">1000"
 	if [ "$app_100" == "1" ] ; then
 	ping_time2="00000""$ping_txt_list"

@@ -497,6 +497,7 @@ fi
 # flush buffers
 sync
 [ ! -s /tmp/script/_opt_script_check ] && /etc/storage/script/sh_opt_script_check.sh &
+[ -s /etc/storage/script/Sh99_ss_tproxy.sh ] && /etc/storage/script/Sh99_ss_tproxy.sh initconfig
 }
 
 opt_Available () {

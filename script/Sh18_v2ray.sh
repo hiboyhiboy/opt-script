@@ -1535,6 +1535,7 @@ allping 4
 logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
 app_99="$(nvram get app_99)"
 if [ "$app_99" == 1 ] ; then
+rm -f /tmp/link_v2_matching/link_v2_matching.txt
 v2ray_link_v2_matching
 fi
 
@@ -1694,11 +1695,13 @@ fi
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 i2log="$(expr $(cat /tmp/allping_$1.js | grep -v "^$" |wc -l) + 1)"
-ilog="$(expr $i2log \* 100 / $ilox \* 100 / 100)"
+ilog=""
+[ "$i2log" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$i2log,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
+[ "$ilog" == "" ] && ilog="  0"
 [ "$ilog" -gt 100 ] && ilog=100
 if [ ! -z "$ping_time" ] ; then
-	echo "ping_$ilog%：$ping_time ms ✔️ $ss_server_x"
-	logger -t "【ping_$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
+	echo "ping$ilog%：$ping_time ms ✔️ $ss_server_x"
+	logger -t "【ping$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
 	[ "$ping_time" -le 250 ] && ping_list_btn="btn-success"
 	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list_btn="btn-warning"
 	[ "$ping_time" -gt 500 ] && ping_list_btn="btn-danger"
@@ -1706,8 +1709,8 @@ if [ ! -z "$ping_time" ] ; then
 	ping_time2="${ping_time2:0-4}"
 else
 	ping_list_btn="btn-danger"
-	echo "ping_$ilog%：>1000 ms ❌ $ss_server_x"
-	logger -t "【ping_$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
+	echo "ping$ilog%：>1000 ms ❌ $ss_server_x"
+	logger -t "【ping$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
 	ping_time=">1000"
 	ping_time2="1000"
 	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt
@@ -1769,6 +1772,7 @@ nvram set app_83=""
 fi
 if [ "$vmess_x_tmp" = "del_link" ] ; then
 	# 清空上次订阅节点配置
+	rm -f /tmp/link_v2_matching/link_v2_matching.txt
 	rm -f /www/link/vmess.js
 	echo "var ACL3List = [ " > /www/link/vmess.js
 	echo ']' >> /www/link/vmess.js
@@ -1823,6 +1827,7 @@ vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | s
 vmess_link_i=""
 [ -f /www/link/vmess.js ] && echo "var ACL3List = [ " > /www/link/vmess.js && echo ']' >> /www/link/vmess.js
 [ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
+rm -f /tmp/link_v2_matching/link_v2_matching.txt
 touch /etc/storage/app_25.sh ;
 sed -Ei '/^🔗/d' /etc/storage/app_25.sh
 if [ ! -z "$(echo "$vmess_link" | awk -F ' ' '{print $2}')" ] ; then
@@ -2254,7 +2259,7 @@ ssd_length="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["se
 [ "$ssd_options" == "null" ] && ssd_options=""
 logger -t "【SSD订阅】" "【$ssd_airport】过期时间： $ssd_expiry"
 ssd_length=$(( ssd_length - 1 ))
-if [ "$ssd_length" -gt 0 ] ; then
+if [ "$ssd_length" -ge 0 ] ; then
 	for ssd_x in $(seq 0 $ssd_length)
 	do
 	ssd_jq_x_link="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"'])')"
@@ -2265,12 +2270,20 @@ if [ "$ssd_length" -gt 0 ] ; then
 		ssd_server="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["server"])')" # 服务器
 		ssd_remarks="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["remarks"])')" # 节点名称
 		ssd_x_ratio="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["ratio"])')" # ratio
+		ssd_x_ratio="$(echo "$ssd_x_ratio" | awk '{printf("%5.3f\n",$1)}')"
+		ilog=""
+		[ "$ssd_length" -gt 0 ] && [ "$ssd_x" -gt 0 ] && ilog="$(echo "$ssd_x,$ssd_length" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
+		[ "0" == "$ssd_x" ] && ilog="  0"
+		[ "$ssd_length" == "$ssd_x" ] && ilog=100
+		[ "$ilog" -gt 100 ] && ilog=100
+		logger -t "【SSD订阅$ilog%】" "比率:「$ssd_x_ratio」 [ $ssd_server ] $ssd_remarks"
 		[ ! -z "$(echo $ssd_jq_x_link | grep '"port"')" ] && ssd_x_port="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
 		[ ! -z "$(echo $ssd_jq_x_link | grep '"password"')" ] && ssd_x_password="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
 		[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin"')" ] && ssd_x_plugin="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
 		[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin_options"')" ] && ssd_x_options="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
 		[ "$ssd_x_ratio" == "null" ] && ssd_x_ratio=""
 		[ "$ssd_x_ratio" == "1" ] && ssd_x_ratio=""
+		[ "$ssd_x_ratio" == "1.000" ] && ssd_x_ratio=""
 		[ ! -z "$ssd_x_ratio" ] && ssd_x_ratio="「$ssd_x_ratio」"
 		[ "$ssd_x_port" == "null" ] && ssd_x_port=""
 		[ "$ssd_x_password" == "null" ] && ssd_x_password=""
@@ -2349,6 +2362,7 @@ else
 fi
 app_99="$(nvram get app_99)"
 if [ "$app_99" == 1 ] ; then
+rm -f /tmp/link_v2_matching/link_v2_matching.txt
 v2ray_link_v2_matching
 fi
 fi

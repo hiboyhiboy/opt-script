@@ -19,7 +19,6 @@ clash_ui=`nvram get app_94`
 lan_ipaddr=`nvram get lan_ipaddr`
 app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
-[ -s /etc/storage/script/Sh99_ss_tproxy.sh ] && /etc/storage/script/Sh99_ss_tproxy.sh initconfig
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
@@ -587,7 +586,9 @@ while read Proxy_server1
 do
 Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -E "$mismatch")"
 if [ -z $(echo "$Proxy_server2" | grep -E -o '([0-9]+\.){3}[0-9]+') ] && [ ! -z "$Proxy_server2" ] ; then 
-ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
+ilog=""
+[ "$do_i" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$do_i,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
+[ "$ilog" == "" ] && ilog="  0"
 [ "$ilog" -gt 100 ] && ilog=100
 [ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp % 【$Proxy_server2】"
 if [ -z $(echo "$Proxy_server2" | grep : | grep -v "\.") ] ; then 
@@ -600,7 +601,9 @@ fi
 do_i=`expr $do_i + 1`
 done < /tmp/clash/server.txt
 rm -f /tmp/clash/server.txt
-ilog="$(expr $do_i \* 100 / $ilox \* 100 / 100)"
+ilog=""
+[ "$do_i" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$do_i,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
+[ "$ilog" == "" ] && ilog="  0"
 [ "$ilog" -gt 100 ] && ilog=100
 [ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
 }

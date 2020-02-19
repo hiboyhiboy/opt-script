@@ -444,13 +444,19 @@ ssd_length="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["se
 [ "$ssd_options" == "null" ] && ssd_options=""
 logger -t "【SSD订阅】" "【$ssd_airport】过期时间： $ssd_expiry ；节点数量： $ssd_length"
 ssd_length=$(( ssd_length - 1 ))
-if [ "$ssd_length" -gt 0 ] ; then
+if [ "$ssd_length" -ge 0 ] ; then
 	for ssd_x in $(seq 0 $ssd_length)
 	do
 	ssd_jq_x_link="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"'])')"
 	ssd_server="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["server"])')" # 服务器
 	ssd_remarks="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["remarks"])')" # 节点名称
 	ssd_x_ratio="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["ratio"])')" # ratio
+	ssd_x_ratio="$(echo "$ssd_x_ratio" | awk '{printf("%5.3f\n",$1)}')"
+	[ "$ssd_length" -gt 0 ] && [ "$ssd_x" -gt 0 ] && ilog="$(echo "$ssd_x,$ssd_length" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
+	[ "0" == "$ssd_x" ] && ilog="  0"
+	[ "$ssd_length" == "$ssd_x" ] && ilog=100
+	[ "$ilog" -gt 100 ] && ilog=100
+	logger -t "【SSD订阅$ilog%】" "比率:「$ssd_x_ratio」 [ $ssd_server ] $ssd_remarks"
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"port"')" ] && ssd_x_port="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"encryption"')" ] && ssd_x_encryption="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"password"')" ] && ssd_x_password="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
@@ -458,6 +464,7 @@ if [ "$ssd_length" -gt 0 ] ; then
 	[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin_options"')" ] && ssd_x_options="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
 	[ "$ssd_x_ratio" == "null" ] && ssd_x_ratio=""
 	[ "$ssd_x_ratio" == "1" ] && ssd_x_ratio=""
+	[ "$ssd_x_ratio" == "1.000" ] && ssd_x_ratio=""
 	[ ! -z "$ssd_x_ratio" ] && ssd_x_ratio="「$ssd_x_ratio」"
 	[ "$ssd_x_port" == "null" ] && ssd_x_port=""
 	[ "$ssd_x_encryption" == "null" ] && ssd_x_encryption=""
@@ -651,6 +658,7 @@ rm -f /tmp/link/link.txt
 do_link "/etc/storage/app_24.sh" "/tmp/link/link.txt"
 logger -t "【SS】" "批量导入链接节点：完成解码"
 if [ "$a1_tmp" != "X_allping" ] ; then
+rm -f /tmp/link_matching/link_matching.txt
 ss_link_ping=`nvram get ss_link_ping`
 if [ "$ss_link_ping" != 1 ] ; then
 	/etc/storage/script/sh_ezscript.sh allping
