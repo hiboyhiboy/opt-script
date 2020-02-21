@@ -278,6 +278,7 @@ resolve_hostname6() {
 }
 
 resolve_svraddr() {
+	restart_dhcpd
 	proxy_all_svrip=""
 	while read svraddr; do
 		[ -z "$svraddr" ] && continue

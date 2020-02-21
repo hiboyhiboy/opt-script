@@ -366,7 +366,6 @@ fi
 		# [ ! -z "$optPath" ] && rm -f /opt/bin/v2ctl /opt/bin/geoip.dat /opt/bin/geosite.dat /tmp/vmess/mk_vmess.json
 	# fi
 	v2ray_wget_v2ctl
-	rm -f /opt/bin/v2ray_config.pb
 if [ ! -s "$SVC_PATH" ] ; then
 	wgetcurl_file "$SVC_PATH" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
 else
@@ -446,6 +445,16 @@ else
 	chmod 777 /tmp/vmess/mk_vmess.json
 	chmod 777 /etc/storage/v2ray_config_script.sh
 	chmod 777 /opt/bin
+	A_restart=`nvram get app_19`
+	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
+		rm -f /opt/bin/v2ray_config.pb
+		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置 /opt/bin/v2ray_config.pb"
+		cd "$(dirname "$SVC_PATH")"
+		eval "v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb $cmd_log2" 
+		[ ! -s /opt/bin/v2ray_config.pb ] && logger -t "【v2ray】" "错误！ /opt/bin/v2ray_config.pb 内容为空, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
+		[ -s /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
+	fi
 	chmod 777 /opt/bin/v2ray_config.pb
 	[ ! -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /tmp/vmess/mk_vmess.json -format json"
 	[ -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /opt/bin/v2ray_config.pb -format pb"
