@@ -247,45 +247,6 @@ kill_ps "_v2ray.sh"
 kill_ps "$scriptname"
 }
 
-v2ray_wget_v2ctl () {
-
-v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
-wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
-if [ "$mk_mode_routing" == "1" ] ; then
-	logger -t "【v2ray】" "使用 ss_tproxy 分流(降低负载，适合低配路由)"
-else
-	geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
-	wgetcurl_file $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
-	geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
-	if [ "$Mem_total" -lt "200000" ] ; then
-	wgetcurl_file $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
-	else
-	wgetcurl_file $geosite_path "$hiboyfile/geosite_s.dat" "$hiboyfile2/geosite_s.dat"
-	fi
-fi
-if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
-	mkdir -p /opt/app/ipk/
-	mkdir -p /opt/etc/ssl/certs
-	rm -f /etc/ssl/certs
-	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
-	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
-		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/
-	fi
-	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
-		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
-		logger -t "【opt】" "下载证书"
-		wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
-		logger -t "【opt】" "安装证书"
-		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
-		rm -f /opt/app/ipk/certs.tgz
-	fi
-	chmod 644 /etc/ssl/certs -R
-	chmod 777 /etc/ssl/certs
-	chmod 644 /opt/etc/ssl/certs -R
-	chmod 777 /opt/etc/ssl/certs
-fi
-}
-
 v2ray_start () {
 
 check_webui_yes
@@ -316,15 +277,19 @@ fi
 fi
 fi
 
-SVC_PATH="$v2ray_path"
-if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/bin/v2ray"
-	v2ray_path="$SVC_PATH"
+if [ ! -s "$v2ray_path" ] ; then
+	v2ray_path="/opt/bin/v2ray"
 fi
-chmod 777 "$SVC_PATH"
-[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/v2ray
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【v2ray】" "找不到 $SVC_PATH，安装 opt 程序"
+v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
+geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
+geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
+chmod 777 "$v2ray_path"
+chmod 777 "$v2ctl_path"
+[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+[[ "$(v2ctl -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ctl_path ] && rm -rf $v2ctl_path
+if [ ! -s "$v2ray_path" ] || [ ! -s "$v2ctl_path" ] ; then
+	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "找不到 $v2ray_path，安装 opt 程序"
+	[ ! -s "$v2ctl_path" ] && logger -t "【v2ray】" "找不到 $v2ctl_path，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
 killall v2ray v2ctl v2ray_script.sh
@@ -338,52 +303,74 @@ if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 	if [ "$Mem_total" -lt "$Mem_lt" ] ; then
 		logger -t "【v2ray】" "内存不足100M"
 		if [ "$mk_mode_routing" == "1" ] ; then
-			rm -f /opt/bin/geoip.dat /opt/bin/geosite.dat /opt/opt_backup/bin/geoip.dat /opt/opt_backup/bin/geosite.dat
+			rm -f $geoip_path $geosite_path /opt/bin/geoip.dat /opt/bin/geosite.dat /opt/opt_backup/bin/geoip.dat /opt/opt_backup/bin/geosite.dat
 		else
 			logger -t "【v2ray】" "建议使用 ss_tproxy 分流(降低负载，适合低配路由)"
 		fi
 	fi
 fi
-	# [ "$Mem_total" -lt "70000" ] && export  V2RAY_RAY_BUFFER_SIZE=1
-	# if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
-		# [ "$v2ray_http_format" = "1" ] && wgetcurl.sh /etc/storage/v2ray_config_script.sh "$v2ray_http_config" "$v2ray_http_config"
-		# [ "$v2ray_http_format" = "2" ] &&  wgetcurl.sh /opt/bin/v2ray_config.pb "$v2ray_http_config" "$v2ray_http_config"
-		# v2ray_http_enable=0
-	# fi
-	# A_restart=`nvram get app_19`
-	# B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-	# if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
-		# [ ! -z "$optPath" ] && rm -f /opt/bin/v2ray
-		# rm -f /opt/bin/v2ray_config.pb
-		# v2ray_wget_v2ctl
-		# logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置 /opt/bin/v2ray_config.pb"
-		# cd "$(dirname "$SVC_PATH")"
-		# cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
-		# json_join_gfwlist
-		# eval "v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb $cmd_log" 
-		# [ ! -s /opt/bin/v2ray_config.pb ] && logger -t "【v2ray】" "错误！ /opt/bin/v2ray_config.pb 内容为空, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
-		# [ -f /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
-		# [ ! -z "$optPath" ] && rm -f /opt/bin/v2ctl /opt/bin/geoip.dat /opt/bin/geosite.dat /tmp/vmess/mk_vmess.json
-	# fi
-	v2ray_wget_v2ctl
-if [ ! -s "$SVC_PATH" ] ; then
-	wgetcurl_file "$SVC_PATH" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+if [ "$mk_mode_routing" == "1" ] ; then
+	logger -t "【v2ray】" "使用 ss_tproxy 分流(降低负载，适合低配路由)"
 else
-	logger -t "【v2ray】" "找到 $SVC_PATH"
-	chmod 777 "$SVC_PATH"
-	[ -f /opt/bin/v2ray ] && chmod 777 /opt/bin/v2ray
-	[ -f /opt/bin/v2ctl ] && chmod 777 /opt/bin/v2ctl
-	[ -f /opt/bin/geoip.dat ] && chmod 777 /opt/bin/geoip.dat
-	[ -f /opt/bin/geosite.dat ] && chmod 777 /opt/bin/geosite.dat
+	wgetcurl_file $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
+	if [ "$Mem_total" -lt "200000" ] ; then
+	wgetcurl_file $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
+	else
+	wgetcurl_file $geosite_path "$hiboyfile/geosite_s.dat" "$hiboyfile2/geosite_s.dat"
+	fi
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【v2ray】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
+if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+	mkdir -p /opt/app/ipk/
+	mkdir -p /opt/etc/ssl/certs
+	rm -f /etc/ssl/certs
+	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
+		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/
+	fi
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
+		logger -t "【opt】" "下载证书"
+		wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
+		logger -t "【opt】" "安装证书"
+		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
+		rm -f /opt/app/ipk/certs.tgz
+	fi
+	chmod 644 /etc/ssl/certs -R
+	chmod 777 /etc/ssl/certs
+	chmod 644 /opt/etc/ssl/certs -R
+	chmod 777 /opt/etc/ssl/certs
+fi
+if [ ! -s "$v2ray_path" ] ; then
+	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+	[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+	if [ ! -s "$v2ray_path" ] ; then
+		wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+	fi
+fi
+if [ ! -s "$v2ctl_path" ] ; then
+	wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
+	[[ "$(v2ctl -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ctl_path ] && rm -rf $v2ctl_path
+	if [ ! -s "$v2ctl_path" ] ; then
+		wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
+	fi
+fi
+if [ -s "$v2ray_path" ] && [ -s "$v2ctl_path" ] ; then
+	logger -t "【v2ray】" "找到 $v2ray_path $v2ctl_path"
+	chmod 777 "$(dirname "$v2ray_path")"
+	chmod 777 $v2ray_path
+	[ -f $v2ctl_path ] && chmod 777 $v2ctl_path
+	[ -f $geoip_path ] && chmod 777 $geoip_path
+	[ -f $geosite_path ] && chmod 777 $geosite_path
+fi
+if [ ! -s "$v2ray_path" ] || [ ! -s "$v2ctl_path" ] ; then
+	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "找不到 $v2ray_path ，需要手动安装 $v2ray_path"
+	[ ! -s "$v2ctl_path" ] && logger -t "【v2ray】" "找不到 $v2ctl_path ，需要手动安装 $v2ctl_path"
 	logger -t "【v2ray】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 fi
-if [ -s "$SVC_PATH" ] ; then
-	nvram set v2ray_path="$SVC_PATH"
+if [ -s "$v2ray_path" ] ; then
+	nvram set v2ray_path="$v2ray_path"
 fi
-v2ray_path="$SVC_PATH"
+v2ray_path="$v2ray_path"
 logger -t "【v2ray】" "运行 v2ray_script"
 chmod 777 /etc/storage/v2ray_script.sh
 chmod 644 /opt/etc/ssl/certs -R
@@ -446,11 +433,11 @@ else
 	chmod 777 /etc/storage/v2ray_config_script.sh
 	chmod 777 /opt/bin
 	A_restart=`nvram get app_19`
-	B_restart=`echo -n "$(cat /etc/storage/v2ray_config_script.sh | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+	B_restart=`echo -n "$(cat /tmp/vmess/mk_vmess.json | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
 		rm -f /opt/bin/v2ray_config.pb
 		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置 /opt/bin/v2ray_config.pb"
-		cd "$(dirname "$SVC_PATH")"
+		cd "$(dirname "$v2ray_path")"
 		eval "v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb $cmd_log2" 
 		[ ! -s /opt/bin/v2ray_config.pb ] && logger -t "【v2ray】" "错误！ /opt/bin/v2ray_config.pb 内容为空, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 		[ -s /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
@@ -459,6 +446,7 @@ else
 	[ ! -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /tmp/vmess/mk_vmess.json -format json"
 	[ -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /opt/bin/v2ray_config.pb -format pb"
 fi
+cd "$(dirname "$v2ray_path")"
 eval "$su_cmd" '"cmd_name=v2ray && '"$su_cmd2"' $cmd_log"' &
 sleep 4
 restart_dhcpd
@@ -2548,7 +2536,7 @@ keep)
 updatev2ray)
 	v2ray_restart o
 	[ "$v2ray_enable" = "1" ] && nvram set v2ray_status="updatev2ray" && logger -t "【v2ray】" "重启" && v2ray_restart
-	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ctl /opt/opt_backup/bin/v2ctl ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
+	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path $v2ctl_path $geoip_path $geosite_path /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ctl /opt/opt_backup/bin/v2ctl ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
 	;;
 initconfig)
 	initconfig
