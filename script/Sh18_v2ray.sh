@@ -1132,7 +1132,7 @@ if [ "$vmess_link_net" = "ws" ] ; then
 fi
 # ws end
 # h2 star
-if [ "$vmess_link_net" = "http" ] ; then
+if [ "$vmess_link_net" = "http" ] || [ "$vmess_link_net" = "h2" ] ; then
 [ ! -z "$vmess_link_path" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["httpSettings","path"];"'$vmess_link_path'")')
 vmess_link_host=$(echo $vmess_link_host | sed 's/,/ /g')
 link_host_i=0
@@ -1182,7 +1182,9 @@ json_int_vmess_streamSettings () {
 echo '{
   "network": "",
   "security": "",
-  "tlsSettings": {},
+  "tlsSettings": {
+    "allowInsecure": true
+  },
   "tcpSettings": {
     "type": "none",
     "request": {
