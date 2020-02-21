@@ -64,6 +64,9 @@ fi
 fi
 v2ray_path=`nvram get v2ray_path`
 [ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
+v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
+geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
+geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
 v2ray_door=`nvram get v2ray_door`
 [ -z $v2ray_door ] && v2ray_door=1099 && nvram set v2ray_door=1099
 
@@ -303,7 +306,8 @@ if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 	if [ "$Mem_total" -lt "$Mem_lt" ] ; then
 		logger -t "【v2ray】" "内存不足100M"
 		if [ "$mk_mode_routing" == "1" ] ; then
-			rm -f $geoip_path $geosite_path /opt/bin/geoip.dat /opt/bin/geosite.dat /opt/opt_backup/bin/geoip.dat /opt/opt_backup/bin/geosite.dat
+			rm -f $geoip_path $geosite_path
+			rm -f /opt/bin/geoip.dat /opt/bin/geosite.dat /opt/opt_backup/bin/geoip.dat /opt/opt_backup/bin/geosite.dat
 		else
 			logger -t "【v2ray】" "建议使用 ss_tproxy 分流(降低负载，适合低配路由)"
 		fi
@@ -2536,7 +2540,7 @@ keep)
 updatev2ray)
 	v2ray_restart o
 	[ "$v2ray_enable" = "1" ] && nvram set v2ray_status="updatev2ray" && logger -t "【v2ray】" "重启" && v2ray_restart
-	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path $v2ctl_path $geoip_path $geosite_path /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ctl /opt/opt_backup/bin/v2ctl ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
+	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path $v2ctl_path $geoip_path $geosite_path ; rm -rf /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ctl /opt/opt_backup/bin/v2ctl ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
 	;;
 initconfig)
 	initconfig
