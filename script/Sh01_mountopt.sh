@@ -400,7 +400,7 @@ if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
 	[ "$block" = "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：获取失败"
 	[ "$block" != "0" ] && [ ! -z "$block" ] && [ "$block" -lt "$opt_cifs_block" ] && opt_cifs_block=$block
 	logger -t "【opt】" "创建$upanPath/opt/o_p_t.img镜像(ext4)文件，$opt_cifs_block M"
-	dd if=/dev/zero of=$upanPath/opt/o_p_t.img bs=1M seek=$opt_cifs_block count=0
+	dd if=/dev/zero of=$upanPath/opt/o_p_t.img bs=1M seek=$opt_cifs_block count=1
 	losetup `losetup -f` $upanPath/opt/o_p_t.img
 	mkfs.ext4 -i 16384 `losetup -a | grep o_p_t.img | awk -F ':' '{print $1}'`
 fi
