@@ -4,6 +4,21 @@ source /etc/storage/script/init.sh
 tmall_enable=`nvram get app_55`
 [ -z $tmall_enable ] && tmall_enable=0 && nvram set app_55=0
 tmall_id=`nvram get app_56`
+demoui_enable=`nvram get app_117`
+[ -z $demoui_enable ] && demoui_enable=0 && nvram set app_117=0
+app_118=`nvram get app_118`
+[ -z $app_118 ] && app_118=8080 && nvram set app_118=8080
+http_tmp_lanport=`nvram get http_tmp_lanport`
+if [ "$demoui_enable" == "0" ] && [ ! -z "$http_tmp_lanport" ]  ; then
+	logger -t "【demoui】" "恢复真实 Web 服务访问端口 $lan_ipaddr:$http_tmp_lanport ，需等待15秒"
+	logger -t "【demoui】" "变更源地址由于网页有缓存导致显示异常，请按 ctrl+F5 强制刷新或清除缓存"
+	logger -t "【demoui】" "变更源地址由于网页有缓存导致显示异常，请按 ctrl+F5 强制刷新或清除缓存 "
+	nvram set http_tmp_lanport=""
+	nvram set http_lanport=$http_tmp_lanport
+	sleep 2
+	killall httpd 
+	killall -9 httpd
+fi
 if [ "$tmall_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep tmall | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
@@ -63,7 +78,7 @@ exit 0
 tmall_get_status () {
 
 A_restart=`nvram get tmall_status`
-B_restart="$tmall_enable$tmall_id$(cat /etc/storage/app_13.sh /etc/storage/app_14.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$tmall_enable$tmall_id$demoui_enable$app_117$app_118$(cat /etc/storage/app_13.sh /etc/storage/app_14.sh /etc/storage/app_29.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set tmall_status=$B_restart
@@ -130,18 +145,54 @@ if [ ! -s "$SVC_PATH" ] ; then
 	initopt
 fi
 mkdir -p "/opt/tmall"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy" "$hiboyfile2/caddy"
-[ -z "$($SVC_PATH -plugins 2>&1 | grep http.cgi)" ] && rm -rf $SVC_PATH
+wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy1" "$hiboyfile2/caddy1"
+[ "$demoui_enable" == "0" ] || [ "$demoui_enable" == "1" ] && { [ -z "$($SVC_PATH -plugins 2>&1 | grep http.cgi)" ] && rm -rf $SVC_PATH ; }
+[ "$demoui_enable" == "2" ] || [ "$demoui_enable" == "1" ] && { [ -z "$($SVC_PATH -plugins 2>&1 | grep http.filter)" ] && rm -rf $SVC_PATH ; }
+wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy1" "$hiboyfile2/caddy1"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【天猫精灵】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【天猫精灵】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && tmall_restart x
 fi
 [ -z "$tmall_id" ] && { logger -t "【天猫精灵】" "启动失败, 注意检[认证配置]是否填写,10 秒后自动尝试重新启动" && sleep 10 && tmall_restart x ; }
 # 生成配置文件
-rm -f /opt/tmall/Caddyfile
-ln -sf /etc/storage/app_13.sh /opt/tmall/Caddyfile
+rm -f /opt/tmall/app_13.sh
+ln -sf /etc/storage/app_13.sh /opt/tmall/app_13.sh
 rm -f /opt/tmall/app_14.sh
 ln -sf /etc/storage/app_14.sh /opt/tmall/app_14.sh
+rm -f /opt/tmall/app_29.sh
+ln -sf /etc/storage/app_29.sh /opt/tmall/app_29.sh
+
+rm -f /opt/tmall/Caddyfile
+[ "$demoui_enable" == "0" ] || [ "$demoui_enable" == "1" ] && { cat /etc/storage/app_13.sh >> /opt/tmall/Caddyfile ; }
+echo "" >> /opt/tmall/Caddyfile
+if [ "$demoui_enable" == "2" ] || [ "$demoui_enable" == "1" ] ; then
+cat /etc/storage/app_29.sh >> /opt/tmall/Caddyfile
+[ "$demoui_enable" == "1" ] && logger -t "【demoui】" "启用 demoui + 启用 tmall 功能"
+[ "$demoui_enable" == "2" ] && logger -t "【demoui】" "只启用 demoui ，停止 tmall 功能"
+logger -t "【demoui】" "替换 demoui 网页内容"
+lan_ipaddr=`nvram get lan_ipaddr`
+sed -Ei 's@replacement.+#内网地址@replacement '"$lan_ipaddr"' #内网地址@g' /opt/tmall/Caddyfile
+wan0_ipaddr=`nvram get wan0_ipaddr`
+sed -Ei 's@replacement.+#外网地址@replacement '"$wan0_ipaddr"' #外网地址@g' /opt/tmall/Caddyfile
+wan0_gateway=`nvram get wan0_gateway`
+sed -Ei 's@replacement.+#外网网关@replacement '"$wan0_gateway"' #外网网关@g' /opt/tmall/Caddyfile
+wl_ssid=`nvram get wl_ssid`
+sed -Ei 's@replacement.+#无线名称SSID@replacement '"$wl_ssid"' #无线名称SSID@g' /opt/tmall/Caddyfile
+http_lanport=`nvram get http_lanport`
+if [ "$app_118" != "$http_lanport" ] ; then
+	logger -t "【demoui】" "变更真实 Web 服务访问端口 $lan_ipaddr:$app_118 ，需等待15秒"
+	logger -t "【demoui】" "变更源地址由于网页有缓存导致显示异常，请按 ctrl+F5 强制刷新或清除缓存"
+	logger -t "【demoui】" "变更源地址由于网页有缓存导致显示异常，请按 ctrl+F5 强制刷新或清除缓存 "
+	nvram set http_tmp_lanport=$http_lanport
+	nvram set http_lanport=$app_118
+	sleep 2
+	killall httpd 
+	killall -9 httpd
+fi
+else
+logger -t "【demoui】" "停止 demoui "
+fi
+
 mkdir -p "/opt/tmall/www/aligenie"
 cd /opt/tmall/www/aligenie
 echo -n $(echo "$tmall_id" | awk -F \  '{print $2}') > ./$(echo "$(echo "$tmall_id" | awk -F \  '{print $1}')" | awk -F . '{print $1}').txt
@@ -233,6 +284,33 @@ RRR
   REPLY_DATA="关闭代理"
 fi
 
+if [ "$POST_DATA2" = "重启路由" ]; then
+  cat > "$RUN_DATA" <<-\RRR
+  nvram commit
+  /sbin/mtd_storage.sh save
+  sync;echo 3 > /proc/sys/vm/drop_caches
+  /bin/mtd_write -r unlock mtd1 #reboot
+RRR
+  REPLY_DATA="重启路由"
+fi
+
+if [ "$POST_DATA2" = "打开路由" ]; then
+  cat > "$RUN_DATA" <<-\RRR
+  nvram set app_117=1
+  nvram commit
+  Sh63_t_mall.sh &
+RRR
+  REPLY_DATA="打开路由"
+fi
+
+if [ "$POST_DATA2" = "关闭路由" ]; then
+  cat > "$RUN_DATA" <<-\RRR
+  nvram set app_117=0
+  nvram commit
+  Sh63_t_mall.sh &
+RRR
+  REPLY_DATA="关闭路由"
+fi
 
 printf "Content-type: text/plain\n\n"
 echo "{
@@ -261,6 +339,49 @@ exit 0
 
 EEE
 	chmod 755 "$app_14"
+fi
+
+app_29="/etc/storage/app_29.sh"
+if [ ! -f "$app_29" ] || [ ! -s "$app_29" ] ; then
+	cat > "$app_29" <<-\EEE
+:80 {
+redir 301 {
+if {path} is "/"
+/  /index.asp
+}
+
+proxy / ec2-54-202-251-7.us-west-2.compute.amazonaws.com:8082 {
+transparent
+}
+filter rule {
+content_type .*
+search_pattern 192.168.50.1|ec2-54-202-251-7.us-west-2.compute.amazonaws.com
+replacement 192.168.123.1 #内网地址
+}
+filter rule {
+content_type .*
+search_pattern 192.168.66.8
+replacement 192.168.1.2 #外网地址
+}
+filter rule {
+content_type .*
+search_pattern 192.168.66.1
+replacement 192.168.1.1 #外网网关
+}
+filter rule {
+content_type .*
+search_pattern ASUS_AX88U
+replacement ASUS #无线名称SSID
+}
+filter rule {
+content_type .*
+search_pattern ":8[0-9][0-9][0-9]"
+replacement ""
+}
+}
+
+EEE
+	chmod 755 "$app_29"
 fi
 
 }

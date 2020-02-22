@@ -581,7 +581,7 @@ update_gfwlist_file() {
 		ss_3p_gfwlist=`nvram get ss_3p_gfwlist`
 		if [ "$ss_3p_gfwlist" = "1" ] ; then
 			logger -t "【update_gfwlist】" "正在获取官方 gfwlist...."
-			local url='https://raw.github.com/gfwlist/gfwlist/master/gfwlist.txt'
+			local url='https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
 			wgetcurl_checkmd5 $tmp_gfwlist "$url" "$url" N 5
 			sed -e  's@$@==@g' -i $tmp_gfwlist
 			base64 -d $tmp_gfwlist > $tmp_down_file
@@ -964,7 +964,7 @@ update_chnroute_file() {
 		tmp_chnroute="/opt/app/ss_tproxy/rule/tmp_chnroute.txt"
 		tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnroute_tmp.txt"
 		rm -f $tmp_chnroute $tmp_down_file
-		local url='https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt'
+		local url='https://cdn.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
 		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute

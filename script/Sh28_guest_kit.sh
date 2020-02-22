@@ -205,6 +205,28 @@ if [ "$POST_DATA" = "5" ]; then
   REPLY_DATA="关闭代理"
 fi
 
+if [ "$POST_DATA" = "6" ]; then
+  nvram commit
+  /sbin/mtd_storage.sh save
+  sync;echo 3 > /proc/sys/vm/drop_caches
+  /bin/mtd_write -r unlock mtd1 #reboot
+  REPLY_DATA="重启路由"
+fi
+
+if [ "$POST_DATA" = "7" ]; then
+  nvram set app_117=1
+  nvram commit
+  /etc/storage/script/Sh63_t_mall.sh &
+  REPLY_DATA="打开路由"
+fi
+
+if [ "$POST_DATA" = "8" ]; then
+  nvram set app_117=0
+  nvram commit
+  /etc/storage/script/Sh63_t_mall.sh &
+  REPLY_DATA="关闭路由"
+fi
+
 logger -t "【guestkit】" "运行 $POST_DATA $REPLY_DATA"
 
 EEE
