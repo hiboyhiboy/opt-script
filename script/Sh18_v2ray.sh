@@ -1808,10 +1808,6 @@ if [ "$vmess_x_tmp" = "del_link" ] ; then
 	return
 fi
 
-if [ "$vmess_x_tmp" != "up_link" ] ; then
-	return
-fi
-
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
@@ -1823,7 +1819,7 @@ vmess_link="`nvram get app_66`"
 vmess_link_up=`nvram get app_67`
 vmess_link_ping=`nvram get app_68`
 A_restart=`nvram get vmess_link_status`
-B_restart=`echo -n "$vmess_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+B_restart=`echo -n "$vmess_link$vmess_link_up" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 nvram set vmess_link_status=$B_restart
 	if [ -z "$vmess_link" ] ; then
@@ -1832,7 +1828,7 @@ nvram set vmess_link_status=$B_restart
 		return
 	else
 		if [ "$vmess_link_up" != 1 ] ; then
-			cru.sh a vmess_link_update "12 */6 * * * $scriptfilepath up_link &" &
+			cru.sh a vmess_link_update "18 */6 * * * $scriptfilepath up_link &" &
 			logger -t "【vmess】" "启动 vmess 服务器订阅，添加计划任务 (Crontab)，每6小时更新"
 		else
 			cru.sh d vmess_link_update
@@ -1843,6 +1839,9 @@ if [ -z "$vmess_link" ] ; then
 	return
 fi
 
+if [ "$vmess_x_tmp" != "up_link" ] ; then
+	return
+fi
 
 logger -t "【vmess】" "服务器订阅：开始更新"
 
@@ -2428,8 +2427,8 @@ if [ ! -z "$(echo -n "$line" | grep "🔐📐")" ] ; then
 else
 	line0="$line"
 fi
-[ ! -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" )"
-[ -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" )"
+[ ! -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" | grep -v -E "剩余流量|过期时间")"
+[ -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "剩余流量|过期时间")"
 [ -z "$match" ] && line3="line3"
 line4="line4" ; line2="" ; 
 if [ ! -z "$line3" ] ; then

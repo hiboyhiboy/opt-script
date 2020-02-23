@@ -443,8 +443,8 @@ if [ ! -z "$(echo -n "$line" | grep "🔐📐")" ] ; then
 else
 	line0="$line"
 fi
-[ ! -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" )"
-[ -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" )"
+[ ! -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "$mismatch" | grep -v -E "剩余流量|过期时间")"
+[ -z "$mismatch" ] && line3="$(echo "$line0" | grep -E .+'",' | cut -d',' -f1 | grep -E "$match" | grep -v -E "剩余流量|过期时间")"
 [ -z "$match" ] && line3="line3"
 line4="line4" ; line2="" ; 
 if [ ! -z "$line3" ] ; then

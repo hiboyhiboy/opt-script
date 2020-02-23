@@ -536,7 +536,7 @@ fi
 
 A_restart="$(nvram get ss_link_status)"
 #B_restart="$ssr_link"
-B_restart=`echo -n "$ssr_link" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+B_restart=`echo -n "$ssr_link$ss_link_up" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 nvram set ss_link_status=$B_restart
 	if [ -z "$ssr_link" ] ; then
