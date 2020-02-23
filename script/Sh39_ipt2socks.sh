@@ -261,10 +261,10 @@ echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr6.conf
 ss_server=`nvram get ss_server`
 echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # v2ray
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # clash
-grep '^  server: ' /etc/storage/app_20.sh | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+grep '^  server: ' /etc/storage/app_20.sh | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 kcptun_server=`nvram get kcptun_server`
 echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # transocks ipt2socks 

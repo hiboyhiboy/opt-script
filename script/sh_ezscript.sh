@@ -677,6 +677,9 @@ ss_name_x="$(base64decode "$ss_name_x")"
 ss_port_x="$(echo $ping_list | cut -d',' -f3 | sed -e "s@"'"'"\|"'\['"@@g")"
 tcping_time="0"
 if [ -f /opt/bin/tcping ] ; then
+if [ ! -z "$(echo "$ss_name_x" | grep -Eo "剩余流量|过期时间")" ] || [ ! -z "$(echo "$ss_server_x" | grep -Eo "google.com|8.8.8.8")" ] ; then
+tcping_time="0"
+else
 resolveip=`ping -4 -n -q -c1 -w1 -W1 $ss_server_x | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
 if [ ! -z "$resolveip" ] ; then
 ipset -! add proxyaddr $resolveip
@@ -686,13 +689,14 @@ tcping_time=`echo $tcping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}
 [[ "$tcping_time" -gt 2 ]] || tcping_time="0"
 [[ "$tcping_time" -lt 2 ]] && tcping_time="0"
 fi
+fi
 [ "$tcping_time" == "0" ] && ping_time="" ||  ping_time="$tcping_time"
 fi
 if [ "$tcping_time" == "0" ] ; then
 if [ ! -z "$(cat /tmp/ping_server_error.txt | grep "error_""$ss_server_x""_error")" ] ; then
 ping_text=""
 else
-if [ ! -z "$(echo "$ss_name_x" | grep -Eo "剩余流量|过期时间")" ] ; then
+if [ ! -z "$(echo "$ss_name_x" | grep -Eo "剩余流量|过期时间")" ] || [ ! -z "$(echo "$ss_server_x" | grep -Eo "google.com|8.8.8.8")" ] ; then
 ping_text=""
 else
 ping_text=`ping -4 $ss_server_x -w 3 -W 3 -q`

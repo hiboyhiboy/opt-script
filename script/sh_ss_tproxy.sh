@@ -282,6 +282,7 @@ resolve_svraddr() {
 	proxy_all_svrip=""
 	while read svraddr; do
 		[ -z "$svraddr" ] && continue
+		[ ! -z "$(cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | grep "$svraddr")" ] && continue
 		if is_true "$ipv4"; then
 			is_ipv4_address "$svraddr" && local svrip_all="$svraddr" || local svrip_all=$(resolve_hostname4 "$svraddr")
 			is_ipv4_address "$svrip_all" && [ -z "$(grep $svrip_all $proxy_svraddr4)" ] && echo "$svrip_all" >> $proxy_svraddr4
