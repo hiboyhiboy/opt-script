@@ -1532,7 +1532,10 @@ ilox="$(cat /www/link/vmess.js | grep -v '^\]' | grep -v "ACL3List = " |wc -l)"
 [ "$ilox" == "0" ] && ilox="$(cat /tmp/link/link_vmess.txt | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
 [ "$ilox" == "0" ] && ilox="$(cat /tmp/link/link_ss.txt | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
 [ "$ilox" == "0" ] && logger -t "【ping】" "错误！节点列表为空" && return
-logger -t "【ping】" "开始 ping"
+[[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
+wgetcurl_file /opt/bin/tcping "$hiboyfile/tcping" "$hiboyfile2/tcping"
+[[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
+[ ! -f /opt/bin/tcping ] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
 allping 3
 allping 4
 logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
@@ -1673,8 +1676,8 @@ rm -f /tmp/allping_$1/?.txt /tmp/allping_$1.js
 x_ping_x () {
 
 mk_ping_txt="$2"
-[ "$1" == "3" ] && js_1_ping="4" && js_2_ping="3"
-[ "$1" == "4" ] && js_1_ping="3" && js_2_ping="2"
+[ "$1" == "3" ] && js_1_ping="4" && js_2_ping="3" && js_3_ping="5"
+[ "$1" == "4" ] && js_1_ping="3" && js_2_ping="2" && js_3_ping="4"
 [ "$1" == "3" ] && js_vmess="vmess.js" && js_t_vmess="vmess.txt"
 [ "$1" == "4" ] && js_vmess="ss.js" && js_t_vmess="ss.txt"
 ping_txt_list="$(ls /tmp/allping_$1 | head -1)"
@@ -1686,6 +1689,21 @@ ss_server_x="$(base64decode "$ss_server_x")"
 if [ ! -z "$ss_server_x" ] ; then
 ss_name_x="$(echo $ping_list | cut -d',' -f "$js_2_ping" | sed -e "s@"'"'"\|"'\['"@@g")"
 ss_name_x="$(base64decode "$ss_name_x")"
+ss_port_x="$(echo $ping_list | cut -d',' -f "$js_3_ping" | sed -e "s@"'"'"\|"'\['"@@g")"
+tcping_time="0"
+if [ -f /opt/bin/tcping ] ; then
+resolveip=`ping -4 -n -q -c1 -w1 -W1 $ss_server_x | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+if [ ! -z "$resolveip" ] ; then
+ipset -! add proxyaddr $resolveip
+ipset -! add ad_spec_dst_sp $resolveip
+tcping_text=`tcping -p $ss_port_x -c 1 $resolveip`
+tcping_time=`echo $tcping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+[[ "$tcping_time" -gt 2 ]] || tcping_time="0"
+[[ "$tcping_time" -lt 2 ]] && tcping_time="0"
+fi
+[ "$tcping_time" == "0" ] && ping_time="" ||  ping_time="$tcping_time"
+fi
+if [ "$tcping_time" == "0" ] ; then
 if [ ! -z "$(cat /tmp/ping_server_error.txt | grep "error_""$ss_server_x""_error")" ] ; then
 ping_text=""
 else
@@ -1696,7 +1714,8 @@ ping_text=`ping -4 $ss_server_x -w 3 -W 3 -q`
 fi
 fi
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
+fi
+#ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 i2log="$(expr $(cat /tmp/allping_$1.js | grep -v "^$" |wc -l) + 1)"
 ilog=""
 [ "$i2log" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$i2log,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
@@ -1704,7 +1723,8 @@ ilog=""
 [ "$ilog" -gt 100 ] && ilog=100
 if [ ! -z "$ping_time" ] ; then
 	echo "ping$ilog%：$ping_time ms ✔️ $ss_server_x"
-	logger -t "【ping$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
+	[ "$tcping_time" == "0" ] && logger -t "【  ping$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
+	[ "$tcping_time" != "0" ] && logger -t "【tcping$ilog%】" "$ping_time ms ✔️ $ss_server_x $ss_name_x"
 	[ "$ping_time" -le 250 ] && ping_list_btn="btn-success"
 	[ "$ping_time" -gt 250 ] && [ "$ping_time" -le 500 ] && ping_list_btn="btn-warning"
 	[ "$ping_time" -gt 500 ] && ping_list_btn="btn-danger"
@@ -1713,7 +1733,7 @@ if [ ! -z "$ping_time" ] ; then
 else
 	ping_list_btn="btn-danger"
 	echo "ping$ilog%：>1000 ms ❌ $ss_server_x"
-	logger -t "【ping$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
+	logger -t "【  ping$ilog%】" ">1000 ms ❌ $ss_server_x $ss_name_x"
 	ping_time=">1000"
 	ping_time2="1000"
 	echo "error_""$ss_server_x""_error" >> /tmp/ping_server_error.txt

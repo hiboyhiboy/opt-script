@@ -312,6 +312,18 @@ RRR
   REPLY_DATA="关闭路由"
 fi
 
+if [ "$POST_DATA2" = "重置路由" ]; then
+  cat > "$RUN_DATA" <<-\RRR
+  /sbin/mtd_storage.sh reset
+  nvram set restore_defaults=1
+  nvram commit
+  /sbin/mtd_storage.sh save
+  sync;echo 3 > /proc/sys/vm/drop_caches
+  /bin/mtd_write -r unlock mtd1 #reboot
+RRR
+  REPLY_DATA="重置路由"
+fi
+
 printf "Content-type: text/plain\n\n"
 echo "{
     \"returnCode\": \"0\",

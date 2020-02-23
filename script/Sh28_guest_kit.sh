@@ -227,6 +227,16 @@ if [ "$POST_DATA" = "8" ]; then
   REPLY_DATA="关闭路由"
 fi
 
+if [ "$POST_DATA" = "9" ]; then
+  /sbin/mtd_storage.sh reset
+  nvram set restore_defaults=1
+  nvram commit
+  /sbin/mtd_storage.sh save
+  sync;echo 3 > /proc/sys/vm/drop_caches
+  /bin/mtd_write -r unlock mtd1 #reboot
+  REPLY_DATA="重置路由"
+fi
+
 logger -t "【guestkit】" "运行 $POST_DATA $REPLY_DATA"
 
 EEE
