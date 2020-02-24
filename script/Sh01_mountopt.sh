@@ -296,6 +296,59 @@ mkdir -p /opt/bin
 
 }
 
+opt_update_download () {
+
+[ ! -d /tmp/AiDisk_00/ ] && return
+[ "$opt_download_enable" == "0" ] && return
+if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] || [ ! -d /tmp/AiDisk_00/cn2qq/opt-file ] ; then
+opt_download
+fi
+
+logger -t "【opt】" "增量更新离线 opt 环境下载地址"
+cn2qq_name="/tmp/AiDisk_00/cn2qq/opt-script"
+if [ -d $cn2qq_name ] ; then
+logger -t "【opt】" "opt-script 开始匹配： $cn2qq_name"
+cd $cn2qq_name
+#md5sum `/usr/bin/find ./ -type f | grep -v .git | grep -v md5.md5 | grep -v up_name.md5 | grep -v up_name.txt` > ./md5.md5
+wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "$hiboyscript/md5.md5" "$hiboyscript2/md5.md5"
+if [ -s $cn2qq_name/up_name.md5 ] ; then
+# 生成不匹配文件名
+cd $cn2qq_name
+md5sum -c $cn2qq_name/up_name.md5 | grep ": FAILED" | awk -F ':' '{print($1)}' | sed -e 's@^./@/@g' > $cn2qq_name/up_name.txt
+# 下载不匹配文件
+cat $cn2qq_name/up_name.txt | grep -v "^$" | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "$hiboyscript$update_addr" "$hiboyscript2$update_addr" Y; done
+rm -f $cn2qq_name/up_name.txt
+logger -t "【opt】" "opt-script 匹配完成： $cn2qq_name"
+else
+logger -t "【opt】" "opt-script 下载匹配md5文件失败： $hiboyscript/md5.md5"
+fi
+else
+logger -t "【opt】" "opt-script 找不到目录： $cn2qq_name"
+fi
+
+cn2qq_name="/tmp/AiDisk_00/cn2qq/opt-file"
+if [ -d $cn2qq_name ] ; then
+logger -t "【opt】" "opt-file 开始匹配： $cn2qq_name"
+cd $cn2qq_name
+#md5sum `/usr/bin/find ./ -type f | grep -v .git | grep -v md5.md5 | grep -v up_name.md5 | grep -v up_name.txt` > ./md5.md5
+wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "$hiboyfile/md5.md5" "$hiboyfile2/md5.md5"
+if [ -s $cn2qq_name/up_name.md5 ] ; then
+# 生成不匹配文件名
+cd $cn2qq_name
+md5sum -c $cn2qq_name/up_name.md5 | grep ": FAILED" | awk -F ':' '{print($1)}' | sed -e 's@^./@/@g' > $cn2qq_name/up_name.txt
+# 下载不匹配文件
+cat $cn2qq_name/up_name.txt | grep -v "^$" | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "$hiboyfile$update_addr" "$hiboyfile2$update_addr" Y; done
+rm -f $cn2qq_name/up_name.txt
+logger -t "【opt】" "opt-file 匹配完成： $cn2qq_name"
+else
+logger -t "【opt】" "opt-file 下载匹配md5文件失败： $hiboyfile/md5.md5"
+fi
+else
+logger -t "【opt】" "opt-file 找不到目录： $cn2qq_name"
+fi
+
+}
+
 opt_download () {
 
 [ ! -d /tmp/AiDisk_00/ ] && return
@@ -801,14 +854,8 @@ libmd5_backup)
 	libmd5_backup &
 	;;
 opt_download)
-	[ -d /tmp/AiDisk_00/cn2qq/opt-script ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script
-	[ -d /tmp/AiDisk_00/cn2qq/opt-file ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-file
-	[ -d /tmp/AiDisk_00/cn2qq/opt-script-master ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script-master
-	[ -d /tmp/AiDisk_00/cn2qq/opt-file-master ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-file-master
-	[ -f /tmp/AiDisk_00/cn2qq/opt-script.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-script.tgz
-	[ -f /tmp/AiDisk_00/cn2qq/opt-file.tgz ] && rm -f /tmp/AiDisk_00/cn2qq/opt-file.tgz
 	opt_download_enable=1
-	opt_download &
+	opt_update_download &
 	;;
 opt_download_script)
 	[ -d /tmp/AiDisk_00/cn2qq/opt-script ] && rm -rf /tmp/AiDisk_00/cn2qq/opt-script
