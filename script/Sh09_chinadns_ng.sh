@@ -213,7 +213,10 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns_ng】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
+for h_i in $(seq 1 2) ; do
+[[ "$(chinadns_ng -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/chinadns_ng
 wgetcurl_file "$SVC_PATH" "$hiboyfile/chinadns_ng" "$hiboyfile2/chinadns_ng"
+done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns_ng】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【chinadns_ng】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
@@ -222,7 +225,10 @@ ln -sf /opt/bin/chinadns_ng /opt/bin/chinadns-ng
 fi
 
 if [ "$smartdns_enable" == "1" ] ; then
+for h_i in $(seq 1 2) ; do
+[[ "$(smartdns -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/smartdns
 wgetcurl_file /opt/bin/smartdns "$hiboyfile/smartdns" "$hiboyfile2/smartdns"
+done
 if [ ! -s "/opt/bin/smartdns" ] ; then
 	logger -t "【chinadns_ng】" "找不到 /opt/bin/smartdns ，需要手动安装 /opt/bin/smartdns"
 	logger -t "【chinadns_ng】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
@@ -232,7 +238,10 @@ smartdns_v=`smartdns -v`
 nvram set smartdns_v="$smartdns_v"
 eval "/opt/bin/smartdns -c /etc/storage/app_23.sh" &
 else
+for h_i in $(seq 1 2) ; do
+[[ "$(dns2tcp -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/dns2tcp
 wgetcurl_file /opt/bin/dns2tcp "$hiboyfile/dns2tcp" "$hiboyfile2/dns2tcp"
+done
 if [ ! -s "/opt/bin/dns2tcp" ] ; then
 	logger -t "【chinadns_ng】" "找不到 /opt/bin/dns2tcp ，需要手动安装 /opt/bin/dns2tcp"
 	logger -t "【chinadns_ng】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x

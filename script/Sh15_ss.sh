@@ -47,13 +47,6 @@ if [ "$ss_threads" != "1" ] ;then
 	threads="$ss_threads"
 	fi
 fi
-Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
-Mem_lt=100000
-if [ "$Mem_total" -lt "$Mem_lt" ] ; then
-	logger -t "【SS】" "检测到内存不足100M，多线程启动失败"
-	nvram set ss_threads=0
-	ss_threads=0
-fi
 fi
 v2ray_path=`nvram get v2ray_path`
 [ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
@@ -240,8 +233,7 @@ sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'
 sstp_set proxy_tcpport='1090'
-[ "$ss_threads" == 0 ] && sstp_set proxy_udpport='1090'
-[ "$ss_threads" != 0 ] && sstp_set proxy_udpport='1092'
+sstp_set proxy_udpport='1090'
 sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
@@ -517,24 +509,42 @@ options1="$(echo "$ss_usage" | sed -r 's/\ -g[ ]+[^丨]+//g' | sed -r 's/\ -G[ ]
 
 # 启动程序
 ss_s1_redir_port=1090
-[ "$ss_threads" != 0 ] && ss_s1_redir_port=1092
-logger -t "【ss-redir】" "启动所有的 SS 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
-logger -t "【SS】" "SS服务器【$app_97】设置内容：$ss_server 端口:$ss_server_port 加密方式:$ss_method 本地监听地址：0.0.0.0 本地代理端口：$ss_s1_redir_port "
+logger -t "【ss-redir】" "启动所有的 ss-redir 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
+logger -t "【ss-redir】" "SS服务器【$app_97】设置内容：$ss_server 端口:$ss_server_port 加密方式:$ss_method 本地监听地址：0.0.0.0 本地代理端口：$ss_s1_redir_port "
 
 SSJSON_sh "/tmp/ss-redir_1.json" "1" "r"
 killall_ss_redir
 check_ssr
+if [ "$ss_threads" != 0 ] ; then
+for ss_1i in $(seq 1 $threads)
+do
+logger -t "【ss-redir】" "启动多线程均衡负载，启动 $ss_1i 线程"
+cmd_name="SS_""$ss_1i""_redir"
+eval "ss-redir --reuse-port -c /tmp/ss-redir_1.json $options1 $cmd_log" &
+usleep 300000
+done
+else
 cmd_name="SS_1_redir"
 eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
+fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	killall_ss_local
 	logger -t "【ss-local】" "启动所有的 ss-local 连线, 出现的 SS 日志并不是错误报告, 只是使用状态日志, 请不要慌张, 只要系统正常你又看不懂就无视它！"
 	logger -t "【ss-local】" "SS服务器【$app_97】设置内容：$ss_server 端口:$ss_server_port 加密方式:$ss_method 本地监听地址：$ss_s1_local_address 本地代理端口：$ss_s1_local_port "
 	SSJSON_sh "/tmp/ss-local_1.json" "1" "l"
 	killall_ss_local
+	if [ "$ss_threads" != 0 ] ; then
+	for ss_1i in $(seq 1 $threads)
+	do
+	logger -t "【ss-local】" "启动多线程均衡负载，启动 $ss_1i 线程"
+	cmd_name="SS_""$ss_1i""_local"
+	eval "ss-local --reuse-port -c /tmp/ss-local_1.json $options1 $cmd_log" &
+	usleep 300000
+	done
+	else
 	cmd_name="SS_1_local"
 	eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
-
+	fi
 fi
 
 }
@@ -551,175 +561,6 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	[ -z "`pidof ss-local`" ] && logger -t "【ss-local】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ss_restart x
 fi
 
-}
-
-start_ss_redir_threads()
-{
-
-# 多线程启动
-if [ "$ss_threads" != 0 ] ; then
-logger -t "【SS-V2ray】" "启动多线程ss-local，使用v2ray随机轮询负载，占用端口1090-1092，10901-10904"
-mkdir -p /tmp/cpu4
-v2ray_cpu4_pb="/tmp/cpu4/ss-redir_v2ray.pb"
-v2ray_cpu4_json="/tmp/cpu4/ss-redir_v2ray.json"
-v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
-wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
-if [[ "$($v2ctl_path -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	[ -f "$v2ctl_path" ] && rm -f "$v2ctl_path"
-	logger -t "【SS】" "找不到 $v2ctl_path ，多线程启动失败"
-	return
-fi
-wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
-if [[ "$($v2ray_path -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	[ -f "$v2ray_path" ] && rm -f "$v2ray_path"
-	logger -t "【SS】" "找不到 $v2ray_path ，多线程启动失败"
-	return
-fi
-cat > $v2ray_cpu4_json <<-END
-{
-  "log": {
-    "error": "/tmp/syslog.log",
-    "loglevel": "warning"
-  },
-  "inbounds": [
-  {
-    "port": 1090,
-    "tag": "door1090",
-    "protocol": "dokodemo-door",
-    "settings": {
-      "network": "tcp,udp",
-      "timeout": 0,
-      "followRedirect": true,
-      "userLevel": 0
-    }
-  }
-  ],
-  "outbounds": [
-    {
-      "protocol": "socks",
-      "tag": "10901",
-      "settings": {
-        "servers": [
-          {
-            "address": "127.0.0.1",
-            "port": 10901
-          }
-        ]
-      }
-    },
-    {
-      "protocol": "socks",
-      "tag": "10902",
-      "settings": {
-        "servers": [
-          {
-            "address": "127.0.0.1",
-            "port": 10902
-          }
-        ]
-      }
-    },
-    {
-      "protocol": "socks",
-      "tag": "10903",
-      "settings": {
-        "servers": [
-          {
-            "address": "127.0.0.1",
-            "port": 10903
-          }
-        ]
-      }
-    },
-    {
-      "protocol": "socks",
-      "tag": "10904",
-      "settings": {
-        "servers": [
-          {
-            "address": "127.0.0.1",
-            "port": 10904
-          }
-        ]
-      }
-    }
-  ],
-  "routing": {
-    "domainStrategy": "IPIfNonMatch",
-    "balancers": [
-      {
-        "tag": "1090cpu4",
-        "selector": [
-          "10901",
-          "10902",
-          "10903",
-          "10904"
-        ]
-      },
-      {
-        "tag": "1090cpu3",
-        "selector": [
-          "10901",
-          "10902",
-          "10903"
-        ]
-      },
-      {
-        "tag": "1090cpu2",
-        "selector": [
-          "10901",
-          "10902"
-        ]
-      },
-      {
-        "tag": "1090udp",
-        "selector": [
-          "10901"
-        ]
-      }
-    ],
-    "rules": [
-      {
-        "type": "field",
-        "network": "tcp",
-        "balancerTag": "1090cpu$threads",
-        "inboundTag": ["door1090"]
-      },
-      {
-        "type": "field",
-        "network": "udp",
-        "balancerTag": "1090udp",
-        "inboundTag": ["door1090"]
-      }
-    ]
-  }
-}
-
-END
-chmod 666 $v2ray_cpu4_json
-logger -t "【SS】" "检测到【$(cat /proc/cpuinfo | grep 'processor' | wc -l)】核CPU：使用 $threads 线程启动"
-[ "$ss_udp_enable" == 0 ] && killall_ss_redir
-cd /tmp/cpu4
-rm -f /tmp/cpu4/ss-redir /tmp/cpu4/v2ctl
-ln -sf "$v2ray_path" /tmp/cpu4/ss-redir
-ln -sf "$v2ctl_path" /tmp/cpu4/v2ctl
-kill_ps /tmp/cpu4/ss-redir
-cmd_name="ss-v2ray"
-eval "/tmp/cpu4/ss-redir -format json -config $v2ray_cpu4_json $cmd_log" &
-rm -f /tmp/cpu4/ss-local_
-ln -sf /usr/sbin/ss-local /tmp/cpu4/ss-local_
-killall ss-local_
-for cpu_i in $(seq 1 $threads)  
-do
-	logger -t "【ss-local_1_$cpu_i】" "启动ss-local 1_$cpu_i 设置内容：$ss_server 端口:$ss_server_port 加密方式:$ss_method "
-	SSJSON_sh "/tmp/ss-redir_1_$cpu_i.json" "1" "c" "127.0.0.1" "1090$cpu_i"
-	cmd_name="ss-local_1_$cpu_i"
-	eval "/tmp/cpu4/ss-local_ -c /tmp/ss-redir_1_$cpu_i.json $options1 $cmd_log" &
-	usleep 300000
-done
-logger -t "【SS】" "多线程启动完成！"
-
-fi
 }
 
 killall_ss_redir()
@@ -748,7 +589,6 @@ Sh99_ss_tproxy.sh x_resolve_svraddr "Sh15_ss.sh"
 
 # 启动新进程
 start_ss_redir
-start_ss_redir_threads
 start_ss_redir_check
 [ "$ss_mode_x" = "3" ] && return
 
@@ -771,7 +611,7 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ss-local 2>/dev/null || optssredir="2"
 fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+if [ "$ss_run_ss_local" = "1" ] ; then
 	hash ss-local 2>/dev/null || optssredir="3"
 fi
 # SS
@@ -785,7 +625,7 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ssrr-local 2>/dev/null || optssredir="2"
 fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+if [ "$ss_run_ss_local" = "1" ] ; then
 	hash ssrr-local 2>/dev/null || optssredir="3"
 fi
 # SSRR
@@ -796,7 +636,7 @@ if [ "$ss_mode_x" != "3" ] ; then
 else
 	hash ssr-local 2>/dev/null || optssredir="2"
 fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+if [ "$ss_run_ss_local" = "1" ] ; then
 	hash ssr-local 2>/dev/null || optssredir="3"
 fi
 fi
@@ -807,7 +647,7 @@ hash dnsproxy 2>/dev/null || optssredir="5"
 elif [ "$ss_dnsproxy_x" = "1" ] ; then
 hash pdnsd 2>/dev/null || optssredir="5"
 fi
-[ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
+[ "$ss_run_ss_local" = "1" ] && { hash ss-local 2>/dev/null || optssredir="3" ; }
 [ ! -z "$ss_plugin_name" ] && { hash $ss_plugin_name 2>/dev/null || optssredir="4" ; }
 if [ "$optssredir" != "0" ] ; then
 	# 找不到ss-redir，安装opt
@@ -832,7 +672,7 @@ if [ "$optssredir" = "1" ] ; then
 	[ ! -s /opt/bin/ss-redir ] && wgetcurl_file "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
 	hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; ss_restart x ; }
 fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+if [ "$ss_run_ss_local" = "1" ] ; then
 chmod 777 "/usr/sbin/ss-local"
 	[[ "$(ss-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-local
 	hash ss-local 2>/dev/null || optssredir="3"
@@ -860,7 +700,7 @@ if [ "$optssredir" = "1" ] ; then
 	[ ! -s /opt/bin/ssrr-redir ] && wgetcurl_file "/opt/bin/ssrr-redir" "$hiboyfile/$libsodium_so/ssrr-redir" "$hiboyfile2/$libsodium_so/ssrr-redir"
 	hash ssrr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssrr-redir, 请检查系统"; ss_restart x ; }
 fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+if [ "$ss_run_ss_local" = "1" ] ; then
 chmod 777 "/opt/bin/ssrr-local"
 	[[ "$(ssrr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssrr-local
 	hash ssrr-local 2>/dev/null || optssredir="3"
@@ -885,7 +725,7 @@ if [ "$optssredir" = "1" ] ; then
 	[ ! -s /opt/bin/ssr-redir ] && wgetcurl_file "/opt/bin/ssr-redir" "$hiboyfile/$libsodium_so/ssr-redir" "$hiboyfile2/$libsodium_so/ssr-redir"
 	hash ssr-redir 2>/dev/null || { logger -t "【SS】" "找不到 ssr-redir, 请检查系统"; ss_restart x ; }
 fi
-if [ "$ss_run_ss_local" = "1" ] || [ "$ss_threads" != 0 ] ; then
+if [ "$ss_run_ss_local" = "1" ] ; then
 chmod 777 "/usr/sbin/ssr-local"
 	[[ "$(ssr-local -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ssr-local
 	hash ssr-local 2>/dev/null || optssredir="3"
@@ -907,32 +747,6 @@ if [ ! -z "$ss_plugin_name" ] ; then
 	if [ "$optssredir" = "44" ] ; then
 		logger -t "【SS】" "找不到 ss_plugin_name :  $ss_plugin_name, 请检查系统"; ss_restart x ;
 	fi
-fi
-# 下载 dnsproxy 程序
-if [ "$ss_dnsproxy_x" = "0" ] ; then
-hash dnsproxy 2>/dev/null && dnsproxy_x="1"
-hash dnsproxy 2>/dev/null || dnsproxy_x="0"
-if [ "$dnsproxy_x" = "0" ] ; then
-	logger -t "【SS】" "找不到 dnsproxy. opt ，挂载opt"
-	/tmp/script/_mountopt start
-	initopt
-	if [ ! -s /opt/bin/dnsproxy ] ; then
-		wgetcurl_file "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
-	fi
-	hash dnsproxy 2>/dev/null || { logger -t "【SS】" "找不到 dnsproxy, 请检查系统"; ss_restart x ; }
-fi
-elif [ "$ss_dnsproxy_x" = "1" ] ; then
-hash pdnsd 2>/dev/null && dnsproxy_x="1"
-hash pdnsd 2>/dev/null || dnsproxy_x="0"
-if [ "$dnsproxy_x" = "0" ] ; then
-	logger -t "【SS】" "找不到 pdnsd. opt ，挂载opt"
-	/tmp/script/_mountopt start
-	initopt
-	if [ ! -s /opt/bin/pdnsd ] ; then
-		wgetcurl_file "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
-	fi
-	hash pdnsd 2>/dev/null || { logger -t "【SS】" "找不到 pdnsd, 请检查系统"; ss_restart x ; }
-fi
 fi
 
 umount  /usr/sbin/ss-redir
@@ -1079,7 +893,6 @@ echo "Debug: $DNS_Server"
 		exit 0
 	fi
 	start_ss_redir
-	start_ss_redir_threads
 	start_ss_redir_check
 	Sh99_ss_tproxy.sh auser_check "Sh15_ss.sh"
 	ss_tproxy_set "Sh15_ss.sh"
@@ -1404,9 +1217,7 @@ fi
 
 NUM=`ps -w | grep ss-redir_ | grep -v grep |wc -l`
 SSRNUM=1
-SSRNUM_udp=0
-[ "$ss_udp_enable" == 1 ] && SSRNUM_udp=$SSRNUM
-[ "$ss_threads" != 0 ] && SSRNUM=`expr $threads \* $SSRNUM + 1 + $SSRNUM_udp`
+#[ "$ss_threads" != 0 ] && SSRNUM=`$threads`
 if [ "$NUM" -lt "$SSRNUM" ] ; then
 	logger -t "【SS】" "$NUM 找不到 $SSRNUM shadowsocks 进程 $rebss, 重启SS."
 	nvram set ss_status=0

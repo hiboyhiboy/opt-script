@@ -266,7 +266,10 @@ kill_ps "$scriptname"
 ss_tproxy_rules_update () {
 [ "$ss_tproxy_update" == "0" ] && return
 nvram set app_111=0 ; nvram commit ;
+for h_i in $(seq 1 2) ; do
+[[ "$(/etc/storage/script/sh_ss_tproxy.sh -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
+done
 rm -f /opt/app/ss_tproxy/tmp/*.md5
 if [ "$ss_tproxy_update" == "1" ] ; then
 	logger -t "【ss_tproxy】" "更新 gfwlist + chnroute 规则" 
@@ -319,8 +322,10 @@ fi
 ss_tproxy_start () {
 ipt_m_check
 check_webui_yes
+for h_i in $(seq 1 2) ; do
+[[ "$(/etc/storage/script/sh_ss_tproxy.sh -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
-
+done
 rm -f /opt/app/ss_tproxy/ss_tproxy.conf
 ln -sf /etc/storage/app_27.sh /opt/app/ss_tproxy/ss_tproxy.conf
 rm -f /opt/app/ss_tproxy/ss_tproxy
@@ -549,8 +554,10 @@ ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 initconfig
 
 ss_tproxy_run () {
+for h_i in $(seq 1 2) ; do
+[[ "$(/etc/storage/script/sh_ss_tproxy.sh -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
-
+done
 sh_ss_tproxy.sh "$@"
 }
 
@@ -574,9 +581,11 @@ if [ "$1" = "del" ] ; then
 	nvram set ss_tproxy_auser=""
 	rm -rf /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp
 	[ -f /etc/storage/script/sh_ss_tproxy.sh ] && rm -f /etc/storage/script/sh_ss_tproxy.sh
-	fi
+fi
+for h_i in $(seq 1 2) ; do
+[[ "$(/etc/storage/script/sh_ss_tproxy.sh -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
-
+done
 initconfig
 
 # 加载程序配置页面

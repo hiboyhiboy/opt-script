@@ -210,7 +210,10 @@ do
 		/tmp/script/_mountopt start
 		initopt
 	fi
+	for h_i in $(seq 1 2) ; do
+	[[ "$($action_frp -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/$action_frp
 	wgetcurl_file "$SVC_PATH" "$hiboyfile/$action_frp$frp_ver_wget" "$hiboyfile2/$action_frp$frp_ver_wget"
+	done
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【frp】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 		logger -t "【frp】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && frp_restart x

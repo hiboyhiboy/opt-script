@@ -130,7 +130,10 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【goflyway】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
+for h_i in $(seq 1 2) ; do
+[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 wgetcurl_file "$SVC_PATH" "$hiboyfile/goflyway" "$hiboyfile2/goflyway"
+done
 if [ -s "$SVC_PATH" ] ; then
 if [ ! -s "$capem_s_path" ] && [ -s "$capem_path" ] ; then
 cp -f "$keypem_path" "$keypem_s_path"
@@ -144,12 +147,13 @@ if [ ! -s "$capem_path" ] && [[ "$(goflyway -h 2>&1 | grep gen-ca | wc -l)" -gt 
 	cd /opt/bin/
 	./goflyway -gen-ca
 fi
-wgetcurl_file "$capem_path" "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem"
+if [ ! -s "$capem_path" ] ; then
+wgetcurl_checkmd5 "$capem_path" "$hiboyfile/ca.pem" "$hiboyfile2/ca.pem" N
+fi
 if [ -s "$capem_path" ] ; then
 	chmod 755 "$capem_path" "$keypem_path"
 fi
-chinalist_path="/opt/bin/chinalist.txt"
-wgetcurl_file "$chinalist_path" "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt"
+[ ! -f /opt/bin/chinalist.txt ] && update_chnlist
 
 fi
 [[ "$(goflyway -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/goflyway
@@ -176,6 +180,12 @@ initopt
 #goflyway_get_status
 eval "$scriptfilepath keep &"
 exit 0
+}
+
+update_chnlist () {
+nvram set app_111=4 && Sh99_ss_tproxy.sh
+cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sort -u | grep -v "^$" > /opt/bin/chinalist.txt
+
 }
 
 initopt () {

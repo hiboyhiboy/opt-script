@@ -1412,7 +1412,10 @@ if [ "$chinadns_enable" != "0" ] ; then
 fi
 
 if [ "$ss_dnsproxy_x" = "0" ] ; then
+	for h_i in $(seq 1 2) ; do
+	[[ "$(dnsproxy -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/dnsproxy
 	hash dnsproxy 2>/dev/null || wgetcurl_file "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
+	done
 	logger -t "【sh_ss_tproxy.sh】" "启动 dnsproxy 防止域名污染"
 	pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 	pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
@@ -1425,7 +1428,10 @@ if [ "$ss_dnsproxy_x" = "0" ] ; then
 	ss_dnsproxy_x=1
 fi
 if [ "$ss_dnsproxy_x" = "1" ] ; then
+for h_i in $(seq 1 2) ; do
+[[ "$(pdnsd -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/pdnsd
 hash pdnsd 2>/dev/null || wgetcurl_file "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
+done
 logger -t "【sh_ss_tproxy.sh】" "启动 pdnsd 防止域名污染"
 pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null

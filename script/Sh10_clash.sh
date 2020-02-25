@@ -164,7 +164,10 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
+for h_i in $(seq 1 2) ; do
+[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
 wgetcurl_file "$SVC_PATH" "$hiboyfile/clash" "$hiboyfile2/clash"
+done
 clash_v=$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $2;}')
 nvram set clash_v="$clash_v"
 [ -z "$clash_v" ] && rm -rf $SVC_PATH
@@ -181,7 +184,7 @@ fi
 fi
 # 下载clash_webs
 if [ ! -d "/opt/app/clash/clash_webs" ] ; then
-	wgetcurl_file /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs.tgz" "$hiboyfile2/clash_webs.tgz"
+	wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs.tgz" "$hiboyfile2/clash_webs.tgz" N
 	tar -xzvf /opt/app/clash/clash_webs.tgz -C /opt/app/clash
 	rm -f /opt/app/clash/clash_webs.tgz
 	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
@@ -288,7 +291,7 @@ if [ ! -s /opt/app/clash/config/Country.mmdb ] ; then
 logger -t "【clash】" "初次启动会自动下载 geoip 数据库文件：/opt/app/clash/config/Country.mmdb"
 logger -t "【clash】" "备注：如果缺少 geoip 数据库文件会启动失败，需 v0.17.1 或以上版本才能自动下载 geoip 数据库文件"
 if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
-wgetcurl_file /opt/app/clash/config/Country.mmdb "$hiboyfile/Country.mmdb" "$hiboyfile2/Country.mmdb"
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "$hiboyfile/Country.mmdb" "$hiboyfile2/Country.mmdb" N
 [ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
 fi
 fi
@@ -526,7 +529,10 @@ if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 yq，安装 opt 程序"
 	/tmp/script/_mountopt start
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	for h_i in $(seq 1 2) ; do
+	[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
 	wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
+	done
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 yq，安装 opt 程序"
 	rm -f /opt/bin/yq

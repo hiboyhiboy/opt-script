@@ -316,11 +316,11 @@ fi
 if [ "$mk_mode_routing" == "1" ] ; then
 	logger -t "【v2ray】" "使用 ss_tproxy 分流(降低负载，适合低配路由)"
 else
-	wgetcurl_file $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat"
+	[ ! -s $geoip_path ] && wgetcurl_checkmd5 $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat" N
 	if [ "$Mem_total" -lt "200000" ] ; then
-	wgetcurl_file $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat"
+	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat" N
 	else
-	wgetcurl_file $geosite_path "$hiboyfile/geosite_s.dat" "$hiboyfile2/geosite_s.dat"
+	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "$hiboyfile/geosite_s.dat" "$hiboyfile2/geosite_s.dat" N
 	fi
 fi
 if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
@@ -344,20 +344,14 @@ if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	chmod 644 /opt/etc/ssl/certs -R
 	chmod 777 /opt/etc/ssl/certs
 fi
-if [ ! -s "$v2ray_path" ] ; then
-	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
-	[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
-	if [ ! -s "$v2ray_path" ] ; then
-		wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
-	fi
-fi
-if [ ! -s "$v2ctl_path" ] ; then
-	wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
-	[[ "$(v2ctl -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ctl_path ] && rm -rf $v2ctl_path
-	if [ ! -s "$v2ctl_path" ] ; then
-		wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
-	fi
-fi
+for h_i in $(seq 1 2) ; do
+[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+done
+for h_i in $(seq 1 2) ; do
+[[ "$(v2ctl -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ctl_path ] && rm -rf $v2ctl_path
+wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
+done
 if [ -s "$v2ray_path" ] && [ -s "$v2ctl_path" ] ; then
 	logger -t "【v2ray】" "找到 $v2ray_path $v2ctl_path"
 	chmod 777 "$(dirname "$v2ray_path")"
@@ -787,7 +781,10 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
 	/tmp/script/_mountopt start
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	for h_i in $(seq 1 2) ; do
 	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
+	[[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/jq
+	done
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
 	rm -f /opt/bin/jq
@@ -1532,8 +1529,10 @@ ilox="$(cat /www/link/vmess.js | grep -v '^\]' | grep -v "ACL3List = " |wc -l)"
 [ "$ilox" == "0" ] && ilox="$(cat /tmp/link/link_vmess.txt | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
 [ "$ilox" == "0" ] && ilox="$(cat /tmp/link/link_ss.txt | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
 [ "$ilox" == "0" ] && logger -t "【ping】" "错误！节点列表为空" && return
+for h_i in $(seq 1 2) ; do
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
 wgetcurl_file /opt/bin/tcping "$hiboyfile/tcping" "$hiboyfile2/tcping"
+done
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
 [ ! -f /opt/bin/tcping ] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
 allping 3

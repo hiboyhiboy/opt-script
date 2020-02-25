@@ -200,17 +200,15 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	wgetcurl_file /opt/bin/chinadns "$hiboyfile/chinadns2" "$hiboyfile2/chinadns2"
-	if [[ "$(chinadns -h | wc -l)" -lt 2 ]] ; then
-		wgetcurl_file /opt/bin/chinadns "$hiboyfile/chinadns" "$hiboyfile2/chinadns"
-	fi
-else
-	logger -t "【chinadns】" "找到 $SVC_PATH"
-fi
+for h_i in $(seq 1 2) ; do
+[[ "$(chinadns -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/chinadns
+wgetcurl_file /opt/bin/chinadns "$hiboyfile/chinadns2" "$hiboyfile2/chinadns2"
+done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【chinadns】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && chinadns_restart x
+else
+	logger -t "【chinadns】" "找到 $SVC_PATH"
 fi
 if [ -s "$SVC_PATH" ] ; then
 	nvram set app_4="$SVC_PATH" #chinadns_path

@@ -148,7 +148,10 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
+for h_i in $(seq 1 2) ; do
+[[ "$(tinyproxy -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/tinyproxy
 wgetcurl_file "$SVC_PATH" "$hiboyfile/tinyproxy" "$hiboyfile2/tinyproxy"
+done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【tinyproxy】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【tinyproxy】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && tinyproxy_restart x

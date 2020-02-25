@@ -184,8 +184,12 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
+for h_i in $(seq 1 2) ; do
+[[ "$(wifidog -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/wifidog
 wgetcurl_file "$SVC_PATH" "$hiboyfile/wifidog" "$hiboyfile2/wifidog"
+[[ "$(wdctl -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/wdctl
 wgetcurl_file /opt/bin/wdctl "$hiboyfile/wdctl" "$hiboyfile2/wdctl"
+done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【wifidog】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【wifidog】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && wifidog_restart x

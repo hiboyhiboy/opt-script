@@ -162,8 +162,10 @@ phddns_start () {
 check_webui_yes
 SVC_PATH="/usr/bin/oraysl"
 SVC_PATH2="/usr/bin/oraynewph"
-if [ ! -s "$SVC_PATH" ] || [ ! -s "$SVC_PATH2" ] ; then
+if [ ! -s "$SVC_PATH" ] ; then
 SVC_PATH="/opt/bin/oraysl"
+fi
+if [ ! -s "$SVC_PATH2" ] ; then
 SVC_PATH2="/opt/bin/oraynewph"
 fi
 chmod 777 "$SVC_PATH"
@@ -174,8 +176,12 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/tmp/script/_mountopt start
 	initopt
 fi
-wgetcurl_file "$SVC_PATH" "$hiboyfile/phddns2/bin/oraysl" "$hiboyfile2/phddns2/bin/oraysl"
-wgetcurl_file "$SVC_PATH2" "$hiboyfile/phddns2/bin/oraynewph" "$hiboyfile2/phddns2/bin/oraynewph"
+if [ ! -s "$SVC_PATH" ] ; then
+wgetcurl_checkmd5 "$SVC_PATH" "$hiboyfile/phddns2/bin/oraysl" "$hiboyfile2/phddns2/bin/oraysl" N
+fi
+if [ ! -s "$SVC_PATH2" ] ; then
+wgetcurl_checkmd5 "$SVC_PATH2" "$hiboyfile/phddns2/bin/oraynewph" "$hiboyfile2/phddns2/bin/oraynewph" N
+fi
 if [ ! -s "$SVC_PATH" ] || [ ! -s "$SVC_PATH2" ] ; then
 	[ ! -s "$SVC_PATH" ] && logger -t "【花生壳内网版】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	[ ! -s "$SVC_PATH2" ] && logger -t "【花生壳内网版】" "找不到 $SVC_PATH2 ，需要手动安装 $SVC_PATH2"

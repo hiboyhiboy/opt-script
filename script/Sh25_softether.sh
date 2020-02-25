@@ -140,16 +140,22 @@ SVC_PATH="$softether_path"
 if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/softether/vpnserver"
 fi
+[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【softether】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
 mkdir -p /opt/softether
-wgetcurl_file "$SVC_PATH" "$hiboyfile/vpnserver" "$hiboyfile2/vpnserver"
-wgetcurl_file "$(dirname $SVC_PATH)"/vpncmd "$hiboyfile/vpncmd" "$hiboyfile2/vpncmd"
-wgetcurl_file "$(dirname $SVC_PATH)"/hamcore.se2 "$hiboyfile/hamcore.se2" "$hiboyfile2/hamcore.se2"
-chmod 777 "$SVC_PATH"
+for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
+wgetcurl_file "$SVC_PATH" "$hiboyfile/vpnserver" "$hiboyfile2/vpnserver"
+[[ "$("$(dirname $SVC_PATH)"/vpncmd -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf "$(dirname $SVC_PATH)"/vpncmd
+wgetcurl_file "$(dirname $SVC_PATH)"/vpncmd "$hiboyfile/vpncmd" "$hiboyfile2/vpncmd"
+done
+if [ ! -s "$(dirname $SVC_PATH)"/hamcore.se2 ] ; then
+wgetcurl_checkmd5 "$(dirname $SVC_PATH)"/hamcore.se2 "$hiboyfile/hamcore.se2" "$hiboyfile2/hamcore.se2" N
+fi
+chmod 777 "$SVC_PATH"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【softether】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【softether】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && softether_restart x

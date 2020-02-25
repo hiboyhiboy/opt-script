@@ -78,6 +78,7 @@ if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	nvram set adm_enable=0
 	nvram save
 	/tmp/script/_ad_m stop &
+	nvram set button_script_1="0"
 fi
 fi
 
@@ -101,6 +102,7 @@ if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	nvram set koolproxy_enable=0
 	nvram save
 	/tmp/script/_kool_proxy &
+	nvram set button_script_1="0"
 fi
 fi
 
@@ -124,6 +126,7 @@ if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	nvram set adbyby_enable=0
 	nvram save
 	/tmp/script/_ad_byby  &
+	nvram set button_script_1="0"
 fi
 fi
 
@@ -150,6 +153,7 @@ if [ "$apply" = 0 ] ; then
 	nvram set ss_enable=1
 	nvram save
 	/tmp/script/_ss &
+	sleep 1
 	nvram set button_script_2="1"
 fi
 # 按钮②状态1时执行以下命令
@@ -159,6 +163,7 @@ if [ "$apply" = 1 ] ; then
 	nvram set ss_enable=0
 	nvram save
 	/tmp/script/_ss &
+	sleep 1
 	nvram set button_script_2="0"
 fi
 fi
@@ -176,6 +181,7 @@ if [ "$apply" = 0 ] ; then
 	nvram set v2ray_enable=1
 	nvram save
 	/tmp/script/_v2ray &
+	sleep 1
 	nvram set button_script_2="1"
 fi
 # 按钮②状态1时执行以下命令
@@ -185,6 +191,7 @@ if [ "$apply" = 1 ] ; then
 	nvram set v2ray_enable=0
 	nvram save
 	/tmp/script/_v2ray &
+	sleep 1
 	nvram set button_script_2="0"
 fi
 fi
@@ -203,6 +210,7 @@ if [ "$apply" = 0 ] ; then
 	nvram set app_27=1
 	nvram save
 	/tmp/script/_app20 &
+	sleep 1
 	nvram set button_script_2="1"
 fi
 # 按钮②状态1时执行以下命令
@@ -213,6 +221,7 @@ if [ "$apply" = 1 ] ; then
 	nvram set app_27=0
 	nvram save
 	/tmp/script/_app20 &
+	sleep 1
 	nvram set button_script_2="0"
 fi
 fi
@@ -230,6 +239,7 @@ if [ "$apply" = 0 ] ; then
 	nvram set app_27=1
 	nvram save
 	/tmp/script/_app10 &
+	sleep 1
 	nvram set button_script_2="1"
 fi
 # 按钮②状态1时执行以下命令
@@ -239,6 +249,7 @@ if [ "$apply" = 1 ] ; then
 	nvram set app_27=0
 	nvram save
 	/tmp/script/_app10 &
+	sleep 1
 	nvram set button_script_2="0"
 fi
 fi
@@ -256,6 +267,7 @@ if [ "$apply" = 0 ] ; then
 	nvram set app_88=1
 	nvram save
 	/tmp/script/_app18 &
+	sleep 1
 	nvram set button_script_2="1"
 fi
 # 按钮②状态1时执行以下命令
@@ -265,6 +277,7 @@ if [ "$apply" = 1 ] ; then
 	nvram set app_88=0
 	nvram save
 	/tmp/script/_app18 &
+	sleep 1
 	nvram set button_script_2="0"
 fi
 fi
@@ -392,7 +405,10 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	/tmp/script/_mountopt start
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	for h_i in $(seq 1 2) ; do
 	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
+	[[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/jq
+	done
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	rm -f /opt/bin/jq
@@ -517,8 +533,10 @@ allping () {
 
 check_link "X_check_app_24"
 [ ! -f /www/link/link.js ] && logger -t "【ping】" "错误！找不到 /www/link/link.js" && return 1
+for h_i in $(seq 1 2) ; do
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
 wgetcurl_file /opt/bin/tcping "$hiboyfile/tcping" "$hiboyfile2/tcping"
+done
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
 [ ! -f /opt/bin/tcping ] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
 mkdir -p /tmp/allping

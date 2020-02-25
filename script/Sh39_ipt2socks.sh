@@ -148,8 +148,10 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ipt2socks】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
 fi
-wgetcurl_file "$SVC_PATH" "$hiboyfile/ipt2socks" "$hiboyfile2/ipt2socks"
+for h_i in $(seq 1 2) ; do
 [[ "$(ipt2socks -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ipt2socks
+wgetcurl_file "$SVC_PATH" "$hiboyfile/ipt2socks" "$hiboyfile2/ipt2socks"
+done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ipt2socks】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【ipt2socks】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ipt2socks_restart x

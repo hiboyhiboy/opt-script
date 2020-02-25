@@ -138,9 +138,10 @@ fi
 if [ -f /etc_ro/ddnsto ] && [ ! -s "$SVC_PATH" ] && [ ! -f /tmp/ddnsto_ro ] ; then
 	cp -f /etc_ro/ddnsto /opt/bin/ddnsto
 fi
+for h_i in $(seq 1 2) ; do
+[[ "$(ddnsto -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ddnsto
 wgetcurl_file "$SVC_PATH" "$hiboyfile/ddnsto" "$hiboyfile2/ddnsto"
-
-#[[ "$(ddnsto -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ddnsto
+done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ddnsto】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【ddnsto】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ddnsto_restart x
