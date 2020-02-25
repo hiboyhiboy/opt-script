@@ -310,17 +310,17 @@ if [ -d $cn2qq_name ] ; then
 logger -t "【opt】" "opt-script 开始匹配： $cn2qq_name"
 cd $cn2qq_name
 #md5sum `/usr/bin/find ./ -type f | grep -v .git | grep -v md5.md5 | grep -v up_name.md5 | grep -v up_name.txt` > ./md5.md5
-wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "$hiboyscript/md5.md5" "$hiboyscript2/md5.md5"
+wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "https://opt.cn2qq.com/opt-script/md5.md5" "https://raw.githubusercontent.com/hiboyhiboy/opt-script/master/md5.md5"
 if [ -s $cn2qq_name/up_name.md5 ] ; then
 # 生成不匹配文件名
 cd $cn2qq_name
 md5sum -c $cn2qq_name/up_name.md5 | grep ": FAILED" | awk -F ':' '{print($1)}' | sed -e 's@^./@/@g' > $cn2qq_name/up_name.txt
 # 下载不匹配文件
-cat $cn2qq_name/up_name.txt | grep -v "^$" | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "$hiboyscript$update_addr" "$hiboyscript2$update_addr" Y; done
+cat $cn2qq_name/up_name.txt | grep -v "^$" | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "https://opt.cn2qq.com/opt-script$update_addr" "https://raw.githubusercontent.com/hiboyhiboy/opt-script/master$update_addr" Y; done
 rm -f $cn2qq_name/up_name.txt
 logger -t "【opt】" "opt-script 匹配完成： $cn2qq_name"
 else
-logger -t "【opt】" "opt-script 下载匹配md5文件失败： $hiboyscript/md5.md5"
+logger -t "【opt】" "opt-script 下载匹配md5文件失败"
 fi
 else
 logger -t "【opt】" "opt-script 找不到目录： $cn2qq_name"
@@ -331,17 +331,17 @@ if [ -d $cn2qq_name ] ; then
 logger -t "【opt】" "opt-file 开始匹配： $cn2qq_name"
 cd $cn2qq_name
 #md5sum `/usr/bin/find ./ -type f | grep -v .git | grep -v md5.md5 | grep -v up_name.md5 | grep -v up_name.txt` > ./md5.md5
-wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "$hiboyfile/md5.md5" "$hiboyfile2/md5.md5"
+wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "https://opt.cn2qq.com/opt-file/md5.md5" "https://raw.githubusercontent.com/hiboyhiboy/opt-file/master/md5.md5"
 if [ -s $cn2qq_name/up_name.md5 ] ; then
 # 生成不匹配文件名
 cd $cn2qq_name
 md5sum -c $cn2qq_name/up_name.md5 | grep ": FAILED" | awk -F ':' '{print($1)}' | sed -e 's@^./@/@g' > $cn2qq_name/up_name.txt
 # 下载不匹配文件
-cat $cn2qq_name/up_name.txt | grep -v "^$" | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "$hiboyfile$update_addr" "$hiboyfile2$update_addr" Y; done
+cat $cn2qq_name/up_name.txt | grep -v "^$" | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "https://opt.cn2qq.com/opt-file$update_addr" "https://raw.githubusercontent.com/hiboyhiboy/opt-file/master$update_addr" Y; done
 rm -f $cn2qq_name/up_name.txt
 logger -t "【opt】" "opt-file 匹配完成： $cn2qq_name"
 else
-logger -t "【opt】" "opt-file 下载匹配md5文件失败： $hiboyfile/md5.md5"
+logger -t "【opt】" "opt-file 下载匹配md5文件失败"
 fi
 else
 logger -t "【opt】" "opt-file 找不到目录： $cn2qq_name"
