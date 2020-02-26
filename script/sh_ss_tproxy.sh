@@ -569,113 +569,107 @@ update_gfwlist() {
 }
 
 update_gfwlist_file() {
-	if [ -f /opt/app/ss_tproxy/tmp/update_gfwlist_file.lock ] ; then
-		logger -t "【update_gfwlist】" "另一个进程正在下载更新 gfwlist 文件...."
-	else
-		logger -t "【update_gfwlist】" "开始下载更新 gfwlist 文件...."
-		touch /opt/app/ss_tproxy/tmp/update_gfwlist_file.lock
-		mkdir -p /opt/app/ss_tproxy/rule
-		tmp_gfwlist="/opt/app/ss_tproxy/rule/tmp_gfwlist.txt"
-		tmp_down_file="/opt/app/ss_tproxy/rule/tmp_gfwlist_tmp.txt"
-		rm -f $tmp_gfwlist $tmp_down_file
-		echo "" > /opt/app/ss_tproxy/rule/gfwlist_dns.txt
-		echo "" > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
-		echo "" > /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
-		ss_3p_enable=`nvram get ss_3p_enable`
-		if [ "$ss_3p_enable" = "1" ] ; then
-		ss_3p_gfwlist=`nvram get ss_3p_gfwlist`
-		if [ "$ss_3p_gfwlist" = "1" ] ; then
-			logger -t "【update_gfwlist】" "正在获取官方 gfwlist...."
-			local url='https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
-			wgetcurl_checkmd5 $tmp_gfwlist "$url" "$url" N 5
-			sed -e  's@$@==@g' -i $tmp_gfwlist
-			base64 -d $tmp_gfwlist > $tmp_down_file
-			rm -f $tmp_gfwlist 
-			cat $tmp_down_file | sort -u |
-				sed '/^$\|@@/d'|
-				sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
-				sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d' |
-				sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
-				grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##'  | sort -u >> $tmp_gfwlist
-		fi
-		ss_3p_kool=`nvram get ss_3p_kool`
-		if [ "$ss_3p_kool" = "1" ] ; then
-			logger -t "【update_gfwlist】" "正在获取 koolshare 列表...."
-			local url='https://raw.github.com/hq450/fancyss/master/rules/gfwlist.conf'
-			wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
-			cat $tmp_down_file | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist
-		fi
-		ss_sub5=`nvram get ss_sub5`
-		if [ ! -z "$ss_sub5" ] ; then
-			logger -t "【update_gfwlist】" "正在获取 GFW 自定义域名 列表...."
-			wgetcurl_checkmd5 $tmp_down_file $ss_sub5 $ss_sub5 Y
-			echo ""  >> $tmp_down_file
-			cat $tmp_down_file | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' | sort -u | grep -v "^$" >> $tmp_gfwlist
-		fi
-		if [ ! -s $tmp_gfwlist ] ; then
-			logger -t "【update_gfwlist】" "加入 固件内置list规则 列表...."
-			rm -f /etc/storage/basedomain.txt
-			tar -xzvf /etc_ro/basedomain.tgz -C /tmp
-			ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
-			[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $tmp_gfwlist
-		fi
-		ss_sub1=`nvram get ss_sub1`
-		if [ "$ss_sub1" = "1" ] ; then
-			logger -t "【update_gfwlist】" "处理订阅列表1....海外加速"
-			local url='/list.txt'
-			wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
-			cat $tmp_down_file |
-				sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist
-		fi
-		ss_sub2=`nvram get ss_sub2`
-		if [ "$ss_sub2" = "1" ] ; then
-			#处理只做dns解释的域名
-			logger -t "【update_gfwlist】" "处理订阅列表2....处理只做dns解释的域名"
-			local url='/dnsonly.txt'
-			wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
-			cat $tmp_down_file |
-				sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns.txt
-		fi
-		ss_sub3=`nvram get ss_sub3`
-		if [ "$ss_sub3" = "1" ] ; then
-			#处理需要排除的域名解释
-			logger -t "【update_gfwlist】" "处理订阅列表3....处理需要排除的域名解释"
-			local url='/passby.txt'
-			wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
-			cat $tmp_down_file |
-				sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
-		fi
-		ss_sub6=`nvram get ss_sub6`
-		if [ ! -z "$ss_sub6" ] ; then
-			logger -t "【update_gfwlist】" "正在获取 GFW IP 列表...."
-			wgetcurl_checkmd5 $tmp_down_file $ss_sub6 $ss_sub6 Y
-			echo ""  >> $tmp_down_file
-			cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
-		fi
-		fi
-		if [ ! -s $tmp_gfwlist ] ; then
-			logger -t "【update_gfwlist】" "加入 固件内置list规则 列表...."
-			rm -f /etc/storage/basedomain.txt
-			tar -xzvf /etc_ro/basedomain.tgz -C /tmp
-			ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
-			[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $tmp_gfwlist
-		fi
-		rm -f $tmp_down_file
-		# 临时添加的域名
-		echo "whatsapp.net" >> $tmp_gfwlist
-		gfwlist_txt_append_domain_names >> $tmp_gfwlist
-		# 添加自定义黑名单
-		cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | while read domain_addr; do echo "$domain_addr" >> $tmp_gfwlist; done 
-		#删除忽略的域名
-		cat $file_wanlist_ext | grep -E "^@b" | cut -c4- | while read domain_addr; do sed -Ei "/$domain_addr/d" $tmp_gfwlist; done 
-		cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u >> $tmp_gfwlist
-		cat $tmp_gfwlist |grep -v '^#' | sort -u | grep -v "^$" > $file_gfwlist_txt
-		logger -t "【update_gfwlist】" "完成下载 gfwlist 文件"
-		rm -f $tmp_gfwlist
-		rm -f /opt/app/ss_tproxy/tmp/update_gfwlist_file.lock
-		rm -f /etc/storage/basedomain.txt
-		ln -sf $file_gfwlist_txt /etc/storage/basedomain.txt
+	logger -t "【update_gfwlist】" "开始下载更新 gfwlist 文件...."
+	mkdir -p /opt/app/ss_tproxy/rule
+	tmp_gfwlist="/opt/app/ss_tproxy/rule/tmp_gfwlist.txt"
+	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_gfwlist_tmp.txt"
+	rm -f $tmp_gfwlist $tmp_down_file
+	echo "" > /opt/app/ss_tproxy/rule/gfwlist_dns.txt
+	echo "" > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
+	echo "" > /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
+	ss_3p_enable=`nvram get ss_3p_enable`
+	if [ "$ss_3p_enable" = "1" ] ; then
+	ss_3p_gfwlist=`nvram get ss_3p_gfwlist`
+	if [ "$ss_3p_gfwlist" = "1" ] ; then
+		logger -t "【update_gfwlist】" "正在获取官方 gfwlist...."
+		local url='https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
+		wgetcurl_checkmd5 $tmp_gfwlist "$url" "$url" N 5
+		sed -e  's@$@==@g' -i $tmp_gfwlist
+		cat $tmp_gfwlist | base64 -d > $tmp_down_file
+		rm -f $tmp_gfwlist 
+		cat $tmp_down_file | sort -u |
+			sed '/^$\|@@/d'|
+			sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
+			sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d' |
+			sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
+			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##'  | sort -u >> $tmp_gfwlist
 	fi
+	ss_3p_kool=`nvram get ss_3p_kool`
+	if [ "$ss_3p_kool" = "1" ] ; then
+		logger -t "【update_gfwlist】" "正在获取 koolshare 列表...."
+		local url='https://raw.github.com/hq450/fancyss/master/rules/gfwlist.conf'
+		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
+		cat $tmp_down_file | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist
+	fi
+	ss_sub5=`nvram get ss_sub5`
+	if [ ! -z "$ss_sub5" ] ; then
+		logger -t "【update_gfwlist】" "正在获取 GFW 自定义域名 列表...."
+		wgetcurl_checkmd5 $tmp_down_file $ss_sub5 $ss_sub5 Y
+		echo ""  >> $tmp_down_file
+		cat $tmp_down_file | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' | sort -u | grep -v "^$" >> $tmp_gfwlist
+	fi
+	if [ ! -s $tmp_gfwlist ] ; then
+		logger -t "【update_gfwlist】" "加入 固件内置list规则 列表...."
+		rm -f /etc/storage/basedomain.txt
+		tar -xzvf /etc_ro/basedomain.tgz -C /tmp
+		ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
+		[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $tmp_gfwlist
+	fi
+	ss_sub1=`nvram get ss_sub1`
+	if [ "$ss_sub1" = "1" ] ; then
+		logger -t "【update_gfwlist】" "处理订阅列表1....海外加速"
+		local url='/list.txt'
+		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
+		cat $tmp_down_file |
+			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist
+	fi
+	ss_sub2=`nvram get ss_sub2`
+	if [ "$ss_sub2" = "1" ] ; then
+		#处理只做dns解释的域名
+		logger -t "【update_gfwlist】" "处理订阅列表2....处理只做dns解释的域名"
+		local url='/dnsonly.txt'
+		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
+		cat $tmp_down_file |
+			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns.txt
+	fi
+	ss_sub3=`nvram get ss_sub3`
+	if [ "$ss_sub3" = "1" ] ; then
+		#处理需要排除的域名解释
+		logger -t "【update_gfwlist】" "处理订阅列表3....处理需要排除的域名解释"
+		local url='/passby.txt'
+		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
+		cat $tmp_down_file |
+			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
+	fi
+	ss_sub6=`nvram get ss_sub6`
+	if [ ! -z "$ss_sub6" ] ; then
+		logger -t "【update_gfwlist】" "正在获取 GFW IP 列表...."
+		wgetcurl_checkmd5 $tmp_down_file $ss_sub6 $ss_sub6 Y
+		echo ""  >> $tmp_down_file
+		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
+	fi
+	fi
+	if [ ! -s $tmp_gfwlist ] ; then
+		logger -t "【update_gfwlist】" "加入 固件内置list规则 列表...."
+		rm -f /etc/storage/basedomain.txt
+		tar -xzvf /etc_ro/basedomain.tgz -C /tmp
+		ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
+		[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $tmp_gfwlist
+	fi
+	rm -f $tmp_down_file
+	# 临时添加的域名
+	echo "whatsapp.net" >> $tmp_gfwlist
+	gfwlist_txt_append_domain_names >> $tmp_gfwlist
+	# 添加自定义黑名单
+	cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | while read domain_addr; do echo "$domain_addr" >> $tmp_gfwlist; done 
+	#删除忽略的域名
+	cat $file_wanlist_ext | grep -E "^@b" | cut -c4- | while read domain_addr; do sed -Ei "/$domain_addr/d" $tmp_gfwlist; done 
+	cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u >> $tmp_gfwlist
+	cat $tmp_gfwlist |grep -v '^#' | sort -u | grep -v "^$" > $file_gfwlist_txt
+	logger -t "【update_gfwlist】" "完成下载 gfwlist 文件"
+	rm -f $tmp_gfwlist
+	rm -f /etc/storage/basedomain.txt
+	ln -sf $file_gfwlist_txt /etc/storage/basedomain.txt
 }
 
 update_md5_check() {
@@ -854,27 +848,21 @@ update_chnlist() {
 }
 
 update_chnlist_file() {
-	if [ -f /opt/app/ss_tproxy/tmp/update_chnlist_file.lock ] ; then
-		logger -t "【update_chnlist】" "另一个进程正在下载更新 chnlist 文件...."
-	else
-		logger -t "【update_chnlist】" "开始下载更新 chnlist 文件...."
-		touch /opt/app/ss_tproxy/tmp/update_chnlist_file.lock
-		mkdir -p /opt/app/ss_tproxy/rule
-		tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnlist_tmp.txt"
-		rm -f $tmp_down_file
-		local url='https://raw.github.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
-		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
-		sed -e "s@server=/@@g" -i  $tmp_down_file
-		sed -e 's@/.*@@g' -i  $tmp_down_file
-		# 添加自定义白名单
-		cat $file_wanlist_ext | grep -E "^@b" | cut -c4- | while read domain_addr; do echo "$domain_addr" >> $tmp_down_file; done 
-		#删除忽略的域名
-		cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | while read domain_addr; do sed -Ei "/$domain_addr/d" $tmp_down_file; done 
-		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/ss_tproxy/rule/chnlist.txt
-		logger -t "【update_chnlist】" "完成下载 chnlist 文件"
-		rm -f $tmp_down_file
-		rm -f /opt/app/ss_tproxy/tmp/update_chnlist_file.lock
-	fi
+	logger -t "【update_chnlist】" "开始下载更新 chnlist 文件...."
+	mkdir -p /opt/app/ss_tproxy/rule
+	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnlist_tmp.txt"
+	rm -f $tmp_down_file
+	local url='https://raw.github.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
+	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
+	sed -e "s@server=/@@g" -i  $tmp_down_file
+	sed -e 's@/.*@@g' -i  $tmp_down_file
+	# 添加自定义白名单
+	cat $file_wanlist_ext | grep -E "^@b" | cut -c4- | while read domain_addr; do echo "$domain_addr" >> $tmp_down_file; done 
+	#删除忽略的域名
+	cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | while read domain_addr; do sed -Ei "/$domain_addr/d" $tmp_down_file; done 
+	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/ss_tproxy/rule/chnlist.txt
+	logger -t "【update_chnlist】" "完成下载 chnlist 文件"
+	rm -f $tmp_down_file
 }
 
 update_chnlist_ipset() {
@@ -960,59 +948,53 @@ update_chnroute() {
 }
 
 update_chnroute_file() {
-	if [ -f /opt/app/ss_tproxy/tmp/update_chnroute_file.lock ] ; then
-		logger -t "【update_chnroute】" "另一个进程正在下载更新 chnroute 文件...."
-	else
-		logger -t "【update_chnroute】" "开始下载更新 chnroute 文件...."
-		touch /opt/app/ss_tproxy/tmp/update_chnroute_file.lock
-		mkdir -p /opt/app/ss_tproxy/rule
-		tmp_chnroute="/opt/app/ss_tproxy/rule/tmp_chnroute.txt"
-		tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnroute_tmp.txt"
-		rm -f $tmp_chnroute $tmp_down_file
-		local url='https://cdn.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
-		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
+	logger -t "【update_chnroute】" "开始下载更新 chnroute 文件...."
+	mkdir -p /opt/app/ss_tproxy/rule
+	tmp_chnroute="/opt/app/ss_tproxy/rule/tmp_chnroute.txt"
+	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnroute_tmp.txt"
+	rm -f $tmp_chnroute $tmp_down_file
+	local url='https://cdn.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
+	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
+	echo ""  >> $tmp_down_file
+	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+	wgetcurl_checkmd5 $tmp_down_file "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt" N 5
+	echo ""  >> $tmp_down_file
+	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+	ss_sub7=`nvram get ss_sub7`
+	if [ ! -z "$ss_sub7" ] ; then
+		logger -t "【update_chnroute】" "正在获取 ① 大陆白名单 IP 下载地址...."
+		wgetcurl_checkmd5 $tmp_down_file $ss_sub7 $ss_sub7 Y
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
-		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt" N 5
+	fi
+	ss_sub8=`nvram get ss_sub8`
+	if [ ! -z "$ss_sub8" ] ; then
+		logger -t "【update_chnroute】" "正在获取 ② 大陆白名单 IP 下载地址...."
+		wgetcurl_checkmd5 $tmp_down_file $ss_sub8 $ss_sub8 Y
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
-		ss_sub7=`nvram get ss_sub7`
-		if [ ! -z "$ss_sub7" ] ; then
-			logger -t "【update_chnroute】" "正在获取 ① 大陆白名单 IP 下载地址...."
-			wgetcurl_checkmd5 $tmp_down_file $ss_sub7 $ss_sub7 Y
-			echo ""  >> $tmp_down_file
-			cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
-		fi
-		ss_sub8=`nvram get ss_sub8`
-		if [ ! -z "$ss_sub8" ] ; then
-			logger -t "【update_chnroute】" "正在获取 ② 大陆白名单 IP 下载地址...."
-			wgetcurl_checkmd5 $tmp_down_file $ss_sub8 $ss_sub8 Y
-			echo ""  >> $tmp_down_file
-			cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
-		fi
-		rm -f $tmp_down_file
-		if [ ! -s $tmp_chnroute ] ; then
-			 rm -f /etc/storage/china_ip_list.txt
-			 tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp
-			 ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
-			[ -s /etc/storage/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！下载文件为空，使用 固件内置 /etc/storage/china_ip_list.txt 规则...." && cat /etc/storage/china_ip_list.txt > $tmp_chnroute
-		fi
+	fi
+	rm -f $tmp_down_file
+	if [ ! -s $tmp_chnroute ] ; then
+		 rm -f /etc/storage/china_ip_list.txt
+		 tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp
+		 ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
+		[ -s /etc/storage/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！下载文件为空，使用 固件内置 /etc/storage/china_ip_list.txt 规则...." && cat /etc/storage/china_ip_list.txt > $tmp_chnroute
+	fi
+	# 添加自定义白名单
+	cat $file_wanlist_ext | grep -E "^b" | cut -c3- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
+	cat $tmp_chnroute | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' > $file_chnroute_txt
+	rm -f $tmp_chnroute
+	rm -f /etc/storage/china_ip_list.txt
+	ln -sf $file_chnroute_txt /etc/storage/china_ip_list.txt
+	logger -t "【update_chnroute】" "完成下载 chnroute 文件"
+	if is_true "$ipv6"; then
+		wget --user-agent "$user_agent" -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv6/ { printf("%s/%d\n", $4, $5)) }' > $tmp_down_file
 		# 添加自定义白名单
-		cat $file_wanlist_ext | grep -E "^b" | cut -c3- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
-		cat $tmp_chnroute | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' > $file_chnroute_txt
-		rm -f $tmp_chnroute
-		rm -f /etc/storage/china_ip_list.txt
-		ln -sf $file_chnroute_txt /etc/storage/china_ip_list.txt
-		logger -t "【update_chnroute】" "完成下载 chnroute 文件"
-		if is_true "$ipv6"; then
-			wget --user-agent "$user_agent" -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv6/ { printf("%s/%d\n", $4, $5)) }' > $tmp_down_file
-			# 添加自定义白名单
-			cat $file_wanlist_ext | grep -E "^~b" | cut -c4- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
-			cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > $file_chnroute6_txt
-			rm -f $tmp_down_file
-			logger -t "【update_chnroute】" "完成下载 chnroute6 文件"
-		fi
-		rm -f /opt/app/ss_tproxy/tmp/update_chnroute_file.lock
+		cat $file_wanlist_ext | grep -E "^~b" | cut -c4- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
+		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > $file_chnroute6_txt
+		rm -f $tmp_down_file
+		logger -t "【update_chnroute】" "完成下载 chnroute6 文件"
 	fi
 }
 
