@@ -420,6 +420,10 @@ load_config() {
 	if is_chnlist_mode; then # 回国模式 反转 wanlist 规则， china DNS 需要走代理
 		dst_fw_ipset_type="$sstp_dst_bp_ipset_setname"
 		dst_bp_ipset_type="$sstp_dst_fw_ipset_setname"
+		dst4_fw_type="sstp_dst_bp"
+		dst6_fw_type="sstp_dst_bp6"
+		dst4_bp_type="sstp_dst_fw"
+		dst6_bp_type="sstp_dst_fw6"
 		dns4_fw_type="$dns_direct"
 		dns6_fw_type="$dns_direct6"
 		dns4_bp_type="$dns_remote"
