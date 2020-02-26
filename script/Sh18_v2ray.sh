@@ -377,7 +377,7 @@ chmod 644 /etc/ssl/certs -R
 chmod 777 /etc/ssl/certs
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
-su_cmd="eval"
+# su_cmd="eval"
 # if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
 	# NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
 	# hash su 2>/dev/null && su_x="1"
@@ -417,7 +417,7 @@ else
 		sed -Ei s/8053/8055/g /tmp/vmess/mk_vmess.json
 	fi
 	# 改写错误日志路径
-	cat /tmp/vmess/mk_vmess.json| jq --raw-output 'setpath(["log","error"];"/tmp/syslog.log")' > /tmp/vmess/mk_vmess2.json
+	cat /tmp/vmess/mk_vmess.json| jq --raw-output 'setpath(["log"];{"error":"/tmp/syslog.log","loglevel":"error"})' > /tmp/vmess/mk_vmess2.json
 	[ -s /tmp/vmess/mk_vmess2.json ] && cp -f /tmp/vmess/mk_vmess2.json /tmp/vmess/mk_vmess.json
 	rm -f /tmp/vmess/mk_vmess2.json
 	fi
@@ -445,7 +445,8 @@ else
 	[ -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /opt/bin/v2ray_config.pb -format pb"
 fi
 cd "$(dirname "$v2ray_path")"
-eval "$su_cmd" '"cmd_name=v2ray && '"$su_cmd2"' $cmd_log"' &
+#eval "$su_cmd" '"cmd_name=v2ray && '"$su_cmd2"' $cmd_log"' &
+eval "$su_cmd2 $cmd_log" &
 sleep 4
 restart_dhcpd
 [ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动成功 $v2ray_v " && v2ray_restart o
@@ -2538,7 +2539,8 @@ nvram set app_82="vmess"
 fi
 # 重启v2ray
 [ "$v2ray_enable" == "0" ] && return
-eval "Sh18_v2ray.sh &"
+eval "$scriptfilepath &"
+exit
 break
 fi
 i_matching=`expr $i_matching + 1`

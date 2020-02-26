@@ -288,6 +288,7 @@ button_3 &
 
 button_3 () {
 
+sleep 1
 # 按钮状态检测子程序
 port=$(iptables -t nat -L | grep 'AD_BYBY_to' | wc -l)
 if [ "$port" -ge 1 ] ; then
@@ -521,7 +522,8 @@ nvram set ss_method="$ss_method"
 nvram set ss_usage="$ss_usage"
 # 重启SS
 [ "$ss_enable" == "0" ] && return
-eval "Sh15_ss.sh &"
+eval "/etc/storage/script/Sh15_ss.sh &"
+exit
 break
 fi
 i_matching=`expr $i_matching + 1`
