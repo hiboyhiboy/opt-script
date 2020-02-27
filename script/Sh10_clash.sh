@@ -97,6 +97,7 @@ B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$cl
 B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
 [ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
+[ "$(nvram get app_86)" = "clash_wget_geoip" ] && update_geoip
 if [ "$(nvram get app_86)" = "clash_save_yml" ] ; then
 #api热重载
 reload_api
@@ -185,7 +186,7 @@ kill_ps "$scriptname keep"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
 # 保存web节点选择
-[ "$app_120" != "2" ] && [ ! -z "`pidof clash`" ] && reload_yml "save"
+reload_yml "check" ; reload_yml "save"
 killall clash
 killall -9 clash
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
@@ -232,7 +233,7 @@ if [ ! -s /opt/app/clash/config/Country.mmdb ] ; then
 logger -t "【clash】" "初次启动会自动下载 geoip 数据库文件：/opt/app/clash/config/Country.mmdb"
 logger -t "【clash】" "备注：如果缺少 geoip 数据库文件会启动失败，需 v0.17.1 或以上版本才能自动下载 geoip 数据库文件"
 if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
-wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "$hiboyfile/Country.mmdb" "$hiboyfile2/Country.mmdb" N
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://github.com/Dreamacro/maxmind-geoip/releases/latest/download/Country.mmdb" "https://github.com/Dreamacro/maxmind-geoip/releases/latest/download/Country.mmdb" N
 [ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
 fi
 fi
@@ -288,8 +289,8 @@ fi
 restart_dhcpd
 # 透明代理
 fi
-# 保存web节点选择
-[ "$app_120" != "2" ] && [ ! -z "`pidof clash`" ] && reload_yml "save"
+# 恢复web节点选择
+reload_yml "check" ; reload_yml "set"
 eval "$scriptfilepath keep &"
 
 exit 0
@@ -680,6 +681,19 @@ mount --bind /opt/app/clash/Advanced_Extensions_clash.asp /www/Advanced_Extensio
 [ "$1" = "del" ] && /etc/storage/www_sh/clash del &
 }
 
+update_geoip () {
+
+[ "$(nvram get app_86)" = "clash_wget_geoip" ] && nvram set app_86=0
+logger -t "【clash】" "更新下载 GeoIP2国家数据库 数据库文件"
+/tmp/script/_mountopt start
+mkdir -p /opt/app/clash/config
+rm -f /opt/app/clash/config/Country_mmdb
+if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://github.com/Dreamacro/maxmind-geoip/releases/latest/download/Country.mmdb" "https://github.com/Dreamacro/maxmind-geoip/releases/latest/download/Country.mmdb" N
+[ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
+fi
+reload_api
+}
 update_yml () {
 secret="$(yq r /etc/storage/app_20.sh secret)"
 rm_temp
@@ -788,7 +802,9 @@ logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/op
 
 reload_api () {
 [ "$app_120" == "2" ] && return
+[ -z "`pidof clash`" ] && return
 #api热重载
+reload_yml "check"
 reload_yml "save"
 reload_yml "reload"
 reload_yml "set"
@@ -797,6 +813,9 @@ reload_yml "set"
 reload_yml () {
 [ "$(nvram get app_86)" = "clash_save_yml" ] && nvram set app_86=0
 [ "$app_120" == "2" ] && return
+[ -z "`pidof clash`" ] && return
+
+if [ "$1" == "check" ] ; then
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	logger -t "【clash】" "找不到 curl ，安装 opt 程序"
@@ -818,7 +837,7 @@ mkdir -p /etc/storage/clash
 secret="$(yq r /opt/app/clash/config/config.yaml secret)"
 rm_temp
 #secret="$clash_secret"
-
+fi
 if [ "$1" == "save" ] ; then
 logger -t "【clash】" "保存web节点选择"
 curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:9090/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).name' > /tmp/Selector_name.txt
@@ -867,6 +886,7 @@ wget_yml)
 	clash_check
 	;;
 reload_yml)
+	reload_yml "check"
 	reload_yml $2
 	;;
 *)
