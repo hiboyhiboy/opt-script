@@ -19,6 +19,8 @@ clash_ui=`nvram get app_94`
 lan_ipaddr=`nvram get lan_ipaddr`
 app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
+clash_secret=`nvram get app_119`
+app_120=`nvram get app_120`
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
@@ -91,15 +93,45 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch$app_default_config"
-B_restart="$B_restart""$(cat /etc/storage/app_20.sh /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch$app_default_config$clash_secret$app_120"
+B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
+[ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
+if [ "$(nvram get app_86)" = "clash_save_yml" ] ; then
+#api热重载
+reload_api
+fi
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
+	if [ -z "$clash_wget_yml" ] ; then
+		cru.sh d clash_link_update
+		logger -t "【clash】" "停止 clash 服务器订阅"
+		return
+	else
+		if [ "$app_120" == 1 ] ; then
+			cru.sh a clash_link_update "24 */6 * * * $scriptfilepath wget_yml &" &
+			logger -t "【clash】" "启动 clash 服务器订阅，添加计划任务 (Crontab)，每6小时更新"
+		else
+			cru.sh d clash_link_update
+		fi
+	fi
 	nvram set clash_status=$B_restart
 	needed_restart=1
 else
 	needed_restart=0
+fi
+[ "$app_120" != "2" ] && clash_get_2_status
+}
+
+clash_get_2_status () {
+C_restart=`nvram get clash_2_status`
+D_restart="$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
+D_restart=`echo -n "$D_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+if [ "$C_restart" != "$D_restart" ] ; then
+	nvram set clash_2_status=$D_restart
+	needed_2_restart=1
+else
+	needed_2_restart=0
 fi
 }
 
@@ -119,6 +151,10 @@ if [ "$clash_enable" = "1" ] ; then
 		if [ "$clash_follow" = "1" ] ; then
 			echo clash_follow
 		fi
+	fi
+	if [ "$needed_2_restart" = "1" ] ; then
+		#api热重载
+		reload_api
 	fi
 fi
 }
@@ -148,6 +184,8 @@ clash_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
+# 保存web节点选择
+[ "$app_120" != "2" ] && [ ! -z "`pidof clash`" ] && reload_yml "save"
 killall clash
 killall -9 clash
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
@@ -190,103 +228,6 @@ if [ ! -d "/opt/app/clash/clash_webs" ] ; then
 	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
 fi
 
-if [ "$app_default_config" = "1" ] ; then
-logger -t "【clash】" "不改写配置，直接使用原始配置启动！（有可能端口不匹配导致功能失效）"
-logger -t "【clash】" "请手动修改配置， HTTP 代理端口：7890"
-logger -t "【clash】" "请手动修改配置， SOCKS5 代理端口：7891"
-logger -t "【clash】" "请手动修改配置，透明代理端口：7892"
-mkdir -p /opt/app/clash/config
-cp -f /etc/storage/app_20.sh /opt/app/clash/config/config.yaml
-else
- # 改写配置适配脚本
-logger -t "【clash】" "初始化 clash dns 配置"
-mkdir -p /tmp/clash
-config_dns_yml="/tmp/clash/dns.yml"
-rm_temp
-cp -f /etc/storage/app_21.sh $config_dns_yml
-sed -Ei '/^$/d' $config_dns_yml
-yq w -i $config_dns_yml dns.ipv6 true
-rm_temp
-if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] || [ "$clash_follow" == 0 ] ; then
-logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8054"
-yq w -i $config_dns_yml dns.listen 0.0.0.0:8054
-rm_temp
-dns_start_dnsproxy='0' # 0:自动开启第三方 DNS 程序(dnsproxy) ;
-else
-logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8054"
-yq w -i $config_dns_yml dns.listen 0.0.0.0:8053
-rm_temp
-dns_start_dnsproxy='1' # 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
-fi
-if [ ! -s $config_dns_yml ] ; then
-logger -t "【clash】" "yq 初始化 clash dns 配置错误！请检查配置！"
-logger -t "【clash】" "恢复原始 clash dns 配置！"
-rm -f /etc/storage/app_21.sh
-initconfig
-cp -f /etc/storage/app_21.sh $config_dns_yml
-
-fi
-
-logger -t "【clash】" "初始化 clash 配置"
-mkdir -p /opt/app/clash/config
-config_yml="/opt/app/clash/config/config.yaml"
-rm_temp
-cp -f /etc/storage/app_20.sh $config_yml
-rm -f /opt/app/clash/config/config.yml
-ln -sf $config_yml /opt/app/clash/config/config.yml
-sed -Ei '/^$/d' $config_yml
-yq w -i $config_yml allow-lan true
-rm_temp
-# sed -e '/^$/d' -i $config_yml
-# sed -r 's@^[ ]+#@#@g' -i $config_yml
-# sed -e '/^#/d' -i $config_yml
-# sed -e 's@#@♯@g' -i $config_yml
-logger -t "【clash】" "允许局域网的连接"
-if [ "$clash_http_enable" != "0" ] ; then
-yq w -i $config_yml port 7890
-rm_temp
-logger -t "【clash】" "HTTP 代理端口：7890"
-else
-yq d -i $config_yml port
-rm_temp
-fi
-if [ "$clash_socks_enable" != "0" ] ; then
-yq w -i $config_yml socks-port 7891
-rm_temp
-logger -t "【clash】" "SOCKS5 代理端口：7891"
-else
-yq d -i $config_yml socks-port
-rm_temp
-fi
-if [ "$clash_follow" != "0" ] ; then
-yq w -i $config_yml redir-port 7892
-rm_temp
-logger -t "【clash】" "redir 代理端口：7892"
-else
-yq d -i $config_yml redir-port
-rm_temp
-fi
-logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
-yq d -i $config_yml dns
-rm_temp
-config_nslookup_server $config_yml
-yq w -i $config_yml external-controller $clash_ui
-rm_temp
-yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
-rm_temp
-if [ ! -s $config_yml ] ; then
-logger -t "【clash】" "yq 初始化 clash 配置错误！请检查配置！"
-logger -t "【clash】" "尝试直接使用原始配置启动！"
-cp -f /etc/storage/app_20.sh $config_yml
-else
-logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
-cat /tmp/clash/dns.yml >> $config_yml
-#yq m -x -i $config_yml /tmp/clash/dns.yml
-#rm_temp
-#merge_dns_ip
-fi
-fi
-logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
 if [ ! -s /opt/app/clash/config/Country.mmdb ] ; then
 logger -t "【clash】" "初次启动会自动下载 geoip 数据库文件：/opt/app/clash/config/Country.mmdb"
 logger -t "【clash】" "备注：如果缺少 geoip 数据库文件会启动失败，需 v0.17.1 或以上版本才能自动下载 geoip 数据库文件"
@@ -295,6 +236,8 @@ wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "$hiboyfile/Country.mmdb" "
 [ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
 fi
 fi
+
+update_yml
 
 cd "$(dirname "$SVC_PATH")"
 su_cmd="eval"
@@ -326,7 +269,6 @@ eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
 sleep 7
 [ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
 [ -z "`pidof clash`" ] && logger -t "【clash】" "启动失败, 注意检clash是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
-nvram set app_86=0
 clash_get_status
 
 if [ "$clash_follow" = "1" ] ; then
@@ -346,7 +288,8 @@ fi
 restart_dhcpd
 # 透明代理
 fi
-
+# 保存web节点选择
+[ "$app_120" != "2" ] && [ ! -z "`pidof clash`" ] && reload_yml "save"
 eval "$scriptfilepath keep &"
 
 exit 0
@@ -480,8 +423,9 @@ fi
 
 }
 
+
 wget_yml () {
-nvram set app_86=0
+[ "$(nvram get app_86)" = "wget_yml" ] && nvram set app_86=0
 [ -z "$clash_wget_yml" ] && logger -t "【clash】" "找不到 【订阅链接】，需要手动填写" && return
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	yq_check
@@ -493,34 +437,63 @@ fi
 mkdir -p /tmp/clash
 logger -t "【clash】" "服务器订阅：开始更新"
 yml_tmp="/tmp/clash/app_20.sh"
-wgetcurl.sh $app_20 "$clash_wget_yml" "$clash_wget_yml" N
-if [ ! -s $app_20 ] ; then
-	rm -f $app_20
-	wget -T 5 -t 3 --user-agent "$user_agent" -O $app_20 "$ssr_link_i"
+wgetcurl.sh $yml_tmp "$clash_wget_yml" "$clash_wget_yml" N
+if [ ! -s $yml_tmp ] ; then
+	rm -f $yml_tmp
+	wget -T 5 -t 3 --user-agent "$user_agent" -O $yml_tmp "$ssr_link_i"
 fi
-if [ ! -s $app_20 ] ; then
-	rm -f $app_20
-	curl -L --user-agent "$user_agent" -o $app_20 "$ssr_link_i"
+if [ ! -s $yml_tmp ] ; then
+	rm -f $yml_tmp
+	curl -L --user-agent "$user_agent" -o $yml_tmp "$ssr_link_i"
 fi
-if [ ! -s $app_20 ] ; then
+if [ ! -s $yml_tmp ] ; then
 	logger -t "【clash】" "错误！！clash 服务器订阅文件下载失败！请检查下载地址"
 else
-	nvram set clash_status=wget_yml
-	cp -f $yml_tmp /etc/storage/app_20.sh
-	yq w -i /etc/storage/app_20.sh allow-lan true
+	cp -f $yml_tmp $app_20
+	yq w -i $app_20 allow-lan true
 	rm_temp
 	#config_nslookup_server /etc/storage/app_20.sh
-	if [ ! -s /etc/storage/app_20.sh ] ; then
+	if [ ! -s $app_20 ] ; then
 		logger -t "【clash】" "yq 格式化 clash 订阅文件错误！请检查订阅文件！"
 		logger -t "【clash】" "尝试直接使用原始订阅文件！"
-		cp -f $yml_tmp /etc/storage/app_20.sh
+		cp -f $yml_tmp $app_20
 	else
+		update_yml
 		logger -t "【clash】" "格式化 clash 配置完成！"
 	fi
 	rm -f $yml_tmp
 fi
+[ "$app_120" == "2" ] && nvram set clash_status=wget_yml
 logger -t "【clash】" "服务器订阅：更新完成"
 logger -t "【clash】" "请按F5或刷新 web 页面刷新配置"
+}
+
+
+jq_check () {
+
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
+	/tmp/script/_mountopt start
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	for h_i in $(seq 1 2) ; do
+	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
+	[[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/jq
+	done
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
+	rm -f /opt/bin/jq
+	/tmp/script/_mountopt optwget
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	opkg update
+	opkg install jq
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【jq_check】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
+	return 1
+fi
+fi
+fi
+fi
+fi
 }
 
 yq_check () {
@@ -707,6 +680,164 @@ mount --bind /opt/app/clash/Advanced_Extensions_clash.asp /www/Advanced_Extensio
 [ "$1" = "del" ] && /etc/storage/www_sh/clash del &
 }
 
+update_yml () {
+secret="$(yq r /etc/storage/app_20.sh secret)"
+rm_temp
+if [ "$secret" != "$clash_secret" ] ; then
+yq w -i /etc/storage/app_20.sh secret "$clash_secret"
+rm_temp
+fi
+if [ "$app_default_config" = "1" ] ; then
+logger -t "【clash】" "不改写配置，直接使用原始配置启动！（有可能端口不匹配导致功能失效）"
+logger -t "【clash】" "请手动修改配置， HTTP 代理端口：7890"
+logger -t "【clash】" "请手动修改配置， SOCKS5 代理端口：7891"
+logger -t "【clash】" "请手动修改配置，透明代理端口：7892"
+mkdir -p /opt/app/clash/config
+cp -f /etc/storage/app_20.sh /opt/app/clash/config/config.yaml
+else
+ # 改写配置适配脚本
+logger -t "【clash】" "初始化 clash dns 配置"
+mkdir -p /tmp/clash
+config_dns_yml="/tmp/clash/dns.yml"
+rm_temp
+cp -f /etc/storage/app_21.sh $config_dns_yml
+sed -Ei '/^$/d' $config_dns_yml
+yq w -i $config_dns_yml dns.ipv6 true
+rm_temp
+if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] || [ "$clash_follow" == 0 ] ; then
+logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8054 自动开启第三方 DNS 程序"
+yq w -i $config_dns_yml dns.listen 0.0.0.0:8054
+rm_temp
+dns_start_dnsproxy='0' # 0:自动开启第三方 DNS 程序(dnsproxy) ;
+else
+logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8053 跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序"
+yq w -i $config_dns_yml dns.listen 0.0.0.0:8053
+rm_temp
+dns_start_dnsproxy='1' # 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
+fi
+if [ ! -s $config_dns_yml ] ; then
+logger -t "【clash】" "yq 初始化 clash dns 配置错误！请检查配置！"
+logger -t "【clash】" "恢复原始 clash dns 配置！"
+rm -f /etc/storage/app_21.sh
+initconfig
+cp -f /etc/storage/app_21.sh $config_dns_yml
+
+fi
+
+logger -t "【clash】" "初始化 clash 配置"
+mkdir -p /opt/app/clash/config
+config_yml="/opt/app/clash/config/config.yaml"
+rm_temp
+cp -f /etc/storage/app_20.sh $config_yml
+rm -f /opt/app/clash/config/config.yml
+ln -sf $config_yml /opt/app/clash/config/config.yml
+sed -Ei '/^$/d' $config_yml
+yq w -i $config_yml allow-lan true
+rm_temp
+# sed -e '/^$/d' -i $config_yml
+# sed -r 's@^[ ]+#@#@g' -i $config_yml
+# sed -e '/^#/d' -i $config_yml
+# sed -e 's@#@♯@g' -i $config_yml
+logger -t "【clash】" "允许局域网的连接"
+if [ "$clash_http_enable" != "0" ] ; then
+yq w -i $config_yml port 7890
+rm_temp
+logger -t "【clash】" "HTTP 代理端口：7890"
+else
+yq d -i $config_yml port
+rm_temp
+fi
+if [ "$clash_socks_enable" != "0" ] ; then
+yq w -i $config_yml socks-port 7891
+rm_temp
+logger -t "【clash】" "SOCKS5 代理端口：7891"
+else
+yq d -i $config_yml socks-port
+rm_temp
+fi
+if [ "$clash_follow" != "0" ] ; then
+yq w -i $config_yml redir-port 7892
+rm_temp
+logger -t "【clash】" "redir 代理端口：7892"
+else
+yq d -i $config_yml redir-port
+rm_temp
+fi
+logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
+yq d -i $config_yml dns
+rm_temp
+config_nslookup_server $config_yml
+yq w -i $config_yml external-controller $clash_ui
+rm_temp
+yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
+rm_temp
+if [ ! -s $config_yml ] ; then
+logger -t "【clash】" "yq 初始化 clash 配置错误！请检查配置！"
+logger -t "【clash】" "尝试直接使用原始配置启动！"
+cp -f /etc/storage/app_20.sh $config_yml
+else
+logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
+cat /tmp/clash/dns.yml >> $config_yml
+#yq m -x -i $config_yml /tmp/clash/dns.yml
+#rm_temp
+#merge_dns_ip
+fi
+fi
+logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
+}
+
+reload_api () {
+[ "$app_120" == "2" ] && return
+#api热重载
+reload_yml "save"
+reload_yml "reload"
+reload_yml "set"
+}
+
+reload_yml () {
+[ "$(nvram get app_86)" = "clash_save_yml" ] && nvram set app_86=0
+[ "$app_120" == "2" ] && return
+curltest=`which curl`
+if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+	logger -t "【clash】" "找不到 curl ，安装 opt 程序"
+	/tmp/script/_mountopt optwget
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		logger -t "【clash】" "找不到 curl ，需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
+		eturn 1
+	fi
+fi
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+jq_check
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "错误！找不到 jq 程序"
+	return 1
+fi
+fi
+mkdir -p /etc/storage/clash
+secret="$(yq r /opt/app/clash/config/config.yaml secret)"
+rm_temp
+#secret="$clash_secret"
+
+if [ "$1" == "save" ] ; then
+logger -t "【clash】" "保存web节点选择"
+curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:9090/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).name' > /tmp/Selector_name.txt
+[ -s /tmp/Selector_name.txt ] && cp -f /tmp/Selector_name.txt /etc/storage/clash/Selector_name.txt
+curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:9090/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).now' > /tmp/Selector_now.txt
+[ -s /tmp/Selector_now.txt ] && cp -f /tmp/Selector_now.txt /etc/storage/clash/Selector_now.txt
+rm -f /tmp/Selector_name.txt /tmp/Selector_now.txt
+fi
+if [ "$1" == "set" ] ; then
+logger -t "【clash】" "恢复web节点选择"
+[ -s /etc/storage/clash/Selector_name.txt ] && [ -s /etc/storage/clash/Selector_now.txt ] && eval "$(awk 'NR==FNR{a[NR]=$0}NR>FNR{print "curl -X PUT -w \"\%\{http_code\}\" -H \"Authorization: Bearer '$secret'\" -H \"Content-Type: application\/json\" -d \047\{\"name\": \""$0"\"\}\047  \047http://127.0.0.1:9090/proxies/"a[FNR]"\047"}' /etc/storage/clash/Selector_name.txt /etc/storage/clash/Selector_now.txt)"
+fi
+if [ "$1" == "reload" ] ; then
+logger -t "【clash】" "api热重载配置"
+curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config/config.yaml"}' 'http://127.0.0.1:9090/configs?force=true'
+fi
+
+}
+
 case $ACTION in
 start)
 	clash_close
@@ -734,6 +865,9 @@ wget_yml)
 	nvram set app_86="wget_yml"
 	wget_yml
 	clash_check
+	;;
+reload_yml)
+	reload_yml $2
 	;;
 *)
 	clash_check

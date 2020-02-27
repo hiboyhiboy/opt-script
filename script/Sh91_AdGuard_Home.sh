@@ -64,6 +64,7 @@ AdGuardHome_get_status () {
 A_restart=`nvram get AdGuardHome_status`
 B_restart="$AdGuardHome_enable$AdGuardHome_2_server"
 [ "$(nvram get app_86)" = "1" ] && B_restart="$B_restart""$(cat /etc/storage/app_19.sh | grep -v '^#' | grep -v "^$")"
+[ "$(nvram get app_86)" = "1" ] && nvram set app_86=0
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set AdGuardHome_status=$B_restart
@@ -191,8 +192,7 @@ else
 	sleep 3
 	[ ! -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动成功" && AdGuardHome_restart o
 	[ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动失败, 注意检AdGuardHome是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
-	nvram set app_86=0
-	AdGuardHome_get_status
+		AdGuardHome_get_status
 	eval "$scriptfilepath keep &"
 fi
 if [ "$port" != 0 ] ; then
