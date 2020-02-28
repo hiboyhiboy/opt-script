@@ -1410,7 +1410,8 @@ if [ "$ss_dnsproxy_x" = "0" ] ; then
 	else
 		dnsproxy -d
 	fi
-	pidof dnsproxy >/dev/null 2>&1 && return
+	[ ! -z "`pidof dnsproxy`" ] && return
+	logger -t "【sh_ss_tproxy.sh】" "错误 dnsproxy 没启动！"
 	ss_dnsproxy_x=1
 fi
 if [ "$ss_dnsproxy_x" = "1" ] ; then
@@ -1468,7 +1469,8 @@ if ! test -f "$CACHE"; then
 	chown -R $USER.$GROUP $CACHEDIR
 fi
 pdnsd -c $pdnsd_conf -p /var/run/pdnsd.pid &
-pidof pdnsd >/dev/null 2>&1 && return
+[ ! -z "`pidof pdnsd`" ] && return
+logger -t "【sh_ss_tproxy.sh】" "错误 pdnsd 没启动！"
 ss_dnsproxy_x=2
 fi
 if [ "$ss_dnsproxy_x" = "2" ] && [ -s /etc/storage/script/Sh19_chinadns.sh ] ; then

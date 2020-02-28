@@ -77,6 +77,10 @@ else
 	
 fi
 ex_params="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $2}')"
+if [ -z "$ex_params" ] ; then
+	# 兼容漏一个/
+	ex_params="$(echo -n $link2 | sed -n '1p' | awk -F '\\?' '{print $2}')"
+fi
 if [ ! -z "$ex_params" ] ; then
 	#存在插件
 	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&]*"  | cut -d '=' -f2)";
@@ -102,13 +106,18 @@ ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
 add_ssr_link () {
 link="$1"
 ex_params="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}')"
+ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')"
+if [ -z "$ex_params" ] ; then
+	# 兼容漏一个/
+	ex_params="$(echo -n $link | sed -n '1p' | awk -F '\\?' '{print $2}')"
+	ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '\\?' '{print $1}')"
+fi
 ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
 ex_protoparam="$(echo -n "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
 ex_remarks="$(echo -n "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
 #ex_group="$(echo -n "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
 
 [ ! -z "$ex_remarks" ] && ss_link_name="$(get_emoji "$(echo -n "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )")"
-ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')"
 [ -z "$ex_remarks" ] && ss_link_name="♯""`echo -n "$ss_link_usage" | cut -d ':' -f1 `"
 ss_link_name="$(echo "$ss_link_name"| sed -n '1p')"
 
