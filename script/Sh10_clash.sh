@@ -104,10 +104,11 @@ reload_api
 fi
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
+	nvram set clash_status=$B_restart
+	needed_restart=1
 	if [ -z "$clash_wget_yml" ] ; then
 		cru.sh d clash_link_update
 		logger -t "【clash】" "停止 clash 服务器订阅"
-		return
 	else
 		if [ "$app_120" == "1" ] ; then
 			cru.sh a clash_link_update "24 */6 * * * $scriptfilepath wget_yml &" &
@@ -116,8 +117,6 @@ if [ "$A_restart" != "$B_restart" ] ; then
 			cru.sh d clash_link_update
 		fi
 	fi
-	nvram set clash_status=$B_restart
-	needed_restart=1
 else
 	needed_restart=0
 fi
