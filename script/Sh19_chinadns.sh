@@ -195,14 +195,14 @@ if [ ! -s "$SVC_PATH" ] ; then
 	SVC_PATH="/opt/bin/chinadns"
 fi
 chmod 777 "$SVC_PATH"
-[[ "$(chinadns -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/chinadns
+[[ "$(chinadns -h | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget
 fi
 for h_i in $(seq 1 2) ; do
-[[ "$(chinadns -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/chinadns
-wgetcurl_file /opt/bin/chinadns "$hiboyfile/chinadns2" "$hiboyfile2/chinadns2"
+[[ "$(chinadns -h | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
+wgetcurl_file $SVC_PATH "$hiboyfile/chinadns2" "$hiboyfile2/chinadns2"
 done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
@@ -229,7 +229,7 @@ usage=$usage" -d "
 fi
 [ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
 update_app
-chmod 755 "/opt/bin/chinadns"
+chmod 755 "$SVC_PATH"
 chinadns_v=`chinadns -V | grep ChinaDNS`
 nvram set chinadns_v="$chinadns_v"
 
@@ -270,7 +270,7 @@ fi
 
 update_init () {
 source /etc/storage/script/init.sh
-[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -ge 0 ] || init_ver="0" ; }
 init_s_ver=2
 if [ "$init_s_ver" -gt "$init_ver" ] ; then
 	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"

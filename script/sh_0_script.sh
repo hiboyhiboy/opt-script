@@ -9,7 +9,7 @@ rm -f /tmp/webui_yes
 rm -f /tmp/script/_opt_script_check
 touch /tmp/script.lock
 touch /tmp/script_script_yes
-[ ! -z "$(cat /tmp/syslog.log | grep "SPI flash chip"| grep 32768)" ] && { nvram set cmd_reboot_enable=1 ; nvram save ; }
+[ ! -z "$(cat /tmp/syslog.log | grep "SPI flash chip"| grep 32768)" ] && { nvram set cmd_reboot_enable=1 ; nvram commit ; nvram save ; }
 . /etc/storage/script0_script.sh
 ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
 ln -sf "/etc/storage/init.status" "/etc/init.status"

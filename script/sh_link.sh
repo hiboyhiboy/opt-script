@@ -508,7 +508,7 @@ start_link () {
 
 rt_ssnum_x=$(nvram get rt_ssnum_x)
 [ -z $rt_ssnum_x ] && rt_ssnum_x="0"
-[ $rt_ssnum_x -lt 0 ] && rt_ssnum_x="0" || { [ $rt_ssnum_x -gt 0 ] || rt_ssnum_x="0" ; }
+[ $rt_ssnum_x -lt 0 ] && rt_ssnum_x="0" || { [ $rt_ssnum_x -ge 0 ] || rt_ssnum_x="0" ; }
 nvram set rt_ssnum_x=$rt_ssnum_x
 
 rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
@@ -648,8 +648,10 @@ a1_tmp="$1"
 check_link "X_check_app_24"
 touch /etc/storage/app_24.sh
 if [ -s /etc/storage/app_24.sh ] ; then
+app_95="$(nvram get app_95)"
 A_restart="$(nvram get app_24_sh_status)"
-B_restart=`cat /etc/storage/app_24.sh | grep -v "^🔗" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+B_restart="$app_95""$(cat /etc/storage/app_24.sh | grep -v "^🔗")"
+B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" == "$B_restart" ] ; then
  # 文件没更新，停止ping
 a1_tmp="X_allping"
@@ -734,7 +736,7 @@ do
 if [ -z "$(echo "$1" | grep "A")" ] && [ -z "$(echo "$1" | grep "ss")" ] && [ ! -z "$1" ] ; then
 del_x="$1"
 del_x="$(echo "$del_x" | tr -d '_' | tr -d ' ')"
-[ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -gt 0 ] || del_x="0" ; }
+[ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -ge 0 ] || del_x="0" ; }
 if [ "$del_x" -gt 1 ] ; then
 	if [ -z "$(sed -n "$del_x"p /www/link/link.js | grep "\[\"🔗")" ] ; then
 		sed -i "$del_x""c dellink_ss" /www/link/link.js
@@ -747,7 +749,7 @@ fi
 if [ ! -z "$(echo "$1" | grep "A")" ] && [ -z "$(echo "$1" | grep "ss")" ] && [ ! -z "$1" ] ; then
 del_x="$1"
 del_x="$(echo "$del_x" | tr -d 'A' | tr -d '_' | tr -d ' ')"
-[ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -gt 0 ] || del_x="0" ; }
+[ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -ge 0 ] || del_x="0" ; }
 [ -s /etc/storage/app_24.sh ] && sed -i "$del_x""c dellink_ss" /etc/storage/app_24.sh
 fi
 shift

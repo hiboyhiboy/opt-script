@@ -12,6 +12,11 @@ for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_
 do
 	modprobe $module
 done 
+if [ ! -d /opt/app/ss_tproxy ] ; then
+	logger -t "【clash】" "找不到 /opt/app/ss_tproxy ，安装 opt 程序"
+	/tmp/script/_mountopt start
+	mkdir -p /opt/app/ss_tproxy
+fi
 
 ss_tproxy_config='/etc/storage/app_27.sh'
 mkdir -p /opt/app/ss_tproxy/tmp
@@ -1400,7 +1405,7 @@ fi
 if [ "$ss_dnsproxy_x" = "0" ] ; then
 	for h_i in $(seq 1 2) ; do
 	[[ "$(dnsproxy -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/dnsproxy
-	hash dnsproxy 2>/dev/null || wgetcurl_file "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
+	[[ "$(dnsproxy -h 2>&1 | wc -l)" -lt 2 ]] && wgetcurl_file "/opt/bin/dnsproxy" "$hiboyfile/dnsproxy" "$hiboyfile2/dnsproxy"
 	done
 	logger -t "【sh_ss_tproxy.sh】" "启动 dnsproxy 防止域名污染"
 	pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
@@ -1417,7 +1422,7 @@ fi
 if [ "$ss_dnsproxy_x" = "1" ] ; then
 for h_i in $(seq 1 2) ; do
 [[ "$(pdnsd -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/pdnsd
-hash pdnsd 2>/dev/null || wgetcurl_file "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
+[[ "$(pdnsd -h 2>&1 | wc -l)" -lt 2 ]] && wgetcurl_file "/opt/bin/pdnsd" "$hiboyfile/pdnsd" "$hiboyfile2/pdnsd"
 done
 logger -t "【sh_ss_tproxy.sh】" "启动 pdnsd 防止域名污染"
 pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
@@ -1506,8 +1511,9 @@ fi
 is_true "$ipv6" && echo "server=$dns_remote6 #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=\/opt\/app\/ss_tproxy\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
-echo "$(for conf_dir_arg in $dnsmasq_conf_dir; do echo "conf-dir=$conf_dir_arg #ss_tproxy"; done)" >> /etc/storage/dnsmasq/dnsmasq.conf
-echo "$(for conf_file_arg in $dnsmasq_conf_file; do echo "conf-file=$conf_file_arg #ss_tproxy"; done)" >> /etc/storage/dnsmasq/dnsmasq.conf
+mkdir -p $dnsmasq_conf_dir
+echo "$(for conf_dir_arg in $dnsmasq_conf_dir; do [ -d $conf_dir_arg ] && echo "conf-dir=$conf_dir_arg #ss_tproxy"; done)" >> /etc/storage/dnsmasq/dnsmasq.conf
+echo "$(for conf_file_arg in $dnsmasq_conf_file; do [ -f $conf_file_arg ] && echo "conf-file=$conf_file_arg #ss_tproxy"; done)" >> /etc/storage/dnsmasq/dnsmasq.conf
 while read dnsmasq_string_arg; do
 	if [ ! -z "$dnsmasq_string_arg" ]; then
 		echo "$dnsmasq_string_arg #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf

@@ -332,6 +332,13 @@ rm -f /opt/app/ss_tproxy/ss_tproxy
 ln -sf /etc/storage/script/sh_ss_tproxy.sh /opt/app/ss_tproxy/ss_tproxy
 rm -f /opt/bin/ss_tproxy
 ln -sf /etc/storage/script/sh_ss_tproxy.sh /opt/bin/ss_tproxy
+
+Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+if [[ "$Available_A" -lt 3 ]] ; then
+mount -o remount,size=60% tmpfs /tmp
+Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
+fi
 ss_tproxy_v="$(sh_ss_tproxy.sh v | awk -F ' ' '{print $2;}')"
 nvram set ss_tproxy_v="$ss_tproxy_v"
 logger -t "【ss_tproxy】" "运行 /etc/storage/script/sh_ss_tproxy.sh"
@@ -370,13 +377,12 @@ mtd_storage.sh save
 nvram set upscript_enable=0
 ss_tproxy_enable=0
 nvram set app_109=0
+nvram commit
 nvram save
 #一键自动更新固件脚本
 wget -q -O- https://opt.cn2qq.com/opt-script/up.sh > /tmp/up.sh && bash < /tmp/up.sh
 sleep 5
-mtd_write -r unlock mtd1
-sleep 5
-reboot
+/bin/mtd_write -r unlock mtd1 #reboot
 sleep 5
 exit
 fi
@@ -563,7 +569,7 @@ sh_ss_tproxy.sh "$@"
 
 update_init () {
 source /etc/storage/script/init.sh
-[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -ge 0 ] || init_ver="0" ; }
 init_s_ver=2
 if [ "$init_s_ver" -gt "$init_ver" ] ; then
 	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"

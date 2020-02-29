@@ -450,17 +450,10 @@ if [ ! -s $yml_tmp ] ; then
 	logger -t "【clash】" "错误！！clash 服务器订阅文件下载失败！请检查下载地址"
 else
 	cp -f $yml_tmp $app_20
-	yq w -i $app_20 allow-lan true
-	rm_temp
+	#yq w -i $app_20 allow-lan true
+	#rm_temp
 	#config_nslookup_server /etc/storage/app_20.sh
-	if [ ! -s $app_20 ] ; then
-		logger -t "【clash】" "yq 格式化 clash 订阅文件错误！请检查订阅文件！"
-		logger -t "【clash】" "尝试直接使用原始订阅文件！"
-		cp -f $yml_tmp $app_20
-	else
-		update_yml
-		logger -t "【clash】" "格式化 clash 配置完成！"
-	fi
+	logger -t "【clash】" "下载 clash 配置完成！"
 	rm -f $yml_tmp
 fi
 [ "$app_120" == "2" ] && nvram set clash_status=wget_yml
@@ -649,7 +642,7 @@ initconfig
 
 update_init () {
 source /etc/storage/script/init.sh
-[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -gt 0 ] || init_ver="0" ; }
+[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -ge 0 ] || init_ver="0" ; }
 init_s_ver=2
 if [ "$init_s_ver" -gt "$init_ver" ] ; then
 	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"

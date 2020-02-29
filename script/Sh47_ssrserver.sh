@@ -106,7 +106,7 @@ fi
 
 while true; do
 	NUM=`ps -w | grep "manyuser/shadowsocks/server" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ "$NUM" -gt "1" ] || [ ! -s "`which python`" ] ; then
+	if [ "$NUM" -lt "1" ] || [ ! -s "`which python`" ] ; then
 		logger -t "【SSR_server】" "重新启动$NUM"
 		ssrserver_restart
 	fi

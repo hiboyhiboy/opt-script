@@ -69,14 +69,14 @@ if [ "$apply" = 0 ] && [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
 	logger -t "【按钮①】" "添加转发规则, 启动 $ad"
 	nvram set adm_status=0
 	nvram set adm_enable=1
-	nvram save
+	nvram commit
 	/tmp/script/_ad_m &
 fi
 if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
 	nvram set adm_status=1
 	nvram set adm_enable=0
-	nvram save
+	nvram commit
 	/tmp/script/_ad_m stop &
 	nvram set button_script_1="0"
 fi
@@ -93,14 +93,14 @@ if [ "$apply" = 0 ] && [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
 	logger -t "【按钮①】" "添加转发规则, 启动 $ad"
 	nvram set koolproxy_status=0
 	nvram set koolproxy_enable=1
-	nvram save
+	nvram commit
 	/tmp/script/_kool_proxy &
 fi
 if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
 	nvram set koolproxy_status=1
 	nvram set koolproxy_enable=0
-	nvram save
+	nvram commit
 	/tmp/script/_kool_proxy &
 	nvram set button_script_1="0"
 fi
@@ -117,14 +117,14 @@ if [ "$apply" = 0 ] && [ "$port" = 0 ] && [ "$PIDS" = 0 ] ; then
 	logger -t "【按钮①】" "添加转发规则, 启动 $ad"
 	nvram set adbyby_status=0
 	nvram set adbyby_enable=1
-	nvram save
+	nvram commit
 	/tmp/script/_ad_byby &
 fi
 if [ "$apply" = 1 ] && [ "$port" -ge 1 ] || [ "$PIDS" != 0 ] ; then
 	logger -t "【按钮①】" "关闭转发规则, 关闭 $ad"
 	nvram set adbyby_status=1
 	nvram set adbyby_enable=0
-	nvram save
+	nvram commit
 	/tmp/script/_ad_byby  &
 	nvram set button_script_1="0"
 fi
@@ -151,7 +151,7 @@ if [ "$apply" = 0 ] ; then
 	logger -t "【按钮②】" "开启 shadowsocks 进程"
 	nvram set ss_status=0
 	nvram set ss_enable=1
-	nvram save
+	nvram commit
 	/tmp/script/_ss &
 	sleep 1
 	nvram set button_script_2="1"
@@ -161,7 +161,7 @@ if [ "$apply" = 1 ] ; then
 	logger -t "【按钮②】" "关闭 shadowsocks 进程"
 	nvram set ss_status=1
 	nvram set ss_enable=0
-	nvram save
+	nvram commit
 	/tmp/script/_ss &
 	sleep 1
 	nvram set button_script_2="0"
@@ -179,7 +179,7 @@ if [ "$apply" = 0 ] ; then
 	logger -t "【按钮②】" "开启 v2ray 进程"
 	nvram set v2ray_status=0
 	nvram set v2ray_enable=1
-	nvram save
+	nvram commit
 	/tmp/script/_v2ray &
 	sleep 1
 	nvram set button_script_2="1"
@@ -189,7 +189,7 @@ if [ "$apply" = 1 ] ; then
 	logger -t "【按钮②】" "关闭 v2ray 进程"
 	nvram set v2ray_status=1
 	nvram set v2ray_enable=0
-	nvram save
+	nvram commit
 	/tmp/script/_v2ray &
 	sleep 1
 	nvram set button_script_2="0"
@@ -208,7 +208,7 @@ if [ "$apply" = 0 ] ; then
 	nvram set ipt2socks_status=0
 	nvram set app_104=1
 	nvram set app_27=1
-	nvram save
+	nvram commit
 	/tmp/script/_app20 &
 	sleep 1
 	nvram set button_script_2="1"
@@ -219,7 +219,7 @@ if [ "$apply" = 1 ] ; then
 	nvram set ipt2socks_status=1
 	nvram set app_104=0
 	nvram set app_27=0
-	nvram save
+	nvram commit
 	/tmp/script/_app20 &
 	sleep 1
 	nvram set button_script_2="0"
@@ -237,7 +237,7 @@ if [ "$apply" = 0 ] ; then
 	logger -t "【按钮②】" "开启 transocks 进程"
 	nvram set transocks_status=0
 	nvram set app_27=1
-	nvram save
+	nvram commit
 	/tmp/script/_app10 &
 	sleep 1
 	nvram set button_script_2="1"
@@ -247,7 +247,7 @@ if [ "$apply" = 1 ] ; then
 	logger -t "【按钮②】" "关闭 transocks 进程"
 	nvram set transocks_status=1
 	nvram set app_27=0
-	nvram save
+	nvram commit
 	/tmp/script/_app10 &
 	sleep 1
 	nvram set button_script_2="0"
@@ -265,7 +265,7 @@ if [ "$apply" = 0 ] ; then
 	logger -t "【按钮②】" "开启 clash 进程"
 	nvram set clash_status=0
 	nvram set app_88=1
-	nvram save
+	nvram commit
 	/tmp/script/_app18 &
 	sleep 1
 	nvram set button_script_2="1"
@@ -275,7 +275,7 @@ if [ "$apply" = 1 ] ; then
 	logger -t "【按钮②】" "关闭 clash 进程"
 	nvram set clash_status=1
 	nvram set app_88=0
-	nvram save
+	nvram commit
 	/tmp/script/_app18 &
 	sleep 1
 	nvram set button_script_2="0"
@@ -535,10 +535,12 @@ allping () {
 
 check_link "X_check_app_24"
 [ ! -f /www/link/link.js ] && logger -t "【ping】" "错误！找不到 /www/link/link.js" && return 1
+if [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] ; then
 for h_i in $(seq 1 2) ; do
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
 wgetcurl_file /opt/bin/tcping "$hiboyfile/tcping" "$hiboyfile2/tcping"
 done
+fi
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
 [ ! -f /opt/bin/tcping ] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
 mkdir -p /tmp/allping

@@ -100,12 +100,13 @@ else
 	[ -s /tmp/check_timeout/check ] && source /tmp/check_timeout/check
 	return
 fi
+ss_link_2=`nvram get ss_link_2`
 check2="404"
 check4="404"
 if [ "$1" != "wget_check" ] ; then
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -gt 1 ] || RND_NUM="1" ; }
+[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
 rm -f /tmp/check_timeout/$RND_NUM
 eval 'x_check_timeout_network_x "$RND_NUM" "2"' &
 sleep 1
@@ -129,7 +130,7 @@ if [ ! -z "$(which curl)" ] ; then
 if [ "$check2" == "404" ] ; then 
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -gt 1 ] || RND_NUM="1" ; }
+[ "$RND_NUM" -lt 2 ] && RND_NUM="2" || { [ "$RND_NUM" -ge 2 ] || RND_NUM="2" ; }
 rm -f /tmp/check_timeout/$RND_NUM
 check2="404"
 check4="404"
@@ -155,7 +156,7 @@ fi
 if [ "$check2" == "404" ] ; then 
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -gt 1 ] || RND_NUM="1" ; }
+[ "$RND_NUM" -lt 3 ] && RND_NUM="3" || { [ "$RND_NUM" -ge 3 ] || RND_NUM="3" ; }
 rm -f /tmp/check_timeout/$RND_NUM
 check2="404"
 check4="404"

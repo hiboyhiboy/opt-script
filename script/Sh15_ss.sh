@@ -53,7 +53,6 @@ v2ray_path=`nvram get v2ray_path`
 
 koolproxy_enable=`nvram get koolproxy_enable`
 ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
-ss_link_2=`nvram get ss_link_2`
 ss_update=`nvram get ss_update`
 ss_update_hour=`nvram get ss_update_hour`
 ss_update_min=`nvram get ss_update_min`
@@ -138,7 +137,11 @@ ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 ss_check=`nvram get ss_check`
 ss_updatess=`nvram get ss_updatess`
 [ -z $ss_updatess ] && ss_updatess=0 && nvram set ss_updatess=$ss_updatess
+ss_link_2=`nvram get ss_link_2`
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
+ss_link_1=`nvram get ss_link_1`
+[ "$ss_link_1" -lt 66 ] && ss_link_1="66" || { [ "$ss_link_1" -ge 66 ] || { ss_link_1="66" ; nvram set ss_link_1="66" ; } ; }
+
 
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 chinadns_enable=`nvram get app_1`
@@ -910,6 +913,8 @@ if [ "$check2" != "200" ] ; then
 	logger -t "【SS】" "网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
 	logger -t "【SS】" "如果是本地组网可忽略此错误！！"
 	logger -t "【SS】" "否则需启用【首次时连接检测】、【运行时持续检测】才能自动故障转移"
+else
+	nvram set ss_rebss_b=0
 fi
 	/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 	logger -t "【SS】" "SS 启动成功"
@@ -978,7 +983,6 @@ cru.sh d ss_update &
 rm -f /tmp/check_timeout/*
 ss-rules -f
 nvram set ss_internet="0"
-/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 rm -f $confdir/r.wantoss.conf
 sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
@@ -993,12 +997,11 @@ rm -f /tmp/sh_sskeey_k.sh
 [ -f /opt/etc/init.d/S26pdnsd ] && { rm -f /var/log/pdnsd.lock; /opt/etc/init.d/S26pdnsd stop& }
 [ -f /opt/etc/init.d/S27pcap-dnsproxy ] && { rm -f /var/log/pcap-dnsproxy.lock; /opt/etc/init.d/S27pcap-dnsproxy stop& }
 nvram set gfwlist3="SS stop."
-/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 umount  /usr/sbin/ss-redir
 umount  /usr/sbin/ss-local
 umount -l /usr/sbin/ss-redir
 umount -l /usr/sbin/ss-local
-kill_ps "sh_ezscript.sh"
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_ss"
 kill_ps "_ss.sh"
 kill_ps "$scriptname"
@@ -1050,7 +1053,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_2$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
@@ -1117,14 +1120,14 @@ fi
 }
 
 sleep_rnd () {
-sleep 10
 #随机延时
 ss_internet=`nvram get ss_internet`
 if [ "$ss_internet" = "1" ] ; then
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-	RND_NUM=`echo $SEED 66 77|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-	[ "$RND_NUM" -lt 66 ] && RND_NUM="66" || { [ "$RND_NUM" -gt 66 ] || RND_NUM="66" ; }
+	RND_NUM=`echo $SEED 1 15|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
 	sleep $RND_NUM
+	sleep $ss_link_1
 fi
 #/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 }
@@ -1158,7 +1161,6 @@ rm -f /tmp/check_timeout/*
 killall sh_sskeey_k.sh
 killall -9 sh_sskeey_k.sh
 /tmp/sh_sskeey_k.sh &
-rebss=1
 ss_run_ss_local=`nvram get ss_run_ss_local`
 ss_mode_x=`nvram get ss_mode_x`
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
@@ -1166,11 +1168,16 @@ sleep 3
 ss_enable=`nvram get ss_enable`
 while [ "$ss_enable" = "1" ];
 do
+rebss=`nvram get ss_rebss_b`
 ss_rebss_n=`nvram get ss_rebss_n`
 ss_rebss_a=`nvram get ss_rebss_a`
 if [ "$ss_rebss_n" != 0 ] ; then
 	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "0" ] ; then
 		logger -t "【SS】" " 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
+		if [ "$rebss" != "0" ] ; then
+		rebss="0"
+		nvram set ss_rebss_b=0
+		fi
 		nvram set ss_status=0
 		eval "$scriptfilepath &"
 		sleep 10
@@ -1178,6 +1185,10 @@ if [ "$ss_rebss_n" != 0 ] ; then
 	fi
 	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "1" ] ; then
 		logger -t "【SS】" " 网络连接 shadowsocks 中断 ['$rebss'], 停止SS."
+		if [ "$rebss" != "0" ] ; then
+		rebss="0"
+		nvram set ss_rebss_b=0
+		fi
 		nvram set ss_enable=0
 		eval "$scriptfilepath &"
 		sleep 10
@@ -1185,16 +1196,26 @@ if [ "$ss_rebss_n" != 0 ] ; then
 	fi
 	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "2" ] ; then
 		logger -t "【SS】" " 网络连接 shadowsocks 中断['$rebss'], 重启路由."
+		if [ "$rebss" != "0" ] ; then
+		rebss="0"
+		nvram set ss_rebss_b=0
+		fi
 		sleep 5
-		reboot
+		nvram commit
+		/sbin/mtd_storage.sh save
+		sync;echo 3 > /proc/sys/vm/drop_caches
+		/bin/mtd_write -r unlock mtd1 #reboot
 	fi
-fi
-if [ "$rebss" -gt 6 ] ; then
-	logger -t "【SS】" " 网络连接 shadowsocks 中断 ['$rebss'], 重启SS."
-	nvram set ss_status=0
-	eval "$scriptfilepath &"
-	sleep 10
-	exit 0
+	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "3" ] ; then
+		logger -t "【SS】" " 网络连接 shadowsocks 中断['$rebss'], 更新订阅."
+		if [ "$rebss" != "0" ] ; then
+		rebss="0"
+		nvram set ss_rebss_b=0
+		fi
+		sleep 5
+		nvram set ss_link_status=""
+		sh_link.sh
+	fi
 fi
 sleep 3
 ss_enable=`nvram get ss_enable`
@@ -1257,8 +1278,11 @@ check2=404
 check_timeout_network "wget_check"
 if [ "$check2" == "200" ] ; then
 	echo "[$LOGTIME] SS $app_97 have no problem."
-	rebss="1"
+	if [ "$rebss" != "0" ] ; then
+	rebss="0"
+	nvram set ss_rebss_b=0
 	nvram set ss_internet="1"
+	fi
 	sleep_rnd
 	#跳出当前循环
 	continue
@@ -1271,8 +1295,11 @@ check2=404
 check_timeout_network "wget_check" "check"
 if [ "$check2" == "200" ] ; then
 	echo "[$LOGTIME] SS $app_97 have no problem."
-	rebss="1"
+	if [ "$rebss" != "0" ] ; then
+	rebss="0"
+	nvram set ss_rebss_b=0
 	nvram set ss_internet="1"
+	fi
 	sleep_rnd
 	#跳出当前循环
 	continue
@@ -1281,6 +1308,7 @@ fi
 if [ ! -z "$app_95" ] ; then
 	nvram set ss_internet="2"
 	rebss=`expr $rebss + 1`
+	nvram set ss_rebss_b="$rebss"
 	logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
 	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
 	/etc/storage/script/sh_ezscript.sh ss_link_matching & 
@@ -1293,6 +1321,7 @@ fi
 nvram set ss_internet="0"
 logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
 rebss=`expr $rebss + 1`
+nvram set ss_rebss_b="$rebss"
 restart_dhcpd
 #/etc/storage/crontabs_script.sh &
 
@@ -1507,7 +1536,7 @@ update)
 	#随机延时
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 	RND_NUM=`echo $SEED 1 600|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-	[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -gt 1 ] || RND_NUM="1" ; }
+	[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
 	# echo $RND_NUM
 	logger -t "【SS】" "$RND_NUM 秒后进入处理状态, 请稍候"
 	sleep $RND_NUM

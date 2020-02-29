@@ -127,7 +127,7 @@ exit 0
 v2ray_get_status () {
 
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$chinadns_enable$ss_link_2$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$chinadns_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set v2ray_status=$B_restart
@@ -179,6 +179,8 @@ fi
 sleep 20
 ss_link_2=`nvram get ss_link_2`
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
+ss_link_1=`nvram get ss_link_1`
+[ "$ss_link_1" -lt 66 ] && ss_link_1="66" || { [ "$ss_link_1" -ge 66 ] || { ss_link_1="66" ; nvram set ss_link_1="66" ; } ; }
 v2ray_enable=`nvram get v2ray_enable`
 while [ "$v2ray_enable" = "1" ]; do
 	NUM=`ps -w | grep "$v2ray_path" | grep -v grep |wc -l`
@@ -192,10 +194,73 @@ while [ "$v2ray_enable" = "1" ]; do
 	v2ray_optput=`nvram get v2ray_optput`
 	if [ "$v2ray_follow" = "1" ] && [ "$ss_keep_check" == "1" ] && [ "$v2ray_optput" == 1 ] ; then
 # 自动故障转移(透明代理时生效)
+
+
+rebss=`nvram get ss_rebss_b`
+ss_rebss_n=`nvram get ss_rebss_n`
+ss_rebss_a=`nvram get ss_rebss_a`
+if [ "$ss_rebss_n" != 0 ] ; then
+	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "0" ] ; then
+		nvram set ss_rebss_b=0
+		logger -t "【v2ray】" " 网络连接 v2ray 中断 ['$rebss'], 重启v2ray."
+		if [ "$rebss" != "0" ] ; then
+		rebss="0"
+		nvram set ss_rebss_b=0
+		fi
+		nvram set v2ray_status=0
+		eval "$scriptfilepath &"
+		sleep 10
+		exit 0
+	fi
+	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "1" ] ; then
+		logger -t "【v2ray】" " 网络连接 v2ray 中断 ['$rebss'], 停止v2ray."
+		if [ "$rebss" != "0" ] ; then
+		rebss="0"
+		nvram set ss_rebss_b=0
+		fi
+		nvram set v2ray_enable=0
+		eval "$scriptfilepath &"
+		sleep 10
+		exit 0
+	fi
+	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "2" ] ; then
+		logger -t "【v2ray】" " 网络连接 v2ray 中断['$rebss'], 重启路由."
+		if [ "$rebss" != "0" ] ; then
+		rebss="0"
+		nvram set ss_rebss_b=0
+		fi
+		sleep 5
+		nvram commit
+		/sbin/mtd_storage.sh save
+		sync;echo 3 > /proc/sys/vm/drop_caches
+		/bin/mtd_write -r unlock mtd1 #reboot
+	fi
+	if [ "$rebss" -gt "$ss_rebss_n" ] && [ "$ss_rebss_a" == "3" ] ; then
+		logger -t "【v2ray】" " 网络连接 v2ray 中断['$rebss'], 更新订阅."
+		if [ "$rebss" != "0" ] ; then
+		rebss="0"
+		nvram set ss_rebss_b=0
+		fi
+		sleep 5
+		nvram set vmess_link_status=""
+		start_vmess_link
+	fi
+fi
+sleep 3
+v2ray_enable=`nvram get v2ray_enable`
+if [ "$v2ray_enable" != "1" ] ; then
+	#跳出当前循环
+	exit 
+fi
+
 check2=404
 check_timeout_network "wget_check"
 if [ "$check2" == "200" ] ; then
 	echo "[$LOGTIME] v2ray $app_98 have no problem."
+	if [ "$rebss" != "0" ] ; then
+	rebss="0"
+	nvram set ss_rebss_b=0
+	fi
 	sleep_rnd
 	#跳出当前循环
 	continue
@@ -209,12 +274,18 @@ check2=404
 check_timeout_network "wget_check" "check"
 if [ "$check2" == "200" ] ; then
 	echo "[$LOGTIME] v2ray $app_98 have no problem."
+	if [ "$rebss" != "0" ] ; then
+	rebss="0"
+	nvram set ss_rebss_b=0
+	fi
 	sleep_rnd
 	#跳出当前循环
 	continue
 fi
 #404
 if [ ! -z "$app_95" ] ; then
+	rebss=`expr $rebss + 1`
+	nvram set ss_rebss_b="$rebss"
 	logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"
 	logger -t "【v2ray】" "匹配关键词自动选用节点故障转移 /tmp/link_v2_matching/link_v2_matching.txt"
 	v2ray_link_v2_matching
@@ -224,10 +295,12 @@ if [ ! -z "$app_95" ] ; then
 fi
 
 #404
+rebss=`expr $rebss + 1`
+nvram set ss_rebss_b="$rebss"
 logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"
 restart_dhcpd
 #/etc/storage/crontabs_script.sh &
-		sleep 30
+		sleep 15
 	else
 		sleep 60
 	fi
@@ -300,7 +373,7 @@ killall -9 v2ray v2ctl v2ray_script.sh
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
 Mem_lt=100000
-[ "$Mem_total" -lt 66 ] && Mem_total="66" || { [ "$Mem_total" -gt 66 ] || Mem_total="66" ; }
+[ "$Mem_total" -lt 66 ] && Mem_total="66" || { [ "$Mem_total" -ge 66 ] || Mem_total="66" ; }
 if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
 	[ ! -z "$optPath" ] && logger -t "【v2ray】" " /opt/ 在内存储存"
 	if [ "$Mem_total" -lt "$Mem_lt" ] ; then
@@ -621,12 +694,12 @@ fi
 }
 
 sleep_rnd () {
-sleep 10
 #随机延时
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-RND_NUM=`echo $SEED 66 77|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-[ "$RND_NUM" -lt 66 ] && RND_NUM="66" || { [ "$RND_NUM" -gt 66 ] || RND_NUM="66" ; }
+RND_NUM=`echo $SEED 1 15|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
 sleep $RND_NUM
+sleep $ss_link_1
 #/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 }
 
@@ -1084,7 +1157,7 @@ vmess_link_host=`nvram get app_79`
 vmess_link_path=`nvram get app_80`
 vmess_link_tls=`nvram get app_81`
 v2ray_server_addresses="$vmess_link_add"
-[ "$vmess_link_v" -gt 0 ] || vmess_link_v=1
+[ "$vmess_link_v" -ge 0 ] || vmess_link_v=1
 if [ "$vmess_link_v" -lt 2 ] ; then
 vmess_link_path=$(echo $vmess_link_host | awk -F '/' '{print $2}')
 vmess_link_host=$(echo $vmess_link_host | awk -F '/' '{print $1}')
@@ -1530,10 +1603,12 @@ ilox="$(cat /www/link/vmess.js | grep -v '^\]' | grep -v "ACL3List = " |wc -l)"
 [ "$ilox" == "0" ] && ilox="$(cat /tmp/link/link_vmess.txt | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
 [ "$ilox" == "0" ] && ilox="$(cat /tmp/link/link_ss.txt | grep -v '^\]' | grep -v "ACL4List = " |wc -l)"
 [ "$ilox" == "0" ] && logger -t "【ping】" "错误！节点列表为空" && return
+if [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] ; then
 for h_i in $(seq 1 2) ; do
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
 wgetcurl_file /opt/bin/tcping "$hiboyfile/tcping" "$hiboyfile2/tcping"
 done
+fi
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
 [ ! -f /opt/bin/tcping ] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
 allping 3
@@ -2072,7 +2147,7 @@ dos2unix /tmp/vmess/link/0_link.txt
 sed -e 's@\r@@g' -i /tmp/vmess/link/0_link.txt
 sed -e '/^$/d' -i /tmp/vmess/link/0_link.txt
 if [ ! -z "$(cat /tmp/vmess/link/0_link.txt | grep "ssd://")" ] ; then
-	logger -t "【SS】" "解码【ssd://】订阅文件"
+	logger -t "【v2ray】" "解码【ssd://】订阅文件"
 	ssd_link /tmp/vmess/link/0_link.txt /www/link/ss.js
 	return
 fi
@@ -2368,8 +2443,10 @@ fi
 fi
 touch /etc/storage/app_25.sh
 if [ -s /etc/storage/app_25.sh ] ; then
+app_95="$(nvram get app_95)"
 A_restart="$(nvram get app_25_sh_status)"
-B_restart=`cat /etc/storage/app_25.sh | grep -v "^🔗" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+B_restart="$app_95""$(cat /etc/storage/app_25.sh | grep -v "^🔗")"
+B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" == "$B_restart" ] ; then
  # 文件没更新，停止ping
 a1_tmp="X_allping"
