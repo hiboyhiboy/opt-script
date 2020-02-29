@@ -2055,17 +2055,17 @@ else
 fi
 ex_params="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $2}')"
 if [ -z "$ex_params" ] ; then
-	ex_params="$(echo -n $link2 | sed -n '1p' | awk -F '\\?plugin' '{print $2}')"
-	if [ ! -z "$ex_params" ] ; then
-		ex_params="plugin$ex_params"
-	fi
+	ex_params="$(echo -n $link2 | sed -n '1p' | awk -F '\\?' '{print $2}')"
+	[ ! -z "$ex_params" ] && link2="$(echo -n $link2 | sed -n '1p' | awk -F '\\?' '{print $1}')"
+else
+	link2="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $1}')"
 fi
 if [ ! -z "$ex_params" ] ; then
 	#存在插件
-	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&]*"  | cut -d '=' -f2)";
+	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&#]*"  | cut -d '=' -f2)";
 	ex_obfsparam=$(printf $(echo -n $ex_obfsparam | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))
 	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts "@' | sed -e 's@$@"@')"
-	link2="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $1}')"
+	
 else
 	ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
 fi
