@@ -805,6 +805,7 @@ reload_api () {
 #api热重载
 reload_yml "check"
 reload_yml "save"
+update_yml
 reload_yml "reload"
 reload_yml "set"
 }
