@@ -1926,20 +1926,24 @@ logger -t "【vmess】" "服务器订阅：开始更新"
 
 vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 vmess_link_i=""
-[ -f /www/link/vmess.js ] && echo "var ACL3List = [ " > /www/link/vmess.js && echo ']' >> /www/link/vmess.js
-[ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
+[ ! -s /www/link/vmess.js ] &&  { rm -f /www/link/vmess.js ; echo "var ACL3List = [ " > /www/link/vmess.js ; echo ']' >> /www/link/vmess.js ; }
+[ "$(sed -n 1p /www/link/vmess.js)" != "var ACL3List = [ " ] && { rm -f /www/link/vmess.js ; echo "var ACL3List = [ " > /www/link/vmess.js ; echo ']' >> /www/link/vmess.js ; }
+[ ! -s /www/link/ss.js ] &&  { rm -f /www/link/ss.js ; echo "var ACL4List = [ " > /www/link/ss.js ; echo ']' >> /www/link/ss.js ; }
+[ "$(sed -n 1p /www/link/ss.js)" != "var ACL4List = [ " ] && { rm -f /www/link/ss.js ; echo "var ACL4List = [ " > /www/link/ss.js ; echo ']' >> /www/link/ss.js ; }
 rm -f /tmp/link_v2_matching/link_v2_matching.txt
-touch /etc/storage/app_25.sh ;
-sed -Ei '/^🔗/d' /etc/storage/app_25.sh
+down_ss_link="1"
+down_vmess_link="1"
 if [ ! -z "$(echo "$vmess_link" | awk -F ' ' '{print $2}')" ] ; then
 	for vmess_link_ii in $vmess_link
 	do
 		vmess_link_i="$vmess_link_ii"
 		down_link
+		rm -rf /tmp/vmess/link/*
 	done
 else
 	vmess_link_i="$vmess_link"
 	down_link
+	rm -rf /tmp/vmess/link/*
 fi
 sed -Ei "s@]]@]@g" /www/link/vmess.js
 sed -Ei '/^\]|^$/d' /www/link/vmess.js
@@ -2127,6 +2131,11 @@ vmess_link_ps=""
 
 down_link () {
 
+if [ -z  "$(echo "$vmess_link_i" | grep 'http:\/\/')""$(echo "$vmess_link_i" | grep 'https:\/\/')" ]  ; then
+	logger -t "【SS】" "$vmess_link_i"
+	logger -t "【SS】" "错误！！vmess 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
+	return
+fi
 mkdir -p /tmp/vmess/link
 #logger -t "【vmess】" "订阅文件下载: $vmess_link_i"
 rm -f /tmp/vmess/link/0_link.txt
@@ -2142,6 +2151,7 @@ fi
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	logger -t "【vmess】" "$vmess_link_i"
 	logger -t "【vmess】" "错误！！vmess 服务器订阅文件下载失败！请检查下载地址"
+	return
 fi
 dos2unix /tmp/vmess/link/0_link.txt
 sed -e 's@\r@@g' -i /tmp/vmess/link/0_link.txt
@@ -2159,8 +2169,9 @@ if [ -s /tmp/vmess/link/3_link.txt ] ; then
 	logger -t "【vmess】" "警告！！vmess 服务器订阅文件下载包含非 BASE64 编码字符！"
 	logger -t "【vmess】" "请检查服务器配置和链接："
 	logger -t "【vmess】" "$vmess_link_i"
-	continue
+	return
 fi
+rm -f /tmp/vmess/link/3_link.txt
 # 开始解码订阅节点配置
 cat /tmp/vmess/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/vmess/link/1_link.txt
 base64 -d /tmp/vmess/link/1_link.txt > /tmp/vmess/link/2_link.txt
@@ -2186,10 +2197,6 @@ else
 do_link "/tmp/vmess/link/2_link.txt"
 fi
 rm -rf /tmp/vmess/link/*
-
-
-
-
 }
 
 do_link () {
@@ -2222,6 +2229,11 @@ if [ ! -z "$ssr_line" ] ; then
 fi
 done < /tmp/vmess/link/do_link.txt
 if [ -f /tmp/vmess/link/vmess_link.txt ] ; then
+if [ "$down_vmess_link" == "1" ] ; then
+# 初次导入节点清空旧的订阅
+[ -f /www/link/vmess.js ] && echo "var ACL3List = [ " > /www/link/vmess.js && echo ']' >> /www/link/vmess.js
+down_vmess_link=0
+fi
 sed -e 's/$/&==/g' -i /tmp/vmess/link/vmess_link.txt
 sed -e "s/_/\//g" -i /tmp/vmess/link/vmess_link.txt
 sed -e "s/\-/\+/g" -i /tmp/vmess/link/vmess_link.txt
@@ -2259,6 +2271,11 @@ sed -e "s/\-/\+/g" -i /tmp/vmess/link/vmess_link.txt
 fi
 
 if [ -f /tmp/vmess/link/ss_link.txt ] ; then
+	if [ "$down_ss_link" == "1" ] ; then
+	# 初次导入节点清空旧的订阅
+	[ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
+	down_ss_link=0
+	fi
 	#awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/vmess/link/ss_link.txt > /tmp/vmess/link/ss_link2.txt
 	while read line
 	do
@@ -2299,6 +2316,11 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 fi
 
 if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
+	if [ "$down_ss_link" == "1" ] ; then
+	# 初次导入节点清空旧的订阅
+	[ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
+	down_ss_link=0
+	fi
 	sed -e 's/$/&==/g' -i /tmp/vmess/link/ssr_link.txt
 	sed -e "s/_/\//g" -i /tmp/vmess/link/ssr_link.txt
 	sed -e "s/\-/\+/g" -i /tmp/vmess/link/ssr_link.txt
@@ -2349,6 +2371,11 @@ rm -rf /tmp/vmess/link/*
 }
 ssd_link () {
 
+if [ "$down_ss_link" == "1" ] ; then
+# 初次导入节点清空旧的订阅
+[ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
+down_ss_link=0
+fi
 mkdir -p /tmp/vmess/link
 mkdir -p /tmp/link
 rm -f /tmp/vmess/link/ssd_link.txt

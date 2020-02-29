@@ -273,6 +273,16 @@ if [ -s /tmp/ss/link/3_link.txt ] ; then
 	rm -f /tmp/ss/link/3_link.txt /tmp/ss/link/0_link.txt
 	return
 fi
+if [ "$down_i_link" == "1" ] ; then
+# 初次导入节点清空旧的订阅
+if [ ! -z "$(cat /www/link_d.js | grep "app_24.sh")" ] ; then
+touch /etc/storage/app_24.sh ;
+sed -Ei '/^🔗/d' /etc/storage/app_24.sh
+else
+sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
+fi
+down_i_link=0
+fi
 rm -f /tmp/ss/link/3_link.txt
 # 开始解码订阅节点配置
 cat /tmp/ss/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/ss/link/1_link.txt
@@ -431,6 +441,11 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	return 1
 fi
 fi
+if [ "$down_i_link" == "1" ] ; then
+# 初次导入节点清空旧的订阅
+sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
+down_i_link=0
+fi
 mkdir -p /tmp/ss/link
 mkdir -p /tmp/link
 rm -f /tmp/ss/link/ssd_link.txt
@@ -578,20 +593,20 @@ ssr_link_i=""
 if [ -f /www/link/link.js ]  ; then
 [ ! -s /www/link/link.js ] &&  { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; echo '[]]' >> /www/link/link.js ; }
 [ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] && { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; echo '[]]' >> /www/link/link.js ; }
-sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
 rm -f /tmp/link_matching/link_matching.txt
-touch /etc/storage/app_24.sh ;
-sed -Ei '/^🔗/d' /etc/storage/app_24.sh
 fi
+down_i_link="1"
 if [ ! -z "$(echo "$ssr_link" | awk -F ' ' '{print $2}')" ] ; then
 	for ssr_link_ii in $ssr_link
 	do
 		ssr_link_i="$ssr_link_ii"
 		down_link
+		rm -rf /tmp/ss/link
 	done
 else
 	ssr_link_i="$ssr_link"
 	down_link
+	rm -rf /tmp/ss/link
 fi
 if [ -f /www/link/link.js ]  ; then
 sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js

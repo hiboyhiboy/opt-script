@@ -207,8 +207,8 @@ for h_i in $(seq 1 2) ; do
 wgetcurl_file "$SVC_PATH" "$hiboyfile/clash" "$hiboyfile2/clash"
 done
 clash_v=$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $2;}')
+[ -z "$clash_v" ] && clash_v=$($SVC_PATH -v)
 nvram set clash_v="$clash_v"
-[ -z "$clash_v" ] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【clash】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【clash】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
