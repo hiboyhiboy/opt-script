@@ -494,7 +494,7 @@ check_config() {
 	file_is_exists "$file_ignlist_ext"   || log_error "file not found: $file_ignlist_ext"
 	file_is_exists "$file_chnroute_set"  || log_error "file not found: $file_chnroute_set"
 	file_is_exists "$file_chnroute6_set" || log_error "file not found: $file_chnroute6_set"
-	file_is_exists "$file_dnsserver_pid" && load_pidfile
+	#file_is_exists "$file_dnsserver_pid" && load_pidfile
 
 	{ ! is_global_mode && ! is_gfwlist_mode && ! is_chnroute_mode && ! is_chnlist_mode; } && log_error "the value of the mode option is invalid: $mode"
 
@@ -1616,7 +1616,7 @@ killall -9 pdnsd dnsproxy
 #	kill -9 $status_chinadns_pid &>/dev/null
 #	kill -9 $status_dns2tcp4_pid &>/dev/null
 #	kill -9 $status_dns2tcp6_pid &>/dev/null
-	delete_pidfile
+#	delete_pidfile
 }
 
 flush_dnscache() {

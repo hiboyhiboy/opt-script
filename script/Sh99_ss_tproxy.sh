@@ -267,7 +267,7 @@ ss_tproxy_rules_update () {
 [ "$ss_tproxy_update" == "0" ] && return
 nvram set app_111=0 ; nvram commit ;
 for h_i in $(seq 1 2) ; do
-[[ "$(/etc/storage/script/sh_ss_tproxy.sh -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
+[[ "$(/etc/storage/script/sh_ss_tproxy.sh h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
 done
 rm -f /opt/app/ss_tproxy/tmp/*.md5
@@ -323,7 +323,7 @@ ss_tproxy_start () {
 ipt_m_check
 check_webui_yes
 for h_i in $(seq 1 2) ; do
-[[ "$(/etc/storage/script/sh_ss_tproxy.sh -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
+[[ "$(/etc/storage/script/sh_ss_tproxy.sh h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
 done
 rm -f /opt/app/ss_tproxy/ss_tproxy.conf
@@ -561,7 +561,7 @@ initconfig
 
 ss_tproxy_run () {
 for h_i in $(seq 1 2) ; do
-[[ "$(/etc/storage/script/sh_ss_tproxy.sh -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
+[[ "$(/etc/storage/script/sh_ss_tproxy.sh h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
 done
 sh_ss_tproxy.sh "$@"
@@ -589,7 +589,7 @@ if [ "$1" = "del" ] ; then
 	[ -f /etc/storage/script/sh_ss_tproxy.sh ] && rm -f /etc/storage/script/sh_ss_tproxy.sh
 fi
 for h_i in $(seq 1 2) ; do
-[[ "$(/etc/storage/script/sh_ss_tproxy.sh -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
+[[ "$(/etc/storage/script/sh_ss_tproxy.sh h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
 done
 initconfig
