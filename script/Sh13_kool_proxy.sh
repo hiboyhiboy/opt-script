@@ -932,9 +932,9 @@ if [ ! -f "$koolproxy_rules_list" ] || [ ! -s "$koolproxy_rules_list" ] ; then
 0|koolproxy.txt|https://kprule.com/koolproxy.txt|
 0|daily.txt|https://kprule.com/daily.txt|
 0|kp.dat|https://kprule.com/kp.dat|
-0|koolproxy.txt|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/koolproxy.txt|
-0|daily.txt|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/daily.txt|
-0|kp.dat|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/kp.dat|
+1|koolproxy.txt|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/koolproxy.txt|
+1|daily.txt|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/daily.txt|
+1|kp.dat|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/kp.dat|
 1|user.txt||
 
 EEE

@@ -909,7 +909,7 @@ echo "Debug: $DNS_Server"
 	check2=404
 	check_timeout_network "wget_check" "check"
 if [ "$check2" != "200" ] ; then 
-	logger -t "【SS】" "错误！【Google.com】连接有问题！！！"
+	logger -t "【SS】" "错误！【$ss_link_2】连接有问题！！！"
 	logger -t "【SS】" "网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
 	logger -t "【SS】" "如果是本地组网可忽略此错误！！"
 	logger -t "【SS】" "否则需启用【首次时连接检测】、【运行时持续检测】才能自动故障转移"

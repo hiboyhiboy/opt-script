@@ -6,7 +6,6 @@ source /etc/storage/app_27.sh
 
 trap "exit 1" HUP INT QUIT TERM PIPE
 
-PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 # 载入iptables模块
 for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
 do
@@ -43,7 +42,7 @@ if [ -n "$LAN_AC_IP" ] ; then
 	esac
 fi
 
-readonly IPV4_RESERVED_IPADDRS="
+IPV4_RESERVED_IPADDRS="
 0.0.0.0/8
 10.0.0.0/8
 100.64.0.0/10
@@ -65,7 +64,7 @@ readonly IPV4_RESERVED_IPADDRS="
 110.110.110.110/32
 "
 
-readonly IPV6_RESERVED_IPADDRS="
+IPV6_RESERVED_IPADDRS="
 ::/128
 ::1/128
 ::ffff:0:0/96
@@ -329,8 +328,27 @@ ipset flush privaddr6 &>/dev/null
 
 echo "create proxyaddr hash:net hashsize 64 family inet
 create proxyaddr6 hash:net hashsize 64 family inet6
+create chnroute hash:net hashsize 1024 family inet
+create chnroute6 hash:net hashsize 1024 family inet6
+create gfwlist hash:net hashsize 1024 family inet
+create gfwlist6 hash:net hashsize 1024 family inet6
+create adbybylist hash:net hashsize 1024 family inet
 create privaddr hash:net hashsize 64 family inet
 create privaddr6 hash:net hashsize 64 family inet6
+create sstp_dst_bp hash:net hashsize 64 family inet
+create sstp_dst_bp6 hash:net hashsize 64 family inet6
+create sstp_dst_fw hash:net hashsize 64 family inet
+create sstp_dst_fw6 hash:net hashsize 64 family inet6
+create sstp_src_ac hash:net hashsize 64 family inet
+create sstp_src_ac6 hash:net hashsize 64 family inet6
+create sstp_src_bp hash:net hashsize 64 family inet
+create sstp_src_bp6 hash:net hashsize 64 family inet6
+create sstp_src_fw hash:net hashsize 64 family inet
+create sstp_src_fw6 hash:net hashsize 64 family inet6
+create sstp_src_gfw hash:net hashsize 64 family inet
+create sstp_src_gfw6 hash:net hashsize 64 family inet6
+create sstp_src_chn hash:net hashsize 64 family inet
+create sstp_src_chn6 hash:net hashsize 64 family inet6
 create sstp_mac_ac hash:mac hashsize 64
 create sstp_mac_bp hash:mac hashsize 64
 create sstp_mac_fw hash:mac hashsize 64
@@ -773,7 +791,7 @@ update_gfwlist_ipset() {
 		[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $file_gfwlist_txt
 		gfwlist_txt_append_domain_names >> $file_gfwlist_txt
 	fi
-	if ! is_chnlist_mode || ! is_global_mode; then
+	if ! is_chnlist_mode; then
 	update_md5_check update_gfwlist_txt $file_gfwlist_txt
 	logger -t "【update_gfwlist】" "开始加载 gfwlist 规则...."
 	if is_md5_not ; then
@@ -796,15 +814,9 @@ update_gfwlist_ipset() {
 			ipset -! create gfwlist6 hash:net family inet6
 			ipset flush gfwlist6 &>/dev/null
 		fi
-		if is_gfwlist_mode; then
-			is_true "$ipv4" && awk '{printf("server=/%s/127.0.0.1#8053\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-			is_true "$ipv6" && awk '{printf("server=/%s/'"$dns_remote6"'\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-			awk '{printf("ipset=/%s/'"$gfwlist_ipset_setname"'\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-		fi
-		if ! is_chnlist_mode && ! is_global_mode; then
-			is_true "$ipv4" && awk '{printf("server=/%s/127.0.0.1#8053\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-			is_true "$ipv6" && awk '{printf("server=/%s/'"$dns_remote6"'\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-		fi
+		is_true "$ipv4" && awk '{printf("server=/%s/127.0.0.1#8053\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		is_true "$ipv6" && awk '{printf("server=/%s/'"$dns_remote6"'\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		awk '{printf("ipset=/%s/'"$gfwlist_ipset_setname"'\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		nvram set gfwlist_list="gfwlist规则`cat /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf | wc -l` 行 Update:$(date "+%m-%d %H:%M")"
 		logger -t "【update_gfwlist】" "配置更新，完成加载 gfwlist 规则...."
 	else
@@ -1080,7 +1092,9 @@ update_wanlanlist_ipset() {
 		#ipset destroy $setname &>/dev/null
 	done
 
-echo "create chnroute hash:net hashsize 1024 family inet
+echo "create proxyaddr hash:net hashsize 64 family inet
+create proxyaddr6 hash:net hashsize 64 family inet6
+create chnroute hash:net hashsize 1024 family inet
 create chnroute6 hash:net hashsize 1024 family inet6
 create gfwlist hash:net hashsize 1024 family inet
 create gfwlist6 hash:net hashsize 1024 family inet6
