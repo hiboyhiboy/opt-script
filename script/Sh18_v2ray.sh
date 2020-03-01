@@ -417,6 +417,13 @@ if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	chmod 644 /opt/etc/ssl/certs -R
 	chmod 777 /opt/etc/ssl/certs
 fi
+Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+if [[ "$Available_A" -lt 33 ]] ; then
+mount -o remount,size=80% tmpfs /tmp
+Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
+fi
+
 for h_i in $(seq 1 2) ; do
 [[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
 wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
@@ -490,7 +497,7 @@ else
 		sed -Ei s/8053/8055/g /tmp/vmess/mk_vmess.json
 	fi
 	# 改写错误日志路径
-	cat /tmp/vmess/mk_vmess.json| jq --raw-output 'setpath(["log"];{"error":"/tmp/syslog.log","loglevel":"error"})' > /tmp/vmess/mk_vmess2.json
+	cat /tmp/vmess/mk_vmess.json | jq --raw-output 'setpath(["log"];{"access": "none","error":"/tmp/syslog.log","loglevel":"error"})' > /tmp/vmess/mk_vmess2.json
 	[ -s /tmp/vmess/mk_vmess2.json ] && cp -f /tmp/vmess/mk_vmess2.json /tmp/vmess/mk_vmess.json
 	rm -f /tmp/vmess/mk_vmess2.json
 	fi
@@ -566,7 +573,9 @@ if [ "$v2ray_optput" = 1 ] ; then
 logger -t "【v2ray】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
 fi
 logger -t "【v2ray】" "完成 透明代理 转发规则设置"
-
+logger -t "【v2ray】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
+logger -t "【v2ray】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
+logger -t "【v2ray】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
 # 透明代理
 fi
 
@@ -879,6 +888,7 @@ fi
 json_int_ss_tproxy () {
 echo '{
   "log": {
+    "access": "none",
     "error": "/tmp/syslog.log",
     "loglevel": "error"
   },
@@ -1340,6 +1350,7 @@ echo '{
 json_int () {
 echo '{
   "log": {
+    "access": "none",
     "error": "/tmp/syslog.log",
     "loglevel": "error"
   },

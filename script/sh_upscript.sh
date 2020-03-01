@@ -48,7 +48,7 @@ wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scrip
 if [ -s /tmp/scriptsh.txt ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2020-03-01b"
+	nvram set scripto="2020-03-01c"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi

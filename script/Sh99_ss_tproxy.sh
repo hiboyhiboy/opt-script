@@ -334,7 +334,7 @@ rm -f /opt/bin/ss_tproxy
 ln -sf /etc/storage/script/sh_ss_tproxy.sh /opt/bin/ss_tproxy
 
 Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
-if [[ "$Available_A" -lt 3 ]] ; then
+if [[ "$Available_A" -lt 10 ]] ; then
 mount -o remount,size=60% tmpfs /tmp
 Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"

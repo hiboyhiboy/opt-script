@@ -288,6 +288,7 @@ if [ ! -z "$upanPath" ] ; then
 	/tmp/re_upan_storage.sh &
 else
 	logger -t "【opt】" "/tmp/AiDisk_00/opt文件夹模式挂载/opt"
+	[ "$size_tmpfs" = "0" ] && mount -o remount,size=50% tmpfs /tmp
 	rm -rf /tmp/AiDisk_00
 	mkdir -p /tmp/AiDisk_00/opt
 	mount -o bind /tmp/AiDisk_00/opt /opt

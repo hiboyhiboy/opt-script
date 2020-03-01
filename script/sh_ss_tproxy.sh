@@ -2484,7 +2484,7 @@ main() {
 	check_config
 
 for options in $arguments; do 
-	logger -t "【sh_ss_tproxy.sh】" "$options"
+	[ "$options" != "h" ] && [ "$options" != "v" ] && logger -t "【sh_ss_tproxy.sh】" "$options"
 	case "$options" in
 		start)           start; status;;
 		stop)            stop; status;;
