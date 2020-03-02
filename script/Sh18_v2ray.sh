@@ -1943,8 +1943,7 @@ vmess_link_i=""
 [ ! -s /www/link/ss.js ] &&  { rm -f /www/link/ss.js ; echo "var ACL4List = [ " > /www/link/ss.js ; echo ']' >> /www/link/ss.js ; }
 [ "$(sed -n 1p /www/link/ss.js)" != "var ACL4List = [ " ] && { rm -f /www/link/ss.js ; echo "var ACL4List = [ " > /www/link/ss.js ; echo ']' >> /www/link/ss.js ; }
 rm -f /tmp/link_v2_matching/link_v2_matching.txt
-down_ss_link="1"
-down_vmess_link="1"
+down_i_link="1"
 if [ ! -z "$(echo "$vmess_link" | awk -F ' ' '{print $2}')" ] ; then
 	for vmess_link_ii in $vmess_link
 	do
@@ -2189,6 +2188,14 @@ cat /tmp/vmess/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/vm
 base64 -d /tmp/vmess/link/1_link.txt > /tmp/vmess/link/2_link.txt
 rm -f /tmp/vmess/0_link.txt /tmp/vmess/1_link.txt
 
+if [ "$down_i_link" == "1" ] ; then
+# 初次导入节点清空旧的订阅
+touch /etc/storage/app_25.sh
+sed -Ei '/^🔗/d' /etc/storage/app_25.sh
+[ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
+[ -f /www/link/vmess.js ] && echo "var ACL3List = [ " > /www/link/vmess.js && echo ']' >> /www/link/vmess.js
+down_i_link=0
+fi
 if [ ! -z "$(cat /www/link_d.js | grep "app_25.sh")" ] ; then
 echo >> /etc/storage/app_25.sh
 sed -Ei 's@^@🔗@g' /tmp/vmess/link/2_link.txt
@@ -2241,11 +2248,6 @@ if [ ! -z "$ssr_line" ] ; then
 fi
 done < /tmp/vmess/link/do_link.txt
 if [ -f /tmp/vmess/link/vmess_link.txt ] ; then
-if [ "$down_vmess_link" == "1" ] ; then
-# 初次导入节点清空旧的订阅
-[ -f /www/link/vmess.js ] && echo "var ACL3List = [ " > /www/link/vmess.js && echo ']' >> /www/link/vmess.js
-down_vmess_link=0
-fi
 sed -e 's/$/&==/g' -i /tmp/vmess/link/vmess_link.txt
 sed -e "s/_/\//g" -i /tmp/vmess/link/vmess_link.txt
 sed -e "s/\-/\+/g" -i /tmp/vmess/link/vmess_link.txt
@@ -2283,11 +2285,6 @@ sed -e "s/\-/\+/g" -i /tmp/vmess/link/vmess_link.txt
 fi
 
 if [ -f /tmp/vmess/link/ss_link.txt ] ; then
-	if [ "$down_ss_link" == "1" ] ; then
-	# 初次导入节点清空旧的订阅
-	[ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
-	down_ss_link=0
-	fi
 	#awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/vmess/link/ss_link.txt > /tmp/vmess/link/ss_link2.txt
 	while read line
 	do
@@ -2328,11 +2325,6 @@ if [ -f /tmp/vmess/link/ss_link.txt ] ; then
 fi
 
 if [ -f /tmp/vmess/link/ssr_link.txt ] ; then
-	if [ "$down_ss_link" == "1" ] ; then
-	# 初次导入节点清空旧的订阅
-	[ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
-	down_ss_link=0
-	fi
 	sed -e 's/$/&==/g' -i /tmp/vmess/link/ssr_link.txt
 	sed -e "s/_/\//g" -i /tmp/vmess/link/ssr_link.txt
 	sed -e "s/\-/\+/g" -i /tmp/vmess/link/ssr_link.txt
@@ -2383,10 +2375,13 @@ rm -rf /tmp/vmess/link/*
 }
 ssd_link () {
 
-if [ "$down_ss_link" == "1" ] ; then
+if [ "$down_i_link" == "1" ] ; then
 # 初次导入节点清空旧的订阅
+touch /etc/storage/app_25.sh
+sed -Ei '/^🔗/d' /etc/storage/app_25.sh
 [ -f /www/link/ss.js ] && echo "var ACL4List = [ " > /www/link/ss.js && echo ']' >> /www/link/ss.js
-down_ss_link=0
+[ -f /www/link/vmess.js ] && echo "var ACL3List = [ " > /www/link/vmess.js && echo ']' >> /www/link/vmess.js
+down_i_link=0
 fi
 mkdir -p /tmp/vmess/link
 mkdir -p /tmp/link
