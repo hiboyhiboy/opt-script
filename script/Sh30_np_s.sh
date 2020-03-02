@@ -155,11 +155,11 @@ action_for=""
 [ "$npss_enable" = "1" ] && action_for=$action_for" nps"
 del_tmp=0
 if [ -z "$nps_version" ] ; then
-	nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0  https://github.com/cnlh/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
-	[ -z "$nps_tag" ] && nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/cnlh/nps/releases/latest  2>&1 | grep '<a href="/cnlh/nps/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
-	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.26.3]" && nps_restart x
+	nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
+	[ -z "$nps_tag" ] && nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep '<a href="/cnlh/nps/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.26.4]" && nps_restart x
 	[ ! -z "$nps_tag" ] && logger -t "【nps】" "自动下载最新版本 $nps_tag"
-	[ -z "$nps_tag" ] && nps_tag="v0.26.3"
+	[ -z "$nps_tag" ] && nps_tag="v0.26.4"
 	nps_version=$nps_tag && nvram set app_57=$nps_tag
 	nps_restart o
 	logger -t "【nps】" "重启" && nps_restart
@@ -196,7 +196,7 @@ if [ ! -z "$action_nps" ] ; then
 		initopt
 	fi
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "npc" ] ; then
-		nps_ver_wget="https://github.com/cnlh/nps/releases/download/$nps_version/linux_mipsle_client.tar.gz"
+		nps_ver_wget="https://github.com/ehang-io/nps/releases/download/$nps_version/linux_mipsle_client.tar.gz"
 		wgetcurl_file /opt/bin/nps/linux_mipsle_client.tar.gz "$nps_ver_wget"
 		rm -rf /opt/bin/nps/tmp
 		mkdir -p /opt/bin/nps/tmp
@@ -207,7 +207,7 @@ if [ ! -z "$action_nps" ] ; then
 	fi
 	[ "$action_nps" = "nps" ] && [ ! -d /opt/bin/nps/conf ] && rm -rf $SVC_PATH /opt/bin/nps/conf
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "nps" ] ; then
-		nps_ver_wget="https://github.com/cnlh/nps/releases/download/$nps_version/linux_mipsle_server.tar.gz"
+		nps_ver_wget="https://github.com/ehang-io/nps/releases/download/$nps_version/linux_mipsle_server.tar.gz"
 		wgetcurl_file /opt/bin/nps/linux_mipsle_server.tar.gz "$nps_ver_wget"
 		rm -rf /opt/bin/nps/tmp
 		mkdir -p /opt/bin/nps/tmp

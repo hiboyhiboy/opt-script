@@ -595,9 +595,10 @@ update_gfwlist() {
 update_gfwlist_file() {
 	logger -t "【update_gfwlist】" "开始下载更新 gfwlist 文件...."
 	mkdir -p /opt/app/ss_tproxy/rule
+	tmp_base64_gfwlist="/opt/app/ss_tproxy/rule/tmp_base64_gfwlist.txt"
 	tmp_gfwlist="/opt/app/ss_tproxy/rule/tmp_gfwlist.txt"
 	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_gfwlist_tmp.txt"
-	rm -f $tmp_gfwlist $tmp_down_file
+	rm -f $tmp_gfwlist $tmp_down_file $tmp_base64_gfwlist
 	echo "" > /opt/app/ss_tproxy/rule/gfwlist_dns.txt
 	echo "" > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
 	echo "" > /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
@@ -607,30 +608,43 @@ update_gfwlist_file() {
 	if [ "$ss_3p_gfwlist" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取官方 gfwlist...."
 		local url='https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
-		wgetcurl_checkmd5 $tmp_gfwlist "$url" "$url" N 5
-		sed -e  's@$@==@g' -i $tmp_gfwlist
-		cat $tmp_gfwlist | base64 -d > $tmp_down_file
-		rm -f $tmp_gfwlist 
+		wgetcurl_checkmd5 $tmp_base64_gfwlist  "$url" "$url" N 5
+		if [ -s $tmp_base64_gfwlist ] && [ -z "$(cat $tmp_base64_gfwlist | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
+		sed -e  's@$@==@g' -i $tmp_base64_gfwlist
+		cat $tmp_base64_gfwlist | base64 -d > $tmp_down_file
+		rm -f $tmp_base64_gfwlist 
+		touch $tmp_down_file
 		cat $tmp_down_file | sort -u |
 			sed '/^$\|@@/d'|
 			sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
 			sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d' |
 			sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
-			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##'  | sort -u >> $tmp_gfwlist
+			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##' | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sort -u >> $tmp_gfwlist
+		else
+		logger -t "【update_gfwlist】" "错误！！！获取官方 gfwlist 下载失败"
+		fi
+		rm -f $tmp_down_file
 	fi
 	ss_3p_kool=`nvram get ss_3p_kool`
 	if [ "$ss_3p_kool" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 koolshare 列表...."
 		local url='https://raw.github.com/hq450/fancyss/master/rules/gfwlist.conf'
 		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
-		cat $tmp_down_file | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist
+		if [ -s $tmp_down_file ] ; then
+		echo ""  >> $tmp_down_file
+		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist
+		fi
+		rm -f $tmp_down_file
 	fi
 	ss_sub5=`nvram get ss_sub5`
 	if [ ! -z "$ss_sub5" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 GFW 自定义域名 列表...."
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub5 $ss_sub5 Y
+		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
-		cat $tmp_down_file | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' | sort -u | grep -v "^$" >> $tmp_gfwlist
+		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' | sort -u | grep -v "^$" >> $tmp_gfwlist
+		fi
+		rm -f $tmp_down_file
 	fi
 	if [ ! -s $tmp_gfwlist ] ; then
 		logger -t "【update_gfwlist】" "加入 固件内置list规则 列表...."
@@ -644,8 +658,11 @@ update_gfwlist_file() {
 		logger -t "【update_gfwlist】" "处理订阅列表1....海外加速"
 		local url='/list.txt'
 		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
-		cat $tmp_down_file |
-			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist
+		if [ -s $tmp_down_file ] ; then
+		echo ""  >> $tmp_down_file
+		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist
+		fi
+		rm -f $tmp_down_file
 	fi
 	ss_sub2=`nvram get ss_sub2`
 	if [ "$ss_sub2" = "1" ] ; then
@@ -653,8 +670,11 @@ update_gfwlist_file() {
 		logger -t "【update_gfwlist】" "处理订阅列表2....处理只做dns解释的域名"
 		local url='/dnsonly.txt'
 		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
-		cat $tmp_down_file |
-			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns.txt
+		if [ -s $tmp_down_file ] ; then
+		echo ""  >> $tmp_down_file
+		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns.txt
+		fi
+		rm -f $tmp_down_file
 	fi
 	ss_sub3=`nvram get ss_sub3`
 	if [ "$ss_sub3" = "1" ] ; then
@@ -662,15 +682,21 @@ update_gfwlist_file() {
 		logger -t "【update_gfwlist】" "处理订阅列表3....处理需要排除的域名解释"
 		local url='/passby.txt'
 		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
-		cat $tmp_down_file |
-			sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
+		if [ -s $tmp_down_file ] ; then
+		echo ""  >> $tmp_down_file
+		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
+		fi
+		rm -f $tmp_down_file
 	fi
 	ss_sub6=`nvram get ss_sub6`
 	if [ ! -z "$ss_sub6" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 GFW IP 列表...."
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub6 $ss_sub6 Y
+		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
+		fi
+		rm -f $tmp_down_file
 	fi
 	fi
 	if [ ! -s $tmp_gfwlist ] ; then
@@ -973,24 +999,36 @@ update_chnroute_file() {
 	rm -f $tmp_chnroute $tmp_down_file
 	local url='https://cdn.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
 	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
+	if [ -s $tmp_down_file ] ; then
 	echo ""  >> $tmp_down_file
 	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+	fi
+	rm -f $tmp_down_file
 	wgetcurl_checkmd5 $tmp_down_file "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt" N 5
+	if [ -s $tmp_down_file ] ; then
 	echo ""  >> $tmp_down_file
 	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+	fi
+	rm -f $tmp_down_file
 	ss_sub7=`nvram get ss_sub7`
 	if [ ! -z "$ss_sub7" ] ; then
 		logger -t "【update_chnroute】" "正在获取 ① 大陆白名单 IP 下载地址...."
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub7 $ss_sub7 Y
+		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+		fi
+		rm -f $tmp_down_file
 	fi
 	ss_sub8=`nvram get ss_sub8`
 	if [ ! -z "$ss_sub8" ] ; then
 		logger -t "【update_chnroute】" "正在获取 ② 大陆白名单 IP 下载地址...."
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub8 $ss_sub8 Y
+		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+		fi
+		rm -f $tmp_down_file
 	fi
 	rm -f $tmp_down_file
 	if [ ! -s $tmp_chnroute ] ; then
@@ -1025,8 +1063,8 @@ update_chnroute_ipset() {
 		[ -s /etc/storage/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！ $file_chnroute_txt 文件为空，使用 固件内置 /etc/storage/china_ip_list.txt 规则...." && cat /etc/storage/china_ip_list.txt > $file_chnroute_txt
 	fi
 	logger -t "【update_chnroute】" "开始加载 chnroute 规则...."
-	if is_true "$ipv4"; then
 	chnroute_list="chnroute规则`ipset list chnroute -t | awk -F: '/Number/{print $2}'` 行"
+	if is_true "$ipv4"; then
 	echo "$chnroute_list" > /opt/app/ss_tproxy/tmp/chnroute_list_Number
 	update_md5_check update_chnroute_txt $file_chnroute_txt /opt/app/ss_tproxy/tmp/chnroute_list_Number
 	if is_md5_not ; then
@@ -1046,9 +1084,11 @@ update_chnroute_ipset() {
 		[ ! -s $file_chnroute_txt ] && logger -t "【update_chnroute】" "匹配错误！！！ $file_chnroute_txt 规则为空...."
 		logger -t "【update_chnroute】" "配置匹配，完成加载 chnroute 规则...."
 	fi
+	else
+	nvram set chnroute_list="$chnroute_list"
 	fi
-	if is_true "$ipv6"; then
 	chnroute6_list="chnroute6规则`ipset list chnroute6 -t | awk -F: '/Number/{print $2}'` 行"
+	if is_true "$ipv6"; then
 	echo "$chnroute6_list" > /opt/app/ss_tproxy/tmp/chnroute6_list_Number
 	update_md5_check update_chnroute6_txt $file_chnroute6_txt /opt/app/ss_tproxy/tmp/chnroute6_list_Number
 	if is_md5_not ; then
@@ -1062,12 +1102,14 @@ update_chnroute_ipset() {
 		update_md5_check update_chnroute6_txt $file_chnroute6_txt /opt/app/ss_tproxy/tmp/chnroute6_list_Number
 		logger -t "【update_chnroute】" "配置更新，完成加载 chnroute6 规则...."
 		else
-		logger -t "【update_chnroute】" "更新错误！！！ $file_chnroute6_txt 规则为空...."
+		logger -t "【update_chnroute】" "更新跳过！！！ $file_chnroute6_txt 规则为空...."
 		fi
 	else
 		[ ! -s $file_chnroute6_txt ] && logger -t "【update_chnroute】" "匹配错误！！！ $file_chnroute6_txt 规则为空...."
 		logger -t "【update_chnroute】" "配置匹配，完成加载 chnroute6 规则...."
 	fi
+	else
+	nvram set chnroute6_list="$chnroute6_list"
 	fi
 
 }
