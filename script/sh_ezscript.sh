@@ -542,7 +542,7 @@ wgetcurl_file /opt/bin/tcping "$hiboyfile/tcping" "$hiboyfile2/tcping"
 done
 fi
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
-[ ! -f /opt/bin/tcping ] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
+[[ "$(tcping -h 2>&1 | wc -l)" -gt 5 ]] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
 mkdir -p /tmp/allping
 rm -f /tmp/allping/?.txt
 rm -f /tmp/ping_server_error.txt
@@ -698,7 +698,7 @@ ss_name_x="$(echo $ping_list | cut -d',' -f1 | sed -e "s@"'"'"\|"'\['"@@g")"
 ss_name_x="$(base64decode "$ss_name_x")"
 ss_port_x="$(echo $ping_list | cut -d',' -f3 | sed -e "s@"'"'"\|"'\['"@@g")"
 tcping_time="0"
-if [ -f /opt/bin/tcping ] ; then
+if [[ "$(tcping -h 2>&1 | wc -l)" -gt 5 ]] ; then
 if [ ! -z "$(echo "$ss_name_x" | grep -Eo "剩余流量|过期时间")" ] || [ ! -z "$(echo "$ss_server_x" | grep -Eo "google.com|8.8.8.8")" ] ; then
 tcping_time="0"
 else

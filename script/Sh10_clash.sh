@@ -292,6 +292,9 @@ else
 logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
 fi
 restart_dhcpd
+logger -t "【v2ray】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
+logger -t "【v2ray】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
+logger -t "【v2ray】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
 # 透明代理
 fi
 # 恢复web节点选择
@@ -394,7 +397,8 @@ echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # clash
-grep '^  server: ' /etc/storage/app_20.sh | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+grep '^  server: ' /etc/storage/app_20.sh | tr -d ' ' | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+cat /etc/storage/app_20.sh | tr -d ' ' | grep -E -o \"server\":\"\[\^\"\]+ | sed -e 's/server\|://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 kcptun_server=`nvram get kcptun_server`
 echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 

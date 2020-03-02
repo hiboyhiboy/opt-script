@@ -676,7 +676,8 @@ echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # clash
-grep '^  server: ' /etc/storage/app_20.sh | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+grep '^  server: ' /etc/storage/app_20.sh | tr -d ' ' | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+cat /etc/storage/app_20.sh | tr -d ' ' | grep -E -o \"server\":\"\[\^\"\]+ | sed -e 's/server\|://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 kcptun_server=`nvram get kcptun_server`
 echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 
@@ -1621,7 +1622,7 @@ wgetcurl_file /opt/bin/tcping "$hiboyfile/tcping" "$hiboyfile2/tcping"
 done
 fi
 [[ "$(tcping -h 2>&1 | wc -l)" -lt 5 ]] && rm -rf /opt/bin/tcping
-[ ! -f /opt/bin/tcping ] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
+[[ "$(tcping -h 2>&1 | wc -l)" -gt 5 ]] && logger -t "【ping】" "开始 ping" || logger -t "【ping】" "开始 tcping"
 allping 3
 allping 4
 logger -t "【ping】" "完成 ping 请按【F5】刷新 web 查看 ping"
@@ -1777,7 +1778,7 @@ ss_name_x="$(echo $ping_list | cut -d',' -f "$js_2_ping" | sed -e "s@"'"'"\|"'\[
 ss_name_x="$(base64decode "$ss_name_x")"
 ss_port_x="$(echo $ping_list | cut -d',' -f "$js_3_ping" | sed -e "s@"'"'"\|"'\['"@@g")"
 tcping_time="0"
-if [ -f /opt/bin/tcping ] ; then
+if [[ "$(tcping -h 2>&1 | wc -l)" -gt 5 ]] ; then
 if [ ! -z "$(echo "$ss_name_x" | grep -Eo "剩余流量|过期时间")" ] || [ ! -z "$(echo "$ss_server_x" | grep -Eo "google.com|8.8.8.8")" ] ; then
 tcping_time="0"
 else
