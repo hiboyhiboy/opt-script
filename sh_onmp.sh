@@ -1849,7 +1849,7 @@ server {
 }
 EOF
 
-sed -e "s/.*listen.*/    listen $1\;/g" -i /opt/etc/nginx/vhost/$2.conf
+sed -e "s/.*listen.*/    listen $1\;\n    listen [::]:$1\;/g" -i /opt/etc/nginx/vhost/$2.conf
 sed -e "s/.*\/opt\/wwwroot\/www\/.*/    root \/opt\/wwwroot\/$2\/\;/g" -i /opt/etc/nginx/vhost/$2.conf
 }
 
