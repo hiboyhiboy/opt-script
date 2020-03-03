@@ -365,7 +365,8 @@ cat > "$config_file" <<-SSJSON
 "obfs": "$obfs_json",
 "obfs_param": "$obfs_param_json",
 "plugin": "$plugin_json",
-"plugin_opts": "$obfs_plugin_json"
+"plugin_opts": "$obfs_plugin_json",
+"reuse_port": true
 }
 SSJSON
 
@@ -524,8 +525,7 @@ for ss_1i in $(seq 1 $threads)
 do
 logger -t "【ss-redir】" "启动多线程均衡负载，启动 $ss_1i 线程"
 cmd_name="SS_""$ss_1i""_redir"
-[ "$ss_type" != "1" ] && eval "ss-redir --reuse-port -c /tmp/ss-redir_1.json $options1 $cmd_log" &
-[ "$ss_type" == "1" ] && eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
+eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
 usleep 300000
 done
 else
@@ -543,8 +543,7 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	do
 	logger -t "【ss-local】" "启动多线程均衡负载，启动 $ss_1i 线程"
 	cmd_name="SS_""$ss_1i""_local"
-	[ "$ss_type" != "1" ] && eval "ss-local --reuse-port -c /tmp/ss-local_1.json $options1 $cmd_log" &
-	[ "$ss_type" == "1" ] && eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
+	eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
 	usleep 300000
 	done
 	else
