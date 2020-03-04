@@ -114,16 +114,21 @@ if mountpoint -q "$dev_mount" ; then
 		/usr/bin/opt-umount.sh $dev_full   $dev_mount
 		for varloop0 in $(echo $(grep "$(losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}')" /proc/mounts | grep -v /media/o_p_t_img | awk -F' ' '{print $2}'))
 		do
+			umount "$varloop0"
 			umount -l "$varloop0"
 		done
-		mountpoint -q /media/o_p_t_img && { fuser -m -k /media/o_p_t_img 2>/dev/null ; umount /media/o_p_t_img ; }
+		mountpoint -q /media/o_p_t_img && umount /media/o_p_t_img
+		mountpoint -q /media/o_p_t_img && umount -l /media/o_p_t_img
+		mountpoint -q /media/o_p_t_img && { fuser -m -k /media/o_p_t_img 2>/dev/null ; umount -l /media/o_p_t_img ; }
 		mountpoint -q /media/o_p_t_img && umount -l /media/o_p_t_img
 		losetup -d `losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}'`
 	fi
 	for varloop0 in $(echo $(grep "$dev_full" /proc/mounts | grep -v $dev_mount | awk -F' ' '{print $2}'))
 	do
+		umount "$varloop0"
 		umount -l "$varloop0"
 	done
+	mountpoint -q "$dev_mount" && umount $dev_mount
 	mountpoint -q "$dev_mount" && umount -l $dev_mount
 	mountpoint -q "$dev_mount" && fuser -m -k $dev_mount 2>/dev/null
 	mountpoint -q "$dev_mount" && umount -l $dev_mount
@@ -244,6 +249,7 @@ upanPath=""
 [ -z "$upanPath" ] && [ "$ss_opt_x" = "1" ] && upanPath="`df -m | grep /dev/sd | grep -E "$(echo $(/usr/bin/find /dev/ -name 'sd*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
 if [ "$ss_opt_x" = "6" ] ; then
 	# 远程共享
+	modprobe -q ext4
 	if ! mountpoint -q "$opt_cifs_2_dir" || [ ! -d $opt_cifs_2_dir ] ; then
 		[ -s /etc/storage/cifs_script.sh ] && source /etc/storage/cifs_script.sh
 	fi
@@ -265,9 +271,11 @@ if [ ! -z "$upanPath" ] ; then
 	# 检测ext4磁盘
 	mkdir -p /tmp/AiDisk_opt
 	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
+	mountpoint -q /tmp/AiDisk_opt && umount -l /tmp/AiDisk_opt
 	mount -o bind "$upanPath" /tmp/AiDisk_opt
 	[ "$(cat  /proc/mounts | grep " /tmp/AiDisk_opt " | awk '{print $3}')" = "ext4" ] && ext4_check=1 || ext4_check=0
-	umount -l /tmp/AiDisk_opt
+	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
+	mountpoint -q /tmp/AiDisk_opt && umount -l /tmp/AiDisk_opt
 	rm -f /tmp/AiDisk_opt
 	if [ "$(losetup -h 2>&1 | wc -l)" -gt 2 ] && [ "$ext4_check" = "0" ] ; then
 		# 不是ext4磁盘时用镜像生成opt
@@ -786,10 +794,11 @@ if [ ! -f "$cifs_script" ] || [ ! -s "$cifs_script" ] ; then
 # SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
 # 说明：【192.168.123.66】为共享服务器的IP，【nas】为共享文件夹名称
 # 说明：username=、password=填账号密码
+modprobe -q ext4
 modprobe des_generic
 modprobe cifs CIFSMaxBufSize=64512
 mkdir -p /media/cifs
-umount /media/cifs
+umount /media/cifs ; umount -l /media/cifs
 mount -t cifs //192.168.123.66/nas /media/cifs -o username=user,password=pass,dynperm,nounix,noserverino,file_mode=0777,dir_mode=0777
 
 EEE

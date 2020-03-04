@@ -811,6 +811,9 @@ reload_yml "save"
 update_yml
 reload_yml "reload"
 reload_yml "set"
+Sh99_ss_tproxy.sh auser_check "Sh10_clash.sh"
+ss_tproxy_set "Sh10_clash.sh"
+Sh99_ss_tproxy.sh x_resolve_svraddr "Sh10_clash.sh"
 }
 
 reload_yml () {

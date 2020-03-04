@@ -388,6 +388,7 @@ logger -t "【mkfs.ext4】" "$3"
 {
 df | grep $3 |  awk -F' ' '{print $NF}' | while read line  
 do	
+	[ ! -z $line ] && umount $line 2>/dev/null
 	[ ! -z $line ] && umount $line -l 2>/dev/null
 done
 sleep 2
