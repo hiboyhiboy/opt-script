@@ -748,7 +748,7 @@ fi
 if [ ! -z "$ss_plugin_name" ] ; then
 	hash $ss_plugin_name 2>/dev/null || optssredir="4"
 	if [ "$optssredir" = "4" ] ; then
-		[ ! -s /opt/bin/$ss_plugin_name ] && wgetcurl_file "/opt/bin/$ss_plugin_name" "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
+		wgetcurl_file "/opt/bin/$ss_plugin_name" "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"
 		hash $ss_plugin_name 2>/dev/null || optssredir="44"
 	fi
 	if [ "$optssredir" = "44" ] ; then
