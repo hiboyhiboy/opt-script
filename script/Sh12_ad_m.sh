@@ -427,7 +427,7 @@ adbyby_whitehost=`nvram get adbyby_whitehost`
 [ ! -z $whitehost ] && sed -Ei "/$(echo $whitehost | tr , \|)/d" /tmp/adbyby_host.conf
 sh_ss_tproxy.sh adbyby_cflist_ipset
 sed -Ei "/\/opt\/app\/ss_tproxy\/dnsmasq.d\/r.gfwlist.conf/d" /etc/storage/dnsmasq/dnsmasq.conf
-[ -s /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf ] && [ -z "$(cat /etc/storage/dnsmasq/dnsmasq.conf | grep "/opt/app/ss_tproxy/dnsmasq.d")" ] && echo "conf-file=/opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
+[ -s /tmp/ss_tproxy/dnsmasq.d/r.gfwlist.conf ] && [ -z "$(cat /etc/storage/dnsmasq/dnsmasq.conf | grep "/tmp/ss_tproxy/dnsmasq.d")" ] && echo "conf-file=/opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 ipset flush adbybylist
 ipset add adbybylist 188.188.188.188
 restart_dhcpd

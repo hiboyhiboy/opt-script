@@ -246,6 +246,8 @@ while true; do
 		logger -t "【ss_tproxy】" "$mode 检测3:找不到 dnsmasq [$dnsmasq_string_arg] 转发规则, 重新添加"
 		ss_tproxy start_dnsserver_confset
 	fi
+	dnsmasq_file="`ls -p /tmp/ss_tproxy/dnsmasq.d | grep -v tmp | grep -v /`"
+[ ! -z "$dnsmasq_file" ] && echo "$dnsmasq_file" | while read conf_file; do [ "$(cat /tmp/ss_tproxy/dnsmasq.d/$conf_file | grep -c "server=\|ipset=")" == "0" ] &&  rm -f /tmp/ss_tproxy/dnsmasq.d/$conf_file ; done
 sleep 60
 done
 }
@@ -311,6 +313,7 @@ if [ "$ss_tproxy_update" == "7" ] ; then
 	nvram set ss_DNS_Redirect=0
 	rm -f /opt/app/ss_tproxy/conf/*
 	rm -f /opt/app/ss_tproxy/dnsmasq.d/*
+	rm -f /tmp/ss_tproxy/dnsmasq.d/*
 	rm -f /opt/app/ss_tproxy/rule/*
 	rm -f /opt/app/ss_tproxy/tmp/*
 	rm -f /etc/storage/app_27.sh
@@ -334,8 +337,8 @@ rm -f /opt/bin/ss_tproxy
 ln -sf /etc/storage/script/sh_ss_tproxy.sh /opt/bin/ss_tproxy
 
 Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
-if [[ "$Available_A" -lt 10 ]] ; then
-mount -o remount,size=60% tmpfs /tmp
+if [[ "$Available_A" -lt 15 ]] ; then
+mount -o remount,size=70% tmpfs /tmp
 Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
 fi
@@ -475,7 +478,7 @@ dnsmasq_cache_size='4096'               # DNS 缓存大小，大小为 0 表示�
 dnsmasq_cache_time='3600'               # DNS 缓存时间，单位是秒，最大 3600 秒
 dnsmasq_log_enable='false'              # 记录详细日志，除非进行调试，否则不建议启用
 dnsmasq_log_file='/tmp/syslog.log'      # 日志文件，如果不想保存日志可以改为 /dev/null
-dnsmasq_conf_dir="/opt/app/ss_tproxy/dnsmasq.d"                          # `--conf-dir` 选项的参数，可以填多个，空格隔开
+dnsmasq_conf_dir="/tmp/ss_tproxy/dnsmasq.d"                          # `--conf-dir` 选项的参数，可以填多个，空格隔开
 dnsmasq_conf_file="/opt/app/ss_tproxy/dnsmasq_conf_file.txt"           # `--conf-file` 选项的参数，可以填多个，空格隔开
 dnsmasq_conf_string="/opt/app/ss_tproxy/conf/dnsmasq_conf_string.conf" # 自定义配置的配置文件(文件里面每一行一个配置)
 
@@ -544,6 +547,7 @@ mkdir -p /opt/app/ss_tproxy/tmp
 mkdir -p /opt/app/ss_tproxy/conf
 mkdir -p /opt/app/ss_tproxy/rule
 mkdir -p /opt/app/ss_tproxy/dnsmasq.d
+mkdir -p /tmp/ss_tproxy/dnsmasq.d
 mkdir -p $dnsmasq_conf_dir
 touch $dnsmasq_conf_file
 touch $proxy_all_svraddr $proxy_svraddr4 $proxy_svraddr6 $chinadns_privaddr4 $chinadns_privaddr6 $dnsmasq_conf_string

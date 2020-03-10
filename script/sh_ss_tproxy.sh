@@ -22,6 +22,7 @@ mkdir -p /opt/app/ss_tproxy/tmp
 mkdir -p /opt/app/ss_tproxy/conf
 mkdir -p /opt/app/ss_tproxy/rule
 mkdir -p /opt/app/ss_tproxy/dnsmasq.d
+mkdir -p /tmp/ss_tproxy/dnsmasq.d
 mkdir -p $dnsmasq_conf_dir
 touch $dnsmasq_conf_file
 touch $proxy_all_svraddr $proxy_svraddr4 $proxy_svraddr6 $chinadns_privaddr4 $chinadns_privaddr6 $dnsmasq_conf_string
@@ -282,7 +283,7 @@ resolve_hostname6() {
 }
 
 resolve_svraddr() {
-	restart_dhcpd
+	update_dnsmasq_file
 	proxy_all_svrip=""
 	while read svraddr; do
 		[ -z "$svraddr" ] && continue
@@ -613,13 +614,15 @@ update_gfwlist_file() {
 		sed -e  's@$@==@g' -i $tmp_base64_gfwlist
 		cat $tmp_base64_gfwlist | base64 -d > $tmp_down_file
 		rm -f $tmp_base64_gfwlist 
-		touch $tmp_down_file
+		[ -z "$(cat $tmp_down_file | grep google )" ] && { rm -f $tmp_down_file ; logger -t "【update_gfwlist】" "错误！！！ base64 解码官方 gfwlist 无数据" ; }
+		if [ -s $tmp_down_file ] ; then
 		cat $tmp_down_file | sort -u |
 			sed '/^$\|@@/d'|
 			sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
 			sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d' |
 			sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
 			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##' | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sort -u >> $tmp_gfwlist
+		fi
 		else
 		logger -t "【update_gfwlist】" "错误！！！获取官方 gfwlist 下载失败"
 		fi
@@ -1286,7 +1289,16 @@ g,149.154.175.50
 	# adbyby host 规则
 	update_cflist_ipset /tmp/adbyby_host.conf /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 
-	restart_dhcpd
+	update_dnsmasq_file
+}
+
+update_dnsmasq_file() {
+
+mkdir -p /tmp/ss_tproxy/dnsmasq.d
+rm -f /tmp/ss/dnsmasq.d/*
+dnsmasq_file="`ls -p /opt/app/ss_tproxy/dnsmasq.d | grep -v tmp | grep -v /`"
+[ ! -z "$dnsmasq_file" ] && echo "$dnsmasq_file" | while read conf_file; do [ "$(cat /opt/app/ss_tproxy/dnsmasq.d/$conf_file | grep -c "server=\|ipset=")" != "0"  ] &&  ln -sf /opt/app/ss_tproxy/dnsmasq.d/$conf_file /tmp/ss_tproxy/dnsmasq.d/$conf_file ; done
+restart_dhcpd
 }
 
 update_check_file() {
@@ -1568,15 +1580,16 @@ fi
 is_true "$ipv6" && echo "server=$dns_remote6 #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=\/opt\/app\/ss_tproxy\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei "/conf-dir=\/tmp\/ss_tproxy\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 mkdir -p $dnsmasq_conf_dir
 echo "$(for conf_dir_arg in $dnsmasq_conf_dir; do [ -d $conf_dir_arg ] && echo "conf-dir=$conf_dir_arg #ss_tproxy"; done)" >> /etc/storage/dnsmasq/dnsmasq.conf
-echo "$(for conf_file_arg in $dnsmasq_conf_file; do [ -f $conf_file_arg ] && echo "conf-file=$conf_file_arg #ss_tproxy"; done)" >> /etc/storage/dnsmasq/dnsmasq.conf
+echo "$(for conf_file_arg in $dnsmasq_conf_file; do [ -s $conf_file_arg ] && echo "conf-file=$conf_file_arg #ss_tproxy"; done)" >> /etc/storage/dnsmasq/dnsmasq.conf
 while read dnsmasq_string_arg; do
 	if [ ! -z "$dnsmasq_string_arg" ]; then
 		echo "$dnsmasq_string_arg #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 	fi
 done < $dnsmasq_conf_string
-restart_dhcpd
+update_dnsmasq_file
 }
 
 start_dnsserver_sstp() {
@@ -1651,7 +1664,7 @@ sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=180
 sed -Ei "/conf-dir=\/opt\/app\/ss_tproxy\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 update_md5_check stop_dnsserver_restart_dhcpd /etc/storage/dnsmasq/dnsmasq.conf
 if is_md5_not ; then
-restart_dhcpd
+update_dnsmasq_file
 fi
 killall pdnsd dnsproxy
 killall -9 pdnsd dnsproxy

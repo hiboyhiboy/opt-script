@@ -254,7 +254,7 @@ sstp_set dns_direct="$DNS_china"
 sstp_set dns_bind_port='8053'
 ## dnsmasq
 sstp_set dnsmasq_bind_port='53'
-sstp_set dnsmasq_conf_dir="/opt/app/ss_tproxy/dnsmasq.d"
+sstp_set dnsmasq_conf_dir="/tmp/ss_tproxy/dnsmasq.d"
 sstp_set dnsmasq_conf_file="/opt/app/ss_tproxy/dnsmasq_conf_file.txt"
 sstp_set dnsmasq_conf_string="/opt/app/ss_tproxy/conf/dnsmasq_conf_string.conf"
 ## ipts
