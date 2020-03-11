@@ -31,17 +31,17 @@ fi
 
 # 多线程
 ss_threads=`nvram get ss_threads`
-[ -z $ss_threads ] && ss_threads=0 && nvram set ss_threads=0
+[ -z "$ss_threads" ] && ss_threads=0 && nvram set ss_threads=0
 if [ "$ss_threads" != 0 ] ; then
-threads=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
-[ -z $threads ] && threads=1
+threads="$(cat /proc/cpuinfo | grep 'processor' | wc -l)"
+[ -z "$threads" ] && threads=1
 if [ "$threads" = "1" ] ;then
 	logger -t "【SS】" "检测到单核CPU，多线程启动失败"
 	nvram set ss_threads=0
 	ss_threads=0
 fi
 if [ "$ss_threads" != "1" ] ;then
-	if [ "$ss_threads" -ge "threads" ] ; then
+	if [ "$ss_threads" -ge "$threads" ] ; then
 	nvram set ss_threads=1
 	else
 	threads="$ss_threads"
@@ -462,6 +462,21 @@ fi
 [ -z "$ssr_obfs" ] && ssr_obfs="plain"
 [ -z "$ssr_protocol" ] && ssr_protocol="origin"
 
+if [ "$ss_method" == "aes-128-cfb" ] || [ "$ss_method" == "aes-128-ctr" ] || [ "$ss_method" == "aes-128-gcm" ] || [ "$ss_method" == "aes-192-cfb" ] || [ "$ss_method" == "aes-192-ctr" ] || [ "$ss_method" == "aes-192-gcm" ] || [ "$ss_method" == "aes-256-cfb" ] || [ "$ss_method" == "aes-256-ctr" ] || [ "$ss_method" == "aes-256-gcm" ] || [ "$ss_method" == "bf-cfb" ] || [ "$ss_method" == "camellia-128-cfb" ] || [ "$ss_method" == "camellia-192-cfb" ] || [ "$ss_method" == "camellia-256-cfb" ] || [ "$ss_method" == "chacha20" ] || [ "$ss_method" == "chacha20-ietf" ] || [ "$ss_method" == "chacha20-ietf-poly1305" ] || [ "$ss_method" == "rc4-md5" ] || [ "$ss_method" == "salsa20" ] || [ "$ss_method" == "xchacha20-ietf-poly1305" ] ; then
+	# SS 协议
+if [ "$ssr_obfs" == "plain" ] && [ "$ssr_protocol" == "origin" ] ; then
+	[ "$ss_type" == "1" ] && nvram set ss_type=0
+	ss_type=0
+	ssr_type_obfs_custom=""
+	ssr_type_protocol_custom=""
+else
+	[ "$ss_type" == "0" ] && nvram set ss_type=1
+	ss_type=1
+fi
+else
+	[ "$ss_type" == "0" ] && nvram set ss_type=1
+	ss_type=1
+fi
 if [ "$ssr_obfs" != "plain" ] || [ "$ssr_protocol" != "origin" ] ; then
 	# SSR 协议
 	ss_type=1
@@ -894,7 +909,7 @@ echo "Debug: $DNS_Server"
 		logger -t "【ss-local】" "本地代理启动. 可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用."
 		logger -t "【ss-local】" "shadowsocks 进程守护启动"
 		ss_cron_job
-		#ss_get_status
+		ss_get_status "c1"
 		nvram set button_script_2_s="SS"
 		eval "$scriptfilepath keep &"
 		exit 0
@@ -925,7 +940,7 @@ fi
 	logger -t "【SS】" "shadowsocks 进程守护启动"
 	nvram set ss_internet="1"
 	ss_cron_job
-	#ss_get_status
+	ss_get_status "c1"
 if [ "$ss_dnsproxy_x" = "2" ] ; then
 	logger -t "【SS】" "使用 dnsmasq ，开启 ChinaDNS 防止域名污染"
 	if [ -f "/etc/storage/script/Sh19_chinadns.sh" ] || [ -s "/etc/storage/script/Sh19_chinadns.sh" ] ; then
@@ -1058,10 +1073,10 @@ B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
 	needed_restart=1
-	ss_get_status2
+	[ "$1" != "c1" ] && ss_get_status2
 else
 	needed_restart=0
-	ss_get_status2
+	[ "$1" != "c1" ] && ss_get_status2
 fi
 }
 

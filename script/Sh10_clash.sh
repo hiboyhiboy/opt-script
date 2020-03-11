@@ -485,7 +485,7 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	rm -f /opt/bin/jq
-	/tmp/script/_mountopt optwget
+	/tmp/script/_mountopt start
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	opkg update
 	opkg install jq
@@ -512,7 +512,7 @@ if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 yq，安装 opt 程序"
 	rm -f /opt/bin/yq
-	/tmp/script/_mountopt optwget
+	/tmp/script/_mountopt start
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	opkg update
 	opkg install yq
