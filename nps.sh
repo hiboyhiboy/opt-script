@@ -1,8 +1,6 @@
 #!/bin/bash
-NEW_VER_version="v0.26.4"
-# This file is accessible as https://install.direct/go.sh
-# Original source is located at github.com/nps/nps-core/release/install-release.sh
-# https://github.com/nps/nps-core/blob/master/release/install-release.sh
+NEW_VER_version="v0.26.5"
+# https://github.com/ehang-io/nps
 
 # If not specify, default meaning of return value:
 # 0: Success
@@ -178,7 +176,7 @@ downloadnps(){
     rm -rf /tmp/nps
     mkdir -p /tmp/nps
     colorEcho ${BLUE} "Downloading nps."
-    DOWNLOAD_LINK="https://github.com/cnlh/nps/releases/download/${NEW_VER}/${VDIS}"
+    DOWNLOAD_LINK="https://github.com/ehang-io/nps/releases/download/${NEW_VER}/${VDIS}"
     rm -f $ZIPFILE
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? != 0 ];then
@@ -277,10 +275,10 @@ getVersion(){
         fi
         VER="$(cat /tmp/nps_v.txt | grep version | awk -F ',' '{print $1}'  | awk -F ' ' '{print $NF}')"
         CUR_VER=v"$VER"
-        TAG_URL="https://github.com/cnlh/nps/releases/latest"
+        TAG_URL="https://github.com/ehang-io/nps/releases/latest"
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep releases/tag | awk -F 'tag/' '{print $NF}' | awk -F '"' '{print $1}'`
         if [[ $NEW_VER == "" ]];then
-            NEW_VER="$(wget --max-redirect=0 https://github.com/cnlh/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}')"
+            NEW_VER="$(wget --max-redirect=0 https://github.com/ehang-io/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}')"
         fi
         if [[ $NEW_VER == "" ]];then
             NEW_VER="$NEW_VER_version"

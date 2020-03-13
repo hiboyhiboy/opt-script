@@ -159,7 +159,7 @@ if [ -z "$nps_version" ] ; then
 	[ -z "$nps_tag" ] && nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep '/nps/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
 	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.26.4]" && nps_restart x
 	[ ! -z "$nps_tag" ] && logger -t "【nps】" "自动下载最新版本 $nps_tag"
-	[ -z "$nps_tag" ] && nps_tag="v0.26.4"
+	[ -z "$nps_tag" ] && nps_tag="v0.26.5"
 	nps_version=$nps_tag && nvram set app_57=$nps_tag
 	nps_restart o
 	logger -t "【nps】" "重启" && nps_restart
