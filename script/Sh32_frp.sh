@@ -3,7 +3,8 @@
 source /etc/storage/script/init.sh
 frp_enable=`nvram get frp_enable`
 [ -z $frp_enable ] && frp_enable=0 && nvram set frp_enable=0
-frp_version_2="0.31.2"
+frp_version_new="0.32.0"
+frp_version_2="$frp_version_new"
 frp_version_0="0.24.1"
 frp_version_1="0.16.1"
 frp_version_3="使用最新版"
@@ -168,14 +169,14 @@ frp_ver_wget=""
 [ "$frp_version" = "2" ] && frp_ver_wget="0.25.0" && frp_version_txt=$frp_version_2
 [ "$frp_version" = "0" ] && frp_ver_wget="0.24.1" && frp_version_txt=$frp_version_0
 [ "$frp_version" = "1" ] && frp_ver_wget="0.16.1" && frp_version_txt=$frp_version_1
-[ "$frp_version" = "3" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
-[ "$frp_version" = "4" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
-[ "$frp_version" = "5" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
-[ "$frp_version" = "6" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
-[ "$frp_version" = "7" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
-[ "$frp_version" = "8" ] && frp_ver_wget="0.25.0" && nvram set frp_version=9
-[ "$frp_version" = "9" ] && frp_ver_wget="0.25.0" && frp_version_txt=$frp_version_2
-[ "$frp_version" = "10" ] && frp_ver_wget="0.25.0"
+[ "$frp_version" = "3" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
+[ "$frp_version" = "4" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
+[ "$frp_version" = "5" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
+[ "$frp_version" = "6" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
+[ "$frp_version" = "7" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
+[ "$frp_version" = "8" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
+[ "$frp_version" = "9" ] && frp_ver_wget="" && frp_version_txt=$frp_version_new
+[ "$frp_version" = "10" ] && frp_ver_wget=""
 [ "$frpc_enable" = "1" ] && action_for="frpc"
 [ "$frps_enable" = "1" ] && action_for=$action_for" frps"
 del_tmp=0
