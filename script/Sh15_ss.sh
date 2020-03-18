@@ -970,7 +970,7 @@ nvram set ss_status="cleanss"
 nvram set kcptun_status="cleanss"
 fi
 mkdir -p /tmp/ss/dnsmasq.d
-rm -f /tmp/ss/dnsmasq.d/*
+rm -rf /tmp/ss/dnsmasq.d/*
 cd /tmp/ss/
 rm_tmp="`ls -p /tmp/ss | grep -v dnsmasq.d/ | grep -v link/`"
 [ ! -z "$rm_tmp" ] && rm -rf $rm_tmp
@@ -1179,7 +1179,7 @@ killall -9 sh_sskeey_k.sh
 ss_run_ss_local=`nvram get ss_run_ss_local`
 ss_mode_x=`nvram get ss_mode_x`
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-sleep 3
+sleep 15
 ss_enable=`nvram get ss_enable`
 while [ "$ss_enable" = "1" ];
 do

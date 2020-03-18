@@ -22,7 +22,7 @@ export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt
 export LD_LIBRARY_PATH=/lib:/opt/lib
 sed -Ei '/github|ipip.net|_vlmcs._tcp|txt-record=_jetbrains-license-server.lan|adbyby_host.conf|cflist.conf|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
-rm -f /tmp/ss/dnsmasq.d/*
+rm -rf /tmp/ss/dnsmasq.d/*
 killall crond
 restart_dhcpd
 [ -f /tmp/menu_title_re ] && /etc/storage/www_sh/menu_title.sh re &
