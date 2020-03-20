@@ -196,7 +196,8 @@ kill_ps "$scriptname"
 
 clash_start () {
 check_webui_yes
-SVC_PATH="/opt/bin/clash"
+SVC_PATH="$(which clash)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/clash"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【clash】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
@@ -487,8 +488,8 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	rm -f /opt/bin/jq
 	/tmp/script/_mountopt optwget
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	opkg update
-	opkg install jq
+	#opkg update
+	#opkg install jq
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
 	return 1
@@ -514,8 +515,8 @@ if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	rm -f /opt/bin/yq
 	/tmp/script/_mountopt start
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	opkg update
-	opkg install yq
+	#opkg update
+	#opkg install yq
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 yq，需要手动安装 opt 后输入[opkg update; opkg install yq]安装"
 	return 1

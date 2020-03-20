@@ -125,7 +125,8 @@ kill_ps "$scriptname"
 goflyway_start () {
 
 check_webui_yes
-SVC_PATH="/opt/bin/goflyway"
+SVC_PATH="$(which goflyway)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/goflyway"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【goflyway】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start

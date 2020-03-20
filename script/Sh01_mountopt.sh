@@ -297,6 +297,10 @@ if [ ! -z "$upanPath" ] ; then
 else
 	logger -t "【opt】" "/tmp/AiDisk_00/opt文件夹模式挂载/opt"
 	[ "$size_tmpfs" = "0" ] && mount -o remount,size=50% tmpfs /tmp
+	mountpoint -q /opt && umount /opt
+	mountpoint -q /opt && umount -l /opt
+	mountpoint -q /tmp/AiDisk_00 && umount /tmp/AiDisk_00
+	mountpoint -q /tmp/AiDisk_00 && umount -l /tmp/AiDisk_00
 	rm -rf /tmp/AiDisk_00
 	mkdir -p /tmp/AiDisk_00/opt
 	mount -o bind /tmp/AiDisk_00/opt /opt
@@ -458,18 +462,22 @@ if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
 	[ -d "$upanPath/opt" ] && mv -f "$upanPath/opt" "$upanPath/opt_old_"$(date "+%Y-%m-%d_%H-%M-%S")
 	[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
 	block="$(check_network 5 $upanPath)"
+	[ "$block" == "" ] && block="0"
 	[ "$block" != "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：$block M"
 	[ "$block" = "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：获取失败"
 	[ "$block" != "0" ] && [ ! -z "$block" ] && [ "$block" -lt "$opt_cifs_block" ] && opt_cifs_block=$block
 	logger -t "【opt】" "创建$upanPath/opt/o_p_t.img镜像(ext4)文件，$opt_cifs_block M"
-	dd if=/dev/zero of=$upanPath/opt/o_p_t.img bs=1M seek=$opt_cifs_block count=1
+	rm -f $upanPath/opt/o_p_t.img
+	dd if=/dev/zero of=$upanPath/opt/o_p_t.img bs=1M seek=$opt_cifs_block count=0
+	sleep 5
+	[ ! -f $upanPath/opt/o_p_t.img ] && { rm -f $upanPath/opt/o_p_t.img; dd if=/dev/zero of=$upanPath/opt/o_p_t.img bs=1M seek=$opt_cifs_block count=1 ; sleep 5 ; }
 	losetup `losetup -f` $upanPath/opt/o_p_t.img
 	mkfs.ext4 -i 16384 `losetup -a | grep o_p_t.img | awk -F ':' '{print $1}'`
 fi
 [ -z "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" ] && losetup `losetup -f` $upanPath/opt/o_p_t.img
 [ -z "$(df -m | grep "/dev/loop" | grep "/media/o_p_t_img")" ] && { modprobe -q ext4 ; mkdir -p /media/o_p_t_img ; mount -t ext4 -o noatime "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" "/media/o_p_t_img" ; }
-mountpoint -q /media/o_p_t_img && mount -o bind "/media/o_p_t_img" /opt
-
+! mountpoint -q /opt && mountpoint -q /media/o_p_t_img && mount -o bind "/media/o_p_t_img" /opt
+! mountpoint -q /opt && { logger -t "【opt】" "错误！！！未能挂载镜像(ext4)文件到 /opt" ; rm -f $upanPath/opt/o_p_t.img; }
 }
 
 re_size () {
@@ -488,7 +496,7 @@ re_size () {
 }
 
 AiDisk00 () {
-re_size &
+re_size
 if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 # 安装ca-certificates
 mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载

@@ -88,11 +88,10 @@ online=$(echo $orayslstatus | grep "ONLINE" | wc -l);
 phddns_keep () {
 logger -t "【花生壳内网版】" "守护进程启动"
 sleep 25
-SVC_PATH="/usr/bin/oraysl"
-SVC_PATH2="/usr/bin/oraynewph"
-if [ ! -s "$SVC_PATH" ] ; then
-SVC_PATH="/opt/bin/oraysl"
-fi
+SVC_PATH="$(which oraysl)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/oraysl"
+SVC_PATH2="$(which oraynewph)"
+[ ! -s "$SVC_PATH2" ] && SVC_PATH2="/opt/bin/oraynewph"
 
 USER_DATA="/tmp/oraysl.status"
 
@@ -160,14 +159,10 @@ kill_ps "$scriptname"
 
 phddns_start () {
 check_webui_yes
-SVC_PATH="/usr/bin/oraysl"
-SVC_PATH2="/usr/bin/oraynewph"
-if [ ! -s "$SVC_PATH" ] ; then
-SVC_PATH="/opt/bin/oraysl"
-fi
-if [ ! -s "$SVC_PATH2" ] ; then
-SVC_PATH2="/opt/bin/oraynewph"
-fi
+SVC_PATH="$(which oraysl)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/oraysl"
+SVC_PATH2="$(which oraynewph)"
+[ ! -s "$SVC_PATH2" ] && SVC_PATH2="/opt/bin/oraynewph"
 chmod 777 "$SVC_PATH"
 chmod 777 "$SVC_PATH2"
 [[ "$(oraysl -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/oraysl /opt/bin/oraynewph

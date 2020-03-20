@@ -122,7 +122,8 @@ kill_ps "$scriptname"
 guestkit_start () {
 
 check_webui_yes
-SVC_PATH="/opt/bin/guestkit"
+SVC_PATH="$(which guestkit)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/guestkit"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【guestkit】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start

@@ -543,16 +543,29 @@ ss_tproxy_status="" # 记录参数状态变化，不需要改动该选项
 VVR
 	fi
 source /etc/storage/app_27.sh
-mkdir -p /opt/app/ss_tproxy/tmp
-mkdir -p /opt/app/ss_tproxy/conf
-mkdir -p /opt/app/ss_tproxy/rule
-mkdir -p /opt/app/ss_tproxy/dnsmasq.d
-mkdir -p /tmp/ss_tproxy/dnsmasq.d
-mkdir -p $dnsmasq_conf_dir
-touch $dnsmasq_conf_file
-touch $proxy_all_svraddr $proxy_svraddr4 $proxy_svraddr6 $chinadns_privaddr4 $chinadns_privaddr6 $dnsmasq_conf_string
-touch $file_gfwlist_txt $file_gfwlist_ext $file_ignlist_ext $file_lanlist_ext $file_wanlist_ext
-touch $file_chnroute_txt $file_chnroute6_txt $file_chnroute_set $file_chnroute6_set
+echo "$dnsmasq_conf_dir
+/opt/app/ss_tproxy/tmp
+/opt/app/ss_tproxy/conf
+/opt/app/ss_tproxy/rule
+/opt/app/ss_tproxy/dnsmasq.d
+/tmp/ss_tproxy/dnsmasq.d" | while read dir_name; do [ ! -z "$dir_name" ] && [ ! -d "$dir_name" ] && mkdir -p $dir_name ; done 
+echo "$dnsmasq_conf_file
+$proxy_all_svraddr
+$proxy_svraddr4
+$proxy_svraddr6
+$chinadns_privaddr4
+$chinadns_privaddr6
+$dnsmasq_conf_string
+$file_gfwlist_txt
+$file_gfwlist_ext
+$file_ignlist_ext
+$file_lanlist_ext
+$file_wanlist_ext
+$file_chnroute_txt
+$file_chnroute6_txt
+$file_chnroute_set
+$file_chnroute6_set" | while read file_name; do [ ! -z "$file_name" ] && [ ! -f "$file_name" ] && touch $file_name ; done
+
 # 链接配置文件
 rm -f /opt/app/ss_tproxy/wanlist.ext
 rm -f /opt/app/ss_tproxy/lanlist.ext

@@ -207,7 +207,8 @@ kill_ps "$scriptname"
 
 chinadns_ng_start () {
 check_webui_yes
-SVC_PATH="/opt/bin/chinadns_ng"
+SVC_PATH="$(which chinadns_ng)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/chinadns_ng"
 [[ "$("$SVC_PATH" -h | wc -l)" -lt 2 ]] && rm -rf "$SVC_PATH"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns_ng】" "找不到 $SVC_PATH，安装 opt 程序"

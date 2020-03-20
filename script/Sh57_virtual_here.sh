@@ -124,7 +124,8 @@ kill_ps "$scriptname"
 virtualhere_start () {
 
 check_webui_yes
-SVC_PATH="/opt/bin/virtualhere"
+SVC_PATH="$(which virtualhere)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/virtualhere"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【virtualhere】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start

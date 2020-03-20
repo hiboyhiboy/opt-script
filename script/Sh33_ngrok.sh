@@ -138,10 +138,8 @@ kill_ps "$scriptname"
 
 ngrok_start () {
 check_webui_yes
-SVC_PATH="/usr/bin/ngrokc"
-if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/bin/ngrokc"
-fi
+SVC_PATH="$(which ngrokc)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/ngrokc"
 chmod 777 "$SVC_PATH"
 [[ "$(ngrokc 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ngrokc
 if [ ! -s "$SVC_PATH" ] ; then

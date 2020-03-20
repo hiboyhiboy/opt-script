@@ -124,7 +124,8 @@ kill_ps "$scriptname"
 
 vpnproxy_start () {
 check_webui_yes
-SVC_PATH="/opt/bin/nvpproxy"
+SVC_PATH="$(which nvpproxy)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/nvpproxy"
 chmod 777 "$SVC_PATH"
 [[ "$(nvpproxy -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/nvpproxy
 if [ ! -s "$SVC_PATH" ] ; then

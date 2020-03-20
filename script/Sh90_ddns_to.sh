@@ -129,7 +129,8 @@ kill_ps "$scriptname"
 ddnsto_start () {
 
 check_webui_yes
-SVC_PATH=/opt/bin/ddnsto
+SVC_PATH="$(which ddnsto)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH=/opt/bin/ddnsto
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ddnsto】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start

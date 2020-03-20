@@ -874,8 +874,8 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	rm -f /opt/bin/jq
 	/tmp/script/_mountopt optwget
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	opkg update
-	opkg install jq
+	#opkg update
+	#opkg install jq
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
 	return 1

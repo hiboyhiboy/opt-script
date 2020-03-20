@@ -123,16 +123,8 @@ kill_ps "$scriptname"
 
 mproxy_start () {
 check_webui_yes
-SVC_PATH="/usr/sbin/mproxy"
-if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/etc/storage/bin/mproxy"
-fi
-if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/usr/sbin/mproxy"
-fi
-if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/bin/mproxy"
-fi
+SVC_PATH="$(which mproxy)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/mproxy"
 chmod 777 "$SVC_PATH"
 [[ "$(mproxy -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/mproxy
 if [ ! -s "$SVC_PATH" ] ; then

@@ -143,7 +143,8 @@ kill_ps "$scriptname"
 ipt2socks_start () {
 
 check_webui_yes
-SVC_PATH="/opt/bin/ipt2socks"
+SVC_PATH="$(which ipt2socks)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/ipt2socks"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ipt2socks】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start

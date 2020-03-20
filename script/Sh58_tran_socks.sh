@@ -166,7 +166,8 @@ tran_c_socks="kumasocks"
 else
 tran_c_socks="transocks"
 fi
-SVC_PATH="/opt/bin/$tran_c_socks"
+SVC_PATH="$(which $tran_c_socks)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/$tran_c_socks"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【$tran_c_socks】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt start
