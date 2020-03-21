@@ -293,9 +293,9 @@ else
 logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
 fi
 restart_dhcpd
-logger -t "【v2ray】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
-logger -t "【v2ray】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
-logger -t "【v2ray】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
+logger -t "【clash】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
+logger -t "【clash】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
+logger -t "【clash】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
 # 透明代理
 fi
 # 恢复web节点选择
