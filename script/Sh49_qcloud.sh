@@ -187,10 +187,12 @@ fi
 urlencode() {
 	# urlencode <string>
 	out=""
-	while read -n1 c
+	read S
+	for i in $(seq 0 $(($(echo -n "$S" |awk -F "" '{print NF}') - 1)) )
 	do
-		case $c in
-			[a-zA-Z0-9._-]) out="$out$c" ;;
+		c="${S:$i:1}"
+		case "$c" in
+			[-_.~a-zA-Z0-9]) out="$out$c" ;;
 			*) out="$out`printf '%%%02X' "'$c"`" ;;
 		esac
 	done

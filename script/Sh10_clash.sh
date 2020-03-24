@@ -851,10 +851,11 @@ fi
 if [ "$1" == "save" ] ; then
 logger -t "【clash】" "保存web节点选择"
 curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).name' > /tmp/Selector_name.txt
-[ -s /tmp/Selector_name.txt ] && cp -f /tmp/Selector_name.txt /etc/storage/clash/Selector_name.txt
+[ -s /tmp/Selector_name.txt ] && { rm -f /etc/storage/clash/Selector_name.txt ;  cat /tmp/Selector_name.txt | while read now_txt; do enc "$now_txt" >> /etc/storage/clash/Selector_name.txt ; done ; }
 curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).now' > /tmp/Selector_now.txt
 [ -s /tmp/Selector_now.txt ] && cp -f /tmp/Selector_now.txt /etc/storage/clash/Selector_now.txt
 rm -f /tmp/Selector_name.txt /tmp/Selector_now.txt
+
 fi
 if [ "$1" == "set" ] ; then
 logger -t "【clash】" "恢复web节点选择"
@@ -865,6 +866,25 @@ logger -t "【clash】" "api热重载配置"
 curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config/config.yaml"}' 'http://127.0.0.1:'"$api_port"'/configs?force=true'
 fi
 
+}
+
+urlencode() {
+	# urlencode <string>
+	out=""
+	read S
+	for i in $(seq 0 $(($(echo -n "$S" |awk -F "" '{print NF}') - 1)) )
+	do
+		c="${S:$i:1}"
+		case "$c" in
+			[-_.~a-zA-Z0-9]) out="$out$c" ;;
+			*) out="$out`printf '%%%02X' "'$c"`" ;;
+		esac
+	done
+	echo $out
+}
+
+enc() {
+	echo -n "$1" | urlencode
 }
 
 case $ACTION in
