@@ -72,8 +72,6 @@ kcptun_enable=`nvram get kcptun_enable`
 [ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=$kcptun_enable
 [ "$kcptun_enable" = "0" ] && kcptun_server=""
 
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
-
 ss_server=`nvram get ss_server`
 ss_server_port=`nvram get ss_server_port`
 ss_key=`nvram get ss_key`
@@ -1068,7 +1066,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$server_addresses$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
