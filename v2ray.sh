@@ -130,6 +130,7 @@ if [ -f "/etc/v2ray/config.back0" ]; then
 	echo '##########################################################################'
 	rm -f /root/v2ray_config.pb
 	/usr/bin/v2ray/v2ctl config < /root/config.json > /root/v2ray_config.pb
+	[ ! -z "$(cat /root/v2ray_config.pb | grep "v2ctl config config.json c1.json c2.json")" ] && /usr/bin/v2ray/v2ctl config /root/config.json > /root/v2ray_config.pb
 	[ -f /root/v2ray_config.pb ] && echo "已经生成 pb 配置文件 /root/v2ray_config.pb"
 	echo '##########################################################################'
 	exit
@@ -583,6 +584,7 @@ echo "打开 /root/config.json 复制里面的内容到路由的 v2ray 配置文
 echo '##########################################################################'
 rm -f /root/v2ray_config.pb
 /usr/bin/v2ray/v2ctl config < /root/config.json > /root/v2ray_config.pb
+[ ! -z "$(cat /root/v2ray_config.pb | grep "v2ctl config config.json c1.json c2.json")" ] && /usr/bin/v2ray/v2ctl config /root/config.json > /root/v2ray_config.pb
 [ -f /root/v2ray_config.pb ] && echo "已经生成 pb 配置文件 /root/v2ray_config.pb"
 echo '##########################################################################'
 

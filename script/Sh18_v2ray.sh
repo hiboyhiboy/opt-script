@@ -517,8 +517,8 @@ else
 		rm -f /opt/bin/v2ray_config.pb
 		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置 /opt/bin/v2ray_config.pb"
 		cd "$(dirname "$v2ray_path")"
-		eval "v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb $cmd_log2" 
-		[ ! -z "$(cat /opt/bin/v2ray_config.pb | grep "v2ctl config config.json c1.json c2.json")" ] && eval "v2ctl config /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb $cmd_log2" 
+		v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb
+		[ ! -z "$(cat /opt/bin/v2ray_config.pb | grep "v2ctl config config.json c1.json c2.json")" ] && v2ctl config /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb
 		[ ! -s /opt/bin/v2ray_config.pb ] && logger -t "【v2ray】" "错误！ /opt/bin/v2ray_config.pb 内容为空, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 		[ -s /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
 	fi
