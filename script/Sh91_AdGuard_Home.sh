@@ -160,7 +160,7 @@ else
 		if [ ! -z "$tag" ] ; then
 			logger -t "【AdGuardHome】" "自动下载最新版本 $tag"
 			wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "https://github.com/AdguardTeam/AdGuardHome/releases/download/$tag/AdGuardHome_linux_mipsle.tar.gz"
-			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt
+			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt ; cd /opt/AdGuardHome
 			rm -f /opt/AdGuardHome/AdGuardHome.tar.gz /opt/AdGuardHome/LICENSE.txt /opt/AdGuardHome/README.md
 		fi
 		if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then

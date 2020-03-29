@@ -197,6 +197,7 @@ SVC_PATH=$softether_path
 [ -f /opt/softether/vpn_server.config ] && [ ! -f /etc/storage/vpn_server.config ] && cp -f /opt/softether/vpn_server.config /etc/storage/vpn_server.config
 [ ! -f /etc/storage/vpn_server.config ] && touch /etc/storage/vpn_server.config
 ln -sf /etc/storage/vpn_server.config /opt/softether/vpn_server.config
+[ ! -s /opt/softether/vpn_server.config ] && cp -f /etc/storage/vpn_server.config /opt/softether/vpn_server.config
 $SVC_PATH start 2>&1 &
 i=120
 until [ ! -z "$tap" ]

@@ -183,6 +183,7 @@ fi
 if [ -s "$SVC_PATH" ] ; then
 	nvram set kcptun_path="$SVC_PATH"
 	[ "$SVC_PATH" != "/opt/bin/kcptun" ] && ln -sf "$SVC_PATH" /opt/bin/kcptun
+	[ "$SVC_PATH" != "/opt/bin/kcptun" ] && [ ! -s /opt/bin/kcptun ] && cp -f "$SVC_PATH" /opt/bin/kcptun
 fi
 chmod 777 "$SVC_PATH"
 kcptun_path="$SVC_PATH"

@@ -163,6 +163,7 @@ speedup_v=$(cat /etc/storage/script/Sh27_speedup.sh | grep 'speedup_vv=' | grep 
 nvram set speedup_v="$speedup_v"
 logger -t "【speedup】" "运行 $speedup_path"
 ln -sf /etc/storage/script/Sh27_speedup.sh /opt/app/speedup/speedup
+[ ! -s /opt/app/speedup/speedup ] && cp -f /etc/storage/script/Sh27_speedup.sh /opt/app/speedup/speedup
 chmod 777 /opt/app/speedup/speedup
 eval "$speedup_path" start_path &
 sleep 2

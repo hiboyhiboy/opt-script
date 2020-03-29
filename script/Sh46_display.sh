@@ -189,11 +189,11 @@ fi
 cp -f /etc/storage/display_lcd4linux_script.sh /tmp/lcd4linux.conf
 SVC_PATH=/opt/bin/lcd4linux
 chmod 777 "$SVC_PATH"
-[[ "$(lcd4linux -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/lcd4linux /opt/opti.txt
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget
 fi
+[[ "$(lcd4linux -h 2>&1 | wc -l)" -lt 2 ]] && /etc/storage/script/Sh01_mountopt.sh libmd5_check
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【相框显示】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【相框显示】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && display_restart x

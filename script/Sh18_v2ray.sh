@@ -402,14 +402,14 @@ if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	rm -f /etc/ssl/certs
 	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
 	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
-		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/
+		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/ ; cd /opt
 	fi
 	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
 		logger -t "【opt】" "下载证书"
 		wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
 		logger -t "【opt】" "安装证书"
-		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
+		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/ ; cd /opt
 		rm -f /opt/app/ipk/certs.tgz
 	fi
 	chmod 644 /etc/ssl/certs -R
@@ -688,6 +688,8 @@ rm -f /opt/app/ss_tproxy/wanlist.ext
 rm -f /opt/app/ss_tproxy/lanlist.ext
 ln -sf /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+[ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+[ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【v2ray】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 

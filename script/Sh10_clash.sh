@@ -231,7 +231,7 @@ fi
 # 下载clash_webs
 if [ ! -d "/opt/app/clash/clash_webs" ] ; then
 	wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs.tgz" "$hiboyfile2/clash_webs.tgz" N
-	tar -xzvf /opt/app/clash/clash_webs.tgz -C /opt/app/clash
+	tar -xzvf /opt/app/clash/clash_webs.tgz -C /opt/app/clash ; cd /opt
 	rm -f /opt/app/clash/clash_webs.tgz
 	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
 fi
@@ -409,6 +409,8 @@ rm -f /opt/app/ss_tproxy/wanlist.ext
 rm -f /opt/app/ss_tproxy/lanlist.ext
 ln -sf /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+[ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+[ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【clash】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 

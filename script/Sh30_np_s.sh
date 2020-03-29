@@ -227,6 +227,7 @@ if [ ! -z "$action_nps" ] ; then
 		fi
 		rm -rf /opt/bin/nps/conf
 		ln -sf /etc/storage/nps/conf /opt/bin/nps/conf
+		[ ! -s /opt/bin/nps/conf ] && cp -f /etc/storage/nps/conf /opt/bin/nps/conf
 	fi
 	[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 	if [ ! -s "$SVC_PATH" ] ; then
@@ -235,8 +236,6 @@ if [ ! -z "$action_nps" ] ; then
 	else
 		logger -t "【nps】" "找到 $SVC_PATH"
 		chmod 755 $SVC_PATH
-		#ln -sf $SVC_PATH /opt/bin/$action_nps
-		#cp -f $SVC_PATH /opt/bin/$action_nps
 		chmod 755 /opt/bin/nps/$action_nps
 	fi
 	logger -t "【nps】" "运行 $action_nps"
@@ -256,6 +255,7 @@ if [ ! -z "$action_nps" ] ; then
 	# 生成配置文件/etc/storage/nps
 		rm -rf /opt/bin/nps/conf
 		ln -sf /etc/storage/nps/conf /opt/bin/nps/conf
+		[ ! -s /opt/bin/nps/conf ] && cp -f /etc/storage/nps/conf /opt/bin/nps/conf
 		if [ ! -f /etc/storage/nps/conf/nps.conf ] ; then
 			rm -rf /etc/storage/nps /opt/bin/nps/conf
 			logger -t "【nps】" "找不到 /etc/storage/nps/conf/nps.conf , 尝试重新启动" && nps_restart x

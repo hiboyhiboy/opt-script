@@ -157,10 +157,13 @@ fi
 # 生成配置文件
 rm -f /opt/tmall/app_13.sh
 ln -sf /etc/storage/app_13.sh /opt/tmall/app_13.sh
+[ ! -f /opt/tmall/app_13.sh ] && cp -f /etc/storage/app_13.sh /opt/tmall/app_13.sh
 rm -f /opt/tmall/app_14.sh
 ln -sf /etc/storage/app_14.sh /opt/tmall/app_14.sh
+[ ! -f /opt/tmall/app_14.sh ] && cp -f /etc/storage/app_14.sh /opt/tmall/app_14.sh
 rm -f /opt/tmall/app_29.sh
 ln -sf /etc/storage/app_29.sh /opt/tmall/app_29.sh
+[ ! -f /opt/tmall/app_29.sh ] && cp -f /etc/storage/app_29.sh /opt/tmall/app_29.sh
 
 rm -f /opt/tmall/Caddyfile
 [ "$demoui_enable" == "0" ] || [ "$demoui_enable" == "1" ] && { cat /etc/storage/app_13.sh >> /opt/tmall/Caddyfile ; }

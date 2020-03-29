@@ -274,6 +274,7 @@ user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 index=1
 ln -sf `which ss-redir` /opt/app/fakeincn/fakeincn
+[ ! -s /opt/app/fakeincn/fakeincn ] && cp -f `which ss-redir` /opt/app/fakeincn/fakeincn
 eval server="\$"server${index}
 logger -t "【fakeincn】" "ChinaServer：$server。"
 eval $(ps -w | grep '/opt/app/fakeincn/fakeincn' | grep -v grep | awk '{print "kill "$1";";}')

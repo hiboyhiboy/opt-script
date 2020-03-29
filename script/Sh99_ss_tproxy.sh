@@ -331,10 +331,13 @@ wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tpr
 done
 rm -f /opt/app/ss_tproxy/ss_tproxy.conf
 ln -sf /etc/storage/app_27.sh /opt/app/ss_tproxy/ss_tproxy.conf
+[ ! -s /opt/app/ss_tproxy/ss_tproxy.conf ] && cp -f /etc/storage/app_27.sh /opt/app/ss_tproxy/ss_tproxy.conf
 rm -f /opt/app/ss_tproxy/ss_tproxy
 ln -sf /etc/storage/script/sh_ss_tproxy.sh /opt/app/ss_tproxy/ss_tproxy
+[ ! -s /opt/app/ss_tproxy/ss_tproxy ] && cp -f /etc/storage/script/sh_ss_tproxy.sh /opt/app/ss_tproxy/ss_tproxy
 rm -f /opt/bin/ss_tproxy
 ln -sf /etc/storage/script/sh_ss_tproxy.sh /opt/bin/ss_tproxy
+[ ! -s /opt/bin/ss_tproxy ] && cp -f /etc/storage/script/sh_ss_tproxy.sh /opt/bin/ss_tproxy
 
 Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 size_tmpfs=`nvram get size_tmpfs`
@@ -572,7 +575,8 @@ rm -f /opt/app/ss_tproxy/wanlist.ext
 rm -f /opt/app/ss_tproxy/lanlist.ext
 ln -sf /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
-
+[ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+[ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 }
 
 initconfig

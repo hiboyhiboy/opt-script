@@ -227,7 +227,7 @@ fi
 if [ "$chinadns_d" = "1" ] ; then
 usage=$usage" -d "
 fi
-[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
+[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt ; cd /opt
 update_app
 chmod 755 "$SVC_PATH"
 chinadns_v=`chinadns -V | grep ChinaDNS`

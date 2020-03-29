@@ -303,6 +303,8 @@ rm -f /opt/app/ss_tproxy/wanlist.ext
 rm -f /opt/app/ss_tproxy/lanlist.ext
 ln -sf /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
+[ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
+[ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【SS】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 
@@ -771,8 +773,6 @@ fi
 
 umount  /usr/sbin/ss-redir
 umount  /usr/sbin/ss-local
-umount -l /usr/sbin/ss-redir
-umount -l /usr/sbin/ss-local
 if [ "$ss_type" != "1" ] ; then
 	# ss
 	if [ ! -s "/usr/sbin/ss-redir" ] ; then
@@ -1012,8 +1012,6 @@ rm -f /tmp/sh_sskeey_k.sh
 nvram set gfwlist3="SS stop."
 umount  /usr/sbin/ss-redir
 umount  /usr/sbin/ss-local
-umount -l /usr/sbin/ss-redir
-umount -l /usr/sbin/ss-local
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_ss"
 kill_ps "_ss.sh"

@@ -81,12 +81,12 @@ else
 fi
 
 # /etc/storage/script/sh01_mountopt.sh
- opttmpfile="$hiboyfile/opttmpg8.tgz"
- opttmpfile2="$hiboyfile2/opttmpg8.tgz"
- optupanfile="$hiboyfile/optupang8.tgz"
- optupanfile3="$hiboyfile2/optupang8.tgz"
- optupanfile2="$hiboyfile/optg8.txt"
- optupanfile4="$hiboyfile2/optg8.txt"
+ opttmpfile="$hiboyfile/opttmpg9.tgz"
+ opttmpfile2="$hiboyfile2/opttmpg9.tgz"
+ optupanfile="$hiboyfile/optupang9.tgz"
+ optupanfile3="$hiboyfile2/optupang9.tgz"
+ optupanfile2="$hiboyfile/optg9.txt"
+ optupanfile4="$hiboyfile2/optg9.txt"
 
 # ss_opt_x 
 # 1 >>自动选择:SD→U盘→内存
@@ -101,7 +101,7 @@ fi
 mount_check_lock () {
 
 # 检查挂载异常设备
-dev_full=$(cat  /proc/mounts | awk '{print $1}' | grep -v -E "$(echo $(/usr/bin/find /dev/ -name '*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/dev/")
+dev_full=$(cat  /proc/mounts | awk '{print $1}' | grep -v "^//" | grep -v -E "$(echo $(/usr/bin/find /dev/ -name '*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/dev/")
 [ ! -z "$dev_full" ] && dev_mount=$(cat  /proc/mounts | grep $dev_full | grep /media/ | awk '{print $2}')
 if [ ! -z "$dev_mount" ] && [ ! -z "$dev_full" ] ; then
 if mountpoint -q "$dev_mount" ; then
@@ -143,7 +143,8 @@ mountpoint -q /opt && mountp=0 || mountp=1 # 0已挂载 1没挂载
 if [ "$mountp" = "0" ] ; then
 	# 找不到opt所在设备
 	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs| awk '{print $1}'`"
-	[ -z "$optPath" ] && optPath=$(grep ' /opt ' /proc/mounts | awk '{print $1}' | grep -E "$(echo $(/usr/bin/find /dev/ -name '*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')")
+	[ -z "$optPath" ] && optPath=$(grep ' /opt ' /proc/mounts | grep -v "^//" | awk '{print $1}' | grep -E "$(echo $(/usr/bin/find /dev/ -name '*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')")
+	[ -z "$optPath" ] && optPath="$(grep ' /opt ' /proc/mounts | grep " cifs "| awk '{print $1}')"
 	if [ -z "$optPath" ] ; then
 		logger -t "【opt】" "opt 选项[$ss_opt_x] 挂载异常，重新挂载：umount -l /opt"
 		/usr/bin/opt-umount.sh $(grep ' /opt ' /proc/mounts | awk '{print $1}')    $(df -m | grep "$(df -m | grep '% /opt' | awk 'NR==1' | awk '{print $1}')" | grep "/media"| awk '{print $NF}' | awk 'NR==1' )
@@ -168,6 +169,43 @@ fi
 AiDisk00
 }
 
+ln_check () {
+
+ln_mkflie="off"
+[ ! -s "/opt/ln.txt" ] && return
+[ "$(md5sum /opt/etc/passwd | awk '{print $1;}')" != "$(md5sum /etc/passwd | awk '{print $1;}')" ] && ln_mkflie="on"
+[ -d /opt/opt_backup ] && [ "$(md5sum /opt/opt_backup/etc/passwd | awk '{print $1;}')" != "$(md5sum /etc/passwd | awk '{print $1;}')" ] && ln_mkflie="on"
+[ "$ln_mkflie" == "off" ] && return
+# 创建软链 /usr/bin/find /opt/opt_backup/ -type l -exec ls -l {} \; | awk -F 'opt_backup' '{print $2}' > /opt/ln.txt ; sed -Ei "s/ -> /丨/g" /opt/ln.txt ;
+logger -t "【opt】" "ln 链接文件失效，开始恢复 ln 链接文件为原始文件"
+echo '#!/bin/sh' > /opt/ln_mkflie.sh
+chmod 777 /opt/ln_mkflie.sh
+cat /opt/ln.txt | awk -F '丨' '{print "cd \"\$\(dirname \"/opt"$1"\"\)\"\; [ -f /opt"$1" ] && \{ rm -f /opt"$1" \; \}"}' >> /opt/ln_mkflie.sh
+[ -d /opt/opt_backup ] && cat /opt/ln.txt | awk -F '丨' '{print "cd \"\$\(dirname \"/opt/opt_backup"$1"\"\)\"\; [ -f /opt/opt_backup"$1" ] && \{ rm -f /opt/opt_backup"$1" \; \}"}' >> /opt/ln_mkflie.sh
+/opt/ln_mkflie.sh # 删除旧文件
+echo '#!/bin/sh' > /opt/ln_mkflie.sh
+chmod 777 /opt/ln_mkflie.sh
+cat /opt/ln.txt | awk -F '丨' '{print "cd \"\$\(dirname \"/opt"$1"\"\)\"\; [ ! -f /opt"$1" ] && [ -f "$2" ] && \{ cp -f "$2" /opt"$1" \; chmod 777 /opt"$1" \; \}"}' >> /opt/ln_mkflie.sh
+[ -d /opt/opt_backup ] && cat /opt/ln.txt | awk -F '丨' '{print "cd \"\$\(dirname \"/opt/opt_backup"$1"\"\)\"\; [ ! -f /opt/opt_backup"$1" ] && [ -f "$2" ] && \{ cp -f "$2" /opt/opt_backup"$1" \; chmod 777 /opt/opt_backup"$1" \; \}"}' >> /opt/ln_mkflie.sh
+/opt/ln_mkflie.sh ; /opt/ln_mkflie.sh ; /opt/ln_mkflie.sh ; /opt/ln_mkflie.sh # 一些文件是多级链接需要多次处理
+logger -t "【opt】" "完成恢复 ln 链接文件"
+rm -f /opt/ln_mkflie.sh
+rm -f /opt/bin/grep  /opt/opt_backup/bin/grep
+rm -f /opt/bin/sed  /opt/opt_backup/bin/sed
+rm -f /opt/bin/ash  /opt/opt_backup/bin/ash
+rm -f /opt/bin/sh  /opt/opt_backup/bin/sh
+rm -f /opt/bin/netstat  /opt/opt_backup/bin/netstat
+rm -f /opt/sbin/ifconfig  /opt/opt_backup/sbin/ifconfig
+rm -f /opt/sbin/route  /opt/opt_backup/bin/sbin/route
+if [ ! -z "$(/usr/bin/find /opt/lib/ld.so.1 -type f)" ] ; then
+	cp -f /etc/shadow /opt/etc/shadow
+	cp -f /etc/passwd /opt/etc/passwd
+	cp -f /etc/group /opt/etc/group
+	cp -f /etc/shells /opt/etc/shells
+	cp -f /etc/TZ /opt/etc/TZ
+fi
+}
+
 prepare_authorized_keys () {
 
 # prepare /etc/localtime
@@ -190,30 +228,37 @@ fi
 [ -f /home/admin/.ssh/authorized_keys ] && chmod 600 /home/admin/.ssh/authorized_keys
 # Fix for multiuser environment
 chmod 777 /opt/tmp
-ln -sf /etc/TZ /opt/etc/TZ
-ln -sf /etc/group /opt/etc/group
-ln -sf /etc/passwd /opt/etc/passwd
+[ ! -s /opt/etc/TZ ] && ln -sf /etc/TZ /opt/etc/TZ
+[ ! -s /opt/etc/group ] && ln -sf /etc/group /opt/etc/group
+[ ! -s /opt/etc/passwd ] && ln -sf /etc/passwd /opt/etc/passwd
+[ ! -s /opt/etc/TZ ] && cp -f /etc/TZ /opt/etc/TZ
+[ ! -s /opt/etc/group ] && cp -f /etc/group /opt/etc/group
+[ ! -s /opt/etc/passwd ] && cp -f /etc/passwd /opt/etc/passwd
 # now try create symlinks - it is a std installation
 if [ -f /etc/shells ]
 then
-	ln -sf /etc/shells /opt/etc/shells
+	[ ! -s /opt/etc/shells ] && ln -sf /etc/shells /opt/etc/shells
+	[ ! -s /opt/etc/shells ] && cp -f /etc/shells /opt/etc/shells
 else
 	cp /opt/etc/shells.1 /opt/etc/shells
 fi
 
 if [ -f /etc/shadow ]
 then
-	ln -sf /etc/shadow /opt/etc/shadow
+	[ ! -s /opt/etc/shadow ] && ln -sf /etc/shadow /opt/etc/shadow
+	[ ! -s /opt/etc/shadow ] && cp -f /etc/shadow /opt/etc/shadow
 fi
 
 if [ -f /etc/gshadow ]
 then
-	ln -sf /etc/gshadow /opt/etc/gshadow
+	[ ! -s /opt/etc/gshadow ] && ln -sf /etc/gshadow /opt/etc/gshadow
+	[ ! -s /opt/etc/gshadow ] && cp -f /etc/gshadow /opt/etc/gshadow
 fi
 
 if [ -f /etc/localtime ]
 then
-	ln -sf /etc/localtime /opt/etc/localtime
+	[ ! -s /opt/etc/localtime ] && ln -sf /etc/localtime /opt/etc/localtime
+	[ ! -s /opt/etc/localtime ] && cp -f /etc/localtime /opt/etc/localtime
 fi	
 ldconfig > /dev/null 2>&1
 ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache > /dev/null 2>&1
@@ -223,7 +268,7 @@ ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache > /dev/null 2>&1
 #mkswap /opt/.swap
 # 挂载 /opt/.swap
 # check swap file exist
-if [ -f /opt/.swap ] ; then
+if [ -f /opt/.swap ] && [ -f /proc/swaps ] ; then
 	swap_part=`cat /proc/swaps | grep 'partition' 2>/dev/null`
 	swap_file=`cat /proc/swaps | grep 'file' 2>/dev/null`
 	if [ -z "$swap_part" ] && [ -z "$swap_file" ] ; then
@@ -268,14 +313,13 @@ if [ "$ss_opt_x" = "5" ] ; then
 	fi
 fi
 if [ ! -z "$upanPath" ] ; then
+	if [ ! -z "$(modprobe -l | grep ext4)" ] ; then
 	# 检测ext4磁盘
 	mkdir -p /tmp/AiDisk_opt
 	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
-	mountpoint -q /tmp/AiDisk_opt && umount -l /tmp/AiDisk_opt
 	mount -o bind "$upanPath" /tmp/AiDisk_opt
 	[ "$(cat  /proc/mounts | grep " /tmp/AiDisk_opt " | awk '{print $3}')" = "ext4" ] && ext4_check=1 || ext4_check=0
 	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
-	mountpoint -q /tmp/AiDisk_opt && umount -l /tmp/AiDisk_opt
 	rm -f /tmp/AiDisk_opt
 	if [ "$(losetup -h 2>&1 | wc -l)" -gt 2 ] && [ "$ext4_check" = "0" ] ; then
 		# 不是ext4磁盘时用镜像生成opt
@@ -283,6 +327,12 @@ if [ ! -z "$upanPath" ] ; then
 	else
 		[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
 		logger -t "【opt】" "$upanPath/opt文件夹模式挂载/opt"
+		mount -o bind "$upanPath/opt" /opt
+	fi
+	else
+	# 无 ext4模块，不创建镜像。
+		[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
+		logger -t "【opt】" "无 ext4模块，不创建镜像。直接使用 $upanPath/opt文件夹模式挂载/opt"
 		mount -o bind "$upanPath/opt" /opt
 	fi
 	rm -f /tmp/AiDisk_00
@@ -298,9 +348,7 @@ else
 	logger -t "【opt】" "/tmp/AiDisk_00/opt文件夹模式挂载/opt"
 	[ "$size_tmpfs" = "0" ] && mount -o remount,size=50% tmpfs /tmp
 	mountpoint -q /opt && umount /opt
-	mountpoint -q /opt && umount -l /opt
 	mountpoint -q /tmp/AiDisk_00 && umount /tmp/AiDisk_00
-	mountpoint -q /tmp/AiDisk_00 && umount -l /tmp/AiDisk_00
 	rm -rf /tmp/AiDisk_00
 	mkdir -p /tmp/AiDisk_00/opt
 	mount -o bind /tmp/AiDisk_00/opt /opt
@@ -506,14 +554,14 @@ if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	rm -f /etc/ssl/certs
 	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
 	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
-		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/
+		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/ ; cd /opt
 	fi
 	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
 		logger -t "【opt】" "下载证书"
 		wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
 		logger -t "【opt】" "安装证书"
-		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/
+		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/ ; cd /opt
 		rm -f /opt/app/ipk/certs.tgz
 	fi
 	chmod 644 /etc/ssl/certs -R
@@ -564,6 +612,20 @@ if [ ! -z "$upanPath" ] ; then
 else
 	mkdir -p /tmp/AiDisk_00/opt
 fi
+if [ ! -z "$(/usr/bin/find /opt/lib/ld.so.1 -type f)" ] ; then
+	cp -f /etc/shadow /opt/etc/shadow
+	cp -f /etc/passwd /opt/etc/passwd
+	cp -f /etc/group /opt/etc/group
+	cp -f /etc/shells /opt/etc/shells
+	cp -f /etc/TZ /opt/etc/TZ
+	rm -f /opt/bin/grep  /opt/opt_backup/bin/grep
+	rm -f /opt/bin/sed  /opt/opt_backup/bin/sed
+	rm -f /opt/bin/ash  /opt/opt_backup/bin/ash
+	rm -f /opt/bin/sh  /opt/opt_backup/bin/sh
+	rm -f /opt/bin/netstat  /opt/opt_backup/bin/netstat
+	rm -f /opt/sbin/ifconfig  /opt/opt_backup/sbin/ifconfig
+	rm -f /opt/sbin/route  /opt/opt_backup/bin/sbin/route
+fi
 # flush buffers
 sync
 [ ! -s /tmp/script/_opt_script_check ] && /etc/storage/script/sh_opt_script_check.sh &
@@ -602,11 +664,13 @@ if [ ! -f /opt/opt.tgz ]  ; then
 	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $opttmpfile" ; wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
 	optPath="`grep ' /opt ' /proc/mounts | grep /dev`"
 	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile"; }
+	optPath="`grep ' /opt ' /proc/mounts | grep " cifs "`"
+	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile"; }
 	logger -t "【opt】" "/opt/opt.tgz 下载完成，开始解压"
 else
 	logger -t "【opt】" "/opt/opt.tgz 已经存在，开始解压"
 fi
-tar -xzvf /opt/opt.tgz -C /opt
+tar -xzvf /opt/opt.tgz -C /opt ; cd /opt
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 [ ! -z "$optPath" ] && rm -f /opt/opt.tgz
 # flush buffers
@@ -615,10 +679,9 @@ sync
 }
 
 opt_wget () {
-
 #opt检查更新
 upopt
-if [ "$(cat /tmp/opti.txt)"x != "$(cat /opt/opti.txt)"x ] && [ "$upopt_enable" = "1" ] && [ -f /tmp/opti.txt ] ; then
+if [ -s /tmp/opti.txt ] && [ "$(cat /tmp/opti.txt)"x != "$(cat /opt/opti.txt)"x ] && [ "$upopt_enable" = "1" ] && [ -f /tmp/opti.txt ] ; then
 	logger -t "【opt】" "opt 需要更新, 自动启动更新"
 	rm -rf /opt/opti.txt /opt/opt_backup/opti.txt
 	rm -rf /opt/lnmp.txt
@@ -650,7 +713,7 @@ if [ ! -f "/opt/opti.txt" ] ; then
 	if [ -z "$optPath" ] && [ -s "/opt/opt.tgz" ] ; then
 		logger -t "【opt】" "备份文件到 /opt/opt_backup"
 		mkdir -p /opt/opt_backup
-		tar -xzvf /opt/opt.tgz -C /opt/opt_backup
+		tar -xzvf /opt/opt.tgz -C /opt/opt_backup ; cd /opt
 		opt_Available
 		if [ -s "/opt/opt_backup/opti.txt" ] ; then
 			logger -t "【opt】" "/opt/opt_backup 解压完成"
@@ -660,6 +723,7 @@ if [ ! -f "/opt/opti.txt" ] ; then
 			logger -t "【opt】" "/opt/opt_backup 解压失败"
 		fi
 	fi
+	ln_check
 fi
 }
 
@@ -691,10 +755,11 @@ if [ ! -f "/opt/opt_backup/opti.txt" ] ; then
 	logger -t "【libmd5_恢复】" "开始解压文件到 /opt/opt_backup"
 	[ ! -f "/opt/opt.tgz" ] && logger -t "【libmd5_恢复】" "未找到 /opt/opt.tgz 跳过文件恢复" && return 0
 	mkdir -p /opt/opt_backup
-	tar -xzvf /opt/opt.tgz -C /opt/opt_backup
+	tar -xzvf /opt/opt.tgz -C /opt/opt_backup ; cd /opt
 	if [ -s "/opt/opti.txt" ] ; then
 		logger -t "【libmd5_恢复】" "/opt/opt_backup 文件解压完成"
 	fi
+	ln_check
 fi
 logger -t "【libmd5_恢复】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/

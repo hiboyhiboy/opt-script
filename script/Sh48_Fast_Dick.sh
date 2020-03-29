@@ -161,12 +161,12 @@ else
 
 	SVC_PATH=/opt/bin/python
 	chmod 777 "$SVC_PATH"
-	[[ "$(python -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/python /opt/opti.txt
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【迅雷快鸟】" "找不到 $SVC_PATH，安装 opt 程序"
 		/tmp/script/_mountopt optwget
 		initopt
 	fi
+	[[ "$(python -h 2>&1 | wc -l)" -lt 2 ]] && /etc/storage/script/Sh01_mountopt.sh libmd5_check
 	if [ -s "$SVC_PATH" ] ; then
 		logger -t "【迅雷快鸟】" "找到 $SVC_PATH"
 	else

@@ -166,11 +166,11 @@ fi
 if [ "$shellinabox_enable" = "1" ] ; then
 SVC_PATH="/opt/sbin/shellinaboxd"
 chmod 777 "$SVC_PATH"
-[[ "$(shellinaboxd -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/shellinaboxd /opt/opti.txt
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "$shell_log" "找不到 $SVC_PATH，安装 opt 程序"
 	/tmp/script/_mountopt optwget
 fi
+[[ "$(shellinaboxd -h 2>&1 | wc -l)" -lt 2 ]] && /etc/storage/script/Sh01_mountopt.sh libmd5_check
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "$shell_log" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "$shell_log" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && shellinabox_restart x

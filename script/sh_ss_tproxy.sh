@@ -664,7 +664,7 @@ update_gfwlist_file() {
 	if [ ! -s $tmp_gfwlist ] ; then
 		logger -t "【update_gfwlist】" "加入 固件内置list规则 列表...."
 		rm -f /etc/storage/basedomain.txt
-		tar -xzvf /etc_ro/basedomain.tgz -C /tmp
+		tar -xzvf /etc_ro/basedomain.tgz -C /tmp ; cd /opt
 		ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
 		[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $tmp_gfwlist
 	fi
@@ -717,7 +717,7 @@ update_gfwlist_file() {
 	if [ ! -s $tmp_gfwlist ] ; then
 		logger -t "【update_gfwlist】" "加入 固件内置list规则 列表...."
 		rm -f /etc/storage/basedomain.txt
-		tar -xzvf /etc_ro/basedomain.tgz -C /tmp
+		tar -xzvf /etc_ro/basedomain.tgz -C /tmp ; cd /opt
 		ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
 		[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $tmp_gfwlist
 	fi
@@ -828,7 +828,7 @@ update_gfwlist_ipset() {
 	if [ ! -s $file_gfwlist_txt ] ; then
 		logger -t "【update_gfwlist】" "错误！！！$file_gfwlist_txt 文件为空，使用 固件内置 /etc/storage/basedomain.txt 规则...."
 		rm -f /etc/storage/basedomain.txt
-		tar -xzvf /etc_ro/basedomain.tgz -C /tmp
+		tar -xzvf /etc_ro/basedomain.tgz -C /tmp ; cd /opt
 		ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
 		[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $file_gfwlist_txt
 		gfwlist_txt_append_domain_names >> $file_gfwlist_txt
@@ -1048,7 +1048,7 @@ update_chnroute_file() {
 	rm -f $tmp_down_file
 	if [ ! -s $tmp_chnroute ] ; then
 		 rm -f /etc/storage/china_ip_list.txt
-		 tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp
+		 tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp ; cd /opt
 		 ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
 		[ -s /etc/storage/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！下载文件为空，使用 固件内置 /etc/storage/china_ip_list.txt 规则...." && cat /etc/storage/china_ip_list.txt > $tmp_chnroute
 	fi
@@ -1073,7 +1073,7 @@ update_chnroute_ipset() {
 	mkdir -p /opt/app/ss_tproxy/rule
 	if [ ! -s $file_chnroute_txt ] ; then
 		rm -f /etc/storage/china_ip_list.txt
-		tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp
+		tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp ; cd /opt
 		ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
 		[ -s /etc/storage/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！ $file_chnroute_txt 文件为空，使用 固件内置 /etc/storage/china_ip_list.txt 规则...." && cat /etc/storage/china_ip_list.txt > $file_chnroute_txt
 	fi

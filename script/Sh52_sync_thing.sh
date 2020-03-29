@@ -52,7 +52,7 @@ if [ "$1" = "x" ] ; then
 			rm -rf $syncthing_upanPath/syncthing/Downloads $syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing.old
 			mkdir -p "$upanPath/syncthing/Downloads"
 			cd $syncthing_upanPath
-			tar -xzvf ./syncthing/syncthing_backup.tgz -C ./
+			tar -xzvf ./syncthing/syncthing_backup.tgz -C ./ ; cd $syncthing_upanPath/syncthing
 		fi
 	fi
 	if [ "$syncthing_renum" -gt "3" ] ; then
