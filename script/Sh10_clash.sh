@@ -857,15 +857,17 @@ curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies'
 curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).now' > /tmp/Selector_now.txt
 [ -s /tmp/Selector_now.txt ] && cp -f /tmp/Selector_now.txt /etc/storage/clash/Selector_now.txt
 rm -f /tmp/Selector_name.txt /tmp/Selector_now.txt
-
+logger -t "【clash】" "保存web节点选择，完成！"
 fi
 if [ "$1" == "set" ] ; then
 logger -t "【clash】" "恢复web节点选择"
 [ -s /etc/storage/clash/Selector_name.txt ] && [ -s /etc/storage/clash/Selector_now.txt ] && eval "$(awk 'NR==FNR{a[NR]=$0}NR>FNR{print "curl -X PUT -w \"\%\{http_code\}\" -H \"Authorization: Bearer '$secret'\" -H \"Content-Type: application\/json\" -d \047\{\"name\": \""$0"\"\}\047  \047http://127.0.0.1:'"$api_port"'/proxies/"a[FNR]"\047"}' /etc/storage/clash/Selector_name.txt /etc/storage/clash/Selector_now.txt)"
+logger -t "【clash】" "恢复web节点选择，完成！"
 fi
 if [ "$1" == "reload" ] ; then
 logger -t "【clash】" "api热重载配置"
 curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config/config.yaml"}' 'http://127.0.0.1:'"$api_port"'/configs?force=true'
+logger -t "【clash】" "api热重载配置，完成！"
 fi
 
 }
