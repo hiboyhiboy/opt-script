@@ -307,8 +307,7 @@ exit 0
 
 update_chnlist () {
 nvram set app_111=4 && Sh99_ss_tproxy.sh
-cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/chinadns_ng/chnlist.txt
-sed -e 's@^cn$@com.cn@g' -i  /opt/app/chinadns_ng/chnlist.txt
+cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sed -e 's@^cn$@com.cn@g' | sort -u | grep -v "^$" >> /opt/app/chinadns_ng/chnlist.txt
 
 }
 

@@ -915,6 +915,7 @@ update_chnlist_file() {
 	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 	sed -e "s@server=/@@g" -i  $tmp_down_file
 	sed -e 's@/.*@@g' -i  $tmp_down_file
+	printf "com.cn\nedu.cn\nnet.cn\norg.cn\ngov.cn\n" >> $tmp_down_file
 	# 添加自定义白名单
 	cat $file_wanlist_ext | grep -E "^@b" | cut -c4- | while read domain_addr; do echo "$domain_addr" >> $tmp_down_file; done 
 	#删除忽略的域名
