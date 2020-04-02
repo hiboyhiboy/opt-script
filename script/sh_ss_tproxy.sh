@@ -977,8 +977,8 @@ update_chnlist_ipset() {
 		[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="$dns_direct"
-		is_true "$ipv4" && cat /opt/app/ss_tproxy/rule/chnlist.txt | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$DNS_china"'\n", $1)}' > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
-		is_true "$ipv6" && cat /opt/app/ss_tproxy/rule/chnlist.txt | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$dns_direct6"'\n", $1)}' > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
+		is_true "$ipv4" && cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$DNS_china"'\n", $1)}' > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
+		is_true "$ipv6" && cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$dns_direct6"'\n", $1)}' > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		logger -t "【update_chnlist】" "配置更新，完成加载 chnlist 规则...."
 		else
 		logger -t "【update_chnlist】" "更新错误！！！ /opt/app/ss_tproxy/rule/chnlist.txt 规则为空...."
@@ -1006,12 +1006,17 @@ update_chnroute() {
 	[ "$(type -t wgetcurl_checkmd5)" != "" ] && { update_chnroute_file ; update_chnroute_ipset ; return ; } || { update_chnroute_sstp ; return ; }
 }
 
+update_chnroute6() {
+	[ "$(type -t wgetcurl_checkmd5)" != "" ] && { update_chnroute_file "ipv6" ; update_chnroute_ipset "ipv6" ; return ; } || { update_chnroute_sstp "ipv6" ; return ; }
+}
+
 update_chnroute_file() {
-	logger -t "【update_chnroute】" "开始下载更新 chnroute 文件...."
 	mkdir -p /opt/app/ss_tproxy/rule
 	tmp_chnroute="/opt/app/ss_tproxy/rule/tmp_chnroute.txt"
 	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnroute_tmp.txt"
 	rm -f $tmp_chnroute $tmp_down_file
+	if [ "$1" != "ipv6" ]; then
+	logger -t "【update_chnroute】" "开始下载更新 chnroute 文件...."
 	local url='https://cdn.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
 	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 	if [ -s $tmp_down_file ] ; then
@@ -1059,8 +1064,10 @@ update_chnroute_file() {
 	rm -f /etc/storage/china_ip_list.txt
 	ln -sf $file_chnroute_txt /etc/storage/china_ip_list.txt
 	logger -t "【update_chnroute】" "完成下载 chnroute 文件"
-	if is_true "$ipv6"; then
-		wget --user-agent "$user_agent" -O- 'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | awk -F\| '/CN\|ipv6/ { printf("%s/%d\n", $4, $5)) }' > $tmp_down_file
+	fi
+	if is_true "$ipv6" || [ "$1" == "ipv6" ]; then
+		logger -t "【update_chnroute】" "开始下载更新 chnroute6 文件...."
+		wget --user-agent "$user_agent" -O- 'https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | grep CN | grep ipv6 | awk -F'|' '{printf("%s/%d\n", $4, $5)}' > $tmp_down_file
 		# 添加自定义白名单
 		cat $file_wanlist_ext | grep -E "^~b" | cut -c4- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > $file_chnroute6_txt
@@ -1077,8 +1084,10 @@ update_chnroute_ipset() {
 		ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
 		[ -s /etc/storage/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！ $file_chnroute_txt 文件为空，使用 固件内置 /etc/storage/china_ip_list.txt 规则...." && cat /etc/storage/china_ip_list.txt > $file_chnroute_txt
 	fi
-	logger -t "【update_chnroute】" "开始加载 chnroute 规则...."
 	chnroute_list="chnroute规则`ipset list chnroute -t | awk -F: '/Number/{print $2}'` 行"
+	chnroute6_list="chnroute6规则`ipset list chnroute6 -t | awk -F: '/Number/{print $2}'` 行"
+	if [ "$1" != "ipv6" ]; then
+	logger -t "【update_chnroute】" "开始加载 chnroute 规则...."
 	if is_true "$ipv4"; then
 	echo "$chnroute_list" > /opt/app/ss_tproxy/tmp/chnroute_list_Number
 	update_md5_check update_chnroute_txt $file_chnroute_txt /opt/app/ss_tproxy/tmp/chnroute_list_Number
@@ -1102,8 +1111,9 @@ update_chnroute_ipset() {
 	else
 	nvram set chnroute_list="$chnroute_list"
 	fi
-	chnroute6_list="chnroute6规则`ipset list chnroute6 -t | awk -F: '/Number/{print $2}'` 行"
-	if is_true "$ipv6"; then
+	fi
+	if is_true "$ipv6" || [ "$1" == "ipv6" ]; then
+	logger -t "【update_chnroute】" "开始加载 chnroute6 规则...."
 	echo "$chnroute6_list" > /opt/app/ss_tproxy/tmp/chnroute6_list_Number
 	update_md5_check update_chnroute6_txt $file_chnroute6_txt /opt/app/ss_tproxy/tmp/chnroute6_list_Number
 	if is_md5_not ; then
@@ -1131,7 +1141,7 @@ update_chnroute_ipset() {
 
 update_chnroute_sstp() {
 	command_is_exists 'curl' || log_error "command not found: curl"
-	local url='http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
+	local url='https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
 	local data; data=$(curl -4sSkL "$url") || log_error "download failed, exit-code: $?"
 	{
 		echo "create chnroute hash:net family inet"
@@ -2566,12 +2576,15 @@ for options in $arguments; do
 		update-chnlist|update_chnlist)   update_chnlist;;
 		update-gfwlist|update_gfwlist)   update_gfwlist;;
 		update-chnroute|update_chnroute) update_chnroute;;
+		update-chnroute6|update_chnroute6) update_chnroute6;;
 		update_chnlist_file)     update_chnlist_file;;
 		update_gfwlist_file)     update_gfwlist_file;;
 		update_chnroute_file)    update_chnroute_file;;
+		update_chnroute_file6)    update_chnroute_file "ipv6";;
 		update_chnlist_ipset)    update_chnlist_ipset;;
 		update_gfwlist_ipset)    update_gfwlist_ipset;;
 		update_chnroute_ipset)   update_chnroute_ipset;;
+		update_chnroute_ipset6)   update_chnroute_ipset "ipv6";;
 		update_wanlanlist_ipset) update_wanlanlist_ipset;;
 		adbyby_cflist_ipset) update_cflist_ipset /tmp/adbyby_host.conf /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf ;;
 		resolve_svraddr)         resolve_svraddr;;

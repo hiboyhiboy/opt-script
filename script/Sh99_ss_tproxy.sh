@@ -284,6 +284,11 @@ if [ "$ss_tproxy_update" == "2" ] ; then
 	sh_ss_tproxy.sh update_chnroute
 	sh_ss_tproxy.sh update_wanlanlist_ipset
 fi
+if [ "$ss_tproxy_update" == "26" ] ; then
+	logger -t "【ss_tproxy】" "更新 chnroute6 [白名单IP]规则" 
+	sh_ss_tproxy.sh update_chnroute6
+	sh_ss_tproxy.sh update_wanlanlist_ipset6
+fi
 if [ "$ss_tproxy_update" == "3" ] ; then
 	logger -t "【ss_tproxy】" "更新 gfwlist [黑名单域名]规则" 
 	sh_ss_tproxy.sh update_gfwlist

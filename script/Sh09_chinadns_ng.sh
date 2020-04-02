@@ -264,10 +264,8 @@ nvram set chinadns_ng_v="$chinadns_ng_v"
 
 [ ! -f /opt/app/chinadns_ng/gfwlist.txt ] && update_gfwlist
 [ ! -f /opt/app/chinadns_ng/chnlist.txt ] && update_chnlist
-[ ! -f /opt/app/ss_tproxy/rule/chnroute.txt ] && update_chnroute
 chnroute_Number=$(ipset list chnroute -t | awk -F: '/Number/{print $2}' | sed -e s/\ //g)
 [ "$chnroute_Number" == "0" ] || [ "$chnroute_Number" == "" ] && update_chnroute
-[ -f /opt/app/ss_tproxy/rule/chnroute6.txt ] && update_chnroute6
 chnroute6_Number=$(ipset list chnroute6 -t | awk -F: '/Number/{print $2}' | sed -e s/\ //g)
 [ "$chnroute6_Number" == "0" ] || [ "$chnroute6_Number" == "" ] && update_chnroute6
 
@@ -310,6 +308,7 @@ exit 0
 update_chnlist () {
 nvram set app_111=4 && Sh99_ss_tproxy.sh
 cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/chinadns_ng/chnlist.txt
+sed -e 's@^cn$@com.cn@g' -i  /opt/app/chinadns_ng/chnlist.txt
 
 }
 
@@ -329,10 +328,10 @@ cat /etc/storage/china_ip_list.txt | grep -v '^#' | sort -u | grep -v "^$" | gre
 }
 
 update_chnroute6 () {
-[ ! -s /opt/app/ss_tproxy/rule/chnroute6.txt ] && return
+nvram set app_111=26 && Sh99_ss_tproxy.sh
 ipset -! -N chnroute6 hash:net family inet6
 ipset -! create chnroute6 hash:net family inet6
-cat /etc/storage/china_ip_list.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A chnroute6 &/g" | ipset -! restore
+/opt/app/ss_tproxy/rule/chnroute6.txt | grep -v '^#' | sort -u | grep -v "^$" | sed -e "s/^/-A chnroute6 &/g" | ipset -! restore
 
 }
 
