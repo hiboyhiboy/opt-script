@@ -27,7 +27,7 @@ url_Owncloud="https://download.owncloud.org/community/owncloud-10.0.10.zip"
 url_Nextcloud="https://download.nextcloud.com/server/releases/nextcloud-13.0.6.zip"
 
 # (5) h5ai（优秀的文件目录）
-url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.29.0.zip"
+url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.29.2.zip"
 
 # (6) Lychee（一个很好看，易于使用的Web相册）
 url_Lychee="https://github.com/electerious/Lychee/archive/master.zip"
@@ -39,7 +39,7 @@ url_Kodexplorer="http://static.kodcloud.com/update/download/kodexplorer4.40.zip"
 url_Typecho="http://typecho.org/downloads/1.1-17.10.30-release.tar.gz"
 
 # (9) Z-Blog (体积小，速度快的PHP博客程序)
-url_Zblog="https://update.zblogcn.com/zip/Z-BlogPHP_1_5_2_1935_Zero.zip"
+url_Zblog="https://update.zblogcn.com/zip/Z-BlogPHP_1_6_0_2090_Valyria.zip"
 
 # (10) DzzOffice (开源办公平台)
 url_DzzOffice="https://codeload.github.com/zyx0814/dzzoffice/zip/master"
@@ -499,6 +499,8 @@ sleep 70
 # 设置数据库密码
 mysqladmin -u root password 123456
 echo -e "\033[41;37m 数据库用户：root, 初始密码：123456 \033[0m"
+mysqladmin -u admin password 123456
+echo -e "\033[41;37m 数据库用户：admin, 初始密码：123456 \033[0m"
 onmp restart
 }
 
@@ -1101,8 +1103,10 @@ set_passwd()
 {
     /opt/etc/init.d/S70mysqld start
     sleep 3
-    echo -e "\033[41;37m 初始密码：123456 \033[0m"
+    echo -e "\033[41;37m root 初始密码：123456 \033[0m"
     mysqladmin -u root -p password
+    echo -e "\033[41;37m admin 初始密码：123456 \033[0m"
+    mysqladmin -u admin -p password
     onmp restart
 }
 
@@ -1639,7 +1643,7 @@ fi
     echo "$name安装完成"
     echo "浏览器地址栏输入：$localhost:$port 即可访问"
     echo "首次打开会要配置数据库信息"
-    echo "地址：127.0.0.1 用户、密码你自己设置的或者默认是root 123456"
+    echo "数据库地址默认 localhost 用户、密码默认是root 123456 或者 admin 123456 或者 你自己设置的"
     echo "下面的可以不配置，然后下一步创建个用户就可以用了"
 }
 
@@ -1673,7 +1677,7 @@ fi
     echo "$name安装完成"
     echo "浏览器地址栏输入：$localhost:$port 即可访问"
     echo "首次打开会要配置用户和数据库信息"
-    echo "地址默认 localhost 用户、密码你自己设置的或者默认是root 123456"
+    echo "数据库地址默认 localhost 用户、密码默认是root 123456 或者 admin 123456 或者 你自己设置的"
     echo "安装好之后可以点击左上角三条杠进入market安装丰富的插件，比如在线预览图片、视频等"
     echo "需要先在 web 界面配置完成后，才能使用 onmp open 的第 10 个选项开启 Redis"
 }
@@ -1708,7 +1712,7 @@ fi
     echo "$name安装完成"
     echo "浏览器地址栏输入：$localhost:$port 即可访问"
     echo "首次打开会要配置用户和数据库信息"
-    echo "地址默认 localhost 用户、密码你自己设置的或者默认是root 123456"
+    echo "数据库地址默认 localhost 用户、密码默认是root 123456 或者 admin 123456 或者 你自己设置的"
     echo "需要先在 web 界面配置完成后，才能使用 onmp open 的第 10 个选项开启 Redis"
 }
 
@@ -2101,7 +2105,8 @@ nvram set onmp_12=""
 onmp_enable=`nvram get onmp_enable`
 [ -z $onmp_enable ] && onmp_enable=0 && nvram set onmp_enable=$onmp_enable
 if [ "$onmp_enable" = "2" ] ; then
-[ ! -z "`pidof mysqld`" ] && mysqladmin -u root -p password 123456 ; logger -t "【ONMP】" "设置数据库密码123456"
+[ ! -z "`pidof mysqld`" ] && mysqladmin -u root -p password 123456 ; logger -t "【ONMP】" "设置数据库用户 root 密码123456"
+[ ! -z "`pidof mysqld`" ] && mysqladmin -u admin -p password 123456 ; logger -t "【ONMP】" "设置数据库用户 admin 密码123456"
 [ -z "`pidof mysqld`" ] && logger -t "【ONMP】" "mysqld暂未开启，重置数据库密码失败，请开启后重试"
 fi
 if [ "$onmp_enable" = "3" ] || [ "$onmp_enable" = "4" ] ; then
