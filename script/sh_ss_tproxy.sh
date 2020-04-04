@@ -1070,7 +1070,7 @@ update_chnroute_file() {
 		rm -f $tmp_chnroute $tmp_down_file
 		logger -t "【update_chnroute】" "开始下载更新 chnroute6 文件...."
 		# wget --user-agent "$user_agent" -O- 'https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | grep CN | grep ipv6 | awk -F'|' '{printf("%s/%d\n", $4, $5)}' > $tmp_down_file
-		local url='$hiboyfile/chnroute6.txt'
+		local url="$hiboyfile/chnroute6.txt"
 		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 		# 添加自定义白名单
 		cat $file_wanlist_ext | grep -E "^~b" | cut -c4- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
