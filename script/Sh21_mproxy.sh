@@ -129,7 +129,7 @@ chmod 777 "$SVC_PATH"
 [[ "$(mproxy -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/mproxy
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【mproxy】" "找不到 mproxy，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 for h_i in $(seq 1 2) ; do

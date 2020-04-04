@@ -149,7 +149,7 @@ else
 	SVC_PATH="/opt/AdGuardHome/AdGuardHome"
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【AdGuardHome】" "找不到 $SVC_PATH，安装 opt 程序"
-		/tmp/script/_mountopt start
+		/etc/storage/script/Sh01_mountopt.sh start
 		initopt
 	fi
 	mkdir -p "/opt/AdGuardHome"

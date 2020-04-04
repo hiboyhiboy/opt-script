@@ -145,7 +145,7 @@ chmod 777 "$SVC_PATH"
 [[ "$(tinyproxy -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/tinyproxy
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【tinyproxy】" "找不到 tinyproxy，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 for h_i in $(seq 1 2) ; do

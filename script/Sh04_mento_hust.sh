@@ -168,7 +168,7 @@ chmod 777 "$SVC_PATH"
 [[ "$(mentohust -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/mentohust
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【MentoHUST】" "找不到 $SVC_PATH ，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 for h_i in $(seq 1 2) ; do

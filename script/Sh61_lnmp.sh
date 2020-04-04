@@ -244,7 +244,7 @@ fi
 
 SVC_PATH="/opt/opti.txt"
 if [ ! -f "$SVC_PATH" ] ; then
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh optwget
 fi
 chmod 777 "/opt/sbin/nginx"
 [[ "$(nginx -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/lnmp.txt

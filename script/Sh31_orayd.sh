@@ -168,7 +168,7 @@ chmod 777 "$SVC_PATH2"
 [[ "$(oraysl -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/oraysl /opt/bin/oraynewph
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【花生壳内网版】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 if [ ! -s "$SVC_PATH" ] ; then

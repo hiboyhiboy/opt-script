@@ -200,7 +200,7 @@ SVC_PATH="$(which clash)"
 [ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/clash"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【clash】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 for h_i in $(seq 1 2) ; do
@@ -480,7 +480,7 @@ jq_check () {
 
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	for h_i in $(seq 1 2) ; do
 	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
@@ -489,7 +489,7 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
 	rm -f /opt/bin/jq
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh optwget
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	#opkg update
 	#opkg install jq
@@ -507,7 +507,7 @@ yq_check () {
 
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 yq，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	for h_i in $(seq 1 2) ; do
 	[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
@@ -516,7 +516,7 @@ if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【clash】" "找不到 yq，安装 opt 程序"
 	rm -f /opt/bin/yq
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	#opkg update
 	#opkg install yq
@@ -691,7 +691,7 @@ update_geoip () {
 
 [ "$(nvram get app_86)" = "clash_wget_geoip" ] && nvram set app_86=0
 logger -t "【clash】" "更新下载 GeoIP2国家数据库 数据库文件"
-/tmp/script/_mountopt start
+/etc/storage/script/Sh01_mountopt.sh start
 mkdir -p /opt/app/clash/config
 rm -f /opt/app/clash/config/Country_mmdb
 if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
@@ -829,7 +829,7 @@ if [ "$1" == "check" ] ; then
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	logger -t "【clash】" "找不到 curl ，安装 opt 程序"
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh optwget
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		logger -t "【clash】" "找不到 curl ，需要手动安装 opt 后输入[opkg update; opkg install curl]安装"

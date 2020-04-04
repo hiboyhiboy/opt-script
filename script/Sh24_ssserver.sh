@@ -148,7 +148,7 @@ chmod 777 "$SVC_PATH"
 [[ "$(ss-server -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-server
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【SS_server】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 wgetcurl_file "$SVC_PATH" "$hiboyfile/$libsodium_so/ss-server" "$hiboyfile2/$libsodium_so/ss-server"
@@ -211,7 +211,7 @@ if [ ! -z "$ss_plugin_name" ] ; then
 	[ ! -z "$ss_plugin_name" ] && { hash $ss_plugin_name 2>/dev/null || optssredir="4" ; }
 	if [ "$optssredir" != "0" ] ; then
 		logger -t "【SS_server】" "找不到 /opt/bin/$ss_plugin_name，安装 opt 程序"
-		/tmp/script/_mountopt start
+		/etc/storage/script/Sh01_mountopt.sh start
 		initopt
 	fi
 	wgetcurl_file /opt/bin/$ss_plugin_name "$hiboyfile/$ss_plugin_name" "$hiboyfile2/$ss_plugin_name"

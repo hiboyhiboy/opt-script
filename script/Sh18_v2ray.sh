@@ -366,7 +366,7 @@ chmod 777 "$v2ctl_path"
 if [ ! -s "$v2ray_path" ] || [ ! -s "$v2ctl_path" ] ; then
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "找不到 $v2ray_path，安装 opt 程序"
 	[ ! -s "$v2ctl_path" ] && logger -t "【v2ray】" "找不到 $v2ctl_path，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 fi
 killall v2ray v2ctl v2ray_script.sh
 killall -9 v2ray v2ctl v2ray_script.sh
@@ -867,7 +867,7 @@ json_jq_check () {
 
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	for h_i in $(seq 1 2) ; do
 	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
@@ -876,7 +876,7 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
 	rm -f /opt/bin/jq
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh optwget
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	#opkg update
 	#opkg install jq

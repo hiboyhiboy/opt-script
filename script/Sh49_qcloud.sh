@@ -146,7 +146,7 @@ check_webui_yes
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	logger -t "【qcloud动态域名】" "找不到 curl ，安装 opt 程序"
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh optwget
 	initopt
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then

@@ -208,7 +208,7 @@ do
 	[[ "$($action_frp -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/$action_frp
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【frp】" "找不到 $SVC_PATH ，安装 opt 程序"
-		/tmp/script/_mountopt start
+		/etc/storage/script/Sh01_mountopt.sh start
 		initopt
 	fi
 	for h_i in $(seq 1 2) ; do

@@ -170,7 +170,7 @@ SVC_PATH="$(which $tran_c_socks)"
 [ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/$tran_c_socks"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【$tran_c_socks】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 fi
 wgetcurl_file "$SVC_PATH" "$hiboyfile/$tran_c_socks" "$hiboyfile2/$tran_c_socks"
 [[ "$($tran_c_socks -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf "$SVC_PATH"

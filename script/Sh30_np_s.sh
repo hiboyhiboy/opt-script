@@ -192,7 +192,7 @@ if [ ! -z "$action_nps" ] ; then
 	[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【nps】" "找不到 $SVC_PATH ，安装 opt 程序"
-		/tmp/script/_mountopt start
+		/etc/storage/script/Sh01_mountopt.sh start
 		initopt
 	fi
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "npc" ] ; then

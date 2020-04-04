@@ -177,7 +177,7 @@ SVC_PATH=/opt/bin/cryfs
 chmod 777 "$SVC_PATH"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【cryfs】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh optwget
 fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【cryfs】" "找不到 $SVC_PATH，opkg update; opkg install cryfs 安装程序"

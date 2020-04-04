@@ -161,7 +161,7 @@ hash ss-redir 2>/dev/null || optssredir="1"
 if [ "$optssredir" != "0" ] ; then
 	# 找不到ss-redir，安装opt
 	logger -t "【SS】" "找不到 ss-redir 、 ss-local 或 obfs-local ，挂载opt"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 optssredir="0"

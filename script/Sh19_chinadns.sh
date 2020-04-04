@@ -198,7 +198,7 @@ chmod 777 "$SVC_PATH"
 [[ "$(chinadns -h | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【chinadns】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh optwget
 fi
 for h_i in $(seq 1 2) ; do
 [[ "$(chinadns -h | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
@@ -217,7 +217,7 @@ chinadns_path="$SVC_PATH"
 
 if [ ! -f "/opt/opti.txt" ] ; then
 	logger -t "【opt】" "安装 opt 环境"
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh optwget
 fi
 # 配置参数
 usage=""

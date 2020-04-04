@@ -143,7 +143,7 @@ chmod 777 "$SVC_PATH"
 [[ "$(cow -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/cow
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【cow】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 fi
 for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH

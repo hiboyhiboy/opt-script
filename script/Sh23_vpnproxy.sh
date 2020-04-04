@@ -130,7 +130,7 @@ chmod 777 "$SVC_PATH"
 [[ "$(nvpproxy -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/nvpproxy
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【vpnproxy】" "找不到 nvpproxy，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 fi
 for h_i in $(seq 1 2) ; do
 [[ "$(nvpproxy -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/nvpproxy

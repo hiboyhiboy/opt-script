@@ -196,7 +196,7 @@ optupd2pro="0"
 if [ "$optupd2pro" != "0" ] ; then
 	# 找不到 udp2raw 、speeder 或 speederv2，安装opt
 	logger -t "【upd2pro】" "找不到 udp2raw 、speeder 或 speederv2，挂载opt"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 optupd2pro="0"

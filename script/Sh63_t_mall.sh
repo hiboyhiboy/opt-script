@@ -141,7 +141,7 @@ SVC_PATH="/opt/tmall/caddy_tmall"
 mkdir -p "/tmp/tmall"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【天猫精灵】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 mkdir -p "/opt/tmall"
