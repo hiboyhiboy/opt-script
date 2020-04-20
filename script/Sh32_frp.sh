@@ -3,8 +3,7 @@
 source /etc/storage/script/init.sh
 frp_enable=`nvram get frp_enable`
 [ -z $frp_enable ] && frp_enable=0 && nvram set frp_enable=0
-frp_version_new="0.32.0"
-frp_version_2="$frp_version_new"
+frp_version_2="0.32.1"
 frp_version_0="0.24.1"
 frp_version_1="0.16.1"
 frp_version_3="使用最新版"
@@ -169,18 +168,52 @@ frp_ver_wget=""
 [ "$frp_version" = "2" ] && frp_ver_wget="0.25.0" && frp_version_txt=$frp_version_2
 [ "$frp_version" = "0" ] && frp_ver_wget="0.24.1" && frp_version_txt=$frp_version_0
 [ "$frp_version" = "1" ] && frp_ver_wget="0.16.1" && frp_version_txt=$frp_version_1
-[ "$frp_version" = "3" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
-[ "$frp_version" = "4" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
-[ "$frp_version" = "5" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
-[ "$frp_version" = "6" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
-[ "$frp_version" = "7" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
-[ "$frp_version" = "8" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version_txt=$frp_version_new
-[ "$frp_version" = "9" ] && frp_ver_wget="" && frp_version_txt=$frp_version_new
+[ "$frp_version" = "3" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "4" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "5" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "6" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "7" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "8" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "9" ] && frp_ver_wget=""
 [ "$frp_version" = "10" ] && frp_ver_wget=""
 [ "$frpc_enable" = "1" ] && action_for="frpc"
 [ "$frps_enable" = "1" ] && action_for=$action_for" frps"
 del_tmp=0
-if [ "$frp_version" != "10" ] ; then
+if [ "$frp_version" == "9" ] ; then
+# 获取最新版本
+frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0  https://github.com/fatedier/frp/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
+[ -z "$frp_tag" ] && frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/fatedier/frp/releases/latest  2>&1 | grep '/frp/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+[ -z "$frp_tag" ] && logger -t "【frp】" "github最新版本获取失败！！！"
+[ ! -z "$frp_tag" ] && logger -t "【frp】" "最新版本 $frp_tag"
+[ -z "$frp_tag" ] && frp_tag="$frp_version_2" && logger -t "【frp】" "使用版本：$frp_version_2" && frp_version=2
+frp_tag="$(echo "$frp_tag" | tr -d 'v' | tr -d ' ')"
+fi
+if [ "$frp_version" == "9" ] ; then
+# 版本对比
+for action_frp in $action_for
+do
+if [ -s "/opt/bin/$action_frp" ] ; then
+	frp_ver="`/opt/bin/$action_frp --version`"
+	if [ "$frp_ver" != "$frp_tag" ] ; then
+		logger -t "【frp】" "$action_frp 当前版本 $frp_ver ,需要安装 $frp_tag ,自动重新下载"
+		[ -s "/opt/bin/$action_frp" ] && rm -f /opt/bin/$action_frp
+	fi
+fi
+done
+# 下载主程序
+rm -rf /opt/bin/frp_tmp
+mkdir -p /opt/bin/frp_tmp
+url_tmp="https://github.com/fatedier/frp/releases/download/v""$frp_tag""/frp_""$frp_tag""_linux_mipsle.tar.gz"
+logger -t "【frp】" "下载: $url_tmp"
+wgetcurl_file "/opt/bin/frp_tmp/frp_linux_mipsle.tar.gz" "$url_tmp"
+logger -t "【frp】" "解压: /opt/bin/frp_tmp/frp_linux_mipsle.tar.gz"
+tar -xz -C /opt/bin/frp_tmp -f /opt/bin/frp_tmp/frp_linux_mipsle.tar.gz
+[ ! -z "$(echo $action_for | grep frpc)" ] && cp "/opt/bin/frp_tmp/frp_""$frp_tag""_linux_mipsle/frpc" /opt/bin/frpc
+[ ! -z "$(echo $action_for | grep frps)" ] && cp "/opt/bin/frp_tmp/frp_""$frp_tag""_linux_mipsle/frps" /opt/bin/frps
+rm -rf /opt/bin/frp_tmp
+logger -t "【frp】" "解压完成！！！"
+fi
+if [ "$frp_version" != "10" ] && [ "$frp_version" != "9" ] ; then
 for action_frp in $action_for
 do
 if [ -s "/opt/bin/$action_frp" ] ; then
