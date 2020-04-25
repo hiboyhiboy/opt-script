@@ -2475,7 +2475,7 @@ start() {
 	update_chnlist_ipset
 	update_check_file
 	
-	update_dnsmasq_file #简单粗暴修复问题
+	update_dnsmasq_file
 	
 	[ "$(type -t post_start)" != "" ] && post_start
 	delete_unused_iptchains
