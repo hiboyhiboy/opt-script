@@ -560,6 +560,9 @@ if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
 		logger -t "【opt】" "下载证书"
 		wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
+		if [ ! -s "/opt/app/ipk/certs.tgz" ] ; then
+			wgetcurl.sh /opt/app/ipk/certs.tgz "$(echo -n "$hiboyfile/certs.tgz" | sed -e "s/https:/http:/g")" "$(echo -n "$hiboyfile2/certs.tgz" | sed -e "s/https:/http:/g")"
+		fi
 		logger -t "【opt】" "安装证书"
 		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/ ; cd /opt
 		rm -f /opt/app/ipk/certs.tgz
