@@ -184,7 +184,7 @@ Zone_ID=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones" \
      -H "X-Auth-Email: $cloudflare_Email" \
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
-Zone_ID=$(echo $Zone_ID|grep -o "id\":\"[0-9a-z]*\",\"name\":\"$DOMAIN\",\"status\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
+Zone_ID=$(echo $Zone_ID| sed -e "s/ //g" |grep -o "id\":\"[0-9a-z]*\",\"name\":\"$DOMAIN\",\"status\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
 sleep 1
 
 }
@@ -216,8 +216,8 @@ recordIP=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zon
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
 sleep 1
-RECORD_ID=$(echo $recordIP | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep -o "id\":\"[0-9a-z]\{32,\}\",\"type\":\"[^\"]*\",\"name\":\"$host_domian\",\"content\":\""|grep -o "id\":\"[0-9a-z]\{32,\}\",\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
-recordIP=$(echo $recordIP | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep -o "name\":\"$host_domian\",\"content\":\"[^\"]*\""| awk -F 'content":"' '{print $2}' | tr -d '"' |head -n1)
+RECORD_ID=$(echo $recordIP | sed -e "s/ //g" | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep ",\"name\":\"$host_domian\"" | grep -o "\"id\":\"[0-9a-z]\{32,\}\",\"" | awk -F : '{print $2}'|grep -o "[a-z0-9]*")
+recordIP=$(echo $recordIP | sed -e "s/ //g" | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep ",\"name\":\"$host_domian\"" | grep -o ",\"content\":\"[^\"]*\"" | awk -F 'content":"' '{print $2}' | tr -d '"' |head -n1)
 # 检查是否有名称重复的子域名
 if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 获得最后更新IP时发现重复的子域名！"
@@ -334,7 +334,7 @@ RECORD_ID=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zo
      -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json")
 sleep 1
-RECORD_ID=$(echo $RECORD_ID | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep -o "id\":\"[0-9a-z]\{32,\}\",\"type\":\"[^\"]*\",\"name\":\"$host_domian\",\"content\":\""|grep -o "id\":\"[0-9a-z]\{32,\}\",\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
+RECORD_ID=$(echo $RECORD_ID | sed -e "s/ //g" | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep ",\"name\":\"$host_domian\"" | grep -o "\"id\":\"[0-9a-z]\{32,\}\",\"" | awk -F : '{print $2}'|grep -o "[a-z0-9]*")
 # 检查是否有名称重复的子域名
 if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 更新记录信息时发现重复的子域名！"
@@ -360,7 +360,7 @@ if [ "$RECORD_ID" = "" ] ; then
      -H "Content-Type: application/json" \
      --data '{"type":"'$domain_type'","name":"'$HOST'","content":"'$hostIP'","ttl":120,"proxied":false}')
 	sleep 1
-	RESULT=$(echo $RESULT | grep -o "success\":[a-z]*,"|awk -F : '{print $2}'|grep -o "[a-z]*")
+	RESULT=$(echo $RESULT | sed -e "s/ //g" | grep -o "success\":[a-z]*,"|awk -F : '{print $2}'|grep -o "[a-z]*")
 	echo "创建dns_records: $RESULT"
 else
 	# 更新记录IP
@@ -370,7 +370,7 @@ else
      -H "Content-Type: application/json" \
      --data '{"type":"'$domain_type'","name":"'$HOST'","content":"'$hostIP'","ttl":120,"proxied":false}')
 	sleep 1
-	RESULT=$(echo $RESULT | grep -o "success\":[a-z]*,"|awk -F : '{print $2}'|grep -o "[a-z]*")
+	RESULT=$(echo $RESULT | sed -e "s/ //g" | grep -o "success\":[a-z]*,"|awk -F : '{print $2}'|grep -o "[a-z]*")
 	echo "更新dns_records: $RESULT"
 fi
 if [ "$(printf "%s" "$RESULT"|grep -c -o "true")" = 1 ];then
