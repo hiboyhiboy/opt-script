@@ -122,6 +122,7 @@ AdGuardHome_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【AdGuardHome】|^$/d' /tmp/script/_opt_script_check
 port=$(grep "#server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei '/server=127.0.0.1#5353/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei 's/^#dns-forward-max/dns-forward-max/g' /etc/storage/dnsmasq/dnsmasq.conf
@@ -206,6 +207,7 @@ echo "$AdGuardHome_server #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 echo "no-resolv #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei 's/^dns-forward-max/#dns-forward-max/g' /etc/storage/dnsmasq/dnsmasq.conf
 echo "dns-forward-max=1000 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 exit 0
 }

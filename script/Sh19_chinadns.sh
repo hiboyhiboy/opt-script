@@ -118,6 +118,7 @@ if [ "$chinadns_enable" = "1" ] ; then
 			logger -t "【chinadns】" "检测:找不到 dnsmasq 转发规则, 重新添加"
 			# 写入dnsmasq配置
 			sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+			sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 			cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv
 server=127.0.0.1#$chinadns_port
@@ -160,6 +161,7 @@ while [ "$chinadns_enable" = "1" ]; do
 		logger -t "【chinadns】" "检测:找不到 dnsmasq 转发规则, 重新添加"
 		# 写入dnsmasq配置
 		sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+		sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 		cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv
 server=127.0.0.1#$chinadns_port
@@ -177,6 +179,7 @@ chinadns_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【chinadns_ng】|【chinadns】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 [ ! -z "$chinadns_path" ] && eval $(ps -w | grep "$chinadns_path" | grep -v grep | awk '{print "kill "$1";";}')
 killall chinadns chinadns_ng dns2tcp smartdns
@@ -245,6 +248,7 @@ initopt
 
 # 写入dnsmasq配置
 sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 	cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv
 server=127.0.0.1#$chinadns_port

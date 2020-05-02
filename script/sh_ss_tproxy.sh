@@ -271,7 +271,7 @@ resolve_hostname4() {
 	local i_timeout=1
 	while [ -z "$ipaddr" ]; do
 		ipaddr=$($resolver_func -4 "$1")
-		[ -z "$ipaddr" ] && sleep 1
+		[ -z "$ipaddr" ] && usleep 300000
 		i_timeout=`expr $i_timeout + 1`
 		if [ "$i_timeout" -gt 2 ] ; then
 			break
@@ -285,7 +285,7 @@ resolve_hostname6() {
 	local i_timeout=1
 	while [ -z "$ipaddr" ]; do
 		ipaddr=$($resolver_func -6 "$1")
-		[ -z "$ipaddr" ] && sleep 1
+		[ -z "$ipaddr" ] && usleep 300000
 		i_timeout=`expr $i_timeout + 1`
 		if [ "$i_timeout" -gt 2 ] ; then
 			break
@@ -302,11 +302,13 @@ resolve_svraddr() {
 		[ ! -z "$(echo $svraddr | grep 8.8.8.8 | grep google.com | grep 114.114.114.114)" ] && continue
 		[ ! -z "$(cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | grep "$svraddr")" ] && continue
 		if is_true "$ipv4"; then
+			is_ipv6_address "$svraddr" && continue
 			is_ipv4_address "$svraddr" && local svrip_all="$svraddr" || local svrip_all=$(resolve_hostname4 "$svraddr")
 			is_ipv4_address "$svrip_all" && [ -z "$(grep $svrip_all $proxy_svraddr4)" ] && echo "$svrip_all" >> $proxy_svraddr4
 		fi
 		
 		if is_true "$ipv6"; then
+			is_ipv4_address "$svraddr" && continue
 			is_ipv6_address "$svraddr" && local svrip_all="$svraddr" || local svrip_all=$(resolve_hostname6 "$svraddr")
 			is_ipv6_address "$svrip_all" && [ -z "$(grep $svrip_all $proxy_svraddr6)" ] && echo "$svrip_all" >> $proxy_svraddr6
 		fi
@@ -1588,6 +1590,7 @@ fi
 
 start_dnsserver_confset() {
 sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 echo "#ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 if [ "$ss_pdnsd_all" = "1" ] || is_global_mode ; then
 	cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
@@ -1601,9 +1604,9 @@ if is_chnlist_mode; then
 	# 回国模式直接使用远端DNS走代理，停止使用 dnsproxy
 	sed -Ei "/server=127.0.0.1#8053/d" /etc/storage/dnsmasq/dnsmasq.conf
 	echo "#server=127.0.0.1#8053 #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
-	echo "server=$dns_remote #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
+	echo "server=${dns_remote:=8.8.8.8#53} #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 fi
-is_true "$ipv6" && echo "server=$dns_remote6 #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
+is_true "$ipv6" && echo "server=${dns_remote6:=2001:4860:4860::8888#53} #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=\/opt\/app\/ss_tproxy\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=\/tmp\/ss_tproxy\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
@@ -1687,6 +1690,7 @@ address = /$server_host/$server_addr"
 
 stop_dnsserver() {
 sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/conf-dir=\/opt\/app\/ss_tproxy\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 update_md5_check stop_dnsserver_restart_dhcpd /etc/storage/dnsmasq/dnsmasq.conf
 if is_md5_not ; then
