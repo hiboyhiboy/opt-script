@@ -371,7 +371,7 @@ if [ -d $cn2qq_name ] ; then
 logger -t "【opt】" "opt-script 开始匹配： $cn2qq_name"
 cd $cn2qq_name
 #md5sum `/usr/bin/find ./ -type f | grep -v .git | grep -v md5.md5 | grep -v up_name.md5 | grep -v up_name.txt` > ./md5.md5
-wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "https://opt.cn2qq.com/opt-script/md5.md5" "https://raw.githubusercontent.com/hiboyhiboy/opt-script/master/md5.md5"
+wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "https://opt.cn2qq.com/opt-script/md5.md5" "https://cdn.jsdelivr.net/gh/hiboyhiboy/opt-script@latest/md5.md5"
 if [ -s $cn2qq_name/up_name.md5 ] ; then
 # 生成不匹配文件名
 cd $cn2qq_name
@@ -392,7 +392,7 @@ if [ -d $cn2qq_name ] ; then
 logger -t "【opt】" "opt-file 开始匹配： $cn2qq_name"
 cd $cn2qq_name
 #md5sum `/usr/bin/find ./ -type f | grep -v .git | grep -v md5.md5 | grep -v up_name.md5 | grep -v up_name.txt` > ./md5.md5
-wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "https://opt.cn2qq.com/opt-file/md5.md5" "https://raw.githubusercontent.com/hiboyhiboy/opt-file/master/md5.md5"
+wgetcurl_checkmd5 "$cn2qq_name/up_name.md5" "https://opt.cn2qq.com/opt-file/md5.md5" "https://cdn.jsdelivr.net/gh/hiboyhiboy/opt-file@latest/md5.md5"
 if [ -s $cn2qq_name/up_name.md5 ] ; then
 # 生成不匹配文件名
 cd $cn2qq_name
@@ -455,7 +455,7 @@ if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] ; then
 fi
 logger -t "【opt】" "$upanPath/cn2qq/opt-script.tgz 解压完成！"
 if [ -f /tmp/AiDisk_00/cn2qq/opt-file/osub ] ; then
-wgetcurl.sh '/tmp/osub_tmp' "https://opt.cn2qq.com/opt-file/osub" "https://raw.githubusercontent.com/hiboyhiboy/opt-file/master/osub"
+wgetcurl.sh '/tmp/osub_tmp' "https://opt.cn2qq.com/opt-file/osub" "https://cdn.jsdelivr.net/gh//hiboyhiboy/opt-file@latest/osub"
 if [ -s /tmp/osub_tmp ] ; then
 	cp -f /tmp/osub_tmp /tmp/AiDisk_00/cn2qq/opt-file/osub
 	rm -f /tmp/osub_tmp
