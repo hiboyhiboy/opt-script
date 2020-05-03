@@ -455,7 +455,7 @@ if [ ! -d /tmp/AiDisk_00/cn2qq/opt-script ] ; then
 fi
 logger -t "【opt】" "$upanPath/cn2qq/opt-script.tgz 解压完成！"
 if [ -f /tmp/AiDisk_00/cn2qq/opt-file/osub ] ; then
-wgetcurl.sh '/tmp/osub_tmp' "https://opt.cn2qq.com/opt-file/osub" "https://cdn.jsdelivr.net/gh//hiboyhiboy/opt-file@latest/osub"
+wgetcurl.sh '/tmp/osub_tmp' "https://opt.cn2qq.com/opt-file/osub" "https://cdn.jsdelivr.net/gh/hiboyhiboy/opt-file@latest/osub"
 if [ -s /tmp/osub_tmp ] ; then
 	cp -f /tmp/osub_tmp /tmp/AiDisk_00/cn2qq/opt-file/osub
 	rm -f /tmp/osub_tmp
