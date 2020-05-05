@@ -1313,11 +1313,41 @@ g,149.154.175.50
 		esac
 	fi
 	done
+	is_true "$ipv4" && update_lanlist_mac "iptables" "nat"
+	is_true "$ipv6" && update_lanlist_mac "ip6tables" "nat"
+	is_enabled_udp && is_true "$ipv4" && update_lanlist_mac "iptables" "mangle"
+	is_enabled_udp && is_true "$ipv6" && update_lanlist_mac "ip6tables" "mangle"
 
 	# adbyby host 规则
 	update_cflist_ipset /tmp/adbyby_host.conf /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 
 	update_dnsmasq_file
+}
+
+update_lanlist_mac() {
+
+cat $file_lanlist_ext | grep -E '^@' | cut -c2- | while read mac_c; do
+mac="${mac_c:2}"; mac=$(echo $mac | sed s/://g| sed s/：//g | tr '[a-z]' '[A-Z]'); mac="${mac:0:2}:${mac:2:2}:${mac:4:2}:${mac:6:2}:${mac:8:2}:${mac:10:2}";
+if [ ! -z "$mac" ] ; then
+	case "${mac_c:0:1}" in
+		n|N)
+			$1 -t $2 -I SSTP_PREROUTING -m mac --mac-source $mac -j SSTP_WAN_AC
+			;;
+		g|G)
+			$1 -t $2 -I SSTP_PREROUTING -m mac --mac-source $mac -j SSTP_WAN_FW
+			;;
+		b|B)
+			$1 -t $2 -I SSTP_PREROUTING -m mac --mac-source $mac -j RETURN
+			;;
+		1)
+			$1 -t $2 -I SSTP_PREROUTING -m mac --mac-source $mac -j SSTP_WAN_CHN
+			;;
+		2)
+			$1 -t $2 -I SSTP_PREROUTING -m mac --mac-source $mac -j SSTP_WAN_GFW
+			;;
+	esac
+fi
+done
 }
 
 update_dnsmasq_file() {
