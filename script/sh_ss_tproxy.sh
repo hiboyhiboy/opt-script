@@ -50,7 +50,8 @@ if [ -n "$LAN_AC_IP" ] ; then
 			LAN_TARGET="SSTP_WAN_FW"
 			;;
 		2)
-			LAN_TARGET="RETURN"
+			LAN_TARGET="SSTP_WAN_AC"
+			#LAN_TARGET="RETURN"
 			;;
 	esac
 fi
@@ -2113,7 +2114,12 @@ start_iptables_tproxy_mode() {
 	$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_ac_setname src -j SSTP_WAN_AC
 	$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_gfw_setname src -j SSTP_WAN_GFW
 	$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_chn_setname src -j SSTP_WAN_CHN
+	if [ "$LAN_AC_IP" == "2" ] ; then
+	$1 -t mangle -A SSTP_LAN_AC -m addrtype ! --src-type LOCAL -j RETURN
+	$1 -t mangle -A SSTP_LAN_AC -m addrtype --src-type LOCAL -j SSTP_WAN_AC
+	else
 	$1 -t mangle -A SSTP_LAN_AC -j ${LAN_TARGET:=SSTP_WAN_AC}
+	fi
 	$1 -t mangle -A SSTP_WAN_AC -j ${MODE_TARGET:=RETURN}
 	$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_GFW
 	$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_CHN
@@ -2272,7 +2278,12 @@ start_iptables_redirect_mode() {
 	$1 -t nat -A SSTP_LAN_AC -m set --match-set $sstp_src_ac_setname src -j SSTP_WAN_AC
 	$1 -t nat -A SSTP_LAN_AC -m set --match-set $sstp_src_gfw_setname src -j SSTP_WAN_GFW
 	$1 -t nat -A SSTP_LAN_AC -m set --match-set $sstp_src_chn_setname src -j SSTP_WAN_CHN
+	if [ "$LAN_AC_IP" == "2" ] ; then
+	$1 -t nat -A SSTP_LAN_AC -m addrtype ! --src-type LOCAL -j RETURN
+	$1 -t nat -A SSTP_LAN_AC -m addrtype --src-type LOCAL -j SSTP_WAN_AC
+	else
 	$1 -t nat -A SSTP_LAN_AC -j ${LAN_TARGET:=SSTP_WAN_AC}
+	fi
 	$1 -t nat -A SSTP_WAN_AC -j ${MODE_TARGET:=RETURN}
 	$1 -t nat -A SSTP_GFW_CHN -j SSTP_WAN_GFW
 	$1 -t nat -A SSTP_GFW_CHN -j SSTP_WAN_CHN
@@ -2350,7 +2361,12 @@ start_iptables_redirect_mode() {
 		$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_ac_setname src -j SSTP_WAN_AC
 		$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_gfw_setname src -j SSTP_WAN_GFW
 		$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_chn_setname src -j SSTP_WAN_CHN
+		if [ "$LAN_AC_IP" == "2" ] ; then
+		$1 -t mangle -A SSTP_LAN_AC -m addrtype ! --src-type LOCAL -j RETURN
+		$1 -t mangle -A SSTP_LAN_AC -m addrtype --src-type LOCAL -j SSTP_WAN_AC
+		else
 		$1 -t mangle -A SSTP_LAN_AC -j ${LAN_TARGET:=SSTP_WAN_AC}
+		fi
 		$1 -t mangle -A SSTP_WAN_AC -j ${MODE_TARGET:=RETURN}
 		$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_GFW
 		$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_CHN
