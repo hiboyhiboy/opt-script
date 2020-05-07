@@ -126,6 +126,7 @@ exit 0
 
 v2ray_get_status () {
 
+script_tmp_config
 A_restart=`nvram get v2ray_status`
 B_restart="$v2ray_enable$chinadns_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -505,6 +506,7 @@ else
 	[ -s /tmp/vmess/mk_vmess2.json ] && cp -f /tmp/vmess/mk_vmess2.json /tmp/vmess/mk_vmess.json
 	rm -f /tmp/vmess/mk_vmess2.json
 	fi
+	script_tmp_config "/tmp/vmess/mk_vmess.json" "D"
 	if [ ! -f "/tmp/vmess/mk_vmess.json" ] || [ ! -s "/tmp/vmess/mk_vmess.json" ] ; then
 	logger -t "【v2ray】" "错误！实际运行配置： /tmp/vmess/mk_vmess.json 文件内容为空"
 	logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
@@ -718,6 +720,23 @@ RND_NUM=`echo $SEED 1 15|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 sleep $RND_NUM
 sleep $ss_link_1
 #/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+}
+
+
+script_tmp_config () {
+ # 处理特殊字符导致的web页面错误
+[ ! -z "$1" ] && tmp_config="$1" || tmp_config="/etc/storage/v2ray_config_script.sh"
+[ ! -s "$tmp_config" ] && return
+if [ "$2" != "D" ] ; then
+ # 临时变更特殊字符
+sed -Ei 's@\*/@﹡／@g' $tmp_config
+sed -Ei 's@/\*@／﹡@g' $tmp_config
+else
+ # 恢复临时特殊字符
+sed -Ei 's@﹡／@\*/@g' $tmp_config
+sed -Ei 's@／﹡@/\*@g' $tmp_config
+fi
+
 }
 
 initopt () {
