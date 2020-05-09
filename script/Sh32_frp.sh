@@ -181,7 +181,7 @@ frp_ver_wget=""
 del_tmp=0
 if [ "$frp_version" == "9" ] ; then
 # 获取最新版本
-frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0  https://github.com/fatedier/frp/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
+frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://github.com/fatedier/frp/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
 [ -z "$frp_tag" ] && frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/fatedier/frp/releases/latest  2>&1 | grep '/frp/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
 [ -z "$frp_tag" ] && logger -t "【frp】" "github最新版本获取失败！！！"
 [ ! -z "$frp_tag" ] && logger -t "【frp】" "最新版本 $frp_tag"

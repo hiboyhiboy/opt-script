@@ -164,11 +164,32 @@ if [ -z "$upanPath" ] ; then
 fi
 SVC_PATH="$upanPath/verysync/verysync"
 mkdir -p "$upanPath/verysync/.config"
+chmod 777 "$SVC_PATH"
+[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
+if [ ! -s "$SVC_PATH" ] ; then
+# 获取最新版本
+verysync_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  http://www.verysync.com/shell/latest )"
+[ -z "$verysync_tag" ] && verysync_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  http://www.verysync.com/shell/latest )"
+[ -z "$verysync_tag" ] && logger -t "【verysync】" "最新版本获取失败！！！"
+[ ! -z "$verysync_tag" ] && logger -t "【verysync】" "最新版本 $verysync_tag"
+[ -z "$verysync_tag" ] && verysync_tag="$verysync_version_2" && logger -t "【verysync】" "使用：$hiboyfile/verysync" && verysync_tag=""
+verysync_tag="$(echo "$verysync_tag" | tr -d 'v' | tr -d ' ')"
+if [ ! -z "$verysync_tag" ] ; then
+	# http://www.verysync.com 下载最新版本
+	wgetcurl.sh "$upanPath/verysync/verysync-linux-mipsle.tar.gz" "http://releases-cdn.verysync.com/releases/v""$verysync_tag""/verysync-linux-mipsle-v""$verysync_tag"".tar.gz"
+	tar -xzvf "$upanPath/verysync/verysync-linux-mipsle.tar.gz" -C $upanPath/verysync ; cd $upanPath/verysync
+	rm -f "$upanPath/verysync/verysync-linux-mipsle.tar.gz"
+	mv -f $upanPath/verysync/verysync-linux-mipsle-v* $upanPath/verysync/verysync-linux-mipsle
+	mv -f $upanPath/verysync/verysync-linux-mipsle/verysync $SVC_PATH
+	rm -rf $upanPath/verysync/verysync-linux-mipsle
+	chmod 777 "$SVC_PATH"
+fi
 wgetcurl_file "$SVC_PATH" "$hiboyfile/verysync" "$hiboyfile2/verysync"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【verysync】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【verysync】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && verysync_restart x
+fi
 fi
 chmod 777 "$SVC_PATH"
 verysync_v=$($SVC_PATH -version | grep verysync | awk -F ' ' '{print $2;}')
