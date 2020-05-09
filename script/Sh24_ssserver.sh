@@ -127,6 +127,8 @@ kill_ps "$scriptname keep"
 sed -Ei '/【SS_server】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
 iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
+ip6tables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
+ip6tables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
 killall ss-server obfs-server gq-server
 killall -9 ss-server obfs-server gq-server
 ss_plugin_server_name="$(nvram get ss_plugin_server_name)"
@@ -297,6 +299,8 @@ if [ "$ssserver_enable" = "1" ] ; then
 		logger -t "【SS_server】" "允许 $ssserver_port 端口通过防火墙"
 		iptables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
 		iptables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
+		ip6tables -t filter -I INPUT -p tcp --dport $ssserver_port -j ACCEPT
+		ip6tables -t filter -I INPUT -p udp --dport $ssserver_port -j ACCEPT
 	fi
 fi
 
