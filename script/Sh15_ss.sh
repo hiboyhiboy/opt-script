@@ -958,7 +958,7 @@ clean_SS()
 
 # 重置 SS IP 规则文件并重启 SS
 logger -t "【SS】" "重置 SS IP 规则文件并重启 SS"
-sed -Ei '/no-resolv|server=|dns-forward-max=1000|min-cache-ttl=1800|accelerated-domains|github|ipip.net/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 if [ "$ss_enable" != "1" ]  ; then
 stop_SS
