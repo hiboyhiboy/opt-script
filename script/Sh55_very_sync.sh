@@ -168,8 +168,14 @@ chmod 777 "$SVC_PATH"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 # 获取最新版本
-verysync_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  http://www.verysync.com/shell/latest )"
-[ -z "$verysync_tag" ] && verysync_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  http://www.verysync.com/shell/latest )"
+curltest=`which curl`
+if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+	verysync_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  http://www.verysync.com/shell/latest )"
+	[ -z "$verysync_tag" ] && verysync_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  http://www.verysync.com/shell/latest )"
+else
+	verysync_tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  http://www.verysync.com/shell/latest )"
+	[ -z "$verysync_tag" ] && verysync_tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  http://www.verysync.com/shell/latest )"
+fi
 [ -z "$verysync_tag" ] && logger -t "【verysync】" "最新版本获取失败！！！"
 [ ! -z "$verysync_tag" ] && logger -t "【verysync】" "最新版本 $verysync_tag"
 [ -z "$verysync_tag" ] && verysync_tag="$verysync_version_2" && logger -t "【verysync】" "使用：$hiboyfile/verysync" && verysync_tag=""

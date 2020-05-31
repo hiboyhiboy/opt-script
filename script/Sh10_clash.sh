@@ -454,11 +454,11 @@ yml_tmp="/tmp/clash/app_20.sh"
 wgetcurl.sh $yml_tmp "$clash_wget_yml" "$clash_wget_yml" N
 if [ ! -s $yml_tmp ] ; then
 	rm -f $yml_tmp
-	wget -T 5 -t 3 --user-agent "$user_agent" -O $yml_tmp "$ssr_link_i"
+	curl -L --user-agent "$user_agent" -o $yml_tmp "$ssr_link_i"
 fi
 if [ ! -s $yml_tmp ] ; then
 	rm -f $yml_tmp
-	curl -L --user-agent "$user_agent" -o $yml_tmp "$ssr_link_i"
+	wget -T 5 -t 3 --user-agent "$user_agent" -O $yml_tmp "$ssr_link_i"
 fi
 if [ ! -s $yml_tmp ] ; then
 	logger -t "【clash】" "错误！！clash 服务器订阅文件下载失败！请检查下载地址"

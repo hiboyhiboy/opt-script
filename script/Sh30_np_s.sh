@@ -155,8 +155,14 @@ action_for=""
 [ "$npss_enable" = "1" ] && action_for=$action_for" nps"
 del_tmp=0
 if [ -z "$nps_version" ] ; then
-	nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
-	[ -z "$nps_tag" ] && nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep '/nps/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
+		[ -z "$nps_tag" ] && nps_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep '/nps/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+	else
+		nps_tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep releases/tag | awk -F 'tag/' '{print $NF}' | awk -F '"' '{print $1}' )"
+		[ -z "$nps_tag" ] && nps_tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep '/nps/tree/'  |head -n1 | awk -F 'tree/' '{print $NF}' | awk -F '"' '{print $1}' )"
+	fi
 	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.26.4]" && nps_restart x
 	[ ! -z "$nps_tag" ] && logger -t "【nps】" "自动下载最新版本 $nps_tag"
 	[ -z "$nps_tag" ] && nps_tag="v0.26.5"

@@ -840,7 +840,9 @@ if [ ! -s /etc/storage/start_script.sh ] ; then
 	{ fuser -m -k /etc/storage 2>/dev/null ; umount -l /etc/storage ; }
 	sleep 1
 	mtd_storage.sh fill
-	restart_firewall
+	sw_mode=`nvram get sw_mode`
+	[ "$sw_mode" != "3" ] && restart_firewall
+	[ "$sw_mode" == "3" ] && /etc/storage/crontabs_script.sh &
 	exit
 fi
 if ! mountpoint -q /etc/storage ; then

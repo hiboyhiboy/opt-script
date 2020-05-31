@@ -95,6 +95,8 @@ for i in `ls /opt/etc/init.d/S??* 2>/dev/null` ; do
 	[ ! -f /tmp/webui_yes ] && continue
 	${i} start
 done
-restart_firewall &
+sw_mode=`nvram get sw_mode`
+[ "$sw_mode" != "3" ] && restart_firewall &
+[ "$sw_mode" == "3" ] && /etc/storage/crontabs_script.sh &
 rm -f /tmp/script.lock
 logger -t "【自定义脚本】" "初始化脚本完成"

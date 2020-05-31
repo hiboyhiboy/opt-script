@@ -244,11 +244,11 @@ rm -f /tmp/ss/link/0_link.txt
 wgetcurl.sh /tmp/ss/link/0_link.txt "$ssr_link_i" "$ssr_link_i" N
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	rm -f /tmp/ss/link/0_link.txt
-	wget -T 5 -t 3 --user-agent "$user_agent" -O /tmp/ss/link/0_link.txt "$ssr_link_i"
+	curl -L --user-agent "$user_agent" -o /tmp/ss/link/0_link.txt "$ssr_link_i"
 fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	rm -f /tmp/ss/link/0_link.txt
-	curl -L --user-agent "$user_agent" -o /tmp/ss/link/0_link.txt "$ssr_link_i"
+	wget -T 5 -t 3 --user-agent "$user_agent" -O /tmp/ss/link/0_link.txt "$ssr_link_i"
 fi
 if [ ! -s /tmp/ss/link/0_link.txt ] ; then
 	logger -t "【SS】" "$ssr_link_i"

@@ -270,7 +270,7 @@ server3=xxx3.dynu.com
 ss_router_port=1234   #服务器端口
 ss_passwd=xxxxxxxxx   #密码
 method=chacha20       #加密方式
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36'
 
 index=1
 ln -sf `which ss-redir` /opt/app/fakeincn/fakeincn

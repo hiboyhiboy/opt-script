@@ -1291,7 +1291,8 @@ echo '{
   "network": "",
   "security": "",
   "tlsSettings": {
-    "allowInsecure": true
+    "allowInsecure": true,
+    "allowInsecureCiphers": true
   },
   "tcpSettings": {
     "type": "none",
@@ -2179,11 +2180,11 @@ rm -f /tmp/vmess/link/0_link.txt
 wgetcurl.sh /tmp/vmess/link/0_link.txt "$vmess_link_i" "$vmess_link_i" N
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	rm -f /tmp/vmess/link/0_link.txt
-	wget -T 5 -t 3 --user-agent "$user_agent" -O /tmp/vmess/link/0_link.txt "$vmess_link_i"
+	curl -L --user-agent "$user_agent" -o /tmp/vmess/link/0_link.txt "$vmess_link_i"
 fi
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	rm -f /tmp/vmess/link/0_link.txt
-	curl -L --user-agent "$user_agent" -o /tmp/vmess/link/0_link.txt "$vmess_link_i"
+	wget -T 5 -t 3 --user-agent "$user_agent" -O /tmp/vmess/link/0_link.txt "$vmess_link_i"
 fi
 if [ ! -s /tmp/vmess/link/0_link.txt ] ; then
 	logger -t "【vmess】" "$vmess_link_i"
