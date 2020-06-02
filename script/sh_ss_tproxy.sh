@@ -356,6 +356,8 @@ create sstp_dst_bp hash:net hashsize 64 family inet
 create sstp_dst_bp6 hash:net hashsize 64 family inet6
 create sstp_dst_fw hash:net hashsize 64 family inet
 create sstp_dst_fw6 hash:net hashsize 64 family inet6
+create sstp_dst_dns_fw hash:net hashsize 64 family inet
+create sstp_dst_dns_fw6 hash:net hashsize 64 family inet6
 create sstp_src_ac hash:net hashsize 64 family inet
 create sstp_src_ac6 hash:net hashsize 64 family inet6
 create sstp_src_bp hash:net hashsize 64 family inet
@@ -447,21 +449,27 @@ load_config() {
 	if is_true "$ipv4" && is_true "$ipv6"; then
 		gfwlist_ipset_setname="gfwlist,gfwlist6"
 		sstp_dst_fw_ipset_setname="sstp_dst_fw,sstp_dst_fw6"
+		sstp_dst_dns_fw_ipset_setname="sstp_dst_dns_fw,sstp_dst_dns_fw6"
 		sstp_dst_bp_ipset_setname="sstp_dst_bp,sstp_dst_bp6"
 	elif is_true "$ipv4"; then
 		gfwlist_ipset_setname="gfwlist"
 		sstp_dst_fw_ipset_setname="sstp_dst_fw"
+		sstp_dst_dns_fw_ipset_setname="sstp_dst_dns_fw"
 		sstp_dst_bp_ipset_setname="sstp_dst_bp"
 	else
 		gfwlist_ipset_setname="gfwlist6"
 		sstp_dst_fw_ipset_setname="sstp_dst_fw6"
+		sstp_dst_dns_fw_ipset_setname="sstp_dst_dns_fw6"
 		sstp_dst_bp_ipset_setname="sstp_dst_bp6"
 	fi
 	if is_chnlist_mode; then # 回国模式 反转 wanlist 规则， china DNS 需要走代理
 		dst_fw_ipset_type="$sstp_dst_bp_ipset_setname"
+		dst_dns_fw_ipset_type="$sstp_dst_bp_ipset_setname"
 		dst_bp_ipset_type="$sstp_dst_fw_ipset_setname"
 		dst4_fw_type="sstp_dst_bp"
 		dst6_fw_type="sstp_dst_bp6"
+		dst4_dns_fw_type="sstp_dst_bp"
+		dst6_dns_fw_type="sstp_dst_bp6"
 		dst4_bp_type="sstp_dst_fw"
 		dst6_bp_type="sstp_dst_fw6"
 		dns4_fw_type="$dns_direct"
@@ -470,9 +478,12 @@ load_config() {
 		dns6_bp_type="$dns_remote6"
 	else
 		dst_fw_ipset_type="$sstp_dst_fw_ipset_setname"
+		dst_dns_fw_ipset_type="$sstp_dst_dns_fw_ipset_setname"
 		dst_bp_ipset_type="$sstp_dst_bp_ipset_setname"
 		dst4_fw_type="sstp_dst_fw"
 		dst6_fw_type="sstp_dst_fw6"
+		dst4_dns_fw_type="sstp_dst_dns_fw"
+		dst6_dns_fw_type="sstp_dst_dns_fw6"
 		dst4_bp_type="sstp_dst_bp"
 		dst6_bp_type="sstp_dst_bp6"
 		dns4_fw_type="127.0.0.1#8053"
@@ -1180,6 +1191,8 @@ create sstp_dst_bp hash:net hashsize 64 family inet
 create sstp_dst_bp6 hash:net hashsize 64 family inet6
 create sstp_dst_fw hash:net hashsize 64 family inet
 create sstp_dst_fw6 hash:net hashsize 64 family inet6
+create sstp_dst_dns_fw hash:net hashsize 64 family inet
+create sstp_dst_dns_fw6 hash:net hashsize 64 family inet6
 create sstp_src_ac hash:net hashsize 64 family inet
 create sstp_src_ac6 hash:net hashsize 64 family inet6
 create sstp_src_bp hash:net hashsize 64 family inet
@@ -1197,78 +1210,84 @@ create sstp_mac_gfw hash:mac hashsize 64
 create sstp_mac_chn hash:mac hashsize 64" | while read sstp_name; do ipset -! $sstp_name ; done 
 
 	# Telegram IP 规则
-	echo "g,8.8.8.8
-g,8.8.4.4
-g,208.67.222.222
-g,208.67.220.220
-g,91.108.4.0/22
-g,91.108.8.0/22
-g,91.108.12.0/22
-g,91.108.20.0/22
-g,91.108.36.0/23
-g,91.108.38.0/23
-g,91.108.56.0/22
-g,149.154.160.0/20
-g,149.154.161.0/24
-g,149.154.162.0/23
-g,149.154.164.0/22
-g,149.154.168.0/21
-g,149.154.172.0/22
-g,149.154.160.1/32
-g,149.154.160.2/31
-g,149.154.160.4/30
-g,149.154.160.8/29
-g,149.154.160.16/28
-g,149.154.160.32/27
-g,149.154.160.64/26
-g,149.154.160.128/25
-g,149.154.164.0/22
-g,91.108.4.0/22
-g,91.108.56.0/24
-g,109.239.140.0/24
-g,67.198.55.0/24
-g,91.108.56.172
-g,149.154.175.50
-" | grep -E "^g" | cut -c3- | while read ip_addr; do echo "-A $dst4_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
-	echo "~g,2001:67c:4e8::/48
-~g,2001:0b28:f23d::/48
-" | grep -E "^~g" | cut -c4- | while read ip_addr; do echo "-A $dst6_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
+	echo "G,8.8.8.8
+G,8.8.4.4
+G,208.67.222.222
+G,208.67.220.220
+G,91.108.4.0/22
+G,91.108.8.0/22
+G,91.108.12.0/22
+G,91.108.20.0/22
+G,91.108.36.0/23
+G,91.108.38.0/23
+G,91.108.56.0/22
+G,149.154.160.0/20
+G,149.154.161.0/24
+G,149.154.162.0/23
+G,149.154.164.0/22
+G,149.154.168.0/21
+G,149.154.172.0/22
+G,149.154.160.1/32
+G,149.154.160.2/31
+G,149.154.160.4/30
+G,149.154.160.8/29
+G,149.154.160.16/28
+G,149.154.160.32/27
+G,149.154.160.64/26
+G,149.154.160.128/25
+G,149.154.164.0/22
+G,91.108.4.0/22
+G,91.108.56.0/24
+G,109.239.140.0/24
+G,67.198.55.0/24
+G,91.108.56.172
+G,149.154.175.50
+" | grep -E "^G" | cut -c3- | while read ip_addr; do echo "-A $dst4_dns_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
+	echo "~G,2001:67c:4e8::/48
+~G,2001:0b28:f23d::/48
+" | grep -E "^~G" | cut -c4- | while read ip_addr; do echo "-A $dst6_dns_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
 
 
 	# wanlist dst IP 规则
 	if is_true "$ipv4"; then
 	cat $file_wanlist_ext | grep -E "^b" | cut -c3- | while read ip_addr; do echo "-A $dst4_bp_type $ip_addr"; done | ipset -! restore &>/dev/null
 	cat $file_wanlist_ext | grep -E "^g" | cut -c3- | while read ip_addr; do echo "-A $dst4_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
+	cat $file_wanlist_ext | grep -E "^G" | cut -c3- | while read ip_addr; do echo "-A $dst4_dns_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
 	fi
 	if is_true "$ipv6"; then
 	cat $file_wanlist_ext | grep -E "^~b" | cut -c4- | while read ip_addr; do echo "-A $dst6_bp_type $ip_addr"; done | ipset -! restore &>/dev/null
 	cat $file_wanlist_ext | grep -E "^~g" | cut -c4- | while read ip_addr; do echo "-A $dst6_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
+	cat $file_wanlist_ext | grep -E "^~G" | cut -c4- | while read ip_addr; do echo "-A $dst6_dns_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
 	fi
 
 	# wanlist 域名 规则
 	if [ -s /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf ] ; then
 		# 删除自定义黑名单 (黑名单不走 gfwlist)
 		cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | while read domain_addr; do sed -Ei "/$domain_addr/d" /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf; done 
+		cat $file_wanlist_ext | grep -E "^@G" | cut -c4- | while read domain_addr; do sed -Ei "/$domain_addr/d" /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf; done 
 	fi
 	if [ -s /opt/app/ss_tproxy/rule/gfwlist_ip.txt ] ; then
 	if is_true "$ipv4"; then
 		cat /opt/app/ss_tproxy/rule/gfwlist_ip.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A $dst4_fw_type &/g" | ipset -! restore
 	fi
 	fi
-	# 添加自定义黑名单 (黑名单改走 sstp_dst_fw)
+	# 添加自定义黑名单 (黑名单改走 sstp_dst_fw sstp_dst_dns_fw)
 	is_true "$ipv4" && cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | awk '{printf("server=/%s/'"$dns4_fw_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 	is_true "$ipv6" && cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | awk '{printf("server=/%s/'"$dns6_fw_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 	cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | awk '{printf("ipset=/%s/'"$dst_fw_ipset_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+	is_true "$ipv4" && cat $file_wanlist_ext | grep -E "^@G" | cut -c4- | awk '{printf("server=/%s/'"$dns4_fw_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+	is_true "$ipv6" && cat $file_wanlist_ext | grep -E "^@G" | cut -c4- | awk '{printf("server=/%s/'"$dns6_fw_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+	cat $file_wanlist_ext | grep -E "^@G" | cut -c4- | awk '{printf("ipset=/%s/'"$dst_dns_fw_ipset_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 
 	# smartdns IP 规则
 	chinadns_ng_enable="`nvram get app_102`"
 	smartdns_enable="`nvram get app_106`"
 	if [ "$chinadns_ng_enable" == "1" ] && [ "$smartdns_enable" == "1" ] && [ -s /etc/storage/app_23.sh ] ; then
 		touch /etc/storage/app_23.sh
-		cat /etc/storage/app_23.sh | grep "^server" | grep office | grep -E -o '([0-9]+\.){3}[0-9]+' | while read ip_addr; do echo "-A $dst4_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
+		cat /etc/storage/app_23.sh | grep "^server" | grep office | grep -E -o '([0-9]+\.){3}[0-9]+' | while read ip_addr; do echo "-A $dst4_dns_fw_type $ip_addr"; done | ipset -! restore &>/dev/null
 		is_true "$ipv4" && cat /etc/storage/app_23.sh | grep "^server" | grep office | grep -E -o 'https://.+/' | awk -F "/" '{print $3}' | awk '{printf("server=/%s/'"$dns4_fw_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		is_true "$ipv6" && cat /etc/storage/app_23.sh | grep "^server" | grep office | grep -E -o 'https://.+/' | awk -F "/" '{print $3}' | awk '{printf("server=/%s/'"$dns6_fw_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-		cat /etc/storage/app_23.sh | grep "^server" | grep office | grep -E -o 'https://.+/' | awk -F "/" '{print $3}' | awk '{printf("ipset=/%s/'"$dst_fw_ipset_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		cat /etc/storage/app_23.sh | grep "^server" | grep office | grep -E -o 'https://.+/' | awk -F "/" '{print $3}' | awk '{printf("ipset=/%s/'"$dst_dns_fw_ipset_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		cat /etc/storage/app_23.sh | grep "^server" | grep china  | grep -E -o '([0-9]+\.){3}[0-9]+' | while read ip_addr; do echo "-A $dst4_bp_type $ip_addr"; done | ipset -! restore &>/dev/null
 		is_true "$ipv4" && cat /etc/storage/app_23.sh | grep "^server" | grep china  | grep -E -o 'https://.+/' | awk -F "/" '{print $3}' | awk '{printf("server=/%s/'"$dns4_bp_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		is_true "$ipv6" && cat /etc/storage/app_23.sh | grep "^server" | grep china  | grep -E -o 'https://.+/' | awk -F "/" '{print $3}' | awk '{printf("server=/%s/'"$dns6_bp_type"'\n", $1 )}' >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
@@ -1851,6 +1870,8 @@ _flush_iptables() {
 	$1 -t mangle -X SSTP_WAN_CHN &>/dev/null
 	$1 -t mangle -F SSTP_WAN_FW  &>/dev/null
 	$1 -t mangle -X SSTP_WAN_FW  &>/dev/null
+	$1 -t mangle -F SSTP_WAN_DNS  &>/dev/null
+	$1 -t mangle -X SSTP_WAN_DNS  &>/dev/null
 	$1 -t nat    -F SSTP_LAN_AC  &>/dev/null
 	$1 -t nat    -X SSTP_LAN_AC  &>/dev/null
 	$1 -t nat    -F SSTP_WAN_AC  &>/dev/null
@@ -1863,6 +1884,8 @@ _flush_iptables() {
 	$1 -t nat    -X SSTP_WAN_CHN &>/dev/null
 	$1 -t nat    -F SSTP_WAN_FW  &>/dev/null
 	$1 -t nat    -X SSTP_WAN_FW  &>/dev/null
+	$1 -t nat    -F SSTP_WAN_DNS  &>/dev/null
+	$1 -t nat    -X SSTP_WAN_DNS  &>/dev/null
 }
 
 flush_iptables() {
@@ -2071,10 +2094,15 @@ start_iptables_tproxy_mode() {
 	local sstp_dst_fw_setname
 	is_ipv4_ipts $1 && sstp_dst_fw_setname="sstp_dst_fw" || sstp_dst_fw_setname="sstp_dst_fw6"
 
+	local sstp_dst_dns_fw_setname
+	is_ipv4_ipts $1 && sstp_dst_dns_fw_setname="sstp_dst_dns_fw" || sstp_dst_dns_fw_setname="sstp_dst_dns_fw6"
+
 	#ipset -X $sstp_dst_bp_setname &>/dev/null
 	ipset -! -N $sstp_dst_bp_setname hash:net hashsize 64 family $gfwlist_setfamily &>/dev/null
 	#ipset -X $sstp_dst_fw_setname &>/dev/null
 	ipset -! -N $sstp_dst_fw_setname hash:net hashsize 64 family $gfwlist_setfamily &>/dev/null
+	#ipset -X $sstp_dst_dns_fw_setname &>/dev/null
+	ipset -! -N $sstp_dst_dns_fw_setname hash:net hashsize 64 family $gfwlist_setfamily &>/dev/null
 
 	######################### SSTP_RULE (tcp and udp) #########################
 
@@ -2085,6 +2113,7 @@ start_iptables_tproxy_mode() {
 	$1 -t mangle -N SSTP_WAN_GFW
 	$1 -t mangle -N SSTP_GFW_CHN
 	$1 -t mangle -N SSTP_WAN_FW
+	$1 -t mangle -N SSTP_WAN_DNS
 
 	$1 -t mangle -A SSTP_RULE -j CONNMARK --restore-mark
 	$1 -t mangle -A SSTP_RULE -m mark --mark $ipts_rt_mark -j RETURN
@@ -2134,6 +2163,10 @@ start_iptables_tproxy_mode() {
 	$1 -t mangle -A SSTP_WAN_CHN -j ${CHN_WAN_TARGET:=SSTP_WAN_FW}
 	$1 -t mangle -A SSTP_WAN_FW -p tcp -m multiport --dports $ipts_proxy_dst_port_tcp --syn -j MARK --set-mark $ipts_rt_mark
 	is_enabled_udp && $1 -t mangle -A SSTP_WAN_FW -p udp -m multiport --dports $ipts_proxy_dst_port_udp -m conntrack --ctstate NEW -j MARK --set-mark $ipts_rt_mark
+
+	$1 -t mangle -A SSTP_WAN_FW -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
+	$1 -t mangle -A SSTP_WAN_DNS -p tcp -m multiport --dports 1:65535 --syn -j MARK --set-mark $ipts_rt_mark
+	is_enabled_udp && $1 -t mangle -A SSTP_WAN_DNS -p udp -m multiport --dports 1:65535 -m conntrack --ctstate NEW -j MARK --set-mark $ipts_rt_mark
 
 	$1 -t mangle -A SSTP_RULE -j CONNMARK --save-mark
 
@@ -2245,10 +2278,15 @@ start_iptables_redirect_mode() {
 	local sstp_dst_fw_setname
 	is_ipv4_ipts $1 && sstp_dst_fw_setname="sstp_dst_fw" || sstp_dst_fw_setname="sstp_dst_fw6"
 
+	local sstp_dst_dns_fw_setname
+	is_ipv4_ipts $1 && sstp_dst_dns_fw_setname="sstp_dst_dns_fw" || sstp_dst_dns_fw_setname="sstp_dst_dns_fw6"
+
 	#ipset -X $sstp_dst_bp_setname &>/dev/null
 	ipset -! -N $sstp_dst_bp_setname hash:net hashsize 64 family $gfwlist_setfamily &>/dev/null
 	#ipset -X $sstp_dst_fw_setname &>/dev/null
 	ipset -! -N $sstp_dst_fw_setname hash:net hashsize 64 family $gfwlist_setfamily &>/dev/null
+	#ipset -X $sstp_dst_dns_fw_setname &>/dev/null
+	ipset -! -N $sstp_dst_dns_fw_setname hash:net hashsize 64 family $gfwlist_setfamily &>/dev/null
 
 	######################### SSTP_RULE (for tcp) #########################
 
@@ -2259,6 +2297,7 @@ start_iptables_redirect_mode() {
 	$1 -t nat -N SSTP_WAN_GFW
 	$1 -t nat -N SSTP_GFW_CHN
 	$1 -t nat -N SSTP_WAN_FW
+	$1 -t nat -N SSTP_WAN_DNS
 
 	$1 -t nat -A SSTP_RULE -p tcp -m set --match-set $proxyaddr_setname dst -m multiport --dports $proxy_svrport -j RETURN
 	$1 -t nat -A SSTP_RULE -m mark --mark 0xff -j RETURN
@@ -2297,6 +2336,9 @@ start_iptables_redirect_mode() {
 	$1 -t nat -A SSTP_WAN_CHN -m set --match-set $chnroute_setname dst -j ${CHN_TARGET:=RETURN}
 	$1 -t nat -A SSTP_WAN_CHN -j ${CHN_WAN_TARGET:=SSTP_WAN_FW}
 	$1 -t nat -A SSTP_WAN_FW -p tcp -m multiport --dports $ipts_proxy_dst_port_tcp --syn -j REDIRECT --to-ports $proxy_tcpport
+
+	$1 -t nat -A SSTP_WAN_FW -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
+	$1 -t nat -A SSTP_WAN_DNS -p tcp -m multiport --dports 1:65535 --syn -j REDIRECT --to-ports $proxy_tcpport
 
 	if is_ipv4_ipts $1; then
 		koolproxy_enable=`nvram get koolproxy_enable`
@@ -2338,6 +2380,7 @@ start_iptables_redirect_mode() {
 		$1 -t mangle -N SSTP_WAN_GFW
 		$1 -t mangle -N SSTP_GFW_CHN
 		$1 -t mangle -N SSTP_WAN_FW
+		$1 -t mangle -N SSTP_WAN_DNS
 
 		$1 -t mangle -A SSTP_RULE -j CONNMARK --restore-mark
 		$1 -t mangle -A SSTP_RULE -m mark --mark $ipts_rt_mark -j RETURN
@@ -2380,6 +2423,9 @@ start_iptables_redirect_mode() {
 		$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $chnroute_setname dst -j ${CHN_TARGET:=RETURN}
 		$1 -t mangle -A SSTP_WAN_CHN -j ${CHN_WAN_TARGET:=SSTP_WAN_FW}
 		$1 -t mangle -A SSTP_WAN_FW -p udp -m multiport --dports $ipts_proxy_dst_port_udp -m conntrack --ctstate NEW -j MARK --set-mark $ipts_rt_mark
+		
+		$1 -t mangle -A SSTP_WAN_FW -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
+		$1 -t mangle -A SSTP_WAN_DNS -p udp -m multiport --dports 1:65535 -m conntrack --ctstate NEW -j MARK --set-mark $ipts_rt_mark
 
 		$1 -t mangle -A SSTP_RULE -j CONNMARK --save-mark
 	fi
