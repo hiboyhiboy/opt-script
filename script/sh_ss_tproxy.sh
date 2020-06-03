@@ -2153,10 +2153,12 @@ start_iptables_tproxy_mode() {
 	$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_GFW
 	$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_CHN
 	$1 -t mangle -A SSTP_GFW_CHN -j RETURN
+	$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 	$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 	$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_bp_setname dst -j RETURN
 	$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $gfwlist_setname dst -j ${GFWLIST_TARGET:=SSTP_WAN_FW}
 	$1 -t mangle -A SSTP_WAN_GFW -j RETURN
+	$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 	$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 	$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_bp_setname dst -j RETURN
 	$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $chnroute_setname dst -j ${CHN_TARGET:=RETURN}
@@ -2327,10 +2329,12 @@ start_iptables_redirect_mode() {
 	$1 -t nat -A SSTP_GFW_CHN -j SSTP_WAN_GFW
 	$1 -t nat -A SSTP_GFW_CHN -j SSTP_WAN_CHN
 	$1 -t nat -A SSTP_GFW_CHN -j RETURN
+	$1 -t nat -A SSTP_WAN_GFW -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 	$1 -t nat -A SSTP_WAN_GFW -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 	$1 -t nat -A SSTP_WAN_GFW -m set --match-set $sstp_dst_bp_setname dst -j RETURN
 	$1 -t nat -A SSTP_WAN_GFW -m set --match-set $gfwlist_setname dst -j ${GFWLIST_TARGET:=SSTP_WAN_FW}
 	$1 -t nat -A SSTP_WAN_GFW -j RETURN
+	$1 -t nat -A SSTP_WAN_CHN -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 	$1 -t nat -A SSTP_WAN_CHN -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 	$1 -t nat -A SSTP_WAN_CHN -m set --match-set $sstp_dst_bp_setname dst -j RETURN
 	$1 -t nat -A SSTP_WAN_CHN -m set --match-set $chnroute_setname dst -j ${CHN_TARGET:=RETURN}
@@ -2414,10 +2418,12 @@ start_iptables_redirect_mode() {
 		$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_GFW
 		$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_CHN
 		$1 -t mangle -A SSTP_GFW_CHN -j RETURN
+		$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 		$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 		$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_bp_setname dst -j RETURN
 		$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $gfwlist_setname dst -j ${GFWLIST_TARGET:=SSTP_WAN_FW}
 		$1 -t mangle -A SSTP_WAN_GFW -j RETURN
+		$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 		$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 		$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_bp_setname dst -j RETURN
 		$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $chnroute_setname dst -j ${CHN_TARGET:=RETURN}
