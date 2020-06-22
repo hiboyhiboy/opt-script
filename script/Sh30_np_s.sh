@@ -269,6 +269,7 @@ if [ ! -z "$action_nps" ] ; then
 		cmd_name="$action_nps"
 		eval "/opt/bin/nps/$action_nps $cmd_log" &
 		logger -t "【nps】" "服务端配置文件在 /etc/storage/nps/conf"
+		logger -t "【nps】" "请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问"
 	fi
 	sleep 4
 	[ -z "`pidof $action_nps`" ] && logger -t "【nps】" "$action_nps启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && nps_restart x
@@ -323,14 +324,45 @@ appname = nps
 #Boot mode(dev|pro)
 runmode = dev
 
+#HTTP(S) proxy port, no startup if empty
+#http_proxy_ip=0.0.0.0
+#http_proxy_port=80
+#https_proxy_port=443
+#https_just_proxy=true
+#default https certificate setting
+#https_default_cert_file=conf/server.pem
+#https_default_key_file=conf/server.key
+
 # Public password, which clients can use to connect to the server
 # After the connection, the server will be able to open relevant ports and parse related domain names according to its own configuration file.
 public_vkey=
 
+#Traffic data persistence interval(minute)
+#Ignorance means no persistence
+#flow_store_interval=1
 # log level LevelEmergency->0  LevelAlert->1 LevelCritical->2 LevelError->3 LevelWarning->4 LevelNotice->5 LevelInformational->6 LevelDebug->7
 log_level=7
 log_path=/tmp/syslog.log
 
+#Whether to restrict IP access, true or false or ignore
+#ip_limit=true
+
+#p2p
+#p2p_ip=127.0.0.1
+#p2p_port=6000
+
+#web
+#web_base_url=
+#web_open_ssl=false
+#web_cert_file=conf/server.pem
+#web_key_file=conf/server.key
+# if web under proxy use sub path. like http://host/nps need this.
+#web_base_url=/nps
+
+#Web API unauthenticated IP address(the len of auth_crypt_key must be 16)
+#Remove comments if needed
+#auth_key=test
+#auth_crypt_key =1234567812345678
 
 #allow_ports=9001-9009,10001,11000-12000
 
@@ -352,6 +384,17 @@ system_info_display=false
 #cache
 http_cache=false
 http_cache_length=100
+
+#get origin ip
+http_add_origin_header=false
+
+#pprof debug options
+#pprof_ip=0.0.0.0
+#pprof_port=9999
+
+#client disconnect timeout
+disconnect_timeout=60
+
 
 EEE
 	web_user=`nvram get http_username`

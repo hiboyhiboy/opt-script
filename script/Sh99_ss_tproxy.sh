@@ -353,6 +353,8 @@ logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空
 fi
 ss_tproxy_v="$(sh_ss_tproxy.sh v | awk -F ' ' '{print $2;}')"
 nvram set ss_tproxy_v="$ss_tproxy_v"
+app21_ver=$(grep 'app21_ver=' /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp | awk -F '=' '{print $2;}')
+nvram set app21_ver=${app21_ver}
 logger -t "【ss_tproxy】" "运行 /etc/storage/script/sh_ss_tproxy.sh"
 #运行脚本启动sh_ss_tproxy.sh
 sh_ss_tproxy.sh start

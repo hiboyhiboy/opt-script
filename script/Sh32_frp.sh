@@ -265,11 +265,11 @@ logger -t "【frp】" "运行 frp_script"
 rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
 eval "/etc/storage/frp_script.sh $cmd_log" &
 restart_dhcpd
-sleep 4
 if [ "$frpc_enable" = "1" ] ; then
 	frpc_v="`/opt/bin/frpc --version`"
 	nvram set frpc_v=$frpc_v
 	logger -t "【frp】" "frpc-version: $frpc_v"
+	sleep 4
 	[ -z "`pidof frpc`" ] && logger -t "【frp】" "frpc启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && frp_restart x
 fi
 if [ "$frps_enable" = "1" ] ; then
@@ -277,6 +277,8 @@ if [ "$frps_enable" = "1" ] ; then
 	nvram set frps_v=$frps_v
 	logger -t "【frp】" "frps-version: $frps_v"
 	[ -z "`pidof frps`" ] && logger -t "【frp】" "frps启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && frp_restart x
+	sleep 4
+	[ ! -z "`pidof frps`" ] && logger -t "【nps】" "请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问"
 fi
 [ "$frpc_enable" = "1" ] && [ ! -z "`pidof frpc`" ] && logger -t "【frp】" "frpc启动成功" && frp_restart o
 [ "$frps_enable" = "1" ] && [ ! -z "`pidof frps`" ] && logger -t "【frp】" "frps启动成功" && frp_restart o
