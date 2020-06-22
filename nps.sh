@@ -119,6 +119,10 @@ if [[ $# = 0 ]]; then
             echo "#web管理界面 password= $web_pass"
             echo "#web管理界面 web port= $web_port"
             echo "#web管理界面      $ipc:$web_port"
+            echo "#有时需要手动设置外网访问端口"
+            echo "#iptables -I INPUT -p tcp --dport $web_port -j ACCEPT"
+            bridge_port="$(cat /usr/bin/nps/conf/nps.conf | grep bridge_port | awk -F '=' '{print $2}')"
+            [ ! -z "$bridge_port" ] && echo "#iptables -I INPUT -p tcp --dport $bridge_port -j ACCEPT"
             break
         fi
     done
@@ -469,7 +473,8 @@ auto_reconnection=true
 
 EEE
     chmod 755 "/usr/bin/nps/npc.txt"
-    sed -e "s|^\(server_addr.*\)=[^=]*$|\1=$ipc:$web_port|" -i /usr/bin/nps/npc.txt
+    bridge_port="$(cat /usr/bin/nps/conf/nps.conf | grep bridge_port | awk -F '=' '{print $2}')"
+    [ ! -z "$bridge_port" ] && sed -e "s|^\(server_addr.*\)=[^=]*$|\1=$ipc:$bridge_port|" -i /usr/bin/nps/npc.txt
 
     return 0
 }
@@ -789,6 +794,10 @@ main(){
     echo "#web管理界面 password= $web_pass"
     echo "#web管理界面 web port= $web_port"
     echo "#web管理界面      $ipc:$web_port"
+    echo "#有时需要手动设置外网访问端口"
+    echo "#iptables -I INPUT -p tcp --dport $web_port -j ACCEPT"
+    bridge_port="$(cat /usr/bin/nps/conf/nps.conf | grep bridge_port | awk -F '=' '{print $2}')"
+    [ ! -z "$bridge_port" ] && echo "#iptables -I INPUT -p tcp --dport $bridge_port -j ACCEPT"
     return 0
 }
 
