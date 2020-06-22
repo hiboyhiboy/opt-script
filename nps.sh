@@ -92,7 +92,10 @@ if [[ $# = 0 ]]; then
     fi
     echo 'nps 输入数字继续一键安装'
     while :; do echo
-        read -p "输入数字继续（【新安装或重新生成配置】请输入1，【更新nps】请输入0，【删除nps】请输入3）:" up_vv
+        echo "【新安装或重新生成配置】请输入1"
+        echo "【更新nps】请输入0"
+        echo "【删除nps】请输入3"
+        read -p "输入数字继续:" up_vv
         if [[ ! $up_vv =~ ^[0-1]$ ]]; then
             if [[ $up_vv == 3 ]]; then
                 REMOVE="1"
@@ -110,13 +113,12 @@ if [[ $# = 0 ]]; then
             web_port_x=`echo $SEED 40000 50000|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
             read -p "输入web管理界面 web port（默认：$web_port_x ）:" web_port
             [ -z "$web_port" ] && web_port=$web_port_x
-            echo '客户端配置文件在 /root/nps/conf/nps.conf'
-            echo '客户端配置文件在 /root/nps/conf/nps.conf'
-            echo '客户端配置文件在 /root/nps/conf/nps.conf'
-            echo "web管理界面 username= $web_user"
-            echo "web管理界面 password= $web_pass"
-            echo "web管理界面 web port= $web_port"
-            echo "web管理界面      $ipc:$web_port"
+            echo '服务端配置文件在 /root/nps/conf/nps.conf'
+            echo '客户端配置文件在 /usr/bin/nps/npc.txt'
+            echo "#web管理界面 username= $web_user"
+            echo "#web管理界面 password= $web_pass"
+            echo "#web管理界面 web port= $web_port"
+            echo "#web管理界面      $ipc:$web_port"
             break
         fi
     done
@@ -128,7 +130,10 @@ if [[ $# = 0 ]]; then
 		nps_RUNNING=1
 		REMOVE=2
 		if [[ -d "/usr/bin/nps/conf" ]]; then
-			read -p "检测到旧配置！！！输入数字继续（【备份旧配置到/root/nps_back/conf】请输入1，【放弃旧配置】请输入2（默认1）:" up_vvv
+			echo "检测到旧配置！！！"
+			echo "【备份旧配置到/root/nps_back/conf】请输入1"
+			echo "【放弃旧配置】请输入2"
+			read -p "输入数字继续（默认1）:" up_vvv
 			[ -z "$up_vvv" ] && up_vvv='1'
 			if [[ $up_vvv != '2' ]];then
 				TIME=$(date "+%Y-%m-%d_%H-%M-%S")
@@ -377,14 +382,45 @@ appname = nps
 #Boot mode(dev|pro)
 runmode = dev
 
+#HTTP(S) proxy port, no startup if empty
+#http_proxy_ip=0.0.0.0
+#http_proxy_port=80
+#https_proxy_port=443
+#https_just_proxy=true
+#default https certificate setting
+#https_default_cert_file=conf/server.pem
+#https_default_key_file=conf/server.key
+
 # Public password, which clients can use to connect to the server
 # After the connection, the server will be able to open relevant ports and parse related domain names according to its own configuration file.
 public_vkey=
 
+#Traffic data persistence interval(minute)
+#Ignorance means no persistence
+#flow_store_interval=1
 # log level LevelEmergency->0  LevelAlert->1 LevelCritical->2 LevelError->3 LevelWarning->4 LevelNotice->5 LevelInformational->6 LevelDebug->7
 log_level=7
 log_path=/tmp/syslog.log
 
+#Whether to restrict IP access, true or false or ignore
+#ip_limit=true
+
+#p2p
+#p2p_ip=127.0.0.1
+#p2p_port=6000
+
+#web
+#web_base_url=
+#web_open_ssl=false
+#web_cert_file=conf/server.pem
+#web_key_file=conf/server.key
+# if web under proxy use sub path. like http://host/nps need this.
+#web_base_url=/nps
+
+#Web API unauthenticated IP address(the len of auth_crypt_key must be 16)
+#Remove comments if needed
+#auth_key=test
+#auth_crypt_key =1234567812345678
 
 #allow_ports=9001-9009,10001,11000-12000
 
@@ -407,13 +443,34 @@ system_info_display=true
 http_cache=false
 http_cache_length=100
 
+#get origin ip
+http_add_origin_header=false
+
+#pprof debug options
+#pprof_ip=0.0.0.0
+#pprof_port=9999
+
+#client disconnect timeout
+disconnect_timeout=60
+
 EEE
     chmod 755 "/usr/bin/nps/conf/nps.conf"
-
+    fi
     sed -e "s|^\(web_port.*\)=[^=]*$|\1=$web_port|" -i /usr/bin/nps/conf/nps.conf
     sed -e "s|^\(web_username.*\)=[^=]*$|\1=$web_user|" -i /usr/bin/nps/conf/nps.conf
     sed -e "s|^\(web_password.*\)=[^=]*$|\1=$web_pass|" -i /usr/bin/nps/conf/nps.conf
-    fi
+
+    cat > "/usr/bin/nps/npc.txt" <<-\EEE
+[common]
+server_addr=1.1.1.1:8284
+conn_type=tcp
+vkey=web界面中显示的密钥
+auto_reconnection=true
+
+EEE
+    chmod 755 "/usr/bin/nps/npc.txt"
+    sed -e "s|^\(server_addr.*\)=[^=]*$|\1=$ipc:$web_port|" -i /usr/bin/nps/npc.txt
+
     return 0
 }
 
@@ -725,9 +782,9 @@ main(){
     fi
     colorEcho ${GREEN} "nps ${NEW_VER} is installed."
     rm -rf /tmp/nps
-    echo '配置完成，客户端配置文件在 /root/nps/conf/nps.conf'
-    echo '配置完成，客户端配置文件在 /root/nps/conf/nps.conf'
-    echo '配置完成，客户端配置文件在 /root/nps/conf/nps.conf'
+    echo '配置完成，服务端配置文件在 /root/nps/conf/nps.conf'
+    echo '配置完成，客户端配置文件在 /usr/bin/nps/npc.txt'
+    cat /usr/bin/nps/npc.txt
     echo "#web管理界面 username= $web_user"
     echo "#web管理界面 password= $web_pass"
     echo "#web管理界面 web port= $web_port"
