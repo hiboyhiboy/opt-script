@@ -33,6 +33,12 @@ RED="31m"      # Error message
 GREEN="32m"    # Success message
 YELLOW="33m"   # Warning message
 BLUE="36m"     # Info message
+magenta="35m"
+
+colorEcho(){
+    COLOR=$1
+    echo -e "\033[${COLOR}${@:2}\033[0m"
+}
 
 
 #########################
@@ -90,39 +96,44 @@ if [[ $# = 0 ]]; then
     if [[ "$IP" = "" ]]; then
         ipc=$(wget -qO- -t1 -T2 ipv4.icanhazip.com)
     fi
-    echo 'nps 输入数字继续一键安装'
+    colorEcho ${BLUE} 'nps 输入数字继续一键安装'
     while :; do echo
-        echo "【新安装或重新生成配置】请输入1"
-        echo "【更新nps】请输入0"
-        echo "【删除nps】请输入3"
-        read -p "输入数字继续:" up_vv
-        if [[ ! $up_vv =~ ^[0-1]$ ]]; then
+        colorEcho ${BLUE} "【最新安装 + 重新生成配置】请输入1"
+        colorEcho ${BLUE} "【重新生成配置】请输入2"
+        colorEcho ${BLUE} "【更新nps】请输入0"
+        colorEcho ${BLUE} "【删除nps】请输入3"
+        read -p "$(colorEcho ${BLUE} "输入数字继续:")" up_vv
+        if [[ ! $up_vv =~ ^[0-2]$ ]]; then
             if [[ $up_vv == 3 ]]; then
                 REMOVE="1"
                 break
             fi
-            echo "${CWARNING}输入错误! 请输入正确的数字!${CEND}"
+            colorEcho ${RED} "${CWARNING}输入错误! 请输入正确的数字!${CEND}"
         else
             SEED=`tr -cd a-b0-9 </dev/urandom | head -c 8`
-            read -p "输入web管理界面 username（默认：$SEED ）:" web_user
+            read -p "$(colorEcho ${BLUE} "输入web管理界面 username（默认：$SEED ）:")" web_user
             [ -z "$web_user" ] && web_user=$SEED
             SEED=`tr -cd a-b0-9 </dev/urandom | head -c 8`
-            read -p "输入web管理界面 password（默认：$SEED ）:" web_pass
+            read -p "$(colorEcho ${BLUE} "输入web管理界面 password（默认：$SEED ）:")" web_pass
             [ -z "$web_pass" ] && web_pass=$SEED
             SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
             web_port_x=`echo $SEED 40000 50000|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-            read -p "输入web管理界面 web port（默认：$web_port_x ）:" web_port
+            read -p "$(colorEcho ${BLUE} "输入web管理界面 web port（默认：$web_port_x ）:")" web_port
             [ -z "$web_port" ] && web_port=$web_port_x
-            echo '服务端配置文件在 /root/nps/conf/nps.conf'
-            echo '客户端配置文件在 /usr/bin/nps/npc.txt'
-            echo "#web管理界面 username= $web_user"
-            echo "#web管理界面 password= $web_pass"
-            echo "#web管理界面 web port= $web_port"
-            echo "#web管理界面      $ipc:$web_port"
-            echo "#有时需要手动设置外网访问端口"
-            echo "#iptables -I INPUT -p tcp --dport $web_port -j ACCEPT"
-            bridge_port="$(cat /usr/bin/nps/conf/nps.conf | grep bridge_port | awk -F '=' '{print $2}')"
-            [ ! -z "$bridge_port" ] && echo "#iptables -I INPUT -p tcp --dport $bridge_port -j ACCEPT"
+            SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+            bridge_port_x=`echo $SEED 50001 60000|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+            read -p "$(colorEcho ${BLUE} "输入网桥端口，用于客户端与服务器通信 bridge port（默认：$bridge_port_x ）:")" bridge_port
+            [ -z "$bridge_port" ] && bridge_port=$bridge_port_x
+            colorEcho ${BLUE} '服务端配置文件在 /root/nps/conf/nps.conf'
+            colorEcho ${BLUE} '客户端配置文件在 /usr/bin/nps/npc.txt'
+            colorEcho ${BLUE} "#网桥端口 bridge_port= $bridge_port"
+            colorEcho ${BLUE} "#web管理界面 username= $web_user"
+            colorEcho ${BLUE} "#web管理界面 password= $web_pass"
+            colorEcho ${BLUE} "#web管理界面 web port= $web_port"
+            colorEcho ${BLUE} "#web管理界面      $ipc:$web_port"
+            colorEcho ${BLUE} "#有时需要手动设置外网访问端口"
+            colorEcho ${magenta} "iptables -I INPUT -p tcp --dport $web_port -j ACCEPT"
+            [ ! -z "$bridge_port" ] && colorEcho ${magenta} "iptables -I INPUT -p tcp --dport $bridge_port -j ACCEPT"
             break
         fi
     done
@@ -130,33 +141,28 @@ if [[ $# = 0 ]]; then
     if [[ $up_vv == '0' ]];then
 		FORCE="1"
     fi
-    if [[ $up_vv == '1' ]];then
+    if [[ $up_vv == '1' ]] || [[ $up_vv == '2' ]];then
 		nps_RUNNING=1
 		REMOVE=2
 		if [[ -d "/usr/bin/nps/conf" ]]; then
-			echo "检测到旧配置！！！"
-			echo "【备份旧配置到/root/nps_back/conf】请输入1"
-			echo "【放弃旧配置】请输入2"
-			read -p "输入数字继续（默认1）:" up_vvv
+			colorEcho ${YELLOW} "检测到旧配置！！！"
+			colorEcho ${YELLOW} "【备份旧配置到/root/nps_back/conf】请输入1"
+			colorEcho ${YELLOW} "【放弃旧配置】请输入2"
+			read -p "$(colorEcho ${BLUE} "输入数字继续（默认1）:")" up_vvv
 			[ -z "$up_vvv" ] && up_vvv='1'
 			if [[ $up_vvv != '2' ]];then
 				TIME=$(date "+%Y-%m-%d_%H-%M-%S")
-				echo '备份旧配置到/root/nps_back/conf'
+				colorEcho ${GREEN} '备份旧配置到/root/nps_back/conf'
 				rm -rf /root/nps_back/conf_$TIME/*
 				mkdir -p /root/nps_back/conf_$TIME
 				cp -r -f -a /root/nps/conf/* /root/nps_back/conf_$TIME
 			else
-				echo '放弃旧配置'
+				colorEcho ${GREEN} '放弃旧配置'
 			fi
 		fi
     fi
 fi
 ###############################
-colorEcho(){
-    COLOR=$1
-    echo -e "\033[${COLOR}${@:2}\033[0m"
-}
-
 sysArch(){
     ARCH=$(uname -m)
     if [[ "$ARCH" == "i686" ]] || [[ "$ARCH" == "i386" ]]; then
@@ -460,9 +466,12 @@ disconnect_timeout=60
 EEE
     chmod 755 "/usr/bin/nps/conf/nps.conf"
     fi
-    sed -e "s|^\(web_port.*\)=[^=]*$|\1=$web_port|" -i /usr/bin/nps/conf/nps.conf
-    sed -e "s|^\(web_username.*\)=[^=]*$|\1=$web_user|" -i /usr/bin/nps/conf/nps.conf
-    sed -e "s|^\(web_password.*\)=[^=]*$|\1=$web_pass|" -i /usr/bin/nps/conf/nps.conf
+
+    return 0
+}
+
+
+installInitScript(){
 
     cat > "/usr/bin/nps/npc.txt" <<-\EEE
 [common]
@@ -473,14 +482,15 @@ auto_reconnection=true
 
 EEE
     chmod 755 "/usr/bin/nps/npc.txt"
+
+    sed -e "s|^\(web_port.*\)=[^=]*$|\1=$web_port|" -i /usr/bin/nps/conf/nps.conf
+    sed -e "s|^\(web_username.*\)=[^=]*$|\1=$web_user|" -i /usr/bin/nps/conf/nps.conf
+    sed -e "s|^\(web_password.*\)=[^=]*$|\1=$web_pass|" -i /usr/bin/nps/conf/nps.conf
+    sed -e "s|^\(bridge_port.*\)=[^=]*$|\1=$bridge_port|" -i /usr/bin/nps/conf/nps.conf
+
     bridge_port="$(cat /usr/bin/nps/conf/nps.conf | grep bridge_port | awk -F '=' '{print $2}')"
     [ ! -z "$bridge_port" ] && sed -e "s|^\(server_addr.*\)=[^=]*$|\1=$ipc:$bridge_port|" -i /usr/bin/nps/npc.txt
 
-    return 0
-}
-
-
-installInitScript(){
     if [[ -n "${SYSTEMCTL_CMD}" ]];then
         if [[ ! -f "/etc/systemd/system/nps.service" ]]; then
             if [[ ! -f "/lib/systemd/system/nps.service" ]]; then
@@ -730,9 +740,12 @@ main(){
     #helping information
     [[ "$HELP" == "1" ]] && Help && return
     [[ "$CHECK" == "1" ]] && checkUpdate && return
+
+    if [[ $up_vv != '2' ]]; then
+
     [[ "$REMOVE" == "1" ]] && remove && return
     [[ "$REMOVE" == "2" ]] && remove
-    
+
     sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
@@ -780,6 +793,13 @@ main(){
         stopnps
     fi
     installnps || return $?
+
+    fi
+
+    if pgrep "nps" > /dev/null ; then
+        nps_RUNNING=1
+        stopnps
+    fi
     installInitScript || return $?
     if [[ ${nps_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting nps service."
@@ -787,17 +807,19 @@ main(){
     fi
     colorEcho ${GREEN} "nps ${NEW_VER} is installed."
     rm -rf /tmp/nps
-    echo '配置完成，服务端配置文件在 /root/nps/conf/nps.conf'
-    echo '配置完成，客户端配置文件在 /usr/bin/nps/npc.txt'
+    colorEcho ${BLUE} '配置完成，服务端配置文件在 /root/nps/conf/nps.conf'
+    colorEcho ${BLUE} '配置完成，客户端配置文件在 /usr/bin/nps/npc.txt'
     cat /usr/bin/nps/npc.txt
-    echo "#web管理界面 username= $web_user"
-    echo "#web管理界面 password= $web_pass"
-    echo "#web管理界面 web port= $web_port"
-    echo "#web管理界面      $ipc:$web_port"
-    echo "#有时需要手动设置外网访问端口"
-    echo "#iptables -I INPUT -p tcp --dport $web_port -j ACCEPT"
     bridge_port="$(cat /usr/bin/nps/conf/nps.conf | grep bridge_port | awk -F '=' '{print $2}')"
-    [ ! -z "$bridge_port" ] && echo "#iptables -I INPUT -p tcp --dport $bridge_port -j ACCEPT"
+    web_port="$(cat /usr/bin/nps/conf/nps.conf | grep web_port | awk -F '=' '{print $2}')"
+    colorEcho ${BLUE} "#网桥端口 bridge_port= $bridge_port"
+    colorEcho ${BLUE} "#web管理界面 username= $web_user"
+    colorEcho ${BLUE} "#web管理界面 password= $web_pass"
+    colorEcho ${BLUE} "#web管理界面 web port= $web_port"
+    colorEcho ${BLUE} "#web管理界面      $ipc:$web_port"
+    colorEcho ${BLUE} "#有时需要手动设置外网访问端口"
+    colorEcho ${magenta} "iptables -I INPUT -p tcp --dport $web_port -j ACCEPT"
+    [ ! -z "$bridge_port" ] && colorEcho ${magenta} "iptables -I INPUT -p tcp --dport $bridge_port -j ACCEPT"
     return 0
 }
 
