@@ -21,6 +21,8 @@ app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
 clash_secret=`nvram get app_119`
 app_120=`nvram get app_120`
+app_121=`nvram get app_121`
+[ -z $log_level ] && log_level="error" && nvram set app_121="error"
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
@@ -791,6 +793,14 @@ yq w -i $config_yml external-controller $clash_ui
 rm_temp
 yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
 rm_temp
+# 转换新参数兼容 1.0 或更高版本
+[ ! -z "$(cat $config_yml | grep "Proxy:" )" ] && sed -e 's@Proxy:@proxies:@g' -i $config_yml && logger -t "【clash】" "转换新参数: Proxy --> proxies"
+[ ! -z "$(cat $config_yml | grep "Proxy Group:" )" ] && sed -e 's@Proxy Group:@proxy-groups:@g' -i $config_yml && logger -t "【clash】" "转换新参数: Proxy Group --> proxy-groups"
+[ ! -z "$(cat $config_yml | grep "Rule:" )" ] && sed -e 's@Rule:@rules:@g' -i $config_yml && logger -t "【clash】" "转换新参数: Rule --> rules"
+[ ! -z "$(cat $config_yml | grep "proxy-provider:" )" ] && sed -e 's@proxy-provider:@proxy-providers:@g' -i $config_yml && logger -t "【clash】" "转换新参数: proxy-provider --> proxy-providers"
+# 设置日志输出 silent / info / warning / error / debug(默认[error]，避免日志内容过多导致卡机）。
+logger -t "【clash】" "设置日志输出: $log_level"
+yq w -i $config_yml log-level $log_level
 if [ ! -s $config_yml ] ; then
 logger -t "【clash】" "yq 初始化 clash 配置错误！请检查配置！"
 logger -t "【clash】" "尝试直接使用原始配置启动！"
