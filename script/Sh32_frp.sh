@@ -195,31 +195,36 @@ fi
 frp_tag="$(echo "$frp_tag" | tr -d 'v' | tr -d ' ')"
 fi
 if [ "$frp_version" == "9" ] ; then
-# 版本对比
+logger -t "【frp】" "$frp_version_9 版本对比"
 for action_frp in $action_for
 do
-if [ -s "/opt/bin/$action_frp" ] ; then
-	frp_ver="`/opt/bin/$action_frp --version`"
-	if [ "$frp_ver" != "$frp_tag" ] ; then
-		logger -t "【frp】" "$action_frp 当前版本 $frp_ver ,需要安装 $frp_tag ,自动重新下载"
-		[ -s "/opt/bin/$action_frp" ] && rm -f /opt/bin/$action_frp
+frp_ver="`/opt/bin/$action_frp --version`"
+if [ "$frp_ver" != "$frp_tag" ] ; then
+	logger -t "【frp】" "$action_frp 当前版本 $frp_ver ,需要安装 $frp_tag ,自动重新下载"
+	[ -s "/opt/bin/$action_frp" ] && rm -f /opt/bin/$action_frp
+	# 下载主程序
+	rm -rf /opt/bin/frp_tmp
+	mkdir -p /opt/bin/frp_tmp
+	url_tmp="https://github.com/fatedier/frp/releases/download/v""$frp_tag""/frp_""$frp_tag""_linux_mipsle.tar.gz"
+	logger -t "【frp】" "下载: $url_tmp"
+	wgetcurl_file "/opt/bin/frp_tmp/frp_linux_mipsle.tar.gz" "$url_tmp"
+	logger -t "【frp】" "解压: /opt/bin/frp_tmp/frp_linux_mipsle.tar.gz"
+	tar -xz -C /opt/bin/frp_tmp -f /opt/bin/frp_tmp/frp_linux_mipsle.tar.gz
+	[ ! -z "$(echo $action_for | grep frpc)" ] && cp "/opt/bin/frp_tmp/frp_""$frp_tag""_linux_mipsle/frpc" /opt/bin/frpc
+	[ ! -z "$(echo $action_for | grep frps)" ] && cp "/opt/bin/frp_tmp/frp_""$frp_tag""_linux_mipsle/frps" /opt/bin/frps
+	rm -rf /opt/bin/frp_tmp
+	chmod 777 /opt/bin/$action_frp
+	[[ "$($action_frp -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/$action_frp
+	if [ -s "/opt/bin/$action_frp" ] ; then
+		logger -t "【frp】" "解压完成！！！ /opt/bin/$action_frp"
+	else
+		logger -t "【frp】" "错误！！！解压文件不完整，请手动下载指定版本解压到：/opt/bin/$action_frp"
 	fi
 fi
 done
-# 下载主程序
-rm -rf /opt/bin/frp_tmp
-mkdir -p /opt/bin/frp_tmp
-url_tmp="https://github.com/fatedier/frp/releases/download/v""$frp_tag""/frp_""$frp_tag""_linux_mipsle.tar.gz"
-logger -t "【frp】" "下载: $url_tmp"
-wgetcurl_file "/opt/bin/frp_tmp/frp_linux_mipsle.tar.gz" "$url_tmp"
-logger -t "【frp】" "解压: /opt/bin/frp_tmp/frp_linux_mipsle.tar.gz"
-tar -xz -C /opt/bin/frp_tmp -f /opt/bin/frp_tmp/frp_linux_mipsle.tar.gz
-[ ! -z "$(echo $action_for | grep frpc)" ] && cp "/opt/bin/frp_tmp/frp_""$frp_tag""_linux_mipsle/frpc" /opt/bin/frpc
-[ ! -z "$(echo $action_for | grep frps)" ] && cp "/opt/bin/frp_tmp/frp_""$frp_tag""_linux_mipsle/frps" /opt/bin/frps
-rm -rf /opt/bin/frp_tmp
-logger -t "【frp】" "解压完成！！！"
 fi
 if [ "$frp_version" != "10" ] && [ "$frp_version" != "9" ] ; then
+logger -t "【frp】" "$frp_version_txt 版本对比"
 for action_frp in $action_for
 do
 if [ -s "/opt/bin/$action_frp" ] ; then
