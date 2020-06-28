@@ -21,7 +21,7 @@ app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
 clash_secret=`nvram get app_119`
 app_120=`nvram get app_120`
-app_121=`nvram get app_121`
+log_level=`nvram get app_121`
 [ -z $log_level ] && log_level="error" && nvram set app_121="error"
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
@@ -95,7 +95,7 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch$app_default_config$clash_secret$app_120"
+B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch$app_default_config$clash_secret$app_120$log_level"
 B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
 [ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
