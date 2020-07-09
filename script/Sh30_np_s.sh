@@ -165,6 +165,20 @@ if [ -z "$nps_version" ] ; then
 	fi
 	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.26.4]" && nps_restart x
 	[ ! -z "$nps_tag" ] && logger -t "【nps】" "自动下载最新版本 $nps_tag"
+	if [ -z "$nps_tag" ] && [ -s "/opt/bin/nps/npc" ] ; then
+		cd /opt/bin/nps
+		/opt/bin/nps/npc 2>&1 > /tmp/nps_v.txt &
+		sleep 2
+		killall npc
+		nps_tag="$(cat /tmp/nps_v.txt | grep version | awk -F ',' '{print $1}'  | awk -F ' ' '{print $NF}')"
+	fi
+	if [ -z "$nps_tag" ] && [ -s "/opt/bin/nps/nps" ] ; then
+		cd /opt/bin/nps
+		/opt/bin/nps/nps 2>&1 > /tmp/nps_v.txt &
+		sleep 2
+		killall nps
+		nps_tag="$(cat /tmp/nps_v.txt | grep version | awk -F ',' '{print $1}'  | awk -F ' ' '{print $NF}')"
+	fi
 	[ -z "$nps_tag" ] && nps_tag="v0.26.8"
 	nps_version=$nps_tag && nvram set app_57=$nps_tag
 	nps_restart o

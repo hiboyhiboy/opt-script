@@ -189,9 +189,18 @@ else
 	frp_tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://github.com/fatedier/frp/releases/latest  2>&1 | grep releases/tag | awk -F 'tag/' '{print $NF}' | awk -F '"' '{print $1}' )"
 	[ -z "$frp_tag" ] && frp_tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://github.com/fatedier/frp/releases/latest  2>&1 | grep '/frp/tree/'  |head -n1 | awk -F 'tree/' '{print $NF}' | awk -F '"' '{print $1}' )"
 fi
-[ -z "$frp_tag" ] && logger -t "【frp】" "github最新版本获取失败！！！"
 [ ! -z "$frp_tag" ] && logger -t "【frp】" "最新版本 $frp_tag"
-[ -z "$frp_tag" ] && frp_tag="$frp_version_2" && logger -t "【frp】" "使用版本：$frp_version_2" && frp_version=2
+if [ -z "$frp_tag" ] ; then
+logger -t "【frp】" "github最新版本获取失败！！！"
+frp_tag="`/opt/bin/frpc --version`"
+[ -z "$frp_tag" ] && frp_tag="`/opt/bin/frps --version`"
+if [ -z "$frp_tag" ] ; then
+frp_tag="$frp_version_2"
+frp_version=10
+frp_ver_wget=""
+fi
+logger -t "【frp】" "使用版本：$frp_tag"
+fi
 frp_tag="$(echo "$frp_tag" | tr -d 'v' | tr -d ' ')"
 fi
 if [ "$frp_version" == "9" ] ; then
