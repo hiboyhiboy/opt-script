@@ -202,6 +202,9 @@ fi
 logger -t "【frp】" "使用版本：$frp_tag"
 fi
 frp_tag="$(echo "$frp_tag" | tr -d 'v' | tr -d ' ')"
+[ ! -z "$frp_tag" ] && nvram set frp_tag_version="$frp_tag"
+[ -z "$frp_tag" ] && frp_tag=`nvram get frp_tag_version`
+[ -z "$frp_tag" ] && frp_tag="0.33.0" && nvram set frp_tag_version="$frp_tag"
 fi
 if [ "$frp_version" == "9" ] ; then
 logger -t "【frp】" "$frp_version_9 版本对比"

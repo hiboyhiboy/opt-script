@@ -179,8 +179,10 @@ if [ -z "$nps_version" ] ; then
 		killall nps
 		nps_tag="$(cat /tmp/nps_v.txt | grep version | awk -F ',' '{print $1}'  | awk -F ' ' '{print $NF}')"
 	fi
-	[ -z "$nps_tag" ] && nps_tag="v0.26.8"
-	nps_version=$nps_tag && nvram set app_57=$nps_tag
+	[ ! -z "$nps_tag" ] && nvram set app_57="$nps_tag"
+	[ -z "$nps_tag" ] && nps_tag=`nvram get app_57`
+	[ -z "$nps_tag" ] && nps_tag="v0.26.8" && nvram set app_57="$nps_tag"
+	nps_version=$nps_tag
 	nps_restart o
 	logger -t "【nps】" "重启" && nps_restart
 fi
