@@ -106,7 +106,7 @@ if [ ! -z "$upanPath" ] ; then
 	fi
 	if [ ! -s "$upanPath/ad/bin/adbyby" ] ; then
 		logger -t "【Adbyby】" "开始下载 adbyby Files"
-		wgetcurl.sh $upanPath/ad/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'https://coding.net/u/adbyby/p/linux/git/raw/master/7620n.tar.gz' N
+		wgetcurl.sh $upanPath/ad/7620n.tar.gz "https://cdn.jsdelivr.net/gh/adbyby/Files@latest/7620n.tar.gz" 'https://coding.net/u/adbyby/p/linux/git/raw/master/7620n.tar.gz' N
 		untar.sh $upanPath/ad/7620n.tar.gz $upanPath/ad $upanPath/ad/bin/adbyby
 	fi
 else
@@ -123,7 +123,7 @@ else
 	fi
 	if [ ! -s "/tmp/bin/adbyby" ] ; then
 		logger -t "【Adbyby】" "开始下载 adbyby Files"
-		wgetcurl.sh /tmp/7620n.tar.gz "https://raw.githubusercontent.com/adbyby/Files/master/7620n.tar.gz" 'https://coding.net/u/adbyby/p/linux/git/raw/master/7620n.tar.gz' N
+		wgetcurl.sh /tmp/7620n.tar.gz "https://cdn.jsdelivr.net/gh/adbyby/Files@latest/7620n.tar.gz" 'https://coding.net/u/adbyby/p/linux/git/raw/master/7620n.tar.gz' N
 		untar.sh /tmp/7620n.tar.gz /tmp /tmp/bin/adbyby
 	fi
 fi
@@ -340,14 +340,14 @@ update_ad_rules () {
 
 xwhyc_rules="$hiboyfile/video.txt"
 xwhyc_rules2="https://opt.cn2qq.com/opt-file/video.txt"
-xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
+xwhyc_rules1="https://cdn.jsdelivr.net/gh/adbyby/xwhyc-rules@latest/video.txt"
 xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules1 N 5
 [ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules0 N 5
 xwhyc_rules="$hiboyfile/lazy.txt"
 xwhyc_rules2="https://opt.cn2qq.com/opt-file/lazy.txt"
-xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
+xwhyc_rules1="https://cdn.jsdelivr.net/gh/adbyby/xwhyc-rules@latest/lazy.txt"
 xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
 wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules1 N 100
@@ -1006,7 +1006,7 @@ update)
 	checka="/tmp/var/lazy.txt"
 	rm -f /tmp/var/lazy.txt
 	urla="https://opt.cn2qq.com/opt-file/lazy.txt"
-	urla1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
+	urla1="https://cdn.jsdelivr.net/gh/adbyby/xwhyc-rules@latest/lazy.txt"
 	urla2="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 	checkb="/tmp/bin/data/lazy.txt"
 	wgetcurl.sh $checka $urla $urla1 N 100
@@ -1019,7 +1019,7 @@ update)
 		checka="/tmp/var/video.txt"
 		rm -f /tmp/var/video.txt
 		urla="https://opt.cn2qq.com/opt-file/video.txt"
-		urla1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
+		urla1="https://cdn.jsdelivr.net/gh/adbyby/xwhyc-rules@latest/video.txt"
 		urla2="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 		checkb="/tmp/bin/data/video.txt"
 		wgetcurl.sh $checka $urla $urla1 N 5

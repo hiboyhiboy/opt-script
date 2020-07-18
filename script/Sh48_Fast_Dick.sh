@@ -176,7 +176,7 @@ else
 	hash python 2>/dev/null || {  logger -t "【迅雷快鸟】" "无法运行 python 程序，请检查系统，10 秒后自动尝试重新启动" ; sleep 10 ; FastDicks_restart x ; }
 	rm -f "/opt/FastDick/" -R
 	mkdir -p "/opt/FastDick"
-	swjsqfile="https://raw.githubusercontent.com/fffonion/Xunlei-FastDick/master/swjsq.py"
+	swjsqfile="https://cdn.jsdelivr.net/gh/fffonion/Xunlei-FastDick@latest/swjsq.py"
 	wgetcurl.sh "/opt/FastDick/swjsq.py" $swjsqfile $swjsqfile N
 	chmod 777 "/opt/FastDick/swjsq.py"
 	logger -t "【迅雷快鸟】" "程序下载完成, 正在启动 python /opt/FastDick/swjsq.py"
