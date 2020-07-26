@@ -657,7 +657,7 @@ update_gfwlist_file() {
 	ss_3p_kool=`nvram get ss_3p_kool`
 	if [ "$ss_3p_kool" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 koolshare 列表...."
-		local url='https://raw.github.com/hq450/fancyss/master/rules/gfwlist.conf'
+		local url='https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf'
 		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
@@ -890,7 +890,7 @@ update_gfwlist_sstp() {
 	command_is_exists 'perl'   || log_error "command not found: perl"
 	command_is_exists 'base64' || log_error "command not found: base64"
 
-	local url='https://raw.github.com/gfwlist/gfwlist/master/gfwlist.txt'
+	local url='https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt'
 	local data; data=$(curl -4sSkL "$url") || log_error "download failed, exit-code: $?"
 
 	local base64_decode=''
@@ -925,7 +925,7 @@ update_chnlist_file() {
 	mkdir -p /opt/app/ss_tproxy/rule
 	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnlist_tmp.txt"
 	rm -f $tmp_down_file
-	local url='https://raw.github.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
+	local url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
 	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 	sed -e "s@server=/@@g" -i  $tmp_down_file
 	sed -e 's@/.*@@g' -i  $tmp_down_file
@@ -1012,7 +1012,7 @@ update_chnlist_ipset() {
 }
 update_chnlist_sstp() {
 	command_is_exists 'curl' || log_error "command not found: curl"
-	local url='https://raw.github.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
+	local url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
 	local data; data=$(curl -4sSkL "$url") || log_error "download failed, exit-code: $?"
 	echo "$data" | awk -F/ '{print $2}' >$file_gfwlist_txt
 }
