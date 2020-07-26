@@ -385,9 +385,9 @@ bind 0.0.0.0:8051 -group china
 bind 0.0.0.0:8052 -group office
 
 # china 服务器
+server 119.29.29.29 -group china
 server 114.114.114.114 -group china
 server 223.5.5.5 -group china
-server 119.29.29.29 -group china
 server 1.2.4.8 -group china
 #server 240c::6666 -group china
 #server 240c::6644 -group china

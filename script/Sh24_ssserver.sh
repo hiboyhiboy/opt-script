@@ -252,6 +252,7 @@ echo -n "$1" \
  | sed -e 's@ -a @ 丨 -a @g' \
  | sed -e 's@ -f @ 丨 -f @g' \
  | sed -e 's@ -t @ 丨 -t @g' \
+ | sed -e 's@ -T @ 丨 -T @g' \
  | sed -e 's@ -c @ 丨 -c @g' \
  | sed -e 's@ -n @ 丨 -n @g' \
  | sed -e 's@ -i @ 丨 -i @g' \
