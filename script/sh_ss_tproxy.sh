@@ -635,7 +635,8 @@ update_gfwlist_file() {
 	if [ "$ss_3p_gfwlist" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取官方 gfwlist...."
 		local url='https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
-		wgetcurl_checkmd5 $tmp_base64_gfwlist  "$url" "$url" N 5
+		local raw_url='https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt'
+		wgetcurl_checkmd5 $tmp_base64_gfwlist  "$url" "$raw_url" N 5
 		if [ -s $tmp_base64_gfwlist ] && [ -z "$(cat $tmp_base64_gfwlist | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		sed -e  's@$@==@g' -i $tmp_base64_gfwlist
 		cat $tmp_base64_gfwlist | base64 -d > $tmp_down_file
