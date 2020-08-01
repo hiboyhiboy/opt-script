@@ -22,6 +22,8 @@ app_default_config=`nvram get app_115`
 clash_secret=`nvram get app_119`
 app_120=`nvram get app_120`
 log_level=`nvram get app_121`
+clash_mode_x=`nvram get app_122`
+[ -z $clash_mode_x ] && clash_mode_x=0 && nvram set app_122=0
 [ -z $log_level ] && log_level="error" && nvram set app_121="error"
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
@@ -95,7 +97,7 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch$app_default_config$clash_secret$app_120$log_level"
+B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch$app_default_config$clash_secret$app_120$log_level$clash_mode_x"
 B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
 [ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
@@ -321,10 +323,10 @@ ss_tproxy_mode_x=`nvram get app_110`
 [ "$ss_tproxy_mode_x" = "0" ] && logger -t "【clash】" "【自动】设置 ss_tproxy 配置文件，配置导入中..."
 [ "$ss_tproxy_mode_x" = "1" ] && logger -t "【clash】" "【手动】设置 ss_tproxy 配置文件，跳过配置导入" && return
  # /etc/storage/app_27.sh
- # sstp_set mode='gfwlist'
- # sstp_set mode='chnroute'
-sstp_set mode='global'
- # sstp_set mode='chnlist'
+[ "$clash_mode_x" = "1" ] && sstp_set mode='gfwlist'
+[ "$clash_mode_x" = "2" ] && sstp_set mode='chnroute'
+[ "$clash_mode_x" = "0" ] && sstp_set mode='global'
+[ "$clash_mode_x" = "3" ] && sstp_set mode='chnlist'
 sstp_set ipv4='true' ; sstp_set ipv6='false' ;
  # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
  # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
@@ -353,10 +355,10 @@ sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
 sstp_set dns_remote='8.8.8.8#53'
 sstp_set dns_remote6='2001:4860:4860::8888#53'
- # sstp_set dns_direct='8.8.8.8' # 回国模式
- # sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
- # sstp_set dns_remote='119.29.29.29#53' # 回国模式
- # sstp_set dns_remote6='240C::6666#53' # 回国模式
+[ "$clash_mode_x" = "3" ] && sstp_set dns_direct='8.8.8.8' # 回国模式
+[ "$clash_mode_x" = "3" ] && sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
+[ "$clash_mode_x" = "3" ] && sstp_set dns_remote='119.29.29.29#53' # 回国模式
+[ "$clash_mode_x" = "3" ] && sstp_set dns_remote6='240C::6666#53' # 回国模式
 sstp_set dns_bind_port='8053'
 ## dnsmasq
 sstp_set dnsmasq_bind_port='53'
