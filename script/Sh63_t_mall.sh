@@ -6,6 +6,15 @@ tmall_enable=`nvram get app_55`
 tmall_id=`nvram get app_56`
 demoui_enable=`nvram get app_117`
 [ -z $demoui_enable ] && demoui_enable=0 && nvram set app_117=0
+wxsend_enable=`nvram get app_123`
+[ -z $wxsend_enable ] && wxsend_enable=0 && nvram set app_123=0
+wxsend_port=`nvram get app_128`
+[ -z $wxsend_port ] && wxsend_port=0 && nvram set app_128=0
+wxsend_cgi=`nvram get app_129`
+if [ -z $wxsend_cgi ] ; then
+weekly=`tr -cd a-b0-9 </dev/urandom | head -c 12`
+wxsend_cgi="$weekly" && nvram set app_129="$weekly"
+fi
 app_118=`nvram get app_118`
 [ -z $app_118 ] && app_118=8080 && nvram set app_118=8080
 http_tmp_lanport=`nvram get http_tmp_lanport`
@@ -78,7 +87,7 @@ exit 0
 tmall_get_status () {
 
 A_restart=`nvram get tmall_status`
-B_restart="$tmall_enable$tmall_id$demoui_enable$app_117$app_118$(cat /etc/storage/app_13.sh /etc/storage/app_14.sh /etc/storage/app_29.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$tmall_enable$wxsend_enable$wxsend_port$tmall_id$demoui_enable$app_117$app_118$(cat /etc/storage/app_13.sh /etc/storage/app_14.sh /etc/storage/app_29.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set tmall_status=$B_restart
@@ -164,9 +173,22 @@ ln -sf /etc/storage/app_14.sh /opt/tmall/app_14.sh
 rm -f /opt/tmall/app_29.sh
 ln -sf /etc/storage/app_29.sh /opt/tmall/app_29.sh
 [ ! -f /opt/tmall/app_29.sh ] && cp -f /etc/storage/app_29.sh /opt/tmall/app_29.sh
+rm -f /opt/tmall/app_31.sh
+ln -sf /etc/storage/app_31.sh /opt/tmall/app_31.sh
+[ ! -f /opt/tmall/app_31.sh ] && cp -f /etc/storage/app_31.sh /opt/tmall/app_31.sh
 
 rm -f /opt/tmall/Caddyfile
 [ "$demoui_enable" == "0" ] || [ "$demoui_enable" == "1" ] && { cat /etc/storage/app_13.sh >> /opt/tmall/Caddyfile ; }
+echo "" >> /opt/tmall/Caddyfile
+if [ "$wxsend_enable" != "0" ] && [ "$wxsend_port" != "0" ] ; then
+	logger -t "【天猫精灵】" "由于已经启动 自建微信推送 部署 api 提供外部程序使用消息推送。"
+	logger -t "【天猫精灵】" "导入 wxsend推送 Caddyfile cgi 配置: /etc/storage/app_31.sh"
+	# 生成配置文件 /etc/storage/app_31.sh
+	sed -e "s@^:.\+\({\)@:$wxsend_port {@g" -i /etc/storage/app_31.sh
+	sed -e "s@^.\+cgi /.\+\(\#\)@ cgi /$wxsend_cgi /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
+	sed -e "s@^cgi /.\+\(\#\)@ cgi /$wxsend_cgi /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
+	cat /etc/storage/app_31.sh >> /opt/tmall/Caddyfile
+fi
 echo "" >> /opt/tmall/Caddyfile
 if [ "$demoui_enable" == "2" ] || [ "$demoui_enable" == "1" ] ; then
 cat /etc/storage/app_29.sh >> /opt/tmall/Caddyfile
@@ -195,7 +217,6 @@ fi
 else
 logger -t "【demoui】" "停止 demoui "
 fi
-
 mkdir -p "/opt/tmall/www/aligenie"
 cd /opt/tmall/www/aligenie
 echo -n $(echo "$tmall_id" | awk -F \  '{print $2}') > ./$(echo "$(echo "$tmall_id" | awk -F \  '{print $1}')" | awk -F . '{print $1}').txt
