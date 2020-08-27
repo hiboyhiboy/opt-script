@@ -78,8 +78,8 @@ fi
 wxsend_title="$(nvram get app_130)"
 wxsend_content="$(nvram get app_131)"
 # 在线发送wxsend推送
-if [ ! -z "$wxsend_appid" ] && [ ! -z "$wxsend_appsecret" ] && [ ! -z "$wxsend_touser" ] && [ ! -z "$wxsend_template_id" ] ; then
 if [ ! -z "$wxsend_title" ] || [ ! -z "$wxsend_content" ] ; then
+if [ ! -z "$wxsend_appid" ] && [ ! -z "$wxsend_appsecret" ] && [ ! -z "$wxsend_touser" ] && [ ! -z "$wxsend_template_id" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] ; then
 		/etc/storage/script/Sh01_mountopt.sh optwget
