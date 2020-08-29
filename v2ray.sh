@@ -2,7 +2,7 @@
 # https://github.com/v2ray/v2ray-core/releases
 # https://github.com/v2fly/v2ray-core/releases
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v4.27.2
+version=v4.27.4
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
