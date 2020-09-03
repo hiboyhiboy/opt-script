@@ -96,9 +96,9 @@ if [ ! -z "$wxsend_appid" ] && [ ! -z "$wxsend_appsecret" ] && [ ! -z "$wxsend_t
 		nvram set app_130=""
 		nvram set app_131=""
 	fi
-fi
 else
 logger -t "【wxsend推送】" "发送失败, 注意检[测试号信息]是否完填写整!!!"
+fi
 fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wx_send)" ]  && [ ! -s /tmp/script/_app12 ]; then
