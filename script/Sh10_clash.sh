@@ -192,6 +192,7 @@ Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
 reload_yml "check" ; reload_yml "save"
 killall clash
 killall -9 clash
+restart_dhcpd
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app18"
 kill_ps "_clash.sh"
