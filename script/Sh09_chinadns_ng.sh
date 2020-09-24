@@ -177,13 +177,12 @@ while [ "$chinadns_ng_enable" = "1" ]; do
 	if [ "$port" = 0 ] ; then
 		logger -t "【chinadns_ng】" "检测:找不到 dnsmasq 转发规则, 重新添加"
 		# 写入dnsmasq配置
-		sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
+		sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
 		sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 		cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv #chinadns_ng
 server=127.0.0.1#$chinadns_ng_port #chinadns_ng
 dns-forward-max=1000 #chinadns_ng
-min-cache-ttl=1800 #chinadns_ng
 domain-needed #chinadns_ng
 EOF
 		restart_dhcpd
@@ -292,13 +291,12 @@ fi
 initopt
 
 # 写入dnsmasq配置
-sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 	cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv #chinadns_ng
 server=127.0.0.1#$chinadns_ng_port #chinadns_ng
 dns-forward-max=1000 #chinadns_ng
-min-cache-ttl=1800 #chinadns_ng
 domain-needed #chinadns_ng
 EOF
 
@@ -429,7 +427,7 @@ server-tcp 208.67.222.222:443 -group office
 
 # TCP链接空闲超时时间
 # tcp-idle-time [second]
-#tcp-idle-time 120
+# tcp-idle-time 120
 
 # 域名结果缓存个数
 # cache-size [number]
@@ -438,7 +436,19 @@ cache-size 512
 
 # 域名预先获取功能
 # prefetch-domain [yes|no]
-prefetch-domain yes
+# prefetch-domain yes
+
+# 过期缓存服务功能
+# serve-expired [yes|no]
+serve-expired yes
+
+# 过期缓存服务最长超时时间
+# serve-expired-ttl [num]
+serve-expired-ttl 0
+
+# 回应的过期缓存TTL
+# serve-expired-reply-ttl [num]
+serve-expired-reply-ttl 5
 
 # 假冒IP地址过滤
 # bogus-nxdomain [ip/subnet]
@@ -500,6 +510,14 @@ rr-ttl-min 300
 # audit-size 128k
 # audit-num 2
 
+# 证书文件
+# ca-file [file]
+# ca-file /etc/ssl/certs/ca-certificates.crt
+
+# 证书文件路径	
+# ca-path [path]
+# ca-path /etc/ss/certs
+
 # 远程udp dns服务器列表
 # server [IP]:[PORT] [-blacklist-ip] [-whitelist-ip] [-check-edns] [-group [group] ...] [-exclude-default-group]
 # 默认端口为53
@@ -555,6 +573,14 @@ nameserver /opt.cn2qq.com/office
 # ipset /www.example.com/block, set ipset with ipset name of block 
 # ipset /www.example.com/-, ignore this domain
 
+# 设置域名规则	
+# domain-rules /domain/ [-speed-check-mode [...]]
+# rules:
+#   -speed-check-mode [mode]: 测速模式，参考speed-check-mode配置
+#                             speed-check-mode [ping|tcp:port|none|,]
+#   -address [address|-]: 参考address配置
+#   -nameserver [group|-]: 参考nameserver配置
+#   -ipset [ipset|-]: 参考ipset配置
 EEE
 	chmod 755 "$app_23"
 fi
