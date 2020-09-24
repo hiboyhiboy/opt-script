@@ -177,12 +177,13 @@ while [ "$chinadns_ng_enable" = "1" ]; do
 	if [ "$port" = 0 ] ; then
 		logger -t "【chinadns_ng】" "检测:找不到 dnsmasq 转发规则, 重新添加"
 		# 写入dnsmasq配置
-		sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
+		sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
 		sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 		cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv #chinadns_ng
 server=127.0.0.1#$chinadns_ng_port #chinadns_ng
 dns-forward-max=1000 #chinadns_ng
+min-cache-ttl=1800 #chinadns_ng
 domain-needed #chinadns_ng
 EOF
 		restart_dhcpd
