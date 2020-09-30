@@ -1034,6 +1034,9 @@ mk_config="$(cat /etc/storage/v2ray_config_script.sh | jq --raw-output '.')"
 #mk_config_0=$(echo $mk_config| jq --raw-output 'getpath(["outbounds",0])')
 mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "vmess")')
 if [ -z "$mk_config_0" ] ; then
+mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "vless")')
+fi
+if [ -z "$mk_config_0" ] ; then
 mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "shadowsocks")')
 fi
 if [ -z "$mk_config_0" ] ; then
@@ -1046,7 +1049,7 @@ if [ -z "$mk_config_0" ] ; then
 mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "mtproto")')
 fi
 if [ -z "$mk_config_0" ] ; then
-logger -t "【vmess】" "错误 outbounds 提出失败，请填写配正确的出站协议！vmess、shadowsocks、socks、http、mtproto"
+logger -t "【vmess】" "错误 outbounds 提出失败，请填写配正确的出站协议！vmess、vless、shadowsocks、socks、http、mtproto"
 return
 fi
 mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["outbounds",0];'"$mk_config_0"')')
