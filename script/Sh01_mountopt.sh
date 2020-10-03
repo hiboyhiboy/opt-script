@@ -767,7 +767,7 @@ fi
 logger -t "【libmd5_恢复】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
 /usr/bin/find /opt/opt_backup/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
-/usr/bin/find /opt/opt_backup/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | sort -r  >> /tmp/md5/libmd5f
+/usr/bin/find /opt/opt_backup/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | grep -v "/opt/opt_backup/bin/nps/conf" | grep -v "/opt/opt_backup/bin/ss_tproxy" | grep -v "/opt/opt_backup/bin/kcptun" | grep -v "/opt/opt_backup/bin/chinadns-ng" | sort -r  >> /tmp/md5/libmd5f
 /usr/bin/find /opt/opt_backup/etc/init.d/ -perm '-u+x' -name '*' | grep -v "S10iptables" | grep -v Sh61_lnmp.sh | sort -r  >> /tmp/md5/libmd5f
 while read line
 do
@@ -800,7 +800,7 @@ mkdir -p /opt/opt_backup
 logger -t "【libmd5_备份】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
 /usr/bin/find /opt/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
-/usr/bin/find /opt/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | sort -r  >> /tmp/md5/libmd5f
+/usr/bin/find /opt/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | grep -v "/opt/bin/nps/conf" | grep -v "/opt/bin/ss_tproxy" | grep -v "/opt/bin/kcptun" | grep -v "/opt/bin/chinadns-ng" | sort -r  >> /tmp/md5/libmd5f
 #/usr/bin/find /opt/etc/init.d/ -perm '-u+x' -name '*' | grep -v "S10iptables" | sort -r  >> /tmp/md5/libmd5f
 while read line
 do

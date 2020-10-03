@@ -27,8 +27,8 @@ ss_mode_x=`nvram get ss_mode_x`
 adbyby_adblocks=`nvram get adbyby_adblocks`
 koolproxy_uprules=`nvram get koolproxy_uprules`
 
-koolproxyfile="https://koolproxy.com/downloads/mipsel"
-koolproxyfilecdn="https://github.com/koolproxy/koolproxy-bin/raw/master/mipsel"
+koolproxyfile="https://cdn.jsdelivr.net/gh/houzi-/CDN/binary/v3.8.5/mipsel"
+koolproxyfilecdn="https://cdn.jsdelivr.net/gh/houzi-/CDN/binary/v3.8.5/mipsel"
 koolproxyfile2="$hiboyfile/koolproxy"
 koolproxyfile22="$hiboyfile2/koolproxy"
 koolproxyfile3="$hiboyfile/7620koolproxy.tgz"
@@ -195,6 +195,7 @@ fi
 koolproxy_check () {
 
 koolproxy_get_status
+[ "$(nvram get app_86)" == "re_ca_key" ] && re_ca_key
 if [ "$koolproxy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "停止 koolproxy" && koolproxy_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
@@ -407,7 +408,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	fi
 
 	# 处理第三方自定义规则 /tmp/rule_DOMAIN.txt
-	/etc/storage/ad_config_script.sh
+	source /etc/storage/ad_config_script.sh
 	adbyby_adblocks=`nvram get adbyby_adblocks`
 	if [ "$adbyby_adblocks" = "1" ] ; then
 		logger -t "【koolproxy】" "下载 第三方自定义 规则"
@@ -569,7 +570,7 @@ lan_ipaddr=`nvram get lan_ipaddr`
 ipset add ad_spec_src_bp $lan_ipaddr
 ipset add ad_spec_src_bp 127.0.0.1
 ipset add adbybylist 110.110.110.110
-/etc/storage/ad_config_script.sh
+source /etc/storage/ad_config_script.sh
 # 内网(LAN)访问控制
 logger -t "【koolproxy】" "设置内网(LAN)访问控制"
 if [ -n "$AD_LAN_AC_IP" ] ; then
@@ -858,6 +859,16 @@ fi
 
 }
 
+re_ca_key () {
+[ "$(nvram get app_86)" == "re_ca_key" ] && nvram set app_86=0
+rm -rf /etc/storage/koolproxy_rules_list.sh /etc/storage/koolproxy_rules_script.sh
+rm -rf /tmp/7620koolproxy
+rm -rf /etc/storage/koolproxy
+rm -rf /tmp/7620koolproxy.tgz
+needed_restart=1
+
+}
+
 initconfig () {
 
 koolproxy_rules_script="/etc/storage/koolproxy_rules_script.sh"
@@ -868,47 +879,55 @@ if [ ! -f "$koolproxy_rules_script" ] || [ ! -s "$koolproxy_rules_script" ] ; th
 !  ABP规则请参考https://adblockplus.org/zh_CN/filters，下面为大致摘要
 !  "!" 为行注释符，注释行以该符号起始作为一行注释语义，用于规则描述
 !  "@@" 为白名单符，白名单具有最高优先级，放行过滤的网站，例如:@@||taobao.com
+!  "@@@@" 超级白名单，比白名单符拥有更高的优先级，主要用于放行https网站，例如:@@@@||https://taobao.com
 !  ------------------------------------------------------------------------------------------
 !  "*" 为字符通配符，能够匹配0长度或任意长度的字符串，该通配符不能与正则语法混用。
 !  "^" 为分隔符，可以是除了字母、数字或者 _ - . % 之外的任何字符。
 !  "~" 为排除标识符，通配符能过滤大多数广告，但同时存在误杀, 可以通过排除标识符修正误杀链接。
+!  "$image" 为识别图片变量，搭配规则使用作用于屏蔽图片，例如:||baidu.com/cdn/adv_$image
+!  "$script" 为识别脚本变量，搭配规则使用作用于屏蔽脚本，例如:||baidu.com/cdn/adv_$script
+!  "$c" 为解除跨域访问，例如:|http://nl-rcd.iqiyi.com/crossdomain.xml$c
+!  "$agent" 为限定浏览器过滤的标识头，例如:|http://www.baidu/adv/xxx.jpg$agent=Chrome,~Firefox
+!  "$domain" 为指定网站过滤，例如:|http://*/adv/xxx.jpg$domain=~baidu.com|qq.com
 !  注：通配符仅在 url 规则中支持，html 规则中不支持
 !  ------------------------------------------------------------------------------------------
 !  "|" 为管线符号，来表示地址的最前端或最末端
 !  "||" 为子域通配符，方便匹配主域名下的所有子域
 !  用法及例子如下：(以下等号表示等价于)
-!  ||xx.com          =  http://xx.com || http://*.xx.com
-!  ||http://xx.com   =  http://xx.com || http://*.xx.com
-!  ||https://xx.com  =  https://xx.com || https://*.xx.com
-!  |xx.com           =  http://xx.com
-!  |http://xx.com    =  http://xx.com
-!  |https://xx.com   =  https://xx.com
-!  xx.com            =  http://*xx.com
-!  http://xx.com     =  http://*xx.com
-!  https://xx.com    =  https://xx.com
+!  ||xx.com/ad          =  http://xx.com/ad* || http://*.xx.com/ad*
+!  ||http://xx.com/ad   =  http://xx.com/ad* || http://*.xx.com/ad*
+!  ||https://xx.com/ad  =  https://xx.com/ad* || https://*.xx.com/ad*
+!  |xx.com/ad           =  http://xx.com/ad*
+!  |http://xx.com/ad    =  http://xx.com/ad*
+!  |https://xx.com/ad   =  https://xx.com/ad*
+!  ad                   =  http://*ad*
+!  http://ad            =  http://*ad*
+!  https://ad           =  不支持，需要指定域名，如下例
+!  https://xx.com/ad    =  |https://xx.com/ad  =  https://xx.com/ad*
+!  [同时可以表示两个以及两个以上的域名]如下例子
+!  https://xx.ad.com 和 https://xxx.xx.ad.com  =  ||https://ad.com (注意! 由于https的原因使用要非常谨慎,不可以大范围使用)
 !  ------------------------------------------------------------------------------------------
-!  支持html规则语法，例如：
+!  兼容adblock规则的html规则语法，例如：
+!  fulldls.com,torrentzap.com##.tp_reccomend_banner
+!  但是推荐写成以下标准写法：
 !  ||fulldls.com##.tp_reccomend_banner
 !  ||torrentzap.com##.tp_reccomend_banner
-!  但不支持adblock规则中，逗号合并符写法，例如：
-!  fulldls.com,torrentzap.com##.tp_reccomend_banner
-!  应该写成推荐样式或以下样式：
-!  fulldls.com##.tp_reccomend_banner
-!  torrentzap.com##.tp_reccomend_banner
+!  如果一个网站html规则有多条，可以合并为这样：
+!  ||torrentzap.com##.tp_reccomend_banner,.ad_top,[class="ad_right"]......
 !  ------------------------------------------------------------------------------------------
 !  文本替换语法：$s@匹配内容@替换内容@
-!  文本替换例子：|http://cdn.pcbeta.js.inimc.com/data/cache/common.js?$s@var $banner = @@
+!  文本替换例子：|http://cdn.pcbeta.js.inimc.com/data/cache/common.js?$s@old@new@
 !  重定向语法：$r@匹配内容@替换内容@
 !  重定向例子：|http://koolshare.cn$r@http://koolshare.cn/*@http://www.qq.com@
+!  非标准端口过滤语法：||abc.com:8081/ad.html或者|http://adb.com:8081/
 !  注：文本替换语法及重定向语法中的匹配内容不仅支持通配符功能，而且额外支持以下功能
-!  支持通配符 * 和 ? ，? 表示单个字符
+!  支持通配符 * 和 ? 表示单个字符
 !  支持全正则匹配，/正则内容/ 表示应用正则匹配
 !  正则替换：替换内容支持 $1 $2 这样的符号
 !  普通替换：替换内容支持 * 这样的符号，表示把命中的内容复制到替换的内容。（类似 $1 $2，但是 * 号会自动计算数字）
 !  ------------------------------------------------------------------------------------------
-!  koolporxy支持https过滤功能，但考虑到https过滤的效率问题，目前仅允许非常明确的过滤指令。
-!  未来将逐步开放模糊https的相关语法，与普通语法同步，敬请期待。
-!  ******************************************************************************************
+!  未来将逐步添加相关语法，兼容adblock puls的更多语法，敬请期待。
+!  *****************************************************************************************
 
 EEE
 	chmod 755 "$koolproxy_rules_script"
@@ -929,12 +948,9 @@ if [ ! -f "$koolproxy_rules_list" ] || [ ! -s "$koolproxy_rules_list" ] ; then
 #（可选项：前面添加#停用规则,删除前面的#可生效）
 # 开关 0表示关闭 1表示开启
 # 开关|规则名字|规则网址|规则备注名字
-0|koolproxy.txt|https://kprule.com/koolproxy.txt|
-0|daily.txt|https://kprule.com/daily.txt|
-0|kp.dat|https://kprule.com/kp.dat|
-1|koolproxy.txt|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/koolproxy.txt|
-1|daily.txt|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/daily.txt|
-1|kp.dat|https://houzi-.coding.net/p/my_dream/d/my_dream/git/raw/master/kp.dat|
+1|koolproxy.txt|https://cdn.jsdelivr.net/gh/houzi-/CDN/koolproxy.txt|
+1|daily.txt|https://cdn.jsdelivr.net/gh/houzi-/CDN/daily.txt|
+1|kp.dat|https://cdn.jsdelivr.net/gh/houzi-/CDN/kp.dat|
 1|user.txt||
 
 EEE

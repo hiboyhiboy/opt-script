@@ -350,7 +350,7 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 	# 
 	
 	# 处理第三方自定义规则 /tmp/rule_DOMAIN.txt
-	/etc/storage/ad_config_script.sh
+	source /etc/storage/ad_config_script.sh
 	adbyby_adblocks=`nvram get adbyby_adblocks`
 	rm -f /tmp/7620adm/user.bin
 	rm -f /tmp/7620adm/user.txt
@@ -463,7 +463,7 @@ lan_ipaddr=`nvram get lan_ipaddr`
 ipset add ad_spec_src_bp $lan_ipaddr
 ipset add ad_spec_src_bp 127.0.0.1
 ipset add adbybylist 188.188.188.188
-/etc/storage/ad_config_script.sh
+source /etc/storage/ad_config_script.sh
 # 内网(LAN)访问控制
 logger -t "【ADM】" "设置内网(LAN)访问控制"
 if [ -n "$AD_LAN_AC_IP" ] ; then

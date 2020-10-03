@@ -403,7 +403,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	lan_ipaddr="0.0.0.0" #`nvram get lan_ipaddr`
 	sed -e "s|^\(listen-address.*\)=[^=]*$|\1=$lan_ipaddr:8118|" -i /tmp/bin/adhook.ini
 	# 处理第三方自定义规则 /tmp/rule_DOMAIN.txt
-	/etc/storage/ad_config_script.sh
+	source /etc/storage/ad_config_script.sh
 	adbyby_adblocks=`nvram get adbyby_adblocks`
 	rm -f /tmp/bin/data/user.bin
 	rm -f /tmp/bin/data/user.txt
@@ -566,7 +566,7 @@ lan_ipaddr=`nvram get lan_ipaddr`
 ipset add ad_spec_src_bp $lan_ipaddr
 ipset add ad_spec_src_bp 127.0.0.1
 ipset add adbybylist 100.100.100.100
-/etc/storage/ad_config_script.sh
+source /etc/storage/ad_config_script.sh
 # 内网(LAN)访问控制
 logger -t "【Adbyby】" "设置内网(LAN)访问控制"
 if [ -n "$AD_LAN_AC_IP" ] ; then
