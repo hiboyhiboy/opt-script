@@ -637,7 +637,8 @@ dns:
     - 223.5.5.5
     # - tls://dns.rubyfish.cn:853
     # - https://dns.rubyfish.cn/dns-query
-     
+    # - https://dns.alidns.com/dns-query
+
   fallback:
     # 与 nameserver 内的服务器列表同时发起请求，当规则符合 GEOIP 在 CN 以外时，fallback 列表内的域名服务器生效。
     - tcp://8.8.8.8:53
@@ -647,10 +648,25 @@ dns:
     # - tls://1.0.0.1:853
     # - tls://dns.google:853
     # - tls://dns.google
-
     # - https://dns.rubyfish.cn/dns-query
     # - https://cloudflare-dns.com/dns-query
     # - https://dns.google/dns-query
+
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+    domain:
+      - '+.google.com'
+      - '+.youtube.com'
+      - '+.appspot.com'
+      - '+.telegram.com'
+      - '+.facebook.com'
+      - '+.twitter.com'
+      - '+.blogger.com'
+      - '+.gmail.com'
+      - '+.gvt1.com'
+
 EEE
 	chmod 755 "$app_21"
 fi

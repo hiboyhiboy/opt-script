@@ -396,7 +396,7 @@ replacement 192.168.123.1 #内网地址
 }
 filter rule {
 content_type .*
-search_pattern 192.168.66.8
+search_pattern 192.168.66.46
 replacement 192.168.1.2 #外网地址
 }
 filter rule {
@@ -406,8 +406,13 @@ replacement 192.168.1.1 #外网网关
 }
 filter rule {
 content_type .*
-search_pattern ASUS_AX88U
+search_pattern ASUS_XT8
 replacement ASUS #无线名称SSID
+}
+filter rule {
+content_type .*
+search_pattern "display:flex;justify-content:center;font-size:14px;"
+replacement "display:none;"
 }
 filter rule {
 content_type .*
