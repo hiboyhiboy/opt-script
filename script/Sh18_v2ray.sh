@@ -334,7 +334,7 @@ logger -t "【v2ray】" "请填写配置远程地址！"
 logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动"
 sleep 10 && v2ray_restart x
 fi
-if [ "$v2ray_http_enable" != "1" ] && [ ! -f /opt/bin/v2ray_config.pb ] ; then
+if [ "$v2ray_http_enable" != "1" ] ; then
 if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
 logger -t "【v2ray】" "错误！ v2ray 配置文件 内容为空"
 logger -t "【v2ray】" "请在导入节点或配置后，选择一个节点【应用】并点击【应用本页面设置】待配置生成"
@@ -361,12 +361,9 @@ v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
 geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
 geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
 chmod 777 "$v2ray_path"
-chmod 777 "$v2ctl_path"
 [[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
-[[ "$(v2ctl -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ctl_path ] && rm -rf $v2ctl_path
-if [ ! -s "$v2ray_path" ] || [ ! -s "$v2ctl_path" ] ; then
+if [ ! -s "$v2ray_path" ] ; then
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "找不到 $v2ray_path，安装 opt 程序"
-	[ ! -s "$v2ctl_path" ] && logger -t "【v2ray】" "找不到 $v2ctl_path，安装 opt 程序"
 	/etc/storage/script/Sh01_mountopt.sh start
 fi
 killall v2ray v2ctl v2ray_script.sh
@@ -433,21 +430,15 @@ for h_i in $(seq 1 2) ; do
 [[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
 wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
 done
-for h_i in $(seq 1 2) ; do
-[[ "$(v2ctl -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ctl_path ] && rm -rf $v2ctl_path
-wgetcurl_file $v2ctl_path "$hiboyfile/v2ctl" "$hiboyfile2/v2ctl"
-done
-if [ -s "$v2ray_path" ] && [ -s "$v2ctl_path" ] ; then
-	logger -t "【v2ray】" "找到 $v2ray_path $v2ctl_path"
+if [ -s "$v2ray_path" ] ; then
+	logger -t "【v2ray】" "找到 $v2ray_path"
 	chmod 777 "$(dirname "$v2ray_path")"
 	chmod 777 $v2ray_path
-	[ -f $v2ctl_path ] && chmod 777 $v2ctl_path
 	[ -f $geoip_path ] && chmod 777 $geoip_path
 	[ -f $geosite_path ] && chmod 777 $geosite_path
 fi
-if [ ! -s "$v2ray_path" ] || [ ! -s "$v2ctl_path" ] ; then
+if [ ! -s "$v2ray_path" ] ; then
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "找不到 $v2ray_path ，需要手动安装 $v2ray_path"
-	[ ! -s "$v2ctl_path" ] && logger -t "【v2ray】" "找不到 $v2ctl_path ，需要手动安装 $v2ctl_path"
 	logger -t "【v2ray】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 fi
 if [ -s "$v2ray_path" ] ; then
@@ -488,12 +479,14 @@ else
 	if [ "$app_default_config" = "1" ] ; then
 	logger -t "【v2ray】" "不改写配置，直接使用原始配置启动！（有可能端口不匹配导致功能失效）"
 	logger -t "【v2ray】" "请手动修改配置，透明代理端口：$v2ray_door"
+	echo "" > /tmp/vmess/mk_vmess.json
 	cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
 	else
 	# 改写配置适配脚本
 	if [ "$mk_mode_routing" != "0" ]  ; then
 	json_mk_ss_tproxy
 	else
+	echo "" > /tmp/vmess/mk_vmess.json
 	cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
 	json_join_gfwlist
 	fi
@@ -516,20 +509,7 @@ else
 	chmod 777 /tmp/vmess/mk_vmess.json
 	chmod 777 /etc/storage/v2ray_config_script.sh
 	chmod 777 /opt/bin
-	A_restart=`nvram get app_19`
-	B_restart=`echo -n "$(cat /tmp/vmess/mk_vmess.json | grep -v "^$")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-	if [ "$A_restart" != "$B_restart" ] || [ ! -f /opt/bin/v2ray_config.pb ] ; then
-		rm -f /opt/bin/v2ray_config.pb
-		logger -t "【v2ray】" "配置文件转换 Protobuf 格式配置 /opt/bin/v2ray_config.pb"
-		cd "$(dirname "$v2ray_path")"
-		v2ctl config /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb
-		#v2ctl config < /tmp/vmess/mk_vmess.json > /opt/bin/v2ray_config.pb
-		[ ! -s /opt/bin/v2ray_config.pb ] && logger -t "【v2ray】" "错误！ /opt/bin/v2ray_config.pb 内容为空, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
-		[ -s /opt/bin/v2ray_config.pb ] && nvram set app_19=$B_restart
-	fi
-	chmod 777 /opt/bin/v2ray_config.pb
-	[ ! -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /tmp/vmess/mk_vmess.json -format json"
-	[ -f /opt/bin/v2ray_config.pb ] && su_cmd2="$v2ray_path -config /opt/bin/v2ray_config.pb -format pb"
+	su_cmd2="$v2ray_path -config /tmp/vmess/mk_vmess.json -format json"
 fi
 cd "$(dirname "$v2ray_path")"
 #eval "$su_cmd" '"cmd_name=v2ray && '"$su_cmd2"' $cmd_log"' &
@@ -1489,7 +1469,15 @@ echo '{
         "domains": [
           "domain:cn2qq.com",
           "geosite:google",
-          "geosite:geolocation-!cn"
+          "geosite:geolocation-!cn",
+          "domain:youtube.com",
+          "domain:appspot.com",
+          "domain:telegram.com",
+          "domain:facebook.com",
+          "domain:twitter.com",
+          "domain:blogger.com",
+          "domain:gmail.com",
+          "domain:gvt1.com"
         ]
       },
       {
