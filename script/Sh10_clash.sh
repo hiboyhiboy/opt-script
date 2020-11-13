@@ -264,6 +264,7 @@ if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
 		adduser -u 778 cl -D -S -H -s /bin/sh
 		killall clash
 		su_cmd="su cl -c "
+		logger -t "【clash】" "启动路由自身流量走透明代理"
 	else
 		logger -t "【clash】" "停止路由自身流量走透明代理"
 		clash_optput=0
@@ -340,7 +341,7 @@ nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询
 [ "$clash_optput" == 1 ] && nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
 [ "$clash_optput" == 0 ] && nvram set app_114="1" # 0:代理本机流量; 1:跳过代理本机流量
 [ "$clash_optput" == 1 ] && sstp_set uid_owner='778' # 非 0 时进行用户ID匹配跳过代理本机流量
-[ "$clash_optput" == 0 ] && sstp_set uid_owner='778' # 非 0 时进行用户ID匹配跳过代理本机流量
+[ "$clash_optput" == 0 ] && sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'
