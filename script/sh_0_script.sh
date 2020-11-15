@@ -33,7 +33,7 @@ chmod 777 /tmp/script/_mountopt
 nvram set ss_internet="0"
 /etc/storage/inet_state_script.sh 12 t
 /etc/storage/script/Sh??_mento_hust.sh &
-ping_text=`ping -4 119.29.29.29 -c 1 -w 4 -q`
+ping_text=`ping -4 223.5.5.5 -c 1 -w 4 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 if [ ! -z "$ping_time" ] ; then
@@ -47,7 +47,7 @@ do
 logger -t "【自定义脚本】" "等待联网后开始脚本"
 sleep 8
 
-ping_text=`ping -4 119.29.29.29 -c 1 -w 4 -q`
+ping_text=`ping -4 223.5.5.5 -c 1 -w 4 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 if [ ! -z "$ping_time" ] ; then

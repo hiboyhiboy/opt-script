@@ -334,7 +334,7 @@ wxsend_notify_2=`nvram get app_50`
 wxsend_notify_3=`nvram get app_51`
 wxsend_notify_4=`nvram get app_52`
 curltest=`which curl`
-ping_text=`ping -4 119.29.29.29 -c 1 -w 2 -q`
+ping_text=`ping -4 223.5.5.5 -c 1 -w 2 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 if [ ! -z "$ping_time" ] ; then

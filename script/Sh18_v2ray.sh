@@ -24,7 +24,7 @@ transocks_mode_x=`nvram get app_28`
 lan_ipaddr=`nvram get lan_ipaddr`
 app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 if [ "$v2ray_enable" != "0" ] ; then
 app_98="$(nvram get app_98)"
 app_95="$(nvram get app_95)"
@@ -610,14 +610,14 @@ sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
 DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
-[ -z "$DNS_china" ] && DNS_china="119.29.29.29"
+[ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
 sstp_set dns_remote='8.8.8.8#53'
 sstp_set dns_remote6='2001:4860:4860::8888#53'
 [ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_direct='8.8.8.8' # 回国模式
 [ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
-[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_remote='119.29.29.29#53' # 回国模式
+[ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_remote='223.5.5.5#53' # 回国模式
 [ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_remote6='240C::6666#53' # 回国模式
 sstp_set dns_bind_port='8053'
 ## dnsmasq
@@ -660,11 +660,11 @@ echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr6.conf
 ss_server=`nvram get ss_server`
 echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # v2ray
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # clash
-grep '^  server: ' /etc/storage/app_20.sh | tr -d ' ' | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
-cat /etc/storage/app_20.sh | tr -d ' ' | grep -E -o \"server\":\"\[\^\"\]+ | sed -e 's/server\|://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+grep '^  server: ' /etc/storage/app_20.sh | tr -d ' ' | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+cat /etc/storage/app_20.sh | tr -d ' ' | grep -E -o \"server\":\"\[\^\"\]+ | sed -e 's/server\|://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 kcptun_server=`nvram get kcptun_server`
 echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 
@@ -736,7 +736,7 @@ cat > "/etc/storage/v2ray_script.sh" <<-\VVR
 # 启动前运行的脚本
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 v2ray_door=`nvram get v2ray_door`
 [ -z $v2ray_door ] && v2ray_door=1099 && nvram set v2ray_door=1099
 lan_ipaddr=`nvram get lan_ipaddr`
@@ -821,7 +821,7 @@ json_gen_special_purpose_ip() {
 ss_s1_ip=""
 kcptun_server=""
 v2ray_server_addresses=""
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 #处理肯定不走通道的目标网段
 kcptun_server=`nvram get kcptun_server`
 kcptun_enable=`nvram get kcptun_enable`
@@ -1481,7 +1481,7 @@ echo '{
         ]
       },
       {
-        "address": "119.29.29.29",
+        "address": "223.5.5.5",
         "port": 53,
         "domains": [
           "geosite:cn"

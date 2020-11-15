@@ -300,7 +300,7 @@ resolve_svraddr() {
 	proxy_all_svrip=""
 	while read svraddr; do
 		[ -z "$svraddr" ] && continue
-		[ ! -z "$(echo $svraddr | grep 8.8.8.8 | grep google.com | grep 114.114.114.114 | grep 119.29.29.29)" ] && continue
+		[ ! -z "$(echo $svraddr | grep 8.8.8.8)$(echo $svraddr | grep 114.114.114.114)$(echo $svraddr | grep 119.29.29.29)$(echo $svraddr | grep 223.5.5.5)" ] && continue
 		[ ! -z "$(cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | grep "$svraddr")" ] && continue
 		if is_true "$ipv4"; then
 			is_ipv6_address "$svraddr" && continue

@@ -478,7 +478,7 @@ proxy_startcmd='date'     # 用于启动本机代理进程的 shell 命令，该
 proxy_stopcmd='date'      # 用于关闭本机代理进程的 shell 命令，该命令应该能立即执行完毕
 
 ## dns
-dns_direct='119.29.29.29'             # 本地 IPv4 DNS，不能指定端口，也可以填组织、公司内部 DNS
+dns_direct='223.5.5.5'             # 本地 IPv4 DNS，不能指定端口，也可以填组织、公司内部 DNS
 dns_direct6='240C::6666'              # 本地 IPv6 DNS，不能指定端口，也可以填组织、公司内部 DNS
 dns_remote='8.8.8.8#53'               # 远程 IPv4 DNS，必须指定端口，提示：访问远程 DNS 会走代理
 dns_remote6='2001:4860:4860::8888#53' # 远程 IPv6 DNS，必须指定端口，提示：访问远程 DNS 会走代理
@@ -535,7 +535,7 @@ opts_ss_netstat='auto'                  # auto/ss/netstat，用哪个端口检�
 opts_ping_cmd_to_use='auto'             # auto/standalone/parameter，ping 相关，见 README
 opts_hostname_resolver='auto'           # auto/dig/getent/ping，用哪个解析工具，见 README
 opts_overwrite_resolv='false'           # true/false，定义如何修改 resolv.conf，见 README
-opts_ip_for_check_net='119.29.29.29'    # 检测外网是否可访问的 IP，ping，留空表示跳过此检查
+opts_ip_for_check_net='223.5.5.5'    # 检测外网是否可访问的 IP，ping，留空表示跳过此检查
 
 ## file
 file_gfwlist_txt='/opt/app/ss_tproxy/rule/gfwlist.txt' # gfwlist/chnlist 模式预置文件

@@ -209,7 +209,7 @@ serverchan_notify_2=`nvram get serverchan_notify_2`
 serverchan_notify_3=`nvram get serverchan_notify_3`
 serverchan_notify_4=`nvram get serverchan_notify_4`
 curltest=`which curl`
-ping_text=`ping -4 119.29.29.29 -c 1 -w 2 -q`
+ping_text=`ping -4 223.5.5.5 -c 1 -w 2 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 ping_loss=`echo $ping_text | awk -F ', ' '{print $3}' | awk '{print $1}'`
 if [ ! -z "$ping_time" ] ; then
