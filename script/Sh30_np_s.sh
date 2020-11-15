@@ -1,6 +1,7 @@
 #!/bin/sh
 #copyright by hiboy
 source /etc/storage/script/init.sh
+nps_version_2="v0.26.9"
 nps_enable=`nvram get app_60`
 [ -z $nps_enable ] && nps_enable=0 && nvram set app_60=0
 npsc_enable=`nvram get app_58`
@@ -163,7 +164,7 @@ if [ -z "$nps_version" ] ; then
 		nps_tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep releases/tag | awk -F 'tag/' '{print $NF}' | awk -F '"' '{print $1}' )"
 		[ -z "$nps_tag" ] && nps_tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://github.com/ehang-io/nps/releases/latest  2>&1 | grep '/nps/tree/'  |head -n1 | awk -F 'tree/' '{print $NF}' | awk -F '"' '{print $1}' )"
 	fi
-	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[v0.26.4]" && nps_restart x
+	[ -z "$nps_tag" ] && logger -t "【nps】" "最新版本获取失败！！！请手动指定版本，例：[""$nps_version_2""]" && nps_restart x
 	[ ! -z "$nps_tag" ] && logger -t "【nps】" "自动下载最新版本 $nps_tag"
 	if [ -z "$nps_tag" ] && [ -s "/opt/bin/nps/npc" ] ; then
 		cd /opt/bin/nps
@@ -181,7 +182,7 @@ if [ -z "$nps_version" ] ; then
 	fi
 	[ ! -z "$nps_tag" ] && nvram set app_57="$nps_tag"
 	[ -z "$nps_tag" ] && nps_tag=`nvram get app_57`
-	[ -z "$nps_tag" ] && nps_tag="v0.26.8" && nvram set app_57="$nps_tag"
+	[ -z "$nps_tag" ] && nps_tag="$nps_version_2" && nvram set app_57="$nps_tag"
 	nps_version=$nps_tag
 	nps_restart o
 	logger -t "【nps】" "重启" && nps_restart
