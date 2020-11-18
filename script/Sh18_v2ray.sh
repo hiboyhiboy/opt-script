@@ -1855,7 +1855,7 @@ if [ ! -z "$(echo $ping_list | grep -E -o \"btn-.+\ ms\",)" ] ; then
 	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f2 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_time ms"'"'"@g")
 	ping_list=$(echo $ping_list | sed "s@"'"'"$(echo $ping_list | grep -E -o \"btn-.+\ ms\", | cut -d',' -f1 | grep -E -o \".+\" | sed -e "s@"'"'"@@g")"'"'"@"'"'"$ping_list_btn"'"'"@g")
 else
-	ping_list=$(echo $ping_list | sed "s@"'", "", "", "'"@"'", "'"$ping_list_btn"'", "'"$ping_time ms"'", "'"@g")
+	ping_list=$(echo $ping_list | sed "s@"'", "", "", "end"'"@"'", "'"$ping_list_btn"'", "'"$ping_time ms"'", "end"'"@g")
 fi
 fi
 if [ ! -z "$ping_list" ] ; then
