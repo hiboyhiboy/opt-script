@@ -513,6 +513,10 @@ fi
 [ ! -z "$(echo "$ss_plugin_config" | grep "obfs-host")" ] && ss_plugin_name="obfs-local"
 [ ! -z "$(echo "$ss_plugin_config" | grep "obfs=tls")" ] && ss_plugin_name="obfs-local"
 [ ! -z "$(echo "$ss_plugin_config" | grep "obfs=http")" ] && ss_plugin_name="obfs-local"
+[ ! -z "$(echo "$ss_plugin_config" | grep "undefined")" ] && ss_plugin_config=""
+[ ! -z "$(echo "$ss_plugin_config" | grep "Undefined")" ] && ss_plugin_config=""
+[ ! -z "$(echo "$ss_plugin_config" | grep "null")" ] && ss_plugin_config=""
+[ ! -z "$(echo "$ss_plugin_config" | grep "Null")" ] && ss_plugin_config=""
 [ ! -z "$(echo "$ss_plugin_name" | grep "GoQuiet")" ] && ss_plugin_name="gq-client"
 [ ! -z "$(echo "$ss_plugin_name" | grep "goquiet")" ] && ss_plugin_name="gq-client"
 [ ! -z "$(echo "$ss_plugin_name" | grep "kcptun")" ] && ss_plugin_name="ss_kcptun"
@@ -521,7 +525,13 @@ fi
 [ ! -z "$(echo "$ss_plugin_name" | grep "cloak")" ] && ss_plugin_name="ck-client"
 [ ! -z "$(echo "$ss_plugin_name" | grep "v2ray")" ] && ss_plugin_name="v2ray-plugin"
 [ ! -z "$(echo "$ss_plugin_name" | grep "V2ray")" ] && ss_plugin_name="v2ray-plugin"
+[ ! -z "$(echo "$ss_plugin_name" | grep "undefined")" ] && ss_plugin_name=""
+[ ! -z "$(echo "$ss_plugin_name" | grep "Undefined")" ] && ss_plugin_name=""
+[ ! -z "$(echo "$ss_plugin_name" | grep "null")" ] && ss_plugin_name=""
+[ ! -z "$(echo "$ss_plugin_name" | grep "Null")" ] && ss_plugin_name=""
 [ ! -z "$ss_plugin_name" ] && { ss_plugin_client_name="$ss_plugin_name" ; nvram set ss_plugin_client_name="$ss_plugin_client_name" ; }
+ss_plugin_client_name="$(nvram get ss_plugin_client_name)"
+[ ! -z "$ss_plugin_client_name" ] && [ -z "$ss_plugin_name" ] && { kill_ps "$ss_plugin_client_name" ; ss_plugin_client_name="" ; nvram set ss_plugin_client_name="" ; }
 [ ! -z "$ss_plugin_client_name" ] && kill_ps "$ss_plugin_client_name"
 
 # 删除混淆、协议、分割符号
