@@ -2015,7 +2015,7 @@ base64decode () {
 # 解码
 if [ ! -z "$(echo -n "$1" | grep "🔐📐")" ] ; then
 	# 转换base64
-	base64decode_tmp="$(echo -n "$1" | sed -e "s/🔗|🔐📐|📐🔐//g" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d | sed ":a;N;s/\n//g;ta")"
+	base64decode_tmp="$(echo -n "$1" | sed -e "s/🔗\|🔐📐\|📐🔐//g" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d | sed ":a;N;s/\n//g;ta")"
 	if [ ! -z "$(echo -n "$1" | grep "🔗")" ] ; then
 		echo -n "🔗$base64decode_tmp"
 	else

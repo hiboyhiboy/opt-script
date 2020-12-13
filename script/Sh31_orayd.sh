@@ -80,7 +80,7 @@ USER_DATA="/tmp/oraysl.status"
 orayslstatus=`head -n 3 $USER_DATA`
 SN=`head -n 2 $USER_DATA  | tail -n 1 | cut -d= -f2-`;
 STATUS=`head -n 3 $USER_DATA  | tail -n 1 | cut -d= -f2-`;
-szUID=`sed -n 's/.*szUID=*/\1/p' /etc/storage/PhMain.ini`;
+szUID=`cat /etc/storage/PhMain.ini | grep "szUID=" | awk -F '=' '{print $2}'`;
 online=$(echo $orayslstatus | grep "ONLINE" | wc -l);
 }
 
@@ -107,7 +107,7 @@ nvram set phddns_sn="$SN"
 nvram set phddns_st="$STATUS"
 szUID=0
 if [ -f /etc/storage/PhMain.ini ] ; then
-szUID=`sed -n 's/.*szUID=*/\1/p' /etc/storage/PhMain.ini`
+szUID=`cat /etc/storage/PhMain.ini | grep "szUID=" | awk -F '=' '{print $2}'`;
 fi
 if [ "$szUID" != "0" ] ; then
 logger -t "【花生壳内网版】" "已经绑定的花生壳账号:$szUID"
