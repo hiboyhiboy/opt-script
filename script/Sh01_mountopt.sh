@@ -25,6 +25,8 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mountopt)" ]  
 	chmod 777 /tmp/script/_mountopt
 fi
 
+opt_force () {
+
 # 自定义 opt 环境下载地址
 opt_force_enable=`nvram get opt_force_enable`
 [ -z $opt_force_enable ] && opt_force_enable="0" && nvram set opt_force_enable="$opt_force_enable"
@@ -80,7 +82,6 @@ else
 	fi
 fi
 
-# /etc/storage/script/sh01_mountopt.sh
  opttmpfile="$hiboyfile/opttmpg9.tgz"
  opttmpfile2="$hiboyfile2/opttmpg9.tgz"
  optupanfile="$hiboyfile/optupang9.tgz"
@@ -88,6 +89,39 @@ fi
  optupanfile2="$hiboyfile/optg9.txt"
  optupanfile4="$hiboyfile2/optg9.txt"
 
+}
+
+opt_force
+
+
+opt_cdn_force () {
+
+opt_force_enable=`nvram get opt_force_enable`
+if [ "$opt_force_enable" != "0" ] ; then
+	logger -t "【script】" "自定义 opt 环境下载地址失效 $opt_force_www"
+	logger -t "【script】" "建议使用免费CDN https://cdn.jsdelivr.net/gh/HiboyHiboy"
+else
+	opt_force_enable="1" && nvram set opt_force_enable="$opt_force_enable"
+	opt_download_enable=`nvram get opt_download_enable`
+	if [ "$opt_download_enable" != "0" ] ; then
+		opt_download_enable="0" && nvram set opt_download_enable="$opt_download_enable"
+	fi
+	opt_force_www="https://cdn.jsdelivr.net/gh/HiboyHiboy" && nvram set opt_force_www="$opt_force_www"
+	logger -t "【script】" "下载地址失效 https://opt.cn2qq.com"
+	logger -t "【script】" "变更使用免费CDN https://cdn.jsdelivr.net/gh/HiboyHiboy"
+	opt_force
+fi
+
+}
+
+# /etc/storage/script/sh01_mountopt.sh
+ opttmpfile="$hiboyfile/opttmpg9.tgz"
+ opttmpfile2="$hiboyfile2/opttmpg9.tgz"
+ optupanfile="$hiboyfile/optupang9.tgz"
+ optupanfile3="$hiboyfile2/optupang9.tgz"
+ optupanfile2="$hiboyfile/optg9.txt"
+ optupanfile4="$hiboyfile2/optg9.txt"
+ 
 # ss_opt_x 
 # 1 >>自动选择:SD→U盘→内存
 # 2 >>安装到内存:需要空余内存(10M+)
@@ -666,9 +700,9 @@ if [ ! -f /opt/opt.tgz ]  ; then
 	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $opttmpfile" ; wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
 	optPath="`grep ' /opt ' /proc/mounts | grep /dev`"
-	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile"; }
+	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile3"; }
 	optPath="`grep ' /opt ' /proc/mounts | grep " cifs "`"
-	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile"; }
+	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile3"; }
 	logger -t "【opt】" "/opt/opt.tgz 下载完成，开始解压"
 else
 	logger -t "【opt】" "/opt/opt.tgz 已经存在，开始解压"
@@ -733,6 +767,10 @@ fi
 upopt () {
 if [ "$upopt_enable" = "1" ] ; then
 wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+if [ ! -s /tmp/opti.txt ] ; then
+	opt_cdn_force
+	wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+fi
 nvram set optt="`cat /tmp/opti.txt`"
 else
 rm -rf /tmp/opti.txt
@@ -743,6 +781,10 @@ nvram set opto="`cat /opt/opti.txt`"
 
 upopt2 () {
 wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+if [ ! -s /tmp/opti.txt ] ; then
+	opt_cdn_force
+	wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+fi
 nvram set optt="`cat /tmp/opti.txt`"
 }
 
@@ -966,6 +1008,12 @@ re_upan_storage)
 	rm -rf /opt/storage/*
 	mtd_storage.sh resetsh
 	/sbin/rstats &
+	;;
+opt_force)
+	opt_force
+	;;
+opt_cdn_force)
+	opt_cdn_force
 	;;
 *)
 	mount_check

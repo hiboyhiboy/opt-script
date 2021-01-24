@@ -84,14 +84,16 @@ fi
 done < /tmp/top
 
 if [ -s /tmp/top_run ] ; then
+sed -Ei "/^$/d" /tmp/top_run
 while read line
 do
 if [ ! -z "$line" ] ; then
 top_PID="$(echo $line | awk -F '©' '{print $1}')"
 top_CPU="$(echo $line | awk -F '©' '{print $2}')"
 top_COMMAND="$(echo $line | awk -F '§' '{print $3}')"
+[ ! -f /tmp/top ] && top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" | sed -e "s@^@#@g" > /tmp/top
 if [ -z "$(cat /tmp/top | grep "$top_PID ")" ] ; then
-sed -Ei "/^$top_PID©/d" /tmp/top_run
+sed -Ei "/^[ \t]*$top_PID©/d" /tmp/top_run
 break
 #continue
 fi
@@ -102,14 +104,13 @@ kill $top_PID
 kill -9 $top_PID
 logger -t "script_check" "检测到进程 PID【$top_PID】 $top_COMMAND"
 logger -t "script_check" "已经连续使用CPU $top_CPU% 大于33分钟，尝试 kill 进程防卡CPU"
-sed -Ei "/^$top_PID©/d" /tmp/top_run
+sed -Ei "/^[ \t]*$top_PID©/d" /tmp/top_run
+else
+sed -e "s@^[ \t]*$top_PID©$top_CPU©§$top_i§@$top_PID©$top_CPU©§$top_2i§@g" -i /tmp/top_run
 fi
-sed -e "s@^$top_PID©$top_CPU©§$top_i§@$top_PID©$top_CPU©§$top_2i§@g" -i /tmp/top_run
 fi
 done < /tmp/top_run
 fi
-else
-[ -f /tmp/top_run ] && rm -f /tmp/top_run
 fi
 fi
 fi

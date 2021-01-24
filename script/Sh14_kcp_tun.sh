@@ -4,10 +4,13 @@ source /etc/storage/script/init.sh
 kcptun_enable=`nvram get kcptun_enable`
 [ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=0
 kcptun_path=`nvram get kcptun_path`
-[ -z $kcptun_path ] && kcptun_path="/opt/bin/client_linux_mipsle" && nvram set kcptun_path=$kcptun_path
+[ -z $kcptun_path ] && kcptun_path="/opt/bin/kcptun" && nvram set kcptun_path=$kcptun_path
 [ -f "/opt/bin/client_linux_mips" ] && rm -f /opt/bin/client_linux_mips
 [ -f "/opt/opt_backup/bin/client_linux_mips" ] && rm -f /opt/opt_backup/bin/client_linux_mips
-[ "$kcptun_path" == "/opt/bin/client_linux_mips" ] && kcptun_path="/opt/bin/client_linux_mipsle" && nvram set kcptun_path=$kcptun_path
+[ -f "/opt/bin/client_linux_mipsle" ] && rm -f /opt/bin/client_linux_mipsle
+[ -f "/opt/opt_backup/bin/client_linux_mipsle" ] && rm -f /opt/opt_backup/bin/client_linux_mipsle
+[ "$kcptun_path" == "/opt/bin/client_linux_mips" ] && kcptun_path="/opt/bin/kcptun" && nvram set kcptun_path=$kcptun_path
+[ "$kcptun_path" == "/opt/bin/client_linux_mipsle" ] && kcptun_path="/opt/bin/kcptun" && nvram set kcptun_path=$kcptun_path
 if [ "$kcptun_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #nvramshow=`nvram showall | grep '=' | grep kcptun | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -152,8 +155,8 @@ kcptun_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$kcptun_path" ] && kill_ps "$kcptun_path"
-killall client_linux_mipsle kcptun_script.sh sh_kcpkeep.sh
-killall -9 client_linux_mipsle kcptun_script.sh sh_kcpkeep.sh
+killall kcptun kcptun_script.sh sh_kcpkeep.sh
+killall -9 kcptun kcptun_script.sh sh_kcpkeep.sh
 kill_ps "/tmp/script/_kcp_tun"
 kill_ps "_kcp_tun.sh"
 kill_ps "$scriptname"
@@ -164,17 +167,17 @@ kcptun_start () {
 check_webui_yes
 SVC_PATH="$kcptun_path"
 if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/bin/client_linux_mipsle"
+	SVC_PATH="/opt/bin/kcptun"
 fi
 chmod 777 "$SVC_PATH"
-[[ "$(client_linux_mipsle -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/client_linux_mipsle
+[[ "$(kcptun -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/kcptun
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $kcptun_path，安装 opt 程序"
 	/etc/storage/script/Sh01_mountopt.sh start
 fi
 for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
-wgetcurl_file "$SVC_PATH" "$hiboyfile/client_linux_mipsle" "$hiboyfile2/client_linux_mipsle"
+wgetcurl_file "$SVC_PATH" "$hiboyfile/kcptun" "$hiboyfile2/kcptun"
 done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【kcptun】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
@@ -337,7 +340,7 @@ export LD_LIBRARY_PATH=/lib:/opt/lib
 ################################################################
 # 客户端进程数量（守护脚本判断数据，请正确填写）
 KCPNUM=1
-killall client_linux_mipsle
+killall kcptun
 #
 ################################################################
 EEE
@@ -366,7 +369,7 @@ keep)
 updatekcptun)
 	kcptun_restart o
 	[ "$kcptun_enable" = "1" ] && nvram set kcptun_status="updatekcptun" && logger -t "【kcptun】" "重启" && kcptun_restart
-	[ "$kcptun_enable" != "1" ] && [ -f "$kcptun_path" ] && nvram set kcptun_v="" && logger -t "【kcptun】" "更新" && rm -rf $kcptun_path /opt/opt_backup/bin/client_linux_mipsle
+	[ "$kcptun_enable" != "1" ] && [ -f "$kcptun_path" ] && nvram set kcptun_v="" && logger -t "【kcptun】" "更新" && rm -rf $kcptun_path /opt/opt_backup/bin/kcptun
 	;;
 *)
 	kcptun_check

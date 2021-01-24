@@ -7,33 +7,6 @@ scriptt=`nvram get scriptt`
 scripto=`nvram get scripto`
 [ "$ACTION" = "upscript" ] && upscript_enable=1
 
-opt_force () {
-
-# 自定义 opt 环境下载地址
-opt_force_enable=`nvram get opt_force_enable`
-[ -z $opt_force_enable ] && opt_force_enable="0" && nvram set opt_force_enable="$opt_force_enable"
-opt_force_www=`nvram get opt_force_www`
-[ -z $opt_force_www ] && opt_force_www="https://opt.cn2qq.com" && nvram set opt_force_www="$opt_force_www"
-if [ "$opt_force_enable" != "0" ] ; then
-	opt_force_www="$(echo $opt_force_www | sed  "s@/\$@@g")"
-	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
-	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
-	echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
-	echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
-	hiboyfile="$opt_force_www/opt-file"
-	hiboyscript="$opt_force_www/opt-script"
-else
-	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
-	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
-	echo 'hiboyfile="https://opt.cn2qq.com/opt-file"' >> /etc/storage/script/init.sh
-	echo 'hiboyscript="https://opt.cn2qq.com/opt-script"' >> /etc/storage/script/init.sh
-	hiboyfile="https://opt.cn2qq.com/opt-file"
-	hiboyscript="https://opt.cn2qq.com/opt-script"
-fi
-}
-
-opt_force
-
 file_o_check () {
 
 #获取script的sh*文件MD5
@@ -45,10 +18,15 @@ file_t_check () {
 #获取最新script的sh*文件MD5
 rm -f /tmp/scriptsh.txt
 wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scriptsh.txt"
-if [ -s /tmp/scriptsh.txt ] ; then
+if [ ! -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
+	/etc/storage/script/Sh01_mountopt.sh opt_cdn_force
+	source /etc/storage/script/init.sh
+	wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scriptsh.txt"
+fi
+if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2020-12-13"
+	nvram set scripto="2021-01-24"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -71,7 +49,7 @@ if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
 			logger -t "【script】" " 更新【$file_name.sh】，md5匹配，更新成功！"
 			mv -f /tmp/script/$file_name.sh /etc/storage/script/$file_name.sh
 			if [ "$file_name"x = "initx" ] ; then
-				opt_force
+				/etc/storage/script/Sh01_mountopt.sh opt_force
 				source /etc/storage/script/init.sh
 			fi
 		else

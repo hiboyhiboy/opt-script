@@ -271,6 +271,8 @@ echo -n "$1" \
  | sed -e 's@ -U @ 丨 -U @g' \
  | sed -e 's@ -6 @ 丨 -6 @g' \
  | sed -e 's@ -d @ 丨 -d @g' \
+ | sed -e 's@ --tcp-incoming-sndbuf @ 丨 --tcp-incoming-sndbuf @g' \
+ | sed -e 's@ --tcp-outgoing-sndbuf @ 丨 --tcp-outgoing-sndbuf @g' \
  | sed -e 's@ --reuse-port @ 丨 --reuse-port @g' \
  | sed -e 's@ --fast-open @ 丨 --fast-open @g' \
  | sed -e 's@ --acl @ 丨 --acl @g' \

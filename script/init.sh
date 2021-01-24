@@ -6,6 +6,8 @@ init_ver=2
 #set -x
 #hiboyfile="https://bitbucket.org/hiboyhiboy/opt-file/raw/master"
 #hiboyscript="https://bitbucket.org/hiboyhiboy/opt-script/raw/master"
+#hiboyfile2="https://cdn.jsdelivr.net/gh/HiboyHiboy/opt-file"
+#hiboyscript2="https://cdn.jsdelivr.net/gh/HiboyHiboy/opt-script"
 hiboyfile="https://opt.cn2qq.com/opt-file"
 hiboyscript="https://opt.cn2qq.com/opt-script"
 hiboyfile2="https://raw.githubusercontent.com/hiboyhiboy/opt-file/master"
