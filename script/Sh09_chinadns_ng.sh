@@ -231,7 +231,10 @@ fi
 if [ "$smartdns_enable" == "1" ] ; then
 for h_i in $(seq 1 2) ; do
 [[ "$(smartdns -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/smartdns
-wgetcurl_file /opt/bin/smartdns "$hiboyfile/smartdns" "$hiboyfile2/smartdns"
+#检查  libssl.so.1.0.0
+[ -f /lib/libssl.so.1.0.0 ] && libssl_so="libssl.so.1.0.0"
+[ -f /lib/libssl.so.1.1 ] && libssl_so="libssl.so.1.1"
+wgetcurl_file /opt/bin/smartdns "$hiboyfile/$libssl_so/smartdns" "$hiboyfile2/$libssl_so/smartdns"
 done
 if [ ! -s "/opt/bin/smartdns" ] ; then
 	logger -t "【chinadns_ng】" "找不到 /opt/bin/smartdns ，需要手动安装 /opt/bin/smartdns"
