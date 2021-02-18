@@ -202,6 +202,7 @@ iptables -t filter -D INPUT -p tcp --dport $lychee_port -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $typecho_port -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $zblog_port -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $dzzoffice_port -j ACCEPT
+sync;echo 3 > /proc/sys/vm/drop_caches
 kill_ps "/tmp/script/_lnmp"
 kill_ps "_lnmp.sh"
 kill_ps "$scriptname"

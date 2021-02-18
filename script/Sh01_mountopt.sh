@@ -82,12 +82,12 @@ else
 	fi
 fi
 
- opttmpfile="$hiboyfile/opttmpg9.tgz"
- opttmpfile2="$hiboyfile2/opttmpg9.tgz"
- optupanfile="$hiboyfile/optupang9.tgz"
- optupanfile3="$hiboyfile2/optupang9.tgz"
- optupanfile2="$hiboyfile/optg9.txt"
- optupanfile4="$hiboyfile2/optg9.txt"
+ opttmpfile="$hiboyfile/opttmpg10.tgz"
+ opttmpfile2="$hiboyfile2/opttmpg10.tgz"
+ optupanfile="$hiboyfile/optupang10.tgz"
+ optupanfile3="$hiboyfile2/optupang10.tgz"
+ optupanfile2="$hiboyfile/optg10.txt"
+ optupanfile4="$hiboyfile2/optg10.txt"
 
 }
 
@@ -115,12 +115,12 @@ fi
 }
 
 # /etc/storage/script/sh01_mountopt.sh
- opttmpfile="$hiboyfile/opttmpg9.tgz"
- opttmpfile2="$hiboyfile2/opttmpg9.tgz"
- optupanfile="$hiboyfile/optupang9.tgz"
- optupanfile3="$hiboyfile2/optupang9.tgz"
- optupanfile2="$hiboyfile/optg9.txt"
- optupanfile4="$hiboyfile2/optg9.txt"
+ opttmpfile="$hiboyfile/opttmpg10.tgz"
+ opttmpfile2="$hiboyfile2/opttmpg10.tgz"
+ optupanfile="$hiboyfile/optupang10.tgz"
+ optupanfile3="$hiboyfile2/optupang10.tgz"
+ optupanfile2="$hiboyfile/optg10.txt"
+ optupanfile4="$hiboyfile2/optg10.txt"
  
 # ss_opt_x 
 # 1 >>自动选择:SD→U盘→内存
@@ -557,7 +557,7 @@ if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
 	mkfs.ext4 -i 16384 `losetup -a | grep o_p_t.img | awk -F ':' '{print $1}'`
 fi
 [ -z "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" ] && losetup `losetup -f` $upanPath/opt/o_p_t.img
-[ -z "$(df -m | grep "/dev/loop" | grep "/media/o_p_t_img")" ] && { modprobe -q ext4 ; mkdir -p /media/o_p_t_img ; mount -t ext4 -o noatime "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" "/media/o_p_t_img" ; }
+[ -z "$(df -m | grep "/dev/loop" | grep "/media/o_p_t_img")" ] && { modprobe -q ext4 ; mkdir -p /media/o_p_t_img ; mount -t ext4 -o noatime,sync "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" "/media/o_p_t_img" ; }
 ! mountpoint -q /opt && mountpoint -q /media/o_p_t_img && mount -o bind "/media/o_p_t_img" /opt
 ! mountpoint -q /opt && { logger -t "【opt】" "错误！！！未能挂载镜像(ext4)文件到 /opt" ; rm -f $upanPath/opt/o_p_t.img; }
 }

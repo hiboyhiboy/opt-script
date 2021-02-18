@@ -266,6 +266,8 @@ exit 0
 
 getweather () {
 
+# 天气数据下载失败，停止获取
+return 
 mkdir -p /opt/lcd4linux/tmp/
 #http://weather.yahoo.com/2146704
 #The location parameter needs to be a WOEID. 

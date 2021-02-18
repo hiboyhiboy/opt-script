@@ -1179,6 +1179,9 @@ vmess_link_type=`nvram get app_78`
 vmess_link_host=`nvram get app_79`
 vmess_link_path=`nvram get app_80`
 vmess_link_tls=`nvram get app_81`
+[ "$vmess_link_v" == "undefined" ] && vmess_link_v=0
+[ "$vmess_link_host" == "undefined" ] && vmess_link_host=""
+[ "$vmess_link_path" == "undefined" ] && vmess_link_path=""
 v2ray_server_addresses="$vmess_link_add"
 [ "$vmess_link_v" -ge 0 ] || vmess_link_v=1
 if [ "$vmess_link_v" -lt 2 ] ; then

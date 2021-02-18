@@ -123,6 +123,7 @@ iptables -t filter -D INPUT -p udp --dport 22331 -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $verysync_wan_port -j ACCEPT
 killall verysync
 killall -9 verysync
+sync;echo 3 > /proc/sys/vm/drop_caches
 kill_ps "/tmp/script/_app6"
 kill_ps "_very_sync.sh"
 kill_ps "$scriptname"
