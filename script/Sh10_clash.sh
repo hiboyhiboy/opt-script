@@ -167,9 +167,10 @@ clash_keep () {
 logger -t "【clash】" "守护进程启动"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 if [ -s /tmp/script/_opt_script_check ]; then
+SVC_PATH="$(which clash)"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof clash\`" ] || [ ! -s "/opt/bin/clash" ] && nvram set clash_status=00 && logger -t "【clash】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check # 【clash】
+	[ -z "\`pidof clash\`" ] || [ ! -s "$SVC_PATH" ] && nvram set clash_status=00 && logger -t "【clash】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check # 【clash】
 OSC
 return
 fi
@@ -253,6 +254,7 @@ fi
 update_yml
 
 cd "$(dirname "$SVC_PATH")"
+tcponly='true'
 su_cmd="eval"
 if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
 	NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
@@ -271,14 +273,30 @@ if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
 		nvram set clash_optput=0
 	fi
 fi
-logger -t "【clash】" "运行 /opt/bin/clash"
+if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
+	# 修改 /opt/bin/clash 的权限支持 udp 转发 https://github.com/Dreamacro/clash/issues/1116
+	# 使用条件：最新固件 + 安装 opt 环境 + 手动安装 opkg install libcap-bin
+	hash setcap 2>/dev/null && setcap_x="1"
+	hash setcap 2>/dev/null || setcap_x="0"
+	[ "$setcap_x" == "1" ] && setcap 'cap_net_admin,cap_net_bind_service,cap_net_raw,cap_net_broadcast=+ep' $SVC_PATH
+	NUM=`getcap $SVC_PATH 2>&1 | grep "cap_net_admin" | grep "cap_net_bind_service" | wc -l`
+	if [ "$NUM" == "1" ] ; then
+		logger -t "【clash】" "setcap 成功附加权限，代理 TCP 和 UDP 流量"
+		tcponly='false'
+	else
+		[ "$setcap_x" != "1" ] && logger -t "【clash】" "缺少 setcap 命令，仅代理TCP流量"
+		[ "$setcap_x" == "1" ] && logger -t "【clash】" "setcap 错误，内核没有打开安全开关，仅代理 TCP 流量"
+		tcponly='true'
+	fi
+fi
+logger -t "【clash】" "运行 $SVC_PATH"
 chmod 777 /opt/app/clash/config -R
 chmod 777 /opt/app/clash/config
 chmod 644 /opt/etc/ssl/certs -R
 chmod 777 /opt/etc/ssl/certs
 chmod 644 /etc/ssl/certs -R
 chmod 777 /etc/ssl/certs
-su_cmd2="/opt/bin/clash -d /opt/app/clash/config"
+su_cmd2="$SVC_PATH -d /opt/app/clash/config"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
 sleep 7
 [ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
@@ -333,7 +351,7 @@ sstp_set ipv4='true' ; sstp_set ipv6='false' ;
  # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
  # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
 sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
-sstp_set tcponly='true' # true:仅代理TCP流量; false:代理TCP和UDP流量
+sstp_set tcponly="$tcponly" # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
 nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
 nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
