@@ -465,13 +465,13 @@ if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
 		adduser -u 777 v2 -D -S -H -s /bin/sh
 		killall v2ray
 		su_cmd="su v2 -c "
-	else
-		logger -t "【v2ray】" "停止路由自身流量走透明代理"
-		v2ray_optput=0
-		nvram set v2ray_optput=0
+	# else
+		# logger -t "【v2ray】" "停止路由自身流量走透明代理"
+		# v2ray_optput=0
+		# nvram set v2ray_optput=0
 	fi
 fi
-if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
+if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ] && [ "$su_cmd" != "eval" ]; then
 	# 修改 /opt/bin/v2ray 的权限支持 udp 转发 https://github.com/Dreamacro/clash/issues/1116
 	# 使用条件：最新固件 + 安装 opt 环境 + 手动安装 opkg install libcap-bin
 	hash setcap 2>/dev/null && setcap_x="1"
@@ -486,6 +486,8 @@ if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
 		[ "$setcap_x" == "1" ] && logger -t "【v2ray】" "setcap 错误，内核没有打开安全开关，仅代理 TCP 流量"
 		tcponly='true'
 	fi
+else
+	logger -t "【v2ray】" "仅代理 TCP 流量"
 fi
 v2ray_v=`v2ray -version | grep V2Ray`
 nvram set v2ray_v="$v2ray_v"

@@ -273,7 +273,7 @@ if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
 		nvram set clash_optput=0
 	fi
 fi
-if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
+if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ] && [ "$su_cmd" != "eval" ]; then
 	# 修改 /opt/bin/clash 的权限支持 udp 转发 https://github.com/Dreamacro/clash/issues/1116
 	# 使用条件：最新固件 + 安装 opt 环境 + 手动安装 opkg install libcap-bin
 	hash setcap 2>/dev/null && setcap_x="1"
@@ -288,6 +288,8 @@ if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
 		[ "$setcap_x" == "1" ] && logger -t "【clash】" "setcap 错误，内核没有打开安全开关，仅代理 TCP 流量"
 		tcponly='true'
 	fi
+else
+	logger -t "【clash】" "仅代理TCP流量"
 fi
 logger -t "【clash】" "运行 $SVC_PATH"
 chmod 777 /opt/app/clash/config -R
