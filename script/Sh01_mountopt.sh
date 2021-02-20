@@ -891,6 +891,12 @@ if ! mountpoint -q /etc/storage ; then
 if [ ! -f /opt/storage/start_script.sh ] && [ -f /etc/storage/start_script.sh ]  ; then
 	mkdir -p -m 755 /opt/storage
 	cp -af /etc/storage/* /opt/storage
+else
+	#[ -f /opt/storage/start_script.sh ] && cp -af /opt/storage/* /etc/storage
+	[ -d /opt/storage/https ] && { mkdir -p -m 700 /opt/storage/https ; cp -af /opt/storage/https/* /etc/storage/https ; }
+	[ -d /opt/storage/openvpn ] && { mkdir -p /opt/storage/openvpn ; cp -af /opt/storage/openvpn/* /etc/storage/openvpn ; }
+	[ -d /opt/storage/inadyn ] && { mkdir -p /opt/storage/inadyn ; cp -af /opt/storage/inadyn/* /etc/storage/inadyn ; }
+	[ -d /opt/storage/dnsmasq ] && { mkdir -p /opt/storage/dnsmasq ; cp -af /opt/storage/dnsmasq/* /etc/storage/dnsmasq ; }
 fi
 	logger -t "【外部存储storage】" "/etc/storage -> /opt/storage"
 	mount --bind /opt/storage /etc/storage
