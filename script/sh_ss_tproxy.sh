@@ -514,6 +514,10 @@ load_config() {
 	output_return=`nvram get app_114`
 	[ -z $output_return ] && output_return=0 && nvram set app_114=0
 	[ ! -z "$ext_output_return" ] && output_return="$ext_output_return"
+	
+	output_udp_return=`nvram get ss_udp_enable`
+	[ -z $output_udp_return ] && output_udp_return=0 && nvram set ss_udp_enable=0
+	[ ! -z "$ext_output_udp_return" ] && output_udp_return="$ext_output_udp_return"
 }
 
 check_config() {
@@ -2449,9 +2453,13 @@ start_iptables_redirect_mode() {
 	fi
 
 	[ "$uid_owner" != "0" ] &&     $1 -t nat -I SSTP_OUTPUT -m owner --uid-owner $uid_owner -j RETURN
+	[ "$gid_owner" != "0" ] &&     $1 -t nat -I SSTP_OUTPUT -m owner --gid-owner $gid_owner -j RETURN
 	[ "$output_return" != "1" ] && $1 -t nat -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p tcp -j SSTP_RULE
 	[ "$uid_owner" != "0" ] && is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m owner --uid-owner $uid_owner -j RETURN
-	[ "$output_return" != "1" ] && is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p udp -j SSTP_RULE
+	[ "$gid_owner" != "0" ] && is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m owner --gid-owner $gid_owner -j RETURN
+	if [ "$output_return" != "1" ] || [ "$output_udp_return" == "1" ] ; then
+		is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p udp -j SSTP_RULE
+	fi
 
 	is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -i $ipts_if_lo -m mark ! --mark $ipts_rt_mark -j RETURN
 

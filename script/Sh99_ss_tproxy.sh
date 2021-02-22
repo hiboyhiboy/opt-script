@@ -119,8 +119,8 @@ exit 0
 ss_tproxy_get_status () {
 
 A_restart=`nvram get ss_tproxy_status`
-B_restart="$ss_tproxy_enable$ss_tproxy_mode_x$ss_pdnsd_all$ss_dnsproxy_x$chinadns_enable$(cat /etc/storage/app_27.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
-C_restart="$dns_start_dnsproxy$ss_pdnsd_cn_all$output_return$ss_pdnsd_all$ss_dnsproxy_x$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$chinadns_enable$chinadns_port$koolproxy_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$ss_tproxy_enable$ss_tproxy_mode_x$ss_pdnsd_all$ss_dnsproxy_x$ss_udp_enable$chinadns_enable$(cat /etc/storage/app_27.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
+C_restart="$ss_udp_enable$dns_start_dnsproxy$ss_pdnsd_cn_all$output_return$ss_pdnsd_all$ss_dnsproxy_x$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$chinadns_enable$chinadns_port$koolproxy_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -464,8 +464,10 @@ ext_ss_pdnsd_all=''       # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用
 ext_ss_pdnsd_cn_all=''    #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 ## iptables -t nat -I SSTP_OUTPUT -j RETURN
 ext_output_return=''      #app_114 0:代理本机流量; 1:跳过代理本机流量
+ext_output_udp_return=''  #ss_udp_enable 0:停用本机 UDP 转发; 1:启动本机 UDP 转发 (需服务器支持 UDP 代理才有效)
 ## iptables -t nat -I SSTP_OUTPUT -m owner --uid-owner 777 -j RETURN
 uid_owner="0"    # 非 0 时进行用户ID匹配跳过代理本机流量
+gid_owner="0"    # 非 0 时进行组ID匹配跳过代理本机流量
 
 ## proxy
 proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf" # 服务器的地址或域名的配置文件，会自动处理分类IPv4、IPv6，允许填写多个服务器地址(文件里面每一行一个服务器地址)

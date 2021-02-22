@@ -12,8 +12,10 @@ clash_socks_enable=`nvram get app_90`
 clash_wget_yml=`nvram get app_91` # 订阅地址
 clash_follow=`nvram get app_92`
 [ -z $clash_follow ] && clash_follow=0 && nvram set app_92=0
-clash_optput=`nvram get app_93`
-[ -z $clash_optput ] && clash_optput=0 && nvram set app_93=0
+ss_udp_enable=`nvram get ss_udp_enable` #udp转发  0、停用；1、启动
+[ -z $ss_udp_enable ] && ss_udp_enable=0 && nvram set ss_udp_enable=0
+app_114=`nvram get app_114` #0:代理本机流量; 1:跳过代理本机流量
+[ -z $app_114 ] && app_114=0 && nvram set app_114=0
 clash_ui=`nvram get app_94`
 [ -z $clash_ui ] && clash_ui="0.0.0.0:9090" && nvram set app_94="0.0.0.0:9090"
 lan_ipaddr=`nvram get lan_ipaddr`
@@ -97,7 +99,7 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_optput$clash_ui$mismatch$app_default_config$clash_secret$app_120$log_level$clash_mode_x"
+B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$mismatch$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114"
 B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
 [ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
@@ -255,41 +257,35 @@ update_yml
 
 cd "$(dirname "$SVC_PATH")"
 tcponly='true'
+gid_owner="0"
 su_cmd="eval"
-if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ]; then
-	NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
-	hash su 2>/dev/null && su_x="1"
-	hash su 2>/dev/null || su_x="0"
+NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
+hash su 2>/dev/null && su_x="1"
+hash su 2>/dev/null || su_x="0"
+if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
+	addgroup -g 1321 ‍✈️
+	adduser -G ‍✈️ -u 1321 ‍✈️ -D -S -H -s /bin/sh
+	sed -Ei s/1321:1321/0:1321/g /etc/passwd
+	su_cmd="su ‍✈️ -c "
+	gid_owner="1321"
+fi
+if [ "$clash_follow" = "1" ] ; then
+if [ "$ss_udp_enable" = "1" ] || [ "$app_114" = "0" ] ; then
 	[ "$su_x" != "1" ] && logger -t "【clash】" "缺少 su 命令"
 	[ "$NUM" -ge "3" ] || logger -t "【clash】" "缺少 iptables -m owner 模块"
-	if [ "$NUM" -ge "3" ] && [ "$clash_optput" = 1 ] && [ "$su_x" = "1" ] ; then
-		adduser -u 778 cl -D -S -H -s /bin/sh
-		killall clash
-		su_cmd="su cl -c "
-		logger -t "【clash】" "启动路由自身流量走透明代理"
+	if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
+		[ "$ss_udp_enable" = "1" ] && tcponly='false'
 	else
-		logger -t "【clash】" "停止路由自身流量走透明代理"
-		clash_optput=0
-		nvram set clash_optput=0
+		ss_udp_enable=0
+		nvram set ss_udp_enable=0
+		app_114=1
+		nvram set app_114=1
 	fi
 fi
-if [ "$clash_follow" = "1" ] && [ "$clash_optput" = "1" ] && [ "$su_cmd" != "eval" ]; then
-	# 修改 /opt/bin/clash 的权限支持 udp 转发 https://github.com/Dreamacro/clash/issues/1116
-	# 使用条件：最新固件 + 安装 opt 环境 + 手动安装 opkg install libcap-bin
-	hash setcap 2>/dev/null && setcap_x="1"
-	hash setcap 2>/dev/null || setcap_x="0"
-	[ "$setcap_x" == "1" ] && setcap 'cap_net_admin,cap_net_bind_service,cap_net_raw,cap_net_broadcast=+ep' $SVC_PATH
-	NUM=`getcap $SVC_PATH 2>&1 | grep "cap_net_admin" | grep "cap_net_bind_service" | wc -l`
-	if [ "$NUM" == "1" ] ; then
-		logger -t "【clash】" "setcap 成功附加权限，代理 TCP 和 UDP 流量"
-		tcponly='false'
-	else
-		[ "$setcap_x" != "1" ] && logger -t "【clash】" "缺少 setcap 命令，仅代理TCP流量"
-		[ "$setcap_x" == "1" ] && logger -t "【clash】" "setcap 错误，内核没有打开安全开关，仅代理 TCP 流量"
-		tcponly='true'
-	fi
-else
-	logger -t "【clash】" "仅代理TCP流量"
+[ "$ss_udp_enable" = "0" ] && logger -t "【clash】" "仅代理 TCP 流量"
+[ "$ss_udp_enable" = "1" ] && logger -t "【clash】" "代理 TCP 和 UDP 流量"
+[ "$app_114" = "0" ] && logger -t "【clash】" "启动路由自身流量走透明代理"
+[ "$app_114" = "1" ] && logger -t "【clash】" "停止路由自身流量走透明代理"
 fi
 logger -t "【clash】" "运行 $SVC_PATH"
 chmod 777 /opt/app/clash/config -R
@@ -310,7 +306,7 @@ Sh99_ss_tproxy.sh auser_check "Sh10_clash.sh"
 ss_tproxy_set "Sh10_clash.sh"
 Sh99_ss_tproxy.sh on_start "Sh10_clash.sh"
 # 同时将代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理
-if [ "$clash_optput" = 1 ] ; then
+if [ "$app_114" = 0 ] ; then
 logger -t "【clash】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
 fi
 logger -t "【clash】" "完成 透明代理 转发规则设置"
@@ -358,10 +354,8 @@ sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"�
 nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
 nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
 nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
-[ "$clash_optput" == 1 ] && nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
-[ "$clash_optput" == 0 ] && nvram set app_114="1" # 0:代理本机流量; 1:跳过代理本机流量
-[ "$clash_optput" == 1 ] && sstp_set uid_owner='778' # 非 0 时进行用户ID匹配跳过代理本机流量
-[ "$clash_optput" == 0 ] && sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
+sstp_set uid_owner='0'          # 非 0 时进行用户ID匹配跳过代理本机流量
+sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'

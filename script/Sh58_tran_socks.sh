@@ -7,6 +7,8 @@ ipt2socks_enable=`nvram get app_104`
 [ -z $ipt2socks_enable ] && ipt2socks_enable=0 && nvram set app_104=0
 kumasocks_enable=`nvram get app_116`
 [ -z $kumasocks_enable ] && kumasocks_enable=0 && nvram set app_116=0
+app_114=`nvram get app_114` #0:代理本机流量; 1:跳过代理本机流量
+[ -z $app_114 ] && app_114=0 && nvram set app_114=0
 
 if [ "$ipt2socks_enable" == "1" ] ; then
 #logger -t "【transocks】" "跳过启用，已经启用 ipt2socks"
@@ -39,6 +41,12 @@ if [ "Sh58_tran_socks.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" 
 	transocks_enable=0 && nvram set app_27=0
 fi
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+cmd_log_enable=`nvram get cmd_log_enable`
+cmd_name="$tran_c_socks"
+cmd_log=""
+if [ "$cmd_log_enable" = "1" ] || [ "$ipt2socks_renum" -gt "0" ] ; then
+	cmd_log="$cmd_log2"
+fi
 fi
 #if [ "$transocks_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep transocks | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -89,7 +97,7 @@ exit 0
 transocks_get_status () {
 
 A_restart=`nvram get transocks_status`
-B_restart="$transocks_enable$transocks_mode_x$transocks_server$transocks_listen_address$transocks_listen_port$transocks_proxy_mode$(cat /etc/storage/app_9.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$transocks_enable$transocks_mode_x$transocks_server$transocks_listen_address$transocks_listen_port$transocks_proxy_mode$app_114$(cat /etc/storage/app_9.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set transocks_status=$B_restart
@@ -179,6 +187,30 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【$tran_c_socks】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && transocks_restart x
 fi
 chmod 777 "$SVC_PATH"
+gid_owner="0"
+su_cmd="eval"
+NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
+hash su 2>/dev/null && su_x="1"
+hash su 2>/dev/null || su_x="0"
+if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
+	addgroup -g 1321 ‍✈️
+	adduser -G ‍✈️ -u 1321 ‍✈️ -D -S -H -s /bin/sh
+	sed -Ei s/1321:1321/0:1321/g /etc/passwd
+	su_cmd="su ‍✈️ -c "
+	gid_owner="1321"
+fi
+if [ "$app_114" = "0" ] ; then
+	[ "$su_x" != "1" ] && logger -t "【$tran_c_socks】" "缺少 su 命令"
+	[ "$NUM" -ge "3" ] || logger -t "【$tran_c_socks】" "缺少 iptables -m owner 模块"
+	if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
+		echo "$app_114"
+	else
+		app_114=1
+		nvram set app_114=1
+	fi
+fi
+[ "$app_114" = "0" ] && logger -t "【$tran_c_socks】" "启动路由自身流量走透明代理"
+[ "$app_114" = "1" ] && logger -t "【$tran_c_socks】" "停止路由自身流量走透明代理"
 transocks_v=$($tran_c_socks -h 2>&1  | grep "$tran_c_socks"_ver | sed -n '1p')
 nvram set transocks_v="$transocks_v"
 logger -t "【$tran_c_socks】" "运行 $tran_c_socks"
@@ -188,10 +220,11 @@ logger -t "【$tran_c_socks】" "运行 $tran_c_socks"
 cd $(dirname `which $tran_c_socks`)
 killall -9 $tran_c_socks
 if [ "$kumasocks_enable" == "1" ] ; then
-kumasocks -c /tmp/kumasocks.toml &
+su_cmd2="kumasocks -c /tmp/kumasocks.toml"
 else
-transocks -f /tmp/transocks.toml &
+su_cmd2="transocks -f /tmp/transocks.toml"
 fi
+eval "$su_cmd" '"cmd_name='"$tran_c_socks"' && '"$su_cmd2"' $cmd_log"' &
 
 sleep 2
 [ ! -z "$(ps -w | grep "$tran_c_socks" | grep -v grep )" ] && logger -t "【$tran_c_socks】" "启动成功" && transocks_restart o
@@ -227,12 +260,12 @@ sstp_set ipv4='true' ; sstp_set ipv6='false' ;
  # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
  # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
 sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
-sstp_set tcponly='false' # true:仅代理TCP流量; false:代理TCP和UDP流量
+sstp_set tcponly='true' # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
 nvram set app_112="0"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
 nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
-nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
 sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
+sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'

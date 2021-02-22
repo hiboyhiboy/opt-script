@@ -42,8 +42,10 @@ fi
 [ "$v2ray_follow" == 0 ] && mk_mode_routing=0
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 #nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-v2ray_optput=`nvram get v2ray_optput`
-[ -z $v2ray_optput ] && v2ray_optput=0 && nvram set v2ray_optput=0
+ss_udp_enable=`nvram get ss_udp_enable` #udp转发  0、停用；1、启动
+[ -z $ss_udp_enable ] && ss_udp_enable=0 && nvram set ss_udp_enable=0
+app_114=`nvram get app_114` #0:代理本机流量; 1:跳过代理本机流量
+[ -z $app_114 ] && app_114=0 && nvram set app_114=0
 
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
@@ -62,6 +64,10 @@ if [ "$cmd_log_enable" = "1" ] || [ "$v2ray_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
 fi
+ss_link_2=`nvram get ss_link_2`
+[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
+ss_link_1=`nvram get ss_link_1`
+[ "$ss_link_1" -lt 66 ] && ss_link_1="66" || { [ "$ss_link_1" -ge 66 ] || { ss_link_1="66" ; nvram set ss_link_1="66" ; } ; }
 v2ray_path=`nvram get v2ray_path`
 [ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
 v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
@@ -128,7 +134,7 @@ v2ray_get_status () {
 
 script_tmp_config
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$chinadns_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_optput$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set v2ray_status=$B_restart
@@ -179,9 +185,7 @@ OSC
 fi
 sleep 20
 ss_link_2=`nvram get ss_link_2`
-[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 ss_link_1=`nvram get ss_link_1`
-[ "$ss_link_1" -lt 66 ] && ss_link_1="66" || { [ "$ss_link_1" -ge 66 ] || { ss_link_1="66" ; nvram set ss_link_1="66" ; } ; }
 v2ray_enable=`nvram get v2ray_enable`
 while [ "$v2ray_enable" = "1" ]; do
 	NUM=`ps -w | grep "$v2ray_path" | grep -v grep |wc -l`
@@ -192,8 +196,8 @@ while [ "$v2ray_enable" = "1" ]; do
 	v2ray_enable=`nvram get v2ray_enable`
 	v2ray_follow=`nvram get v2ray_follow`
 	ss_keep_check=`nvram get ss_keep_check`
-	v2ray_optput=`nvram get v2ray_optput`
-	if [ "$v2ray_follow" = "1" ] && [ "$ss_keep_check" == "1" ] && [ "$v2ray_optput" == 1 ] ; then
+	app_114=`nvram get app_114`
+	if [ "$v2ray_follow" = "1" ] && [ "$ss_keep_check" == "1" ] && [ "$app_114" == 0 ] ; then
 # 自动故障转移(透明代理时生效)
 
 
@@ -454,40 +458,33 @@ chmod 777 /etc/ssl/certs
 /etc/storage/v2ray_script.sh
 cd "$(dirname "$v2ray_path")"
 tcponly='true'
+gid_owner="0"
 su_cmd="eval"
-if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ]; then
-	NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
-	hash su 2>/dev/null && su_x="1"
-	hash su 2>/dev/null || su_x="0"
+NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
+hash su 2>/dev/null && su_x="1"
+hash su 2>/dev/null || su_x="0"
+if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
+	addgroup -g 1321 ‍✈️
+	adduser -G ‍✈️ -u 1321 ‍✈️ -D -S -H -s /bin/sh
+	sed -Ei s/1321:1321/0:1321/g /etc/passwd
+	su_cmd="su ‍✈️ -c "
+	gid_owner="1321"
+fi
+if [ "$v2ray_follow" = "1" ] ; then
+if [ "$ss_udp_enable" = "1" ] || [ "$app_114" = "0" ] ; then
 	[ "$su_x" != "1" ] && logger -t "【v2ray】" "缺少 su 命令"
 	[ "$NUM" -ge "3" ] || logger -t "【v2ray】" "缺少 iptables -m owner 模块"
-	if [ "$NUM" -ge "3" ] && [ "$v2ray_optput" = 1 ] && [ "$su_x" = "1" ] ; then
-		adduser -u 777 v2 -D -S -H -s /bin/sh
-		killall v2ray
-		su_cmd="su v2 -c "
-	# else
-		# logger -t "【v2ray】" "停止路由自身流量走透明代理"
-		# v2ray_optput=0
-		# nvram set v2ray_optput=0
+	if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
+		[ "$ss_udp_enable" = "1" ] && tcponly='false'
+	else
+		ss_udp_enable=0
+		nvram set ss_udp_enable=0
 	fi
 fi
-if [ "$v2ray_follow" = "1" ] && [ "$v2ray_optput" = "1" ] && [ "$su_cmd" != "eval" ]; then
-	# 修改 /opt/bin/v2ray 的权限支持 udp 转发 https://github.com/Dreamacro/clash/issues/1116
-	# 使用条件：最新固件 + 安装 opt 环境 + 手动安装 opkg install libcap-bin
-	hash setcap 2>/dev/null && setcap_x="1"
-	hash setcap 2>/dev/null || setcap_x="0"
-	[ "$setcap_x" == "1" ] && setcap 'cap_net_admin,cap_net_bind_service,cap_net_raw,cap_net_broadcast=+ep' $v2ray_path
-	NUM=`getcap $v2ray_path 2>&1 | grep "cap_net_admin" | grep "cap_net_bind_service" | wc -l`
-	if [ "$NUM" == "1" ] ; then
-		logger -t "【v2ray】" "setcap 成功附加权限，代理 TCP 和 UDP 流量"
-		tcponly='false'
-	else
-		[ "$setcap_x" != "1" ] && logger -t "【v2ray】" "缺少 setcap 命令，仅代理 TCP 流量"
-		[ "$setcap_x" == "1" ] && logger -t "【v2ray】" "setcap 错误，内核没有打开安全开关，仅代理 TCP 流量"
-		tcponly='true'
-	fi
-else
-	logger -t "【v2ray】" "仅代理 TCP 流量"
+[ "$ss_udp_enable" = "0" ] && logger -t "【v2ray】" "仅代理 TCP 流量"
+[ "$ss_udp_enable" = "1" ] && logger -t "【v2ray】" "代理 TCP 和 UDP 流量"
+[ "$app_114" = "0" ] && logger -t "【v2ray】" "启动路由自身流量走透明代理"
+[ "$app_114" = "1" ] && logger -t "【v2ray】" "停止路由自身流量走透明代理"
 fi
 v2ray_v=`v2ray -version | grep V2Ray`
 nvram set v2ray_v="$v2ray_v"
@@ -575,7 +572,7 @@ Sh99_ss_tproxy.sh on_start "Sh18_v2ray.sh"
 logger -t "【v2ray】" "载入 透明代理 转发规则设置"
 
 # 同时将代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理
-if [ "$v2ray_optput" = 1 ] ; then
+if [ "$app_114" = 0 ] ; then
 logger -t "【v2ray】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
 fi
 logger -t "【v2ray】" "完成 透明代理 转发规则设置"
@@ -617,10 +614,8 @@ sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"�
 nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
 nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
 nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
-[ "$v2ray_optput" == 1 ] && nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
-[ "$v2ray_optput" == 0 ] && nvram set app_114="1" # 0:代理本机流量; 1:跳过代理本机流量
-[ "$v2ray_optput" == 1 ] && sstp_set uid_owner='777' # 非 0 时进行用户ID匹配跳过代理本机流量
-[ "$v2ray_optput" == 0 ] && sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
+sstp_set uid_owner='0'          # 非 0 时进行用户ID匹配跳过代理本机流量
+sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'
@@ -714,8 +709,9 @@ fi
 
 sleep_rnd () {
 #随机延时
+ss_link_1=`nvram get ss_link_1`
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-RND_NUM=`echo $SEED 1 15|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+RND_NUM=`echo $SEED 30 60|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 [ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
 sleep $RND_NUM
 sleep $ss_link_1

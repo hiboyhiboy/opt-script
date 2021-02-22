@@ -135,11 +135,6 @@ ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 ss_check=`nvram get ss_check`
 ss_updatess=`nvram get ss_updatess`
 [ -z $ss_updatess ] && ss_updatess=0 && nvram set ss_updatess=$ss_updatess
-ss_link_2=`nvram get ss_link_2`
-[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
-ss_link_1=`nvram get ss_link_1`
-[ "$ss_link_1" -lt 66 ] && ss_link_1="66" || { [ "$ss_link_1" -ge 66 ] || { ss_link_1="66" ; nvram set ss_link_1="66" ; } ; }
-
 
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 chinadns_enable=`nvram get app_1`
@@ -170,6 +165,11 @@ if [ "$cmd_log_enable" = "1" ] || [ "$ss_renum" -gt "0" ] ; then
 fi
 fi
 
+gid_owner="0"
+ss_link_2=`nvram get ss_link_2`
+[ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
+ss_link_1=`nvram get ss_link_1`
+[ "$ss_link_1" -lt 66 ] && ss_link_1="66" || { [ "$ss_link_1" -ge 66 ] || { ss_link_1="66" ; nvram set ss_link_1="66" ; } ; }
 if [ "$ss_enable" != "0" ] ; then
 	kcptun_server=`nvram get kcptun_server`
 	if [ "$kcptun_enable" != "0" ] ; then
@@ -230,6 +230,7 @@ nvram set app_112="0"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy)
 nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
 sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
+sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
 sstp_set proxy_svrport='1:65535'
@@ -548,17 +549,34 @@ logger -t "【ss-redir】" "SS服务器【$app_97】设置内容：$ss_server �
 SSJSON_sh "/tmp/ss-redir_1.json" "1" "r"
 killall_ss_redir
 check_ssr
+gid_owner="0"
+su_cmd="eval"
+NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
+hash su 2>/dev/null && su_x="1"
+hash su 2>/dev/null || su_x="0"
+if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
+	addgroup -g 1321 ‍✈️
+	adduser -G ‍✈️ -u 1321 ‍✈️ -D -S -H -s /bin/sh
+	sed -Ei s/1321:1321/0:1321/g /etc/passwd
+	su_cmd="su ‍✈️ -c "
+	gid_owner="1321"
+fi
+
 if [ "$ss_threads" != 0 ] ; then
 for ss_1i in $(seq 1 $threads)
 do
 logger -t "【ss-redir】" "启动多线程均衡负载，启动 $ss_1i 线程"
 cmd_name="SS_""$ss_1i""_redir"
-eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
+#eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
+su_cmd2="ss-redir -c /tmp/ss-redir_1.json $options1"
+eval "$su_cmd" '"cmd_name='"$cmd_name"' && '"$su_cmd2"' $cmd_log"' &
 usleep 300000
 done
 else
 cmd_name="SS_1_redir"
-eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
+#eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
+su_cmd2="ss-redir -c /tmp/ss-redir_1.json $options1"
+eval "$su_cmd" '"cmd_name='"$cmd_name"' && '"$su_cmd2"' $cmd_log"' &
 fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	killall_ss_local
@@ -571,12 +589,16 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	do
 	logger -t "【ss-local】" "启动多线程均衡负载，启动 $ss_1i 线程"
 	cmd_name="SS_""$ss_1i""_local"
-	eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
+	#eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
+	su_cmd2="ss-local -c /tmp/ss-local_1.json $options1"
+	eval "$su_cmd" '"cmd_name='"$cmd_name"' && '"$su_cmd2"' $cmd_log"' &
 	usleep 300000
 	done
 	else
 	cmd_name="SS_1_local"
-	eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
+	#eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
+	su_cmd2="ss-local -c /tmp/ss-local_1.json $options1"
+	eval "$su_cmd" '"cmd_name='"$cmd_name"' && '"$su_cmd2"' $cmd_log"' &
 	fi
 fi
 
@@ -1146,10 +1168,11 @@ fi
 
 sleep_rnd () {
 #随机延时
+ss_link_1=`nvram get ss_link_1`
 ss_internet=`nvram get ss_internet`
 if [ "$ss_internet" = "1" ] ; then
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-	RND_NUM=`echo $SEED 1 15|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	RND_NUM=`echo $SEED 30 60|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 	[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
 	sleep $RND_NUM
 	sleep $ss_link_1
