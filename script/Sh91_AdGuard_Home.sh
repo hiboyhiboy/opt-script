@@ -307,13 +307,9 @@ filters:
   name: AdAway
   id: 2
 - enabled: true
-  url: https://hosts-file.net/ad_servers.txt
-  name: hpHosts - Ad and Tracking servers only
-  id: 3
-- enabled: true
   url: https://www.malwaredomainlist.com/hostslist/hosts.txt
   name: MalwareDomainList.com Hosts List
-  id: 4
+  id: 3
 user_rules: []
 dhcp:
   enabled: false

@@ -487,6 +487,7 @@ fi
 [ "$app_114" = "1" ] && logger -t "【v2ray】" "停止路由自身流量走透明代理"
 fi
 v2ray_v=`v2ray -version | grep V2Ray`
+[ -z "$v2ray_v" ] && v2ray_v=`v2ray -version | grep Xray`
 nvram set v2ray_v="$v2ray_v"
 if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
 	[ "$v2ray_http_format" = "1" ] && su_cmd2="$v2ray_path -format json -config $v2ray_http_config"
