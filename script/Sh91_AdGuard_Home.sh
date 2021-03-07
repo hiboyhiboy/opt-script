@@ -3,6 +3,8 @@
 source /etc/storage/script/init.sh
 AdGuardHome_enable=`nvram get app_84`
 [ -z $AdGuardHome_enable ] && AdGuardHome_enable=0 && nvram set app_84=0
+AdGuardHome_dns=`nvram get app_132`
+[ -z $AdGuardHome_dns ] && AdGuardHome_dns=0 && nvram set app_132=0
 AdGuardHome_2_server=`nvram get app_85`
 if [ "$AdGuardHome_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep AdGuardHome | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -62,7 +64,7 @@ exit 0
 AdGuardHome_get_status () {
 
 A_restart=`nvram get AdGuardHome_status`
-B_restart="$AdGuardHome_enable$AdGuardHome_2_server"
+B_restart="$AdGuardHome_enable$AdGuardHome_dns$AdGuardHome_2_server"
 [ "$(nvram get app_86)" = "1" ] && B_restart="$B_restart""$(cat /etc/storage/app_19.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "1" ] && nvram set app_86=0
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -85,12 +87,23 @@ if [ "$AdGuardHome_enable" = "1" ] ; then
 		AdGuardHome_close
 		AdGuardHome_start
 	else
-		[ -z "$AdGuardHome_2_server" ] && [ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
-		if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-			sleep 10 
+		if [ "$AdGuardHome_dns" != "0" ] ; then
+			[ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
+			if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
+				sleep 10 
+				if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
+					logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 变更侦听端口规则 port=12353 , 自动尝试重新启动"
+					AdGuardHome_restart
+				fi
+			fi
+		else
+			[ -z "$AdGuardHome_2_server" ] && [ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
 			if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-				logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 自动尝试重新启动"
-				AdGuardHome_restart
+				sleep 10 
+				if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
+					logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 自动尝试重新启动"
+					AdGuardHome_restart
+				fi
 			fi
 		fi
 	fi
@@ -107,6 +120,15 @@ OSC
 #return
 fi
 while true; do
+if [ "$AdGuardHome_dns" != "0" ] ; then
+	if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
+		sleep 10 
+		if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
+			logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 变更侦听端口规则 port=12353 , 自动尝试重新启动"
+			AdGuardHome_restart
+		fi
+	fi
+else
 	if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
 		sleep 10
 		if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
@@ -114,6 +136,7 @@ while true; do
 			AdGuardHome_restart
 		fi
 	fi
+fi
 sleep 61
 done
 }
@@ -142,7 +165,7 @@ kill_ps "$scriptname"
 AdGuardHome_start () {
 check_webui_yes
 port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-if [ ! -z "$AdGuardHome_2_server" ] ; then
+if [ ! -z "$AdGuardHome_2_server" ] && [ "$AdGuardHome_dns" == "0" ] ; then
 	logger -t "【AdGuardHome】" "使用外置 AdGuardHome 服务器： $AdGuardHome_2_server"
 	logger -t "【AdGuardHome】" "建议外置 AdGuardHome 服务器的上游 DNS 是无污染的"
 	AdGuardHome_server="server=$(echo $AdGuardHome_2_server | sed 's@:\|：@#@g')"
@@ -187,12 +210,26 @@ else
 	logger -t "【AdGuardHome】" "启用本机 AdGuardHome 服务"
 	AdGuardHome_server='server=127.0.0.1#5353'
 	# 生成配置文件
-	if [ "$port" != 0 ] ; then
-		logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:8053"
-		set_dns "127.0.0.1:8053"
+	if [ "$AdGuardHome_dns" != "0" ] ; then
+		AdGuardHome_server='server=127.0.0.1#53'
+		sed -Ei 's/  port: 5353/  port: 53/g' /etc/storage/app_19.sh
+		logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:12353"
+		set_dns "127.0.0.1:12353"
 		set_dns "1.1.1.1" "del"
-	else
 		set_dns "127.0.0.1:8053" "del"
+	else
+		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+		if [ "$port" != 0 ] ; then
+			logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:8053"
+			set_dns "127.0.0.1:8053"
+			set_dns "1.1.1.1" "del"
+			set_dns "127.0.0.1:12353" "del"
+		else
+			set_dns "127.0.0.1:8053" "del"
+			set_dns "127.0.0.1:12353" "del"
+		fi
+		sed -Ei 's/  port: 5353/  port: 53/g' /etc/storage/app_19.sh
+		sed -Ei 's/  port: 53/  port: 5353/g' /etc/storage/app_19.sh
 	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	eval "/opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
@@ -202,17 +239,24 @@ else
 		AdGuardHome_get_status
 	eval "$scriptfilepath keep &"
 fi
-if [ "$port" != 0 ] ; then
-	logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 删除 server=127.0.0.1#8053"
-	sed -Ei '/server=/d' /etc/storage/dnsmasq/dnsmasq.conf
-	echo '#server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
+if [ "$AdGuardHome_dns" != "0" ] ; then
+	logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
+	sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
+	echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+else
+	port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	if [ "$port" != 0 ] ; then
+		logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 删除 server=127.0.0.1#8053"
+		sed -Ei '/server=/d' /etc/storage/dnsmasq/dnsmasq.conf
+		echo '#server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
+	fi
+	logger -t "【AdGuardHome】" "添加 AdGuardHome 的 dnsmasq 转发规则 $AdGuardHome_server"
+	sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
+	echo "$AdGuardHome_server #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+	echo "no-resolv #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+	sed -Ei 's/^dns-forward-max/#dns-forward-max/g' /etc/storage/dnsmasq/dnsmasq.conf
+	echo "dns-forward-max=1000 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 fi
-logger -t "【AdGuardHome】" "添加 AdGuardHome 的 dnsmasq 转发规则 server=127.0.0.1#5353"
-sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
-echo "$AdGuardHome_server #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-echo "no-resolv #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-sed -Ei 's/^dns-forward-max/#dns-forward-max/g' /etc/storage/dnsmasq/dnsmasq.conf
-echo "dns-forward-max=1000 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
 exit 0
