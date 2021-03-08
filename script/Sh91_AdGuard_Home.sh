@@ -231,6 +231,12 @@ else
 		sed -Ei 's/  port: 5353/  port: 53/g' /etc/storage/app_19.sh
 		sed -Ei 's/  port: 53/  port: 5353/g' /etc/storage/app_19.sh
 	fi
+	if [ "$AdGuardHome_dns" != "0" ] ; then
+		logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
+		sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
+		echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+		restart_dhcpd
+	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	eval "/opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
 	sleep 3
@@ -239,11 +245,7 @@ else
 		AdGuardHome_get_status
 	eval "$scriptfilepath keep &"
 fi
-if [ "$AdGuardHome_dns" != "0" ] ; then
-	logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
-	sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
-	echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-else
+if [ "$AdGuardHome_dns" == "0" ] ; then
 	port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 	if [ "$port" != 0 ] ; then
 		logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 删除 server=127.0.0.1#8053"
