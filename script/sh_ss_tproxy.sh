@@ -930,8 +930,9 @@ update_chnlist_file() {
 	mkdir -p /opt/app/ss_tproxy/rule
 	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnlist_tmp.txt"
 	rm -f $tmp_down_file
-	local url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
-	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
+	local url='https://cdn.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
+	local raw_url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
+	wgetcurl_checkmd5 $tmp_down_file "$url" "$raw_url" N 5
 	sed -e "s@server=/@@g" -i  $tmp_down_file
 	sed -e 's@/.*@@g' -i  $tmp_down_file
 	printf "com.cn\nedu.cn\nnet.cn\norg.cn\ngov.cn\n" >> $tmp_down_file
@@ -1017,7 +1018,7 @@ update_chnlist_ipset() {
 }
 update_chnlist_sstp() {
 	command_is_exists 'curl' || log_error "command not found: curl"
-	local url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
+	local url='https://cdn.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
 	local data; data=$(curl -4sSkL "$url") || log_error "download failed, exit-code: $?"
 	echo "$data" | awk -F/ '{print $2}' >$file_gfwlist_txt
 }
