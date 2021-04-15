@@ -82,13 +82,16 @@ else
 	fi
 fi
 
- opttmpfile="$hiboyfile/opttmpg10.tgz"
- opttmpfile2="$hiboyfile2/opttmpg10.tgz"
- optupanfile="$hiboyfile/optupang10.tgz"
- optupanfile3="$hiboyfile2/optupang10.tgz"
- optupanfile2="$hiboyfile/optg10.txt"
- optupanfile4="$hiboyfile2/optg10.txt"
-
+ opttmpfile="$hiboyfile/opttmpg11.tgz"
+ opttmpfile2="$hiboyfile2/opttmpg11.tgz"
+ 
+ optupanfile="$hiboyfile/optupang11.tgz"
+ optupanfile2="$hiboyfile2/optupang11.tgz"
+ optupanfileS="10"
+ optupanfile_md5="da0d5ebd045d1c1592daac9343071184"
+ 
+ opt_txt_file1="$hiboyfile/optg11.txt"
+ opt_txt_file2="$hiboyfile2/optg11.txt"
 }
 
 opt_force
@@ -115,13 +118,7 @@ fi
 }
 
 # /etc/storage/script/sh01_mountopt.sh
- opttmpfile="$hiboyfile/opttmpg10.tgz"
- opttmpfile2="$hiboyfile2/opttmpg10.tgz"
- optupanfile="$hiboyfile/optupang10.tgz"
- optupanfile3="$hiboyfile2/optupang10.tgz"
- optupanfile2="$hiboyfile/optg10.txt"
- optupanfile4="$hiboyfile2/optg10.txt"
- 
+
 # ss_opt_x 
 # 1 >>自动选择:SD→U盘→内存
 # 2 >>安装到内存:需要空余内存(10M+)
@@ -695,21 +692,35 @@ logger -t "【opt】" "以上两个数据如出现占用100%时，则 opt 数据
 opt_file () {
 
 if [ ! -f /opt/opt.tgz ]  ; then
-	rm -f /opt/opt.tgz
+	rm -f /opt/opt.tgz*
 	logger -t "【opt】" "/opt 可用空间：$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')M"
 	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $opttmpfile" ; wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
-	optPath="`grep ' /opt ' /proc/mounts | grep /dev`"
-	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile3"; }
-	optPath="`grep ' /opt ' /proc/mounts | grep " cifs "`"
-	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $optupanfile" ; wgetcurl.sh '/opt/opt.tgz' "$optupanfile" "$optupanfile3"; }
-	logger -t "【opt】" "/opt/opt.tgz 下载完成，开始解压"
+	if [ ! -z "$(grep ' /opt ' /proc/mounts | grep /dev)" ] || [ ! -z "$(grep ' /opt ' /proc/mounts | grep " cifs ")" ]  ; then
+		for optupanfileN in $(seq 0 $optupanfileS) ; do
+		optupanfileN="00""$optupanfileN"
+		optupanfileN="${optupanfileN:0-2}"
+		logger -t "【opt】" "下载: $optupanfile.$optupanfileN"
+		wgetcurl.sh "/opt/opt.tgz.$optupanfileN" "$optupanfile.$optupanfileN" "$optupanfile2.$optupanfileN"
+		done
+		logger -t "【opt】" "合并文件: /opt/opt.tgz"
+		cat /opt/opt.tgz.* > /opt/opt.tgz
+		if [ "$optupanfile_md5" != "$(md5sum /opt/opt.tgz | awk '{print $1;}')" ]  ; then
+			logger -t "【opt】" "/opt/opt.tgz md5不匹配！"
+			rm -f /opt/opt.tgz*
+		else
+			rm -f /opt/opt.tgz.*
+		fi
+	fi
+	[ -f /opt/opt.tgz ] && logger -t "【opt】" "/opt/opt.tgz 下载完成，开始解压" || logger -t "【opt】" "/opt/opt.tgz 下载失败！"
 else
 	logger -t "【opt】" "/opt/opt.tgz 已经存在，开始解压"
 fi
+if [ -f /opt/opt.tgz ]  ; then
 tar -xzvf /opt/opt.tgz -C /opt ; cd /opt
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 [ ! -z "$optPath" ] && rm -f /opt/opt.tgz
+fi
 # flush buffers
 sync
 
@@ -766,10 +777,10 @@ fi
 
 upopt () {
 if [ "$upopt_enable" = "1" ] ; then
-wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 if [ ! -s /tmp/opti.txt ] ; then
 	opt_cdn_force
-	wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 fi
 nvram set optt="`cat /tmp/opti.txt`"
 else
@@ -780,10 +791,10 @@ nvram set opto="`cat /opt/opti.txt`"
 }
 
 upopt2 () {
-wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 if [ ! -s /tmp/opti.txt ] ; then
 	opt_cdn_force
-	wgetcurl.sh "/tmp/opti.txt" "$optupanfile2" "$optupanfile4"
+	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 fi
 nvram set optt="`cat /tmp/opti.txt`"
 }
