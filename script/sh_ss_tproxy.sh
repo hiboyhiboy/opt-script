@@ -297,7 +297,8 @@ resolve_hostname6() {
 
 resolve_svraddr() {
 	update_dnsmasq_file
-	proxy_all_svrip=""
+	if [ "$uid_owner" == "0" ] && [ "$gid_owner" == "0" ] ; then
+	
 	while read svraddr; do
 		[ -z "$svraddr" ] && continue
 		[ ! -z "$(echo $svraddr | grep 8.8.8.8)$(echo $svraddr | grep 114.114.114.114)$(echo $svraddr | grep 119.29.29.29)$(echo $svraddr | grep 223.5.5.5)" ] && continue
@@ -335,6 +336,8 @@ $svripv4"
 			proxy_svripv6="$proxy_svripv6
 $svripv6"
 		done < $proxy_svraddr6
+	fi
+	
 	fi
 
 #ipset destroy $setname &>/dev/null
@@ -376,9 +379,8 @@ create sstp_mac_chn hash:mac hashsize 64" | while read sstp_name; do ipset -! $s
 
 	ipset flush proxyaddr &>/dev/null
 	ipset flush proxyaddr6 &>/dev/null
-	for svr_ip in $proxy_svripv4; do echo "-A proxyaddr $svr_ip"; done | ipset -! restore &>/dev/null
-	ipset flush proxyaddr6 &>/dev/null
-	for svr_ip in $proxy_svripv6; do echo "-A proxyaddr6 $svr_ip"; done | ipset -! restore &>/dev/null
+	[ "$proxy_svripv4" != "" ] && { for svr_ip in $proxy_svripv4; do echo "-A proxyaddr $svr_ip"; done | ipset -! restore &>/dev/null ; }
+	[ "$proxy_svripv6" != "" ] && { for svr_ip in $proxy_svripv6; do echo "-A proxyaddr6 $svr_ip"; done | ipset -! restore &>/dev/null ; }
 	ipset flush privaddr &>/dev/null
 	ipset flush privaddr6 &>/dev/null
 	for priv_ip in $IPV4_RESERVED_IPADDRS; do echo "-A privaddr $priv_ip"; done | ipset -! restore &>/dev/null
@@ -421,6 +423,9 @@ load_config() {
 	else
 		source "$ss_tproxy_config" $arguments || log_error "load config failed, exit-code: $?"
 	fi
+
+	[ "$uid_owner" == "" ] && uid_owner="0"
+	[ "$gid_owner" == "" ] && gid_owner="0"
 
 	# MODE_TARGET
 	if is_global_mode; then
@@ -533,7 +538,9 @@ check_config() {
 	{ is_false "$ipv4" && is_false "$ipv6"; } && log_error "both ipv4 and ipv6 are disabled, nothing to do"
 
 	[ -z "$proxy_svrport" ] && log_error "the value of the proxy_svrport option is empty: $proxy_svrport"
-	[ "cat $proxy_svraddr4" == "" -a "cat $proxy_svraddr6" == "" ] && log_error "both proxy_svraddr4 and proxy_svraddr6 are empty"
+	if [ "$uid_owner" == "0" ] && [ "$gid_owner" == "0" ] ; then
+		[ "cat $proxy_svraddr4" == "" -a "cat $proxy_svraddr6" == "" ] && log_error "both proxy_svraddr4 and proxy_svraddr6 are empty"
+	fi
 
 	command_is_exists 'ipset'   || log_error "command not found: ipset"
 	command_is_exists 'dnsmasq' || log_error "command not found: dnsmasq"
@@ -620,7 +627,9 @@ gfwlist_txt_append_domain_names() {
 }
 
 update_gfwlist() {
-	[ "$(type -t wgetcurl_checkmd5)" != "" ] && { update_gfwlist_file ; update_gfwlist_ipset ; return ; } || { update_gfwlist_sstp ; return ; }
+	update_gfwlist_file
+	update_gfwlist_ipset
+	return
 }
 
 update_gfwlist_file() {
@@ -890,39 +899,9 @@ update_gfwlist_ipset() {
 	fi
 }
 
-update_gfwlist_sstp() {
-	command_is_exists 'curl'   || log_error "command not found: curl"
-	command_is_exists 'perl'   || log_error "command not found: perl"
-	command_is_exists 'base64' || log_error "command not found: base64"
-
-	local url='https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt'
-	local data; data=$(curl -4sSkL "$url") || log_error "download failed, exit-code: $?"
-
-	local base64_decode=''
-	base64 -d       </dev/null &>/dev/null && base64_decode='base64 -d'
-	base64 --decode </dev/null &>/dev/null && base64_decode='base64 --decode'
-	[ "$base64_decode" ] || log_error "command args is not support: base64 -d/--decode"
-
-readonly GFWLIST_TXT_PERL_SCRIPT_STRING='
-if (/URL Keywords/i) { $null = <> until $null =~ /^!/ }
-s#^\s*+$|^!.*+$|^@@.*+$|^\[AutoProxy.*+$|^/.*/$##i;
-s@^\|\|?|\|$@@;
-s@^https?:/?/?@@i;
-s@(?:/|%).*+$@@;
-s@\*[^.*]++$@\n@;
-s@^.*?\*[^.]*+(?=[^*]+$)@@;
-s@^\*?\.|^.*\.\*?$@@;
-s@(?=[^0-9a-zA-Z.-]).*+$@@;
-s@^\d+\.\d+\.\d+\.\d+(?::\d+)?$@@;
-s@^[^.]++$@@;
-s@^\s*+$@@
-'
-
-	echo "$data" | $base64_decode | { perl -pe "$GFWLIST_TXT_PERL_SCRIPT_STRING"; gfwlist_txt_append_domain_names; } | sort | uniq >$file_gfwlist_txt
-}
-
 update_chnlist() {
-	[ "$(type -t wgetcurl_checkmd5)" != "" ] && { update_chnlist_file ; return ; } || { update_chnlist_sstp ; return ; }
+	update_chnlist_file
+	return
 }
 
 update_chnlist_file() {
@@ -1016,19 +995,17 @@ update_chnlist_ipset() {
 	nvram set gfwlist_list="gfwlist规则`cat /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf | wc -l` 行 Update:$(date "+%m-%d %H:%M")"
 
 }
-update_chnlist_sstp() {
-	command_is_exists 'curl' || log_error "command not found: curl"
-	local url='https://cdn.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
-	local data; data=$(curl -4sSkL "$url") || log_error "download failed, exit-code: $?"
-	echo "$data" | awk -F/ '{print $2}' >$file_gfwlist_txt
-}
 
 update_chnroute() {
-	[ "$(type -t wgetcurl_checkmd5)" != "" ] && { update_chnroute_file ; update_chnroute_ipset ; return ; } || { update_chnroute_sstp ; return ; }
+	update_chnroute_file
+	update_chnroute_ipset
+	return
 }
 
 update_chnroute6() {
-	[ "$(type -t wgetcurl_checkmd5)" != "" ] && { update_chnroute_file "ipv6" ; update_chnroute_ipset "ipv6" ; return ; } || { update_chnroute_sstp "ipv6" ; return ; }
+	update_chnroute_file "ipv6"
+	update_chnroute_ipset "ipv6"
+	return
 }
 
 update_chnroute_file() {
@@ -1161,20 +1138,6 @@ update_chnroute_ipset() {
 	nvram set chnroute6_list="$chnroute6_list"
 	fi
 
-}
-
-update_chnroute_sstp() {
-	command_is_exists 'curl' || log_error "command not found: curl"
-	local url='https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
-	local data; data=$(curl -4sSkL "$url") || log_error "download failed, exit-code: $?"
-	{
-		echo "create chnroute hash:net family inet"
-		echo "$data" | grep CN | grep ipv4 | awk -F'|' '{printf("add chnroute %s/%d\n", $4, 32-log($5)/log(2))}'
-	} >$file_chnroute_set
-	{
-		echo "create chnroute6 hash:net family inet6"
-		echo "$data" | grep CN | grep ipv6 | awk -F'|' '{printf("add chnroute6 %s/%d\n", $4, $5)}'
-	} >$file_chnroute6_set
 }
 
 update_wanlanlist_ipset() {
@@ -1400,140 +1363,10 @@ update_check_file() {
 	fi
 }
 
-start_dnsserver_global() {
-	local dnsmasq_config_string=$(cat <<EOF
-$(is_true "$dnsmasq_log_enable" && echo 'log-queries')
-log-facility = $dnsmasq_log_file
-log-async = 20
-domain-needed
-cache-size = $dnsmasq_cache_size
-$([ $(dnsmasq --help | grep -c min-cache-ttl) -ne 0 ] && echo "min-cache-ttl = $dnsmasq_cache_time")
-no-negcache
-no-resolv
-port = $dnsmasq_bind_port
-$(is_true "$ipv4" && echo "server = $dns_remote")
-$(is_true "$ipv6" && echo "server = $dns_remote6")
-$(
-cat $file_ignlist_ext | grep -E '^@' | cut -c2- | while read domain_name; do
-	is_true "$ipv4" && echo "server = /$domain_name/$dns_direct"
-	is_true "$ipv6" && echo "server = /$domain_name/$dns_direct6"
-	if is_true "$ipv4" && is_true "$ipv6"; then
-		echo "ipset = /$domain_name/privaddr,privaddr6"
-	elif is_true "$ipv4"; then
-		echo "ipset = /$domain_name/privaddr"
-	else
-		echo "ipset = /$domain_name/privaddr6"
-	fi
-done
-)
-$(for append_config in $dnsmasq_append_config; do echo "$append_config"; done)
-$(for conf_dir_arg in $dnsmasq_conf_dir; do echo "conf-dir = $conf_dir_arg"; done)
-$(for conf_file_arg in $dnsmasq_conf_file; do echo "conf-file = $conf_file_arg"; done)
-EOF
-)
-#    status_dnsmasq_pid=$(dnsmasq --keep-in-foreground --conf-file=- <<<"$dnsmasq_config_string" & echo $!)
-echo "$dnsmasq_config_string" > /opt/app/ss_tproxy/dnsmasq_config_string.txt
-}
-
-start_dnsserver_gfwlist() {
-	local dnsmasq_config_string=$(cat <<EOF
-$(is_true "$dnsmasq_log_enable" && echo 'log-queries')
-log-facility = $dnsmasq_log_file
-log-async = 20
-domain-needed
-cache-size = $dnsmasq_cache_size
-$([ $(dnsmasq --help | grep -c min-cache-ttl) -ne 0 ] && echo "min-cache-ttl = $dnsmasq_cache_time")
-no-negcache
-no-resolv
-port = $dnsmasq_bind_port
-$(is_true "$ipv4" && echo "server = $dns_direct")
-$(is_true "$ipv6" && echo "server = $dns_direct6")
-$(
-{ cat $file_gfwlist_txt; grep -E '^@' $file_gfwlist_ext | cut -c2-; } | while read domain_name; do
-	is_true "$ipv4" && echo "server = /$domain_name/$dns_remote"
-	is_true "$ipv6" && echo "server = /$domain_name/$dns_remote6"
-	if is_true "$ipv4" && is_true "$ipv6"; then
-		echo "ipset = /$domain_name/gfwlist,gfwlist6"
-	elif is_true "$ipv4"; then
-		echo "ipset = /$domain_name/gfwlist"
-	else
-		echo "ipset = /$domain_name/gfwlist6"
-	fi
-done
-)
-$(for append_config in $dnsmasq_append_config; do echo "$append_config"; done)
-$(for conf_dir_arg in $dnsmasq_conf_dir; do echo "conf-dir = $conf_dir_arg"; done)
-$(for conf_file_arg in $dnsmasq_conf_file; do echo "conf-file = $conf_file_arg"; done)
-EOF
-)
-#    status_dnsmasq_pid=$(dnsmasq --keep-in-foreground --conf-file=- <<<"$dnsmasq_config_string" & echo $!)
-echo "$dnsmasq_config_string" > /opt/app/ss_tproxy/dnsmasq_config_string.txt
-}
-
-start_dnsserver_chnroute() {
-	local chinadns_args="-b 127.0.0.1 -l $chinadns_bind_port -o $chinadns_timeout -p $chinadns_repeat"
-	is_true "$chinadns_noip_as_chnip" && chinadns_args="$chinadns_args -n"
-	#is_true "$chinadns_gfwlist_mode" && chinadns_args="$chinadns_args -g-"
-	is_true "$chinadns_fairmode" && chinadns_args="$chinadns_args -f"
-	is_true "$chinadns_verbose" && chinadns_args="$chinadns_args -v"
-	if is_true "$ipv4" && is_true "$ipv6"; then
-		chinadns_args="$chinadns_args -c $dns_direct,$dns_direct6"
-		chinadns_args="$chinadns_args -t $dns_remote,$dns_remote6"
-	elif is_true "$ipv4"; then
-		chinadns_args="$chinadns_args -c $dns_direct"
-		chinadns_args="$chinadns_args -t $dns_remote"
-	else
-		chinadns_args="$chinadns_args -c $dns_direct6"
-		chinadns_args="$chinadns_args -t $dns_remote6"
-	fi
-	#ipset -X chnroute &>/dev/null
-	#ipset -X chnroute6 &>/dev/null
-	ipset -! restore <$file_chnroute_set
-	ipset -! restore <$file_chnroute6_set
-	for privaddr in `cat $chinadns_privaddr4`; do echo "-A chnroute $privaddr"; done | ipset -! restore &>/dev/null
-	for privaddr in `cat $chinadns_privaddr6`; do echo "-A chnroute6 $privaddr"; done | ipset -! restore &>/dev/null
-	if is_true "$chinadns_gfwlist_mode"; then
-		chinadns_ng $chinadns_args -g $file_gfwlist_txt >> $chinadns_logfile &
-	else
-		chinadns_ng $chinadns_args >> $chinadns_logfile &
-	fi
-	status_chinadns_pid=$(pidof chinadns_ng)
-
-	local dnsmasq_config_string=$(cat <<EOF
-$(is_true "$dnsmasq_log_enable" && echo 'log-queries')
-log-facility = $dnsmasq_log_file
-log-async = 20
-domain-needed
-cache-size = $dnsmasq_cache_size
-$([ $(dnsmasq --help | grep -c min-cache-ttl) -ne 0 ] && echo "min-cache-ttl = $dnsmasq_cache_time")
-no-negcache
-no-resolv
-port = $dnsmasq_bind_port
-server = 127.0.0.1#$chinadns_bind_port
-$(
-cat $file_ignlist_ext | grep -E '^@' | cut -c2- | while read domain_name; do
-	is_true "$ipv4" && echo "server = /$domain_name/$dns_direct"
-	is_true "$ipv6" && echo "server = /$domain_name/$dns_direct6"
-	if is_true "$ipv4" && is_true "$ipv6"; then
-		echo "ipset = /$domain_name/privaddr,privaddr6"
-	elif is_true "$ipv4"; then
-		echo "ipset = /$domain_name/privaddr"
-	else
-		echo "ipset = /$domain_name/privaddr6"
-	fi
-done
-)
-$(for append_config in $dnsmasq_append_config; do echo "$append_config"; done)
-$(for conf_dir_arg in $dnsmasq_conf_dir; do echo "conf-dir = $conf_dir_arg"; done)
-$(for conf_file_arg in $dnsmasq_conf_file; do echo "conf-file = $conf_file_arg"; done)
-EOF
-)
-#    status_dnsmasq_pid=$(dnsmasq --keep-in-foreground --conf-file=- <<<"$dnsmasq_config_string" & echo $!)
-echo "$dnsmasq_config_string" > /opt/app/ss_tproxy/dnsmasq_config_string.txt
-}
-
 start_dnsserver() {
-	[ "$(type -t wgetcurl_checkmd5)" != "" ] && { start_dnsserver_dnsproxy ; start_dnsserver_confset ; return ; } || { start_dnsserver_sstp ; return ; }
+	start_dnsserver_dnsproxy
+	start_dnsserver_confset
+	return
 }
 
 start_dnsserver_dnsproxy() {
@@ -1675,73 +1508,6 @@ while read dnsmasq_string_arg; do
 	fi
 done < $dnsmasq_conf_string
 update_dnsmasq_file
-}
-
-start_dnsserver_sstp() {
-	resolve_svraddr
-	dnsmasq_append_config="$(cat $dnsmasq_conf_string)"
-	if is_true "$ipv4"; then
-		do_i="0"
-		while read svraddr; do
-			do_i=$(( do_i + 1 ))
-			server_host="$svraddr"
-			server_addr="$(echo "$proxy_svripv4" | sed -n "$do_i,1p" )"
-			if is_domain_name "$server_host"; then
-				dnsmasq_append_config="$dnsmasq_append_config
-address = /$server_host/$server_addr"
-			fi
-		done < $proxy_svraddr4
-	fi
-	if is_true "$ipv6"; then
-		do_i="0"
-		while read svraddr; do
-			do_i=$(( do_i + 1 ))
-			server_host="$svraddr"
-			server_addr="$(echo "$proxy_svripv6" | sed -n "$do_i,1p" )"
-			if is_domain_name "$server_host"; then
-				dnsmasq_append_config="$dnsmasq_append_config
-address = /$server_host/$server_addr"
-			fi
-		done < $proxy_svraddr6
-	fi
-
-	if ! is_enabled_udp; then
-		local original_dns_remote="$dns_remote"
-		local original_dns_remote6="$dns_remote6"
-		dns_remote="127.0.0.1#$dns2tcp_bind_port"
-		dns_remote6="::1#$dns2tcp_bind_port"
-	fi
-
-	if is_global_mode; then
-		start_dnsserver_global
-	elif is_gfwlist_mode; then
-		start_dnsserver_gfwlist
-	elif is_chnroute_mode; then
-		start_dnsserver_chnroute
-	fi
-
-	if ! is_enabled_udp; then
-		local dns2tcp_listen_addr4="$dns_remote"
-		local dns2tcp_listen_addr6="$dns_remote6"
-		local dns2tcp_remote_addr4="$original_dns_remote"
-		local dns2tcp_remote_addr6="$original_dns_remote6"
-		dns_remote="$original_dns_remote"
-		dns_remote6="$original_dns_remote6"
-		if is_true "$ipv4"; then
-			local dns2tcp_args="-L $dns2tcp_listen_addr4 -R $dns2tcp_remote_addr4"
-			is_true "$dns2tcp_verbose" && dns2tcp_args="$dns2tcp_args -v"
-			dns2tcp $dns2tcp_args >>$dns2tcp_logfile &
-			status_dns2tcp4_pid=$(pidof dns2tcp)
-		fi
-		if is_true "$ipv6"; then
-			local dns2tcp_args="-L $dns2tcp_listen_addr6 -R $dns2tcp_remote_addr6"
-			is_true "$dns2tcp_verbose" && dns2tcp_args="$dns2tcp_args -v"
-			dns2tcp $dns2tcp_args >>$dns2tcp_logfile &
-			status_dns2tcp6_pid=$(pidof dns2tcp)
-		fi
-	fi
-
-	update_pidfile
 }
 
 stop_dnsserver() {
@@ -2456,8 +2222,8 @@ start_iptables_redirect_mode() {
 	[ "$uid_owner" != "0" ] &&     $1 -t nat -I SSTP_OUTPUT -m owner --uid-owner $uid_owner -j RETURN
 	[ "$gid_owner" != "0" ] &&     $1 -t nat -I SSTP_OUTPUT -m owner --gid-owner $gid_owner -j RETURN
 	[ "$output_return" != "1" ] && $1 -t nat -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p tcp -j SSTP_RULE
-	[ "$uid_owner" != "0" ] && is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m owner --uid-owner $uid_owner -j RETURN
-	[ "$gid_owner" != "0" ] && is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m owner --gid-owner $gid_owner -j RETURN
+	[ "$uid_owner" != "0" ] && is_enabled_udp && $1 -t mangle -I SSTP_OUTPUT -m owner --uid-owner $uid_owner -j RETURN
+	[ "$gid_owner" != "0" ] && is_enabled_udp && $1 -t mangle -I SSTP_OUTPUT -m owner --gid-owner $gid_owner -j RETURN
 	if [ "$output_return" != "1" ] || [ "$output_udp_return" == "1" ] ; then
 		is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p udp -j SSTP_RULE
 	fi
