@@ -101,10 +101,10 @@ logger -t "【wxsend推送】" "发送失败, 注意检[测试号信息]是否�
 fi
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wx_send)" ]  && [ ! -s /tmp/script/_app12 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wx_send)" ]  && [ ! -s /tmp/script/_app22 ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app12
-	chmod 777 /tmp/script/_app12
+	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app22
+	chmod 777 /tmp/script/_app22
 fi
 
 wxsend_restart () {
@@ -215,7 +215,7 @@ killall app_30.sh
 killall -9 app_30.sh
 [ "$tmall_enable" == "0" ] && killall caddy_tmall
 [ "$tmall_enable" == "0" ] && killall -9 caddy_tmall
-kill_ps "/tmp/script/_app12"
+kill_ps "/tmp/script/_app22"
 kill_ps "_wx_send.sh"
 kill_ps "$scriptname"
 }
