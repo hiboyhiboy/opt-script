@@ -330,7 +330,7 @@ name1="$name"
 	fi
 I=3
 qcloud_record_id=""
-while [ "$qcloud_record_id" = "" ] ; do
+while [ -z "$qcloud_record_id" ] ; do
 	I=$(($I - 1))
 	[ $I -lt 0 ] && break
 	# 获得记录ID
@@ -340,7 +340,7 @@ while [ "$qcloud_record_id" = "" ] ; do
 	sleep 1
 done
 	timestamp=`date +%s`
-if [ "$qcloud_record_id" = "" ] ; then
+if [ -z "$qcloud_record_id" ] ; then
 	qcloud_record_id=`add_record | get_codeDesc`
 	echo "added record $qcloud_record_id"
 	logger -t "【qcloud动态域名】" "添加的记录  $qcloud_record_id"

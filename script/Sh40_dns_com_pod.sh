@@ -274,7 +274,7 @@ recordID=""
 		domain_type="A"
 		post_type="Record.Ddns"
 	fi
-while [ "$recordID" = "" ] ; do
+while [ -z "$recordID" ] ; do
 	I=$(($I - 1))
 	[ $I -lt 0 ] && break
 	# 获得域名ID
@@ -286,7 +286,7 @@ while [ "$recordID" = "" ] ; do
 	recordID=$(echo $recordID | grep -Eo '"records".+' | sed -e "s/"'"remark":'"/"' \n '"/g" | grep '"type":"'$domain_type'"' | grep -Eo '"id":"[0-9]+"' | cut -d':' -f2 | tr -d '"' |head -n1)
 done
 	#echo "更新记录信息 recordID: " $recordID
-	if [ "$recordID" = "" ] ; then
+	if [ -z "$recordID" ] ; then
 		# 添加子域名记录IP
 		myIP=$hostIP
 		logger -t "【dns_com_pod动态域名】" "添加子域名 $HOST 记录IP: $myIP"
@@ -299,7 +299,7 @@ done
 	recordCD=$(echo $recordRS | grep -Eo '"code":"[0-9]+"' | cut -d':' -f2 | tr -d '"')
 	recordIP=$(echo $recordRS | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"')
 	# 输出记录IP
-	if [ "$recordIP" = "" ] ; then
+	if [ -z "$recordIP" ] ; then
 		sleep 10
 		# 获得记录ID
 		recordID=$(arApiPost "Record.List" "domain_id=$domainID&sub_domain=$HOST")

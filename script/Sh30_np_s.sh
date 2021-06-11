@@ -196,7 +196,7 @@ if [ ! -z "$action_nps" ] && [ -s "/opt/bin/nps/$action_nps" ] ; then
 	sleep 2
 	killall $action_nps
 	nps_ver="$(cat /tmp/nps_v.txt | grep version | awk -F ',' '{print $1}'  | awk -F ' ' '{print $NF}')"
-	if [ "$nps_ver" = "" ] ; then
+	if [ -z "$nps_ver" ] ; then
 		logger -t "【nps】" "$action_nps 当前版本 $nps_ver ,获取失败，请手动检查版本是否和服务器匹配!"
 	else
 	if [ v"$nps_ver" != "$nps_version" ] ; then

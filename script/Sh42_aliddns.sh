@@ -351,7 +351,7 @@ esac
 	fi
 I=3
 aliddns_record_id=""
-while [ "$aliddns_record_id" = "" ] ; do
+while [ -z "$aliddns_record_id" ] ; do
 	I=$(($I - 1))
 	[ $I -lt 0 ] && break
 	# 获得记录ID
@@ -361,7 +361,7 @@ while [ "$aliddns_record_id" = "" ] ; do
 	sleep 1
 done
 	timestamp=`date -u "+%Y-%m-%dT%H%%3A%M%%3A%SZ"`
-if [ "$aliddns_record_id" = "" ] ; then
+if [ -z "$aliddns_record_id" ] ; then
 	aliddns_record_id=`add_record | get_recordid`
 	echo "added record $aliddns_record_id"
 	logger -t "【AliDDNS动态域名】" "添加的记录  $aliddns_record_id"
@@ -371,7 +371,7 @@ else
 	logger -t "【AliDDNS动态域名】" "更新的记录  $aliddns_record_id"
 fi
 # save to file
-if [ "$aliddns_record_id" = "" ] ; then
+if [ -z "$aliddns_record_id" ] ; then
 	# failed
 	nvram set aliddns_last_act="`date "+%Y-%m-%d %H:%M:%S"`   更新失败"
 	logger -t "【AliDDNS动态域名】" "更新失败"

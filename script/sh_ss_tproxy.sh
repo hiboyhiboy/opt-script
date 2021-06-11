@@ -379,8 +379,8 @@ create sstp_mac_chn hash:mac hashsize 64" | while read sstp_name; do ipset -! $s
 
 	ipset flush proxyaddr &>/dev/null
 	ipset flush proxyaddr6 &>/dev/null
-	[ "$proxy_svripv4" != "" ] && { for svr_ip in $proxy_svripv4; do echo "-A proxyaddr $svr_ip"; done | ipset -! restore &>/dev/null ; }
-	[ "$proxy_svripv6" != "" ] && { for svr_ip in $proxy_svripv6; do echo "-A proxyaddr6 $svr_ip"; done | ipset -! restore &>/dev/null ; }
+	[ ! -z "$proxy_svripv4" ] && { for svr_ip in $proxy_svripv4; do echo "-A proxyaddr $svr_ip"; done | ipset -! restore &>/dev/null ; }
+	[ ! -z "$proxy_svripv6" ] && { for svr_ip in $proxy_svripv6; do echo "-A proxyaddr6 $svr_ip"; done | ipset -! restore &>/dev/null ; }
 	ipset flush privaddr &>/dev/null
 	ipset flush privaddr6 &>/dev/null
 	for priv_ip in $IPV4_RESERVED_IPADDRS; do echo "-A privaddr $priv_ip"; done | ipset -! restore &>/dev/null
@@ -424,8 +424,8 @@ load_config() {
 		source "$ss_tproxy_config" $arguments || log_error "load config failed, exit-code: $?"
 	fi
 
-	[ "$uid_owner" == "" ] && uid_owner="0"
-	[ "$gid_owner" == "" ] && gid_owner="0"
+	[ -z "$uid_owner" ] && uid_owner="0"
+	[ -z "$gid_owner" ] && gid_owner="0"
 
 	# MODE_TARGET
 	if is_global_mode; then
@@ -539,7 +539,7 @@ check_config() {
 
 	[ -z "$proxy_svrport" ] && log_error "the value of the proxy_svrport option is empty: $proxy_svrport"
 	if [ "$uid_owner" == "0" ] && [ "$gid_owner" == "0" ] ; then
-		[ "cat $proxy_svraddr4" == "" -a "cat $proxy_svraddr6" == "" ] && log_error "both proxy_svraddr4 and proxy_svraddr6 are empty"
+		[ -z "cat $proxy_svraddr4" ] && [ -z "cat $proxy_svraddr6" ] && log_error "both proxy_svraddr4 and proxy_svraddr6 are empty"
 	fi
 
 	command_is_exists 'ipset'   || log_error "command not found: ipset"
@@ -1350,7 +1350,7 @@ restart_dhcpd
 
 update_check_file() {
 	[ ! -f /opt/app/ss_tproxy/tmp/update_check_time ] && echo -n "0" > /opt/app/ss_tproxy/tmp/update_check_time
-	if [ $(($(date "+%y%m%d%H%M") - $(cat /opt/app/ss_tproxy/tmp/update_check_time))) -ge 1440 ] || [ ! -s /opt/app/ss_tproxy/tmp/update_check_time ] ; then
+	if [ $(($(date "+%y%m%d%H%M") - $(cat /opt/app/ss_tproxy/tmp/update_check_time))) -ge 70000 ] || [ ! -s /opt/app/ss_tproxy/tmp/update_check_time ] ; then
 		echo "update_check_file 开始新的 update_file"
 		echo -n "$(date "+%y%m%d%H%M")" > /opt/app/ss_tproxy/tmp/update_check_time
 		update_gfwlist
@@ -1358,7 +1358,7 @@ update_check_file() {
 		update_chnlist
 		update_wanlanlist_ipset
 	else
-		echo "update_check_file 间隔少于1天直接返回"
+		echo "update_check_file 间隔少于7天直接返回"
 		return
 	fi
 }
@@ -1578,7 +1578,7 @@ enable_ipforward() {
 
 disable_icmpredir() {
 	for dir in $(ls /proc/sys/net/ipv4/conf); do
-		set_sysctl_option "net.ipv4.conf.$dir.send_redirects" 0
+		set_sysctl_option "net.ipv4.conf.${dir//.//}.send_redirects" 0
 	done
 }
 
@@ -1696,7 +1696,7 @@ check_startdnsredir() {
 	is_false "$ipts_reddns_onstart" && return
 
 	local direct_dns_ip
-	is_ipv4_ipts $1 && direct_dns_ip="$dns_direct" || direct_dns_ip="$dns_direct6"
+	is_ipv4_ipts $1 && direct_dns_ip="${dns4_fw_type%%#*}" || direct_dns_ip="${dns6_fw_type%%#*}"
 	[ ! -z "$ipts_reddns_ip" ] && is_ipv4_ipts $1 && direct_dns_ip="$ipts_reddns_ip"
 
 	$1 -t nat -N SSTP_PREROUTING  &>/dev/null
@@ -2337,7 +2337,7 @@ get_wifidognx_mangle() {
 start() {
 	ss_tproxy_is_started && { stop; status; echo; }
 	waiting_network "$opts_ip_for_check_net"
-	[ "$(type -t pre_start)" != "" ] && pre_start
+	[ ! -z "$(type -t pre_start)" ] && pre_start
 
 	flush_postrule
 	enable_ipforward
@@ -2355,13 +2355,13 @@ start() {
 	
 	update_dnsmasq_file
 	
-	[ "$(type -t post_start)" != "" ] && post_start
+	[ ! -z "$(type -t post_start)" ] && post_start
 	delete_unused_iptchains
 	gen_include
 }
 
 stop() {
-	[ "$(type -t pre_stop)" != "" ] && pre_stop
+	[ ! -z "$(type -t pre_stop)" ] && pre_stop
 
 	restore_resolvconf
 	flush_iptables
@@ -2371,7 +2371,7 @@ stop() {
 	stop_proxy_proc
 	check_postrule
 
-	[ "$(type -t post_stop)" != "" ] && post_stop
+	[ ! -z "$(type -t post_stop)" ] && post_stop
 	gen_include
 }
 
@@ -2416,7 +2416,7 @@ COMMAND := {
 Specify the -x option for debugging of bash scripts
 Specify the name=value to override ss-tproxy configs
 Issues or bug report: https://github.com/zfl9/ss-tproxy
-See the https://www.zfl9.com/ss-redir.html for more details
+See https://github.com/zfl9/ss-tproxy/wiki for more details
 EOF
 }
 
@@ -2434,10 +2434,10 @@ main() {
 		fi
 	done
 
-	if [ "$arguments" == "" ]; then
+	if [ -z "$arguments" ]; then
 		echo "$(color_yellow "Missing necessary options")"
 		help
-		return 1
+		return 0
 	fi
 
 	load_config

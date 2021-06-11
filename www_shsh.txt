@@ -49,4 +49,4 @@ Aliddns=36e398b590d70f11f3501fb57e96e688
 Adbyby=786a0f7d63817dd4e946166eec73fc7a
 AdGuardHome=afaba97af170d222ef333a4bdc536321
 ADM=05cd33137fc53d9afd8bca0065b37535
-menu_title.sh=b651f002a7b30dd6edbfec8da97aa063
+menu_title.sh=9ced468ae91bc5bf2c4828bfb749eb11

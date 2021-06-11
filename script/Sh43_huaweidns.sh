@@ -366,7 +366,7 @@ esac
 	fi
 I=3
 Record_ID=""
-while [ "$Record_ID" = "" ] ; do
+while [ -z "$Record_ID" ] ; do
     I=$(($I - 1))
     [ $I -lt 0 ] && break    # 获得记录ID
     Record_re="$(curl -L    -s -X GET \
@@ -377,7 +377,7 @@ while [ "$Record_ID" = "" ] ; do
     Record_ID="$(echo $Record_re|grep -o "\"id\":\"[0-9a-z]*\",\"name\":\"$HOST2.$DOMAIN.\",\"description\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")"
     echo "RECORD ID: $Record_ID"
 done
-    if [ "$Record_ID" = "" ] ; then
+    if [ -z "$Record_ID" ] ; then
         # 添加子域名记录IP
         logger -t "【huaweidns动态域名】" "添加子域名 $HOST 记录IP"
         IP=$hostIP

@@ -541,7 +541,7 @@ if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
 	[ -d "$upanPath/opt" ] && mv -f "$upanPath/opt" "$upanPath/opt_old_"$(date "+%Y-%m-%d_%H-%M-%S")
 	[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
 	block="$(check_network 5 $upanPath)"
-	[ "$block" == "" ] && block="0"
+	[ -z "$block" ] && block="0"
 	[ "$block" != "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：$block M"
 	[ "$block" = "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：获取失败"
 	[ "$block" != "0" ] && [ ! -z "$block" ] && [ "$block" -lt "$opt_cifs_block" ] && opt_cifs_block=$block

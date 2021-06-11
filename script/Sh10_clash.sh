@@ -594,7 +594,7 @@ Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server://g' | sed -e 's/"\|'"
 if [ -z $(echo "$Proxy_server2" | grep -E -o '([0-9]+\.){3}[0-9]+') ] && [ ! -z "$Proxy_server2" ] ; then 
 ilog=""
 [ "$do_i" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$do_i,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
-[ "$ilog" == "" ] && ilog="  0"
+[ -z "$ilog" ] && ilog="  0"
 [ "$ilog" -gt 100 ] && ilog=100
 [ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp % 【$Proxy_server2】"
 if [ -z $(echo "$Proxy_server2" | grep : | grep -v "\.") ] ; then 
@@ -609,7 +609,7 @@ done < /tmp/clash/server.txt
 rm -f /tmp/clash/server.txt
 ilog=""
 [ "$do_i" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$do_i,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
-[ "$ilog" == "" ] && ilog="  0"
+[ -z "$ilog" ] && ilog="  0"
 [ "$ilog" -gt 100 ] && ilog=100
 [ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
 }

@@ -571,7 +571,7 @@ fi
 i_x_ping=`expr $i_x_ping + 1`
 fi
 done < /www/link/link.js
-while [ "$(ls /tmp/allping | head -1)" != "" ];
+while [ ! -z "$(ls /tmp/allping | head -1)" ];
 do
 x_ping_x &
 usleep 100000
@@ -636,7 +636,7 @@ fi
 i_x_ping=`expr $i_x_ping + 1`
 fi
 done < /tmp/link/link.txt
-while [ "$(ls /tmp/allping | head -1)" != "" ];
+while [ ! -z "$(ls /tmp/allping | head -1)" ];
 do
 x_ping_x "1" &
 usleep 100000
@@ -731,7 +731,7 @@ fi
 i2log="$(expr $(cat /tmp/allping.js | grep -v "^$" |wc -l) + 1)"
 ilog=""
 [ "$i2log" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$i2log,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
-[ "$ilog" == "" ] && ilog="  0"
+[ -z "$ilog"  ] && ilog="  0"
 [ "$ilog" -gt 100 ] && ilog=100
 if [ ! -z "$ping_time" ] ; then
 	echo "ping$ilog%：$ping_time ms ✔️ $ss_server_x"

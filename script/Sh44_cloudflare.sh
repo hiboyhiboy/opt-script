@@ -323,7 +323,7 @@ case  $HOST  in
 		;;
 esac
 
-while [ "$RECORD_ID" = "" ] ; do
+while [ -z "$RECORD_ID" ] ; do
 	I=$(($I - 1))
 	[ $I -lt 0 ] && break
 # 获得Zone_ID
@@ -352,7 +352,7 @@ fi
 #echo "RECORD ID: $RECORD_ID"
 sleep 1
 done
-if [ "$RECORD_ID" = "" ] ; then
+if [ -z "$RECORD_ID" ] ; then
 	# 添加子域名记录IP
 	RESULT=$(curl -L    -s -X POST "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
      -H "X-Auth-Email: $cloudflare_Email" \

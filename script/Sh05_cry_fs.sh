@@ -342,7 +342,7 @@ if [ "$cryfs_key_enable" = "2" ] && [ -z "$cryfs_pass" ] ; then
 	fi
 	reup=1
 	upPassword=""
-	while [ "$upPassword" = "" ] && [ "$reup" -lt "7" ];
+	while [ -z "$upPassword" ] && [ "$reup" -lt "7" ];
 	do
 	logger -t "【cryfs】" "等待 tgbot 密码返回"
 	sleep 30 ; reup=`expr $reup + 1`

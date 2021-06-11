@@ -271,9 +271,9 @@ nvram set chinadns_ng_v="$chinadns_ng_v"
 [ ! -f /opt/app/chinadns_ng/gfwlist.txt ] && update_gfwlist
 [ ! -f /opt/app/chinadns_ng/chnlist.txt ] && update_chnlist
 chnroute_Number=$(ipset list chnroute -t | awk -F: '/Number/{print $2}' | sed -e s/\ //g)
-[ "$chnroute_Number" == "0" ] || [ "$chnroute_Number" == "" ] && update_chnroute
+[ "$chnroute_Number" == "0" ] || [ -z "$chnroute_Number" ] && update_chnroute
 chnroute6_Number=$(ipset list chnroute6 -t | awk -F: '/Number/{print $2}' | sed -e s/\ //g)
-[ "$chnroute6_Number" == "0" ] || [ "$chnroute6_Number" == "" ] && update_chnroute6
+[ "$chnroute6_Number" == "0" ] || [ -z "$chnroute6_Number" ] && update_chnroute6
 
 
 killall dnsproxy && killall -9 dnsproxy 2>/dev/null
