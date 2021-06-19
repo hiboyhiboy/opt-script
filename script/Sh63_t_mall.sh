@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 tmall_enable=`nvram get app_55`
@@ -44,7 +44,7 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep t_mall)" ]  && [ ! -s /tmp/script/_app13 ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app13
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app13
 	chmod 777 /tmp/script/_app13
 fi
 
@@ -236,7 +236,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -263,7 +263,7 @@ fi
 app_14="/etc/storage/app_14.sh"
 if [ ! -f "$app_14" ] || [ ! -s "$app_14" ] ; then
 	cat > "$app_14" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 # 此脚本路径：/etc/storage/app_14.sh
 [ "POST" = "$REQUEST_METHOD" -a -n "$CONTENT_LENGTH" ] && read -n "$CONTENT_LENGTH" POST_DATA
 POST_DATA2=$(echo "$POST_DATA" | sed "s/\///g" | sed "s/[[:space:]]//g" | grep -o "\"intentName\":\".*\"," | awk -F : '{print $2}'| awk -F , '{print $1}' | sed -e 's@"@@g')

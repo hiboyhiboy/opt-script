@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 TAG="AD_BYBY"		  # iptables tag
@@ -77,7 +77,7 @@ gfw_black_list="gfwlist"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kool_proxy)" ]  && [ ! -s /tmp/script/_kool_proxy ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kool_proxy
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kool_proxy
 	chmod 777 /tmp/script/_kool_proxy
 fi
 
@@ -227,7 +227,7 @@ nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/ru
 nvram set koolproxy_h="`/tmp/7620koolproxy/koolproxy -h | awk 'NR==1{print}'`】【`sed -n '1,10p' /tmp/7620koolproxy/data/rules/daily.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/rules/daily.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+|201?.{1}' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g' | sed -n '1p'`"
 fi
 cat > "/tmp/sh_ad_kp_keey_k.sh" <<-ADMK
-#!/bin/sh
+#!/bin/bash
 source /etc/storage/script/init.sh
 sleep 919
 koolproxy_enable=\`nvram get koolproxy_enable\`
@@ -475,7 +475,7 @@ iptables-save -c | sed  "s/webstr--url/webstr --url/g" | grep -v "$TAG" | iptabl
 for setname in $(ipset -n list | grep -i "ad_spec"); do
 	ipset destroy $setname 2>/dev/null
 done
-[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
+[ -n "$FWI" ] && echo '#!/bin/bash' >$FWI
 }
 
 krdl_ipset () {
@@ -854,7 +854,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }

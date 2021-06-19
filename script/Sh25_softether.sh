@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 softether_enable=`nvram get softether_enable`
@@ -20,7 +20,7 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep softether)" ]  && [ ! -s /tmp/script/_softether ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_softether
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_softether
 	chmod 777 /tmp/script/_softether
 fi
 
@@ -179,7 +179,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -188,7 +188,7 @@ initconfig () {
 
 	if [ ! -f "/etc/storage/softether_script.sh" ] || [ ! -s "/etc/storage/softether_script.sh" ] ; then
 cat > "/etc/storage/softether_script.sh" <<-\FOF
-#!/bin/sh
+#!/bin/bash
 export PATH='/opt/softether:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 softether_path=`nvram get softether_path`

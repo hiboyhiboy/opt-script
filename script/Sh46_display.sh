@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 display_enable=`nvram get display_enable`
@@ -32,7 +32,7 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ]  && [ ! -s /tmp/script/_display ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_display
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_display
 	chmod 777 /tmp/script/_display
 fi
 
@@ -538,7 +538,7 @@ if [ "$optw_enable" != "2" ] ; then
 	nvram set optw_enable=2
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }

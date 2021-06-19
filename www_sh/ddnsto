@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/ddnsto
+if [ -f "/tmp/www_asp/Advanced_Extensions_ddnstoasp" ] ; then
+if [ ! -f "/opt/app/ddnsto/Advanced_Extensions_ddnsto.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_ddnstoasp /opt/app/ddnsto/Advanced_Extensions_ddnsto.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_ddnstoasp
+fi
+fi
 if [ ! -f "/opt/app/ddnsto/Advanced_Extensions_ddnsto.asp" ] || [ ! -s "/opt/app/ddnsto/Advanced_Extensions_ddnsto.asp" ] ; then
 	wgetcurl.sh /opt/app/ddnsto/Advanced_Extensions_ddnsto.asp "$hiboyfile/Advanced_Extensions_ddnstoasp" "$hiboyfile2/Advanced_Extensions_ddnstoasp"
 fi

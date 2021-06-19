@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,7 +22,7 @@ fakeincn_path="/etc/storage/app_1.sh"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep fakeincn)" ]  && [ ! -s /tmp/script/_app2 ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app2
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app2
 	chmod 777 /tmp/script/_app2
 fi
 
@@ -238,7 +238,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -248,7 +248,7 @@ initconfig () {
 # 说明和SS参数
 if [ ! -f "/etc/storage/app_1.sh" ] || [ ! -s "/etc/storage/app_1.sh" ] ; then
 	cat >> "/etc/storage/app_1.sh" <<-\EOF
-#!/bin/sh
+#!/bin/bash
 # FakeInChina(假装在中国) 
 # 用途：与“由于版权限制，你所在的地区不能播放”告别，目前支持大多数主流的视音频app，包括：youku、iqiyi、qq（音乐、视频）、网易、乐视、CNTV等等，数量太多，不全部列出了。
 # 这个功能模块需要使用国内SS服务器，其实最早让 Hiboy 把ss-server集成到 PADAVAN 基础固件就是为了这一个模块，只是由于前一段时间基本上在国内，也就一直没有时间去调试这个模块，这段时间终于有时间和条件进行调试了。

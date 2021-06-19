@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/ss_tproxy
+if [ -f "/tmp/www_asp/Advanced_Extensions_ss_tproxyasp" ] ; then
+if [ ! -f "/opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_ss_tproxyasp /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_ss_tproxyasp
+fi
+fi
 if [ ! -f "/opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp" ] || [ ! -s "/opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp" ] ; then
 	wgetcurl.sh /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp "$hiboyfile/Advanced_Extensions_ss_tproxyasp" "$hiboyfile2/Advanced_Extensions_ss_tproxyasp"
 fi

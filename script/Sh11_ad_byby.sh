@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 TAG="AD_BYBY"		  # iptables tag
@@ -58,7 +58,7 @@ gfw_black_list="gfwlist"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ad_byby)" ]  && [ ! -s /tmp/script/_ad_byby ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ad_byby
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ad_byby
 	chmod 777 /tmp/script/_ad_byby
 fi
 
@@ -222,7 +222,7 @@ nvram set adbybyvideo="$ipsetstxt video规则更新时间 $adbybyvideotime / 【
 nvram set adbybyuser3="第三方规则行数:  `sed -n '$=' /tmp/bin/data/user3adblocks.txt | sed s/[[:space:]]//g ` 行"
 nvram set adbybyuser="自定义规则行数:  `sed -n '$=' /tmp/bin/data/user_rules.txt | sed s/[[:space:]]//g ` 行"
 cat > "/tmp/sh_ad_byby_keey_k.sh" <<-ADMK
-#!/bin/sh
+#!/bin/bash
 source /etc/storage/script/init.sh
 sleep 919
 adbyby_enable=\`nvram get adbyby_enable\`
@@ -511,7 +511,7 @@ iptables-save -c | sed  "s/webstr--url/webstr --url/g" | grep -v "$TAG" | iptabl
 for setname in $(ipset -n list | grep -i "ad_spec"); do
 	ipset destroy $setname 2>/dev/null
 done
-[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
+[ -n "$FWI" ] && echo '#!/bin/bash' >$FWI
 }
 
 adbyby_cp_rules() {
@@ -838,7 +838,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }

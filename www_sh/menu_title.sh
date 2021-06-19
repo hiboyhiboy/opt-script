@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 # 一级菜单显示标题：空格隔开
 menu0_title="配置扩展环境  ShadowSocks 花生壳内网版 广告屏蔽功能 搭建Web环境"
@@ -14,7 +14,7 @@ source /etc/storage/script/init.sh
 
 if [ ! -s /tmp/script/_menu_title ] && [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep menu_title)" ] ; then
     mkdir -p /tmp/script
-    { echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_menu_title
+    { echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_menu_title
     ln -sf /etc/storage/www_sh/menu_title.sh /etc/storage/menu_title_script.sh
 fi
 

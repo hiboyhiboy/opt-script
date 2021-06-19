@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -31,7 +31,7 @@ upd2pro3_path="/etc/storage/app_6.sh"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep upd2pro)" ] && [ ! -s /tmp/script/_app3 ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app3
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app3
 	chmod 777 /tmp/script/_app3
 fi
 
@@ -273,7 +273,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -282,7 +282,7 @@ initconfig () {
 
 if [ ! -f "/etc/storage/app_3.sh" ] || [ ! -s "/etc/storage/app_3.sh" ] ; then
 	cat >> "/etc/storage/app_3.sh" <<-\EOF
-#!/bin/sh
+#!/bin/bash
 # 中文教程：https://github.com/wangyu-/udp2raw-tunnel/blob/master/doc/README.zh-cn.md
 # udp2raw+kcptun step_by_step教程：
 # https://github.com/wangyu-/udp2raw-tunnel/blob/master/doc/kcptun_step_by_step.md
@@ -299,7 +299,7 @@ fi
 
 if [ ! -f "/etc/storage/app_4.sh" ] || [ ! -s "/etc/storage/app_4.sh" ] ; then
 	cat >> "/etc/storage/app_4.sh" <<-\EOF
-#!/bin/sh
+#!/bin/bash
 # 中文教程：https://github.com/wangyu-/UDPspeeder/blob/master/doc/README.zh-cn.v1.md
 # 请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问
 logger -t "【upd2pro】" "运行 speeder" ; killall speeder ;
@@ -310,7 +310,7 @@ fi
 
 if [ ! -f "/etc/storage/app_6.sh" ] || [ ! -s "/etc/storage/app_6.sh" ] ; then
 	cat >> "/etc/storage/app_6.sh" <<-\EOF
-#!/bin/sh
+#!/bin/bash
 # 中文教程：https://github.com/wangyu-/UDPspeeder
 # 请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问
 logger -t "【upd2pro】" "运行 speederv2" ; killall speederv2 ;

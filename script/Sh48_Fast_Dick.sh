@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 FastDick_enable=`nvram get FastDick_enable`
@@ -22,7 +22,7 @@ fi
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ]  && [ ! -s /tmp/script/_Fast_Dick ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_Fast_Dick
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_Fast_Dick
 	chmod 777 /tmp/script/_Fast_Dick
 fi
 
@@ -191,7 +191,7 @@ else
 	if [ -f /opt/FastDick/swjsq_wget.sh ] ; then
 		logger -t "【迅雷快鸟】" "自动备份 swjsq 文件到路由, 【写入内部存储】后下次重启可以免U盘启动了"
 		cat > "/etc/storage/FastDick_script.sh" <<-\EEF
-#!/bin/sh
+#!/bin/bash
 # 迅雷快鸟【2免U盘启动】功能需到【自定义脚本0】配置【FastDicks=2】，并在此输入swjsq_wget.sh文件内容
 #【2免U盘启动】需要填写在下方的【迅雷快鸟脚本】，生成脚本两种方法：
 # ①插入U盘，配置自定义脚本【1插U盘启动】启动快鸟一次即可自动生成
@@ -224,7 +224,7 @@ initconfig () {
 FastDick_script="/etc/storage/FastDick_script.sh"
 if [ ! -f "$FastDick_script" ] || [ ! -s "$FastDick_script" ] ; then
 	cat > "$FastDick_script" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 # 迅雷快鸟【免U盘启动】功能需在此输入swjsq_wget.sh文件内容
 # swjsq_wget.sh文件脚本两种方法：
 # ①插入U盘，配置自定义脚本【插U盘启动】启动快鸟一次即可自动生成
@@ -243,7 +243,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }

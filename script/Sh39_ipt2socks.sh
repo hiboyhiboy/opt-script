@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 ipt2socks_enable=`nvram get app_104`
@@ -38,7 +38,7 @@ if [ "$ipt2socks_enable" == "1" ] ; then
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ipt2socks)" ]  && [ ! -s /tmp/script/_app20 ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app20
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app20
 	chmod 777 /tmp/script/_app20
 fi
 
@@ -342,7 +342,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -351,7 +351,7 @@ initconfig () {
 [ -z "$(cat /etc/storage/app_22.sh | grep '\-b 0.0.0.0 -l')" ] && rm -f /etc/storage/app_22.sh
 	if [ ! -f "/etc/storage/app_22.sh" ] || [ ! -s "/etc/storage/app_22.sh" ] ; then
 cat > "/etc/storage/app_22.sh" <<-\VVR
-#!/bin/sh
+#!/bin/bash
 lan_ipaddr=`nvram get lan_ipaddr`
 transocks_listen_address=`nvram get app_30`
 transocks_listen_port=`nvram get app_31`

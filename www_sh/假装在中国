@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/fakeincn
+if [ -f "/tmp/www_asp/Advanced_Extensions_fakeincnasp" ] ; then
+if [ ! -f "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_fakeincnasp /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_fakeincnasp
+fi
+fi
 if [ ! -f "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] || [ ! -s "/opt/app/fakeincn/Advanced_Extensions_fakeincn.asp" ] ; then
 	wgetcurl.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp "$hiboyfile/Advanced_Extensions_fakeincnasp" "$hiboyfile2/Advanced_Extensions_fakeincnasp"
 fi

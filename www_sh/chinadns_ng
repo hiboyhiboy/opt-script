@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/chinadns_ng
+if [ -f "/tmp/www_asp/Advanced_Extensions_chinadns_ngasp" ] ; then
+if [ ! -f "/opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_chinadns_ngasp /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_chinadns_ngasp
+fi
+fi
 if [ ! -f "/opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp" ] || [ ! -s "/opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp" ] ; then
 	wgetcurl.sh /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp "$hiboyfile/Advanced_Extensions_chinadns_ngasp" "$hiboyfile2/Advanced_Extensions_chinadns_ngasp"
 fi

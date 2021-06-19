@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 #nvramshow=`nvram showall | grep '=' | grep opt | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -21,7 +21,7 @@ size_media_enable=`nvram get size_media_enable`
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mountopt)" ]  && [ ! -s /tmp/script/_mountopt ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' ; } > /tmp/script/_mountopt
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' ; } > /tmp/script/_mountopt
 	chmod 777 /tmp/script/_mountopt
 fi
 
@@ -209,12 +209,12 @@ ln_mkflie="off"
 [ "$ln_mkflie" == "off" ] && return
 # 创建软链 /usr/bin/find /opt/opt_backup/ -type l -exec ls -l {} \; | awk -F 'opt_backup' '{print $2}' > /opt/ln.txt ; sed -Ei "s/ -> /丨/g" /opt/ln.txt ;
 logger -t "【opt】" "ln 链接文件失效，开始恢复 ln 链接文件为原始文件"
-echo '#!/bin/sh' > /opt/ln_mkflie.sh
+echo '#!/bin/bash' > /opt/ln_mkflie.sh
 chmod 777 /opt/ln_mkflie.sh
 cat /opt/ln.txt | awk -F '丨' '{print "cd \"\$\(dirname \"/opt"$1"\"\)\"\; [ -f /opt"$1" ] && \{ rm -f /opt"$1" \; \}"}' >> /opt/ln_mkflie.sh
 [ -d /opt/opt_backup ] && cat /opt/ln.txt | awk -F '丨' '{print "cd \"\$\(dirname \"/opt/opt_backup"$1"\"\)\"\; [ -f /opt/opt_backup"$1" ] && \{ rm -f /opt/opt_backup"$1" \; \}"}' >> /opt/ln_mkflie.sh
 /opt/ln_mkflie.sh # 删除旧文件
-echo '#!/bin/sh' > /opt/ln_mkflie.sh
+echo '#!/bin/bash' > /opt/ln_mkflie.sh
 chmod 777 /opt/ln_mkflie.sh
 cat /opt/ln.txt | awk -F '丨' '{print "cd \"\$\(dirname \"/opt"$1"\"\)\"\; [ ! -f /opt"$1" ] && [ -f "$2" ] && \{ cp -f "$2" /opt"$1" \; chmod 777 /opt"$1" \; \}"}' >> /opt/ln_mkflie.sh
 [ -d /opt/opt_backup ] && cat /opt/ln.txt | awk -F '丨' '{print "cd \"\$\(dirname \"/opt/opt_backup"$1"\"\)\"\; [ ! -f /opt/opt_backup"$1" ] && [ -f "$2" ] && \{ cp -f "$2" /opt/opt_backup"$1" \; chmod 777 /opt/opt_backup"$1" \; \}"}' >> /opt/ln_mkflie.sh
@@ -883,7 +883,7 @@ re_upan_storage () {
 initconfig () {
 
 cat > "/tmp/re_upan_storage.sh" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 #set -x
 upan_storage_enable=`nvram get upan_storage_enable`
 if [ "$upan_storage_enable" = "1" ] && [ "$1" != "0" ] ; then
@@ -927,7 +927,7 @@ chmod 755 "/tmp/re_upan_storage.sh"
 cifs_script="/etc/storage/cifs_script.sh"
 if [ ! -f "$cifs_script" ] || [ ! -s "$cifs_script" ] ; then
 	cat > "$cifs_script" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 # SMB资源挂载(局域网共享映射，无USB也能挂载储存空间)
 # 说明：【192.168.123.66】为共享服务器的IP，【nas】为共享文件夹名称
 # 说明：username=、password=填账号密码

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/ipt2socks
+if [ -f "/tmp/www_asp/Advanced_Extensions_ipt2socksasp" ] ; then
+if [ ! -f "/opt/app/ipt2socks/Advanced_Extensions_ipt2socks.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_ipt2socksasp /opt/app/ipt2socks/Advanced_Extensions_ipt2socks.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_ipt2socksasp
+fi
+fi
 if [ ! -f "/opt/app/ipt2socks/Advanced_Extensions_ipt2socks.asp" ] || [ ! -s "/opt/app/ipt2socks/Advanced_Extensions_ipt2socks.asp" ] ; then
 	wgetcurl.sh /opt/app/ipt2socks/Advanced_Extensions_ipt2socks.asp "$hiboyfile/Advanced_Extensions_ipt2socksasp" "$hiboyfile2/Advanced_Extensions_ipt2socksasp"
 fi

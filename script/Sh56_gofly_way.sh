@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 goflyway_enable=`nvram get app_23`
@@ -22,7 +22,7 @@ if [ "$cmd_log_enable" = "1" ] || [ "$goflyway_renum" -gt "0" ] ; then
 fi
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep gofly_way)" ]  && [ ! -s /tmp/script/_app7 ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app7
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app7
 	chmod 777 /tmp/script/_app7
 fi
 
@@ -193,7 +193,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
@@ -201,7 +201,7 @@ fi
 initconfig () {
 	if [ ! -f "/etc/storage/app_7.sh" ] || [ ! -s "/etc/storage/app_7.sh" ] ; then
 cat > "/etc/storage/app_7.sh" <<-\VVR
-#!/bin/sh
+#!/bin/bash
 # 启动运行的脚本
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib

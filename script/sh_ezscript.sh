@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 sh_link_sh="sh_link_sh"
 source /etc/storage/script/sh_link.sh

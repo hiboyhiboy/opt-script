@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 #/etc/storage/script/sh_0_script.sh
 #/etc/storage/script_script.sh
@@ -28,7 +28,7 @@ killall crond
 restart_dhcpd
 [ -f /tmp/menu_title_re ] && /etc/storage/www_sh/menu_title.sh re &
 mkdir -p /tmp/script
-{ echo '#!/bin/sh' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' ; } > /tmp/script/_mountopt
+{ echo '#!/bin/bash' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' ; } > /tmp/script/_mountopt
 chmod 777 /tmp/script/_mountopt
 nvram set ss_internet="0"
 /etc/storage/inet_state_script.sh 12 t

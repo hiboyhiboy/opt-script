@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 # 失效清理
 echo "Sh03_jbls.sh"
@@ -10,7 +10,7 @@ jbls_enable=`nvram get jbls_enable`
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep jbls)" ]  && [ ! -s /tmp/script/_jbls ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_jbls
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_jbls
 	chmod 777 /tmp/script/_jbls
 fi
 
@@ -77,7 +77,7 @@ initconfig () {
 jbls_script="/etc/storage/jbls_script.sh"
 if [ ! -f "$jbls_script" ] || [ ! -s "$jbls_script" ] ; then
 	cat > "$jbls_script" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 

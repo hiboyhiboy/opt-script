@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 #nvramshow=`nvram showall | grep '=' | grep script | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -26,7 +26,7 @@ fi
 if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2021-6-11"
+	nvram set scripto="2021-6-19"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi

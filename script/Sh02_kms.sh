@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 kms_enable=`nvram get kms_enable`
@@ -7,7 +7,7 @@ kms_enable=`nvram get kms_enable`
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kms)" ]  && [ ! -s /tmp/script/_kms ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kms
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kms
 	chmod 777 /tmp/script/_kms
 fi
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # hiboy改 原项目地址: https://github.com/zfl9/ss-tproxy
 source /etc/storage/script/init.sh
 source /etc/storage/app_26.sh
@@ -2273,7 +2273,7 @@ start_iptables() {
 }
 
 gen_include() {
-echo '#!/bin/sh' >/tmp/firewall.sstp.pdcn
+echo '#!/bin/bash' >/tmp/firewall.sstp.pdcn
 cat <<-CAT >>/tmp/firewall.sstp.pdcn
 iptables-restore -n <<-EOF
 $(iptables-save | sed  "s/webstr--url/webstr --url/g" | grep -E "SSTP|^\*|^COMMIT" |sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/")

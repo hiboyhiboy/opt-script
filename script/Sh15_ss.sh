@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 ss_enable=`nvram get ss_enable`
@@ -198,7 +198,7 @@ confdir_x="$(echo -e $confdir | sed -e "s/\//"'\\'"\//g")"
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss)" ]  && [ ! -s /tmp/script/_ss ]; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ss
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ss
 	chmod 777 /tmp/script/_ss
 fi
 
@@ -911,7 +911,7 @@ fi
 
 gen_include() {
 [ -n "$FWI" ] || return 0
-[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
+[ -n "$FWI" ] && echo '#!/bin/bash' >$FWI
 cat <<-CAT >>$FWI
 iptables-restore -n <<-EOF
 $(iptables-save | sed  "s/webstr--url/webstr --url/g" | grep -E "SSTP|^\*|^COMMIT" |sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/")
@@ -1184,7 +1184,7 @@ fi
 SS_keep () {
 gen_include
 cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
-#!/bin/sh
+#!/bin/bash
 source /etc/storage/script/init.sh
 for ss_1i in \$(seq 0 16)
 do
@@ -1426,7 +1426,7 @@ initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
 if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
 fi
 
 }
