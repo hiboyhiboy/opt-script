@@ -324,21 +324,7 @@ chmod 777 /etc/storage/app_3.sh /etc/storage/app_4.sh /etc/storage/app_6.sh
 
 initconfig
 
-update_init () {
-source /etc/storage/script/init.sh
-[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -ge 0 ] || init_ver="0" ; }
-init_s_ver=2
-if [ "$init_s_ver" -gt "$init_ver" ] ; then
-	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
-	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
-	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
-	chmod 755 /etc/storage/script/init.sh
-	source /etc/storage/script/init.sh
-fi
-}
-
 update_app () {
-update_init
 if [ "$1" = "del1" ] ; then
 	rm -rf /etc/storage/app_3.sh /opt/bin/udp2raw /opt/opt_backup/bin/udp2raw /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
 fi

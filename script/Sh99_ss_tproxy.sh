@@ -599,21 +599,7 @@ done
 sh_ss_tproxy.sh "$@"
 }
 
-update_init () {
-source /etc/storage/script/init.sh
-[ "$init_ver" -lt 0 ] && init_ver="0" || { [ "$init_ver" -ge 0 ] || init_ver="0" ; }
-init_s_ver=2
-if [ "$init_s_ver" -gt "$init_ver" ] ; then
-	logger -t "【update_init】" "更新 /etc/storage/script/init.sh 文件"
-	wgetcurl.sh /tmp/init_tmp.sh  "$hiboyscript/script/init.sh" "$hiboyscript2/script/init.sh"
-	[ -s /tmp/init_tmp.sh ] && cp -f /tmp/init_tmp.sh /etc/storage/script/init.sh
-	chmod 755 /etc/storage/script/init.sh
-	source /etc/storage/script/init.sh
-fi
-}
-
 update_app () {
-update_init
 mkdir -p /opt/app/ss_tproxy
 if [ "$1" = "del" ] ; then
 	nvram set ss_tproxy_auser=""

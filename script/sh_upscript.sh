@@ -18,7 +18,7 @@ file_t_check () {
 #获取最新script的sh*文件MD5
 rm -f /tmp/scriptsh.txt
 wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scriptsh.txt"
-if [ ! -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
+if [ ! -s /tmp/scriptsh.txt ] || [ -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] || [ -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	/etc/storage/script/Sh01_mountopt.sh opt_cdn_force
 	source /etc/storage/script/init.sh
 	wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scriptsh.txt"
@@ -26,7 +26,7 @@ fi
 if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2021-6-19"
+	nvram set scripto="2021-6-24"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -34,6 +34,7 @@ fi
 
 file_check () {
 mkdir -p /tmp/script
+if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 while read line
 do
 c_line=`echo $line |grep -v "#" |grep -v 'scriptt='`
@@ -58,42 +59,13 @@ if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
 	fi
 fi
 done < /tmp/scriptsh.txt
-}
-
-start_upscript_daydayup () {
-
-logger -t "【script】" "脚本检查更新"
-file_t_check
-if [ -s /tmp/scriptsh.txt ] ; then
-	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "当前【$scripto】脚本需要更新, 未启用自动更新, 请手动更新到【$scriptt】" && return
-	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then
-		logger -t "【script】" "脚本需要更新, 自动下载更新"
-		nvram set scripto="$scriptt"
-		file_o_check
-		cd /etc/storage/script/
-		rm -f ./.upscript_daydayup
-		mkdir -p /tmp/script
-		while read line
-		do
-		c_line=`echo $line |grep -v "#" |grep -v 'scriptt='`
-		file_name=${line%%=*}
-		if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
-			echo "$hiboyscript/script/$file_name.sh" >> ./.upscript_daydayup
-			echo "\|$hiboyscript2/script/$file_name.sh" >> ./.upscript_daydayup
-		fi
-		done < /tmp/scriptsh.txt
-		daydayup ./.upscript_daydayup >> /tmp/syslog.log &
-	fi
-else
-	[ "$upscript_enable" != "1" ] && return
-	logger -t "【script】" "脚本检查更新失败"
 fi
 }
 
 start_upscript () {
 logger -t "【script】" "脚本检查更新"
 file_t_check
-if [ -s /tmp/scriptsh.txt ] ; then
+if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	[ "$scriptt"x = "$scripto"x ] && logger -t "【script】" "脚本已经最新"
 	[ "$scriptt"x != "$scripto"x ] && [ "$upscript_enable" != "1" ] && logger -t "【script】" "当前【$scripto】脚本需要更新, 未启用自动更新, 请手动更新到【$scriptt】" && return
 	if [ "$upscript_enable" = "1" ] && [ "$scriptt"x != "$scripto"x ] ; then

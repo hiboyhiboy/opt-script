@@ -782,11 +782,15 @@ if [ ! -s /tmp/opti.txt ] ; then
 	opt_cdn_force
 	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 fi
+[[ "$(cat /tmp/opti.txt | wc -c)" -gt 11 ]] && echo "" > /tmp/opti.txt
+[ ! -z "$(cat /tmp/opti.txt | grep -v '<' | grep -v '>')" ] && echo "" > /tmp/opti.txt
 nvram set optt="`cat /tmp/opti.txt`"
 else
 rm -rf /tmp/opti.txt
 upopt2 &
 fi
+[[ "$(cat /opt/opti.txt | wc -c)" -gt 11 ]] && echo "" > /opt/opti.txt
+[ ! -z "$(cat /opt/opti.txt | grep -v '<' | grep -v '>')" ] && echo "" > /opt/opti.txt
 nvram set opto="`cat /opt/opti.txt`"
 }
 
@@ -796,6 +800,8 @@ if [ ! -s /tmp/opti.txt ] ; then
 	opt_cdn_force
 	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 fi
+[[ "$(cat /tmp/opti.txt | wc -c)" -gt 11 ]] && echo "" > /tmp/opti.txt
+[ ! -z "$(cat /tmp/opti.txt | grep -v '<' | grep -v '>')" ] && echo "" > /tmp/opti.txt
 nvram set optt="`cat /tmp/opti.txt`"
 }
 

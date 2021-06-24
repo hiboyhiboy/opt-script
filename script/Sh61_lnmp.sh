@@ -689,7 +689,7 @@ fi
 if [ "$down_sh_onmp" = "1" ] ; then
 	logger -t "【LNMP】" "更新 /opt/bin/sh_onmp.sh, 下载脚本: $hiboyscript/sh_onmp.sh"
 	wgetcurl.sh /tmp/sh_onmp.sh "$hiboyscript/sh_onmp.sh" "$hiboyscript2/sh_onmp.sh"
-	[[ "$(cat /tmp/sh_onmp.sh | wc -l)" -gt 1000 ]] && { rm -f /opt/bin/sh_onmp.sh ; mv -f /tmp/sh_onmp.sh /opt/bin/sh_onmp.sh ; }
+	[[ "$(cat /tmp/sh_onmp.sh | wc -l)" -gt 1000 ]] && [ ! -z "$(cat /tmp/sh_onmp.sh | grep "kodexplorer")" ] && { rm -f /opt/bin/sh_onmp.sh ; mv -f /tmp/sh_onmp.sh /opt/bin/sh_onmp.sh ; }
 fi
 [ -f /opt/bin/sh_onmp.sh ] && chmod 777 "/opt/bin/sh_onmp.sh"
 
@@ -709,7 +709,11 @@ localhost=`nvram get lan_ipaddr`\
 [ -f /opt/bin/onmp ] && sed -e 's/^exit #exit_tmp/#exit_tmp/g' -i /opt/bin/onmp # 内部控制启动
 sh_onmp.sh check
 [ -f /opt/bin/onmp ] && sed -e 's/^#exit_tmp/exit #exit_tmp/g' -i /opt/bin/onmp # 外部控制启动
-[ -f /opt/lnmp.txt ] && nvram set lnmpo=`cat /opt/lnmp.txt`
+if [ -f /opt/lnmp.txt ] ; then
+[[ "$(cat /opt/lnmp.txt | wc -c)" -gt 11 ]] && echo "" > /opt/lnmp.txt
+[ ! -z "$(cat /opt/lnmp.txt | grep -v '<' | grep -v '>')" ] && echo "" > /opt/lnmp.txt
+nvram set lnmpo=`cat /opt/lnmp.txt`
+fi
 onmp_enable=0 && nvram set onmp_enable=$onmp_enable ; nvram commit ; 
 
 }

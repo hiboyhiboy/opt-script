@@ -173,6 +173,7 @@ rm -f /tmp/www_shsh.txt
 wgetcurl.sh "/tmp/www_shsh.txt" "$hiboyscript/www_shsh.txt" "$hiboyscript2/www_shsh.txt"
 
 mkdir -p /tmp/www_sh
+if [ -s /tmp/www_shsh.txt ] && [ ! -z "$(cat /tmp/www_shsh.txt | grep "menu_title")" ] ; then
 while read line
 do
 c_line=`echo $line |grep -v "#" |grep -v 'www_sht='`
@@ -193,7 +194,7 @@ if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
     fi
 fi
 done < /tmp/www_shsh.txt
-
+fi
 chmod 777 /etc/storage/www_sh -R
 
 }
@@ -208,6 +209,8 @@ nvram set www_ver=$www_ver
 # 最新 www_sh 文件
 wgetcurl.sh "/tmp/menu_title.txt" "$hiboyscript/www_sh/menu_title.txt" "$hiboyscript2/www_sh/menu_title.txt"
 touch /tmp/menu_title.txt
+[[ "$(cat /tmp/menu_title.txt | wc -c)" -ge 11 ]] && echo "" /tmp/menu_title.txt
+[ ! -z "$(cat /tmp/menu_title.txt | grep -v '<' | grep -v '>')" ] && echo "" > /tmp/menu_title.txt
 www_ver_n=`cat /tmp/menu_title.txt | sed -n '1p'`
 nvram set www_ver_n=$www_ver_n
 if [ "$www_ver"x != "$www_ver_n"x ] ; then
@@ -215,6 +218,7 @@ logger -t "【www_sh】" "当前自定义菜单标题【 $www_ver 】需要更�
 fi
 # 最新 app_ver_n.txt 文件
 wgetcurl.sh "/tmp/app_ver_n.txt" "$hiboyscript/app_ver_n.txt" "$hiboyscript2/app_ver_n.txt"
+[ -z "$(cat /tmp/app_ver_n.txt | grep "app1_ver_n")" ] && echo "nvram set lnmpt=" /tmp/app_ver_n.txt
 source /tmp/app_ver_n.txt
 }
 
