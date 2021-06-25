@@ -330,7 +330,7 @@ if [ "$tgbot_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     rm -f /tmp/var/tgbot_nsub
     wgetcurl.sh "/tmp/var/tgbot_nsub" "$hiboyfile/osub" "$hiboyfile2/osub"
     [[ "$(cat /tmp/var/tgbot_nsub | wc -c)" -ge 20 ]] && echo "" /tmp/var/tgbot_nsub
-    [ ! -z "$(cat /tmp/var/tgbot_nsub | grep -v '<' | grep -v '>')" ] && echo "" > /tmp/var/tgbot_nsub
+    [ ! -z "$(cat /tmp/var/tgbot_nsub | grep '<' | grep '>')" ] && echo "" > /tmp/var/tgbot_nsub
     if [ "$(cat /tmp/var/tgbot_osub |head -n1)"x != "$(cat /tmp/var/tgbot_nsub |head -n1)"x ] && [ -f /tmp/var/tgbot_nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/tgbot_osub
         content="新的固件： `cat /tmp/var/tgbot_nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/tgbot_osub | grep -v "^$"` "

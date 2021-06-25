@@ -429,7 +429,7 @@ if [ "$wxsend_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     rm -f /tmp/var/wxsend_nsub
     wgetcurl.sh "/tmp/var/wxsend_nsub" "$hiboyfile/osub" "$hiboyfile2/osub"
     [[ "$(cat /tmp/var/wxsend_nsub | wc -c)" -ge 20 ]] && echo "" /tmp/var/wxsend_nsub
-    [ ! -z "$(cat /tmp/var/wxsend_nsub | grep -v '<' | grep -v '>')" ] && echo "" > /tmp/var/wxsend_nsub
+    [ ! -z "$(cat /tmp/var/wxsend_nsub | grep '<' | grep '>')" ] && echo "" > /tmp/var/wxsend_nsub
     if [ "$(cat /tmp/var/wxsend_osub |head -n1)"x != "$(cat /tmp/var/wxsend_nsub |head -n1)"x ] && [ -f /tmp/var/wxsend_nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/wxsend_osub
         content="新的固件： `cat /tmp/var/wxsend_nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/wxsend_osub | grep -v "^$"` "

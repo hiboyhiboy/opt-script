@@ -210,7 +210,7 @@ nvram set www_ver=$www_ver
 wgetcurl.sh "/tmp/menu_title.txt" "$hiboyscript/www_sh/menu_title.txt" "$hiboyscript2/www_sh/menu_title.txt"
 touch /tmp/menu_title.txt
 [[ "$(cat /tmp/menu_title.txt | wc -c)" -ge 11 ]] && echo "" /tmp/menu_title.txt
-[ ! -z "$(cat /tmp/menu_title.txt | grep -v '<' | grep -v '>')" ] && echo "" > /tmp/menu_title.txt
+[ ! -z "$(cat /tmp/menu_title.txt | grep '<' | grep '>')" ] && echo "" > /tmp/menu_title.txt
 www_ver_n=`cat /tmp/menu_title.txt | sed -n '1p'`
 nvram set www_ver_n=$www_ver_n
 if [ "$www_ver"x != "$www_ver_n"x ] ; then

@@ -304,7 +304,7 @@ if [ "$serverchan_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     rm -f /tmp/var/nsub
     wgetcurl.sh "/tmp/var/nsub" "$hiboyfile/osub" "$hiboyfile2/osub"
     [[ "$(cat /tmp/var/nsub | wc -c)" -ge 20 ]] && echo "" /tmp/var/nsub
-    [ ! -z "$(cat /tmp/var/nsub | grep -v '<' | grep -v '>')" ] && echo "" > /tmp/var/nsub
+    [ ! -z "$(cat /tmp/var/nsub | grep '<' | grep '>')" ] && echo "" > /tmp/var/nsub
     if [ "$(cat /tmp/var/osub |head -n1)"x != "$(cat /tmp/var/nsub |head -n1)"x ] && [ -f /tmp/var/nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/osub
         content="新的固件： `cat /tmp/var/nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/osub | grep -v "^$"` "

@@ -711,7 +711,7 @@ sh_onmp.sh check
 [ -f /opt/bin/onmp ] && sed -e 's/^#exit_tmp/exit #exit_tmp/g' -i /opt/bin/onmp # 外部控制启动
 if [ -f /opt/lnmp.txt ] ; then
 [[ "$(cat /opt/lnmp.txt | wc -c)" -gt 11 ]] && echo "" > /opt/lnmp.txt
-[ ! -z "$(cat /opt/lnmp.txt | grep -v '<' | grep -v '>')" ] && echo "" > /opt/lnmp.txt
+[ ! -z "$(cat /opt/lnmp.txt | grep '<' | grep '>')" ] && echo "" > /opt/lnmp.txt
 nvram set lnmpo=`cat /opt/lnmp.txt`
 fi
 onmp_enable=0 && nvram set onmp_enable=$onmp_enable ; nvram commit ; 
