@@ -3,7 +3,7 @@
 
 de_2_base64 () {
 
-if [ -z "$(echo "$1" | awk -F '#' '{print $1}' | grep -Eo [^A-Za-z0-9+/=:]+)" ] ; then
+if [ -z "$(echo "$1" | awk -F '#' '{print $1}' | grep -Eo [^A-Za-z0-9+/=:_-]+)" ] ; then
 # 有些链接会多一层 base64 包裹，链接2次解码
 	if [ ! -z "$(echo "$1" | awk -F '#' '{print $2}')" ] ; then
 		echo "$(echo -n "$1" | awk -F '#' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"'#'"$(echo $1 | awk -F '#' '{print $2}')"
