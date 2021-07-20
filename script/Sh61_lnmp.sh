@@ -119,6 +119,7 @@ lnmp_get_status () {
 A_restart=`nvram get lnmp_status`
 B_restart="$http_username$lnmp_enable$mysql_enable$default_enable$kodexplorer_enable$owncloud_enable$phpmyadmin_enable$wifidog_server_enable$default_port$kodexplorer_port$owncloud_port$phpmyadmin_port$wifidog_server_port$nextcloud_enable$nextcloud_port$wordpress_enable$wordpress_port$h5ai_enable$h5ai_port$lychee_enable$lychee_port$typecho_enable$typecho_port$zblog_enable$zblog_port$dzzoffice_enable$dzzoffice_port$redis_enable$onmp_enable"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set lnmp_status=$B_restart
 	needed_restart=1

@@ -49,6 +49,7 @@ dns_com_pod_get_status () {
 A_restart=`nvram get dns_com_pod_status`
 B_restart="$dns_com_pod_enable$dns_com_pod_username$dns_com_pod_password$dns_com_pod_user_token$dns_com_pod_domian$dns_com_pod_host$dns_com_pod_domian2$dns_com_pod_host2$dns_com_pod_domian6$dns_com_pod_host6$dns_com_pod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set dns_com_pod_status=$B_restart
 	needed_restart=1
@@ -63,6 +64,7 @@ dns_com_pod_get_status2 () {
 A_restart=`nvram get dns_com_pod_status2`
 B_restart="$dns_com_pod_username$dns_com_pod_password"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set dns_com_pod_status2=$B_restart
 	dns_com_pod_user_token=""
@@ -104,6 +106,9 @@ fi
 dns_com_pod_keep () {
 dns_com_pod_start
 logger -t "【dns_com_pod动态域名】" "守护进程启动"
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof Sh40_dns_com_pod.sh\`" ] && nvram set dns_com_pod_status=00 && logger -t "【dns_com_pod】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【dns_com_pod】|^$/d' /tmp/script/_opt_script_check # 【dns_com_pod】
+OSC
 while true; do
 sleep 41
 sleep $dns_com_pod_interval
@@ -117,6 +122,7 @@ done
 }
 
 dns_com_pod_close () {
+sed -Ei '/【dns_com_pod】|^$/d' /tmp/script/_opt_script_check
 kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_dns_com_pod"
 kill_ps "_dns_com_pod.sh"

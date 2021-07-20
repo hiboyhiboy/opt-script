@@ -179,6 +179,7 @@ adm_get_status () {
 A_restart=`nvram get adm_status`
 B_restart="$adm_enable$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adm_rules_script.sh | grep -v "^$" | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set adm_status=$B_restart
 	needed_restart=1
@@ -622,7 +623,6 @@ cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
 224.0.0.0/4
 240.0.0.0/4
 255.255.255.255
-213.183.51.102
 $lan_ipaddr
 $ss_s1_ip_echo
 $kcptun_server_echo

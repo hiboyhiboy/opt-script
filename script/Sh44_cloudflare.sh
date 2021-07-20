@@ -6,6 +6,7 @@ cloudflare_enable=`nvram get cloudflare_enable`
 if [ "$cloudflare_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep cloudflare | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
+cloudflare_token=`nvram get cloudflare_token`
 cloudflare_Email=`nvram get cloudflare_Email`
 cloudflare_Key=`nvram get cloudflare_Key`
 cloudflare_domian=`nvram get cloudflare_domian`
@@ -15,6 +16,20 @@ cloudflare_host2=`nvram get cloudflare_host2`
 cloudflare_domian6=`nvram get cloudflare_domian6`
 cloudflare_host6=`nvram get cloudflare_host6`
 cloudflare_interval=`nvram get cloudflare_interval`
+
+if [ ! -z "$cloudflare_token" ] ; then
+account_key_1="Authorization: Bearer $cloudflare_token"
+account_key_2=""
+account_key_a1=" -H "
+account_key_a2=""
+fi
+if [ -z "$cloudflare_token" ] && [ ! -z "$cloudflare_Email" ] && [ ! -z "$cloudflare_Key" ] ; then
+account_key_1="X-Auth-Email: $cloudflare_Email"
+account_key_2="X-Auth-Key: $cloudflare_Key"
+account_key_a1=" -H "
+account_key_a2=" -H "
+fi
+
 
 if [ "$cloudflare_domian"x != "x" ] && [ "$cloudflare_host"x = "x" ] ; then
 	cloudflare_host="www"
@@ -35,7 +50,7 @@ hostIP=""
 Zone_ID=""
 DOMAIN=""
 HOST=""
-[ -z $cloudflare_interval ] && cloudflare_interval=120 && nvram set cloudflare_interval=$cloudflare_interval
+[ -z $cloudflare_interval ] && cloudflare_interval=600 && nvram set cloudflare_interval=$cloudflare_interval
 cloudflare_renum=`nvram get cloudflare_renum`
 
 fi
@@ -85,8 +100,9 @@ exit 0
 cloudflare_get_status () {
 
 A_restart=`nvram get cloudflare_status`
-B_restart="$cloudflare_enable$cloudflare_Email$cloudflare_Key$cloudflare_domian$cloudflare_host$cloudflare_domian2$cloudflare_host2$cloudflare_domian6$cloudflare_host6$cloudflare_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$cloudflare_enable$cloudflare_token$cloudflare_Email$cloudflare_Key$cloudflare_domian$cloudflare_host$cloudflare_domian2$cloudflare_host2$cloudflare_domian6$cloudflare_host6$cloudflare_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set cloudflare_status=$B_restart
 	needed_restart=1
@@ -117,6 +133,9 @@ fi
 cloudflare_keep () {
 cloudflare_start
 logger -t "【cloudflare动态域名】" "守护进程启动"
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof Sh44_cloudflare.sh\`" ] && nvram set cloudflare_status=00 && logger -t "【cloudflare】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【cloudflare】|^$/d' /tmp/script/_opt_script_check # 【cloudflare】
+OSC
 while true; do
 sleep 43
 sleep $cloudflare_interval
@@ -131,7 +150,7 @@ done
 }
 
 cloudflare_close () {
-
+sed -Ei '/【cloudflare】|^$/d' /tmp/script/_opt_script_check
 kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_cloudflare"
 kill_ps "_cloudflare.sh"
@@ -181,9 +200,9 @@ Zone_ID=""
 get_Zone_ID() {
 # 获得Zone_ID
 Zone_ID=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones" \
-     -H "X-Auth-Email: $cloudflare_Email" \
-     -H "X-Auth-Key: $cloudflare_Key" \
-     -H "Content-Type: application/json")
+     -H "Content-Type: application/json" \
+     $account_key_a1 "$account_key_1" \
+     $account_key_a2 "$account_key_2")
 Zone_ID=$(echo $Zone_ID| sed -e "s/ //g" |grep -o "id\":\"[0-9a-z]*\",\"name\":\"$DOMAIN\",\"status\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")
 sleep 1
 
@@ -212,9 +231,9 @@ esac
 get_Zone_ID
 # 获得最后更新IP
 recordIP=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
-     -H "X-Auth-Email: $cloudflare_Email" \
-     -H "X-Auth-Key: $cloudflare_Key" \
-     -H "Content-Type: application/json")
+     -H "Content-Type: application/json" \
+     $account_key_a1 "$account_key_1" \
+     $account_key_a2 "$account_key_2")
 sleep 1
 RECORD_ID=$(echo $recordIP | sed -e "s/ //g" | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep ",\"name\":\"$host_domian\"" | grep -o "\"id\":\"[0-9a-z]\{32,\}\",\"" | awk -F : '{print $2}'|grep -o "[a-z0-9]*")
 recordIP=$(echo $recordIP | sed -e "s/ //g" | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep ",\"name\":\"$host_domian\"" | grep -o ",\"content\":\"[^\"]*\"" | awk -F 'content":"' '{print $2}' | tr -d '"' |head -n1)
@@ -225,9 +244,9 @@ if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 	do
 	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 删除名称重复的子域名！ID: $Delete_RECORD_ID"
 	RESULT=$(curl -L    -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
-     -H "X-Auth-Email: $cloudflare_Email" \
-     -H "X-Auth-Key: $cloudflare_Key" \
-     -H "Content-Type: application/json")
+     -H "Content-Type: application/json"\
+     $account_key_a1 "$account_key_1" \
+     $account_key_a2 "$account_key_2" )
 	sleep 1
 	done
 	recordIP="0"
@@ -330,9 +349,9 @@ while [ -z "$RECORD_ID" ] ; do
 get_Zone_ID
 # 获得记录ID
 RECORD_ID=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
-     -H "X-Auth-Email: $cloudflare_Email" \
-     -H "X-Auth-Key: $cloudflare_Key" \
-     -H "Content-Type: application/json")
+     -H "Content-Type: application/json" \
+     $account_key_a1 "$account_key_1" \
+     $account_key_a2 "$account_key_2")
 sleep 1
 RECORD_ID=$(echo $RECORD_ID | sed -e "s/ //g" | sed -e "s/"'"ttl":'"/"' \n '"/g" | grep "type\":\"$domain_type\"" | grep ",\"name\":\"$host_domian\"" | grep -o "\"id\":\"[0-9a-z]\{32,\}\",\"" | awk -F : '{print $2}'|grep -o "[a-z0-9]*")
 # 检查是否有名称重复的子域名
@@ -342,9 +361,9 @@ if [ "$(echo $RECORD_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 	do
 	logger -t "【cloudflare动态域名】" "$HOST.$DOMAIN 删除名称重复的子域名！ID: $Delete_RECORD_ID"
 	RESULT=$(curl -L    -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$Delete_RECORD_ID" \
-     -H "X-Auth-Email: $cloudflare_Email" \
-     -H "X-Auth-Key: $cloudflare_Key" \
-     -H "Content-Type: application/json")
+     -H "Content-Type: application/json" \
+     $account_key_a1 "$account_key_1" \
+     $account_key_a2 "$account_key_2")
 	sleep 1
 	done
 	RECORD_ID=""
@@ -355,9 +374,9 @@ done
 if [ -z "$RECORD_ID" ] ; then
 	# 添加子域名记录IP
 	RESULT=$(curl -L    -s -X POST "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
-     -H "X-Auth-Email: $cloudflare_Email" \
-     -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json" \
+     $account_key_a1 "$account_key_1" \
+     $account_key_a2 "$account_key_2" \
      --data '{"type":"'$domain_type'","name":"'$HOST'","content":"'$hostIP'","ttl":120,"proxied":false}')
 	sleep 1
 	RESULT=$(echo $RESULT | sed -e "s/ //g" | grep -o "success\":[a-z]*,"|awk -F : '{print $2}'|grep -o "[a-z]*")
@@ -365,9 +384,9 @@ if [ -z "$RECORD_ID" ] ; then
 else
 	# 更新记录IP
 	RESULT=$(curl -L    -s -X PUT "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records/$RECORD_ID" \
-     -H "X-Auth-Email: $cloudflare_Email" \
-     -H "X-Auth-Key: $cloudflare_Key" \
      -H "Content-Type: application/json" \
+     $account_key_a1 "$account_key_1" \
+     $account_key_a2 "$account_key_2" \
      --data '{"type":"'$domain_type'","name":"'$HOST'","content":"'$hostIP'","ttl":120,"proxied":false}')
 	sleep 1
 	RESULT=$(echo $RESULT | sed -e "s/ //g" | grep -o "success\":[a-z]*,"|awk -F : '{print $2}'|grep -o "[a-z]*")

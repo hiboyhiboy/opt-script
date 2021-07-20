@@ -65,6 +65,7 @@ xunlei_get_status () {
 A_restart=`nvram get xunleis_status`
 B_restart="$xunleis$xunleis_dir"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set xunleis_status=$B_restart
 	needed_restart=1

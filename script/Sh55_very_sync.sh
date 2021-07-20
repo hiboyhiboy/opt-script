@@ -69,6 +69,7 @@ verysync_get_status () {
 A_restart=`nvram get verysync_status`
 B_restart="$verysync_enable$verysync_wan$verysync_wan_port"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set verysync_status=$B_restart
 	needed_restart=1

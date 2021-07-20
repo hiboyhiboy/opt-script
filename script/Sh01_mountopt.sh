@@ -540,7 +540,7 @@ logger -t "【opt】" "$upanPath/opt/o_p_t.img镜像(ext4)模式挂载/media/o_p
 if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
 	[ -d "$upanPath/opt" ] && mv -f "$upanPath/opt" "$upanPath/opt_old_"$(date "+%Y-%m-%d_%H-%M-%S")
 	[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
-	block="$(check_network 5 $upanPath)"
+	[ -d "$upanPath" ] && block="$(check_disk_size $upanPath)"
 	[ -z "$block" ] && block="0"
 	[ "$block" != "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：$block M"
 	[ "$block" = "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：获取失败"
@@ -631,10 +631,10 @@ if [ "$ss_opt_x" = "5" ] ; then
 	fi
 fi
 mkdir -p /opt/bin
-if [ ! -f /sbin/check_network ] && [ ! -f /opt/bin/check_network ] ; then
-	wgetcurl.sh '/opt/bin/check_network' "$hiboyfile/check_network" "$hiboyfile2/check_network"
+if [ ! -f /sbin/check_disk_size ] && [ ! -f /opt/bin/check_disk_size ] ; then
+	wgetcurl.sh '/opt/bin/check_disk_size' "$hiboyfile/check_disk_size" "$hiboyfile2/check_disk_size"
 fi
-[ -f /sbin/check_network ] && [ -f /opt/bin/check_network ] && rm -f /opt/bin/check_network
+[ -f /sbin/check_disk_size ] && [ -f /opt/bin/check_disk_size ] && rm -f /opt/bin/check_disk_size
 if [ ! -z "$upanPath" ] ; then
 	rm -f /tmp/AiDisk_00
 	[ -d /tmp/AiDisk_00 ] || rm -rf /tmp/AiDisk_00

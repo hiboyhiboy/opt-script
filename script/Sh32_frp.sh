@@ -88,6 +88,7 @@ frp_get_status () {
 A_restart=`nvram get frp_status`
 B_restart="$frp_enable$frpc_enable$frps_enable$frp_version$(cat /etc/storage/frp_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 nvram set frp_status=$B_restart
 needed_restart=1

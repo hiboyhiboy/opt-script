@@ -60,6 +60,7 @@ translate_get_status () {
 A_restart=`nvram get translate_status`
 B_restart="$translate_enable$translate_type"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set translate_status=$B_restart
 	needed_restart=1

@@ -73,6 +73,7 @@ speedup_get_status () {
 A_restart=`nvram get speedup_status`
 B_restart="$speedup_enable$speedup_Info$check_Qos$Start_Qos$Heart_Qos"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set speedup_status=$B_restart
 	needed_restart=1

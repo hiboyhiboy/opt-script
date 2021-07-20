@@ -1,143 +1,384 @@
 #!/bin/bash
 #copyright by hiboy
-source /etc/storage/script/init.sh
 
-# 🔐📐|📐🔐
-if [ -z "$(cat /www/link_d.js | grep "🔐📐")" ] ; then
-name_base64=0
+de_2_base64 () {
+
+if [ -z "$(echo "$1" | awk -F '#' '{print $1}' | grep -Eo [^A-Za-z0-9+/=:]+)" ] ; then
+# 有些链接会多一层 base64 包裹，链接2次解码
+	if [ ! -z "$(echo "$1" | awk -F '#' '{print $2}')" ] ; then
+		echo "$(echo -n "$1" | awk -F '#' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"'#'"$(echo $1 | awk -F '#' '{print $2}')"
+	else
+		echo "$(echo -n "$1" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"
+	fi
 else
-name_base64=1
+	echo "$1"
 fi
 
-base64encode () {
-# 转码
-if [ "$name_base64" == 0 ] ; then
-echo -n "$1"
-else
-# 转换base64
-echo -n "🔐📐$(echo -n "$1" | sed ":a;N;s/\n//g;ta" | base64 | sed -e "s/\//_/g" | sed -e "s/\+/-/g" | sed 's/&==//g' | sed ":a;N;s/\n//g;ta")📐🔐"
+}
+
+#↪️123🔀🔁➿123↩️
+
+
+# 处理链接
+link_de_protocol () {
+[ -z "$link_tmp" ] && link_tmp="$1"
+link_tmp=$(echo $link_tmp)
+if [ ! -z "$link_tmp" ] ; then
+add_0
+[ ! -z "$(echo -n $link_tmp | grep -v "[Vv]less://" | grep -v "[Vv]mess://" | grep -Eo "ss://")" ] && link_protocol="ss"
+[ ! -z "$(echo -n $link_tmp | grep -Eo "ssr://")" ] && link_protocol="ssr"
+[ ! -z "$(echo -n $link_tmp | grep -Eo "[Vv]less://")" ] && link_protocol="vless"
+[ ! -z "$(echo -n $link_tmp | grep -Eo "[Vv]mess://")" ] && link_protocol="vmess"
+# [ ! -z "$(echo -n $link_tmp | grep -Eo "trojan://")" ] && link_protocol="trojan"
+# [ ! -z "$(echo -n $link_tmp | grep -Eo "trojan-go://")" ] && link_protocol="trojan"
+# 非指定链接返回空值
+link_de_m "$2"
+fi
+if [ ! -z "$link_tmp" ] ; then
+[ "$link_protocol" == "ss" ] && de_ss_link
+[ "$link_protocol" == "ssr" ] && de_ssr_link
+[ "$link_protocol" == "vless" ] && de_vless_link
+[ "$link_protocol" == "vmess" ] && de_vmess_link
+[ "$link_protocol" == "ss" ] && de_trojan_link
+fi
+link_tmp=""
+}
+
+# 非指定链接返回空值
+link_de_m () {
+if [ ! -z "$1" ] && [ -z "$(echo -n $1 | grep -Eo "0""$link_protocol""0")" ] ; then
+add_0
+link_tmp=""
 fi
 }
 
-get_emoji () {
-
-if [ "$name_base64" == 0 ] ; then
-echo -n "$1" \
- | sed -e 's@#@♯@g' \
- | sed -e 's@\r@_@g' \
- | sed -e 's@\n@_@g' \
- | sed -e 's@,@，@g' \
- | sed -e 's@+@➕@g' \
- | sed -e 's@=@＝@g' \
- | sed -e 's@|@丨@g' \
- | sed -e "s@%@％@g" \
- | sed -e "s@\^@∧@g" \
- | sed -e 's@/@／@g' \
- | sed -e 's@\\@＼@g' \
- | sed -e "s@<@《@g" \
- | sed -e "s@>@》@g" \
- | sed -e 's@;@；@g' \
- | sed -e 's@`@▪️@g' \
- | sed -e 's@:@：@g' \
- | sed -e 's@!@❗️@g' \
- | sed -e 's@*@﹡@g' \
- | sed -e 's@?@❓@g' \
- | sed -e 's@\$@💲@g' \
- | sed -e 's@(@（@g' \
- | sed -e 's@)@）@g' \
- | sed -e 's@{@『@g' \
- | sed -e 's@}@』@g' \
- | sed -e 's@\[@【@g' \
- | sed -e 's@\]@】@g' \
- | sed -e 's@&@﹠@g' \
- | sed -e "s@'@▫️@g" \
- | sed -e 's@"@”@g'
- 
-# | sed -e 's@ @_@g'
-else
-echo -n "$1"
+de_ss_link () {
+[ -z "$link_tmp" ] && link_tmp="$1"
+link_tmp=$(echo $link_tmp)
+link="$link_tmp"
+[ -z "$(echo -n $link | grep -v "[Vv]less" | grep -v "[Vv]mess" | grep -Eo "ss://")" ] && return 1
+add_0
+if [ ! -z "$(echo -n "$link" | grep -v "[Vv]less" | grep -v "[Vv]mess" | grep -Eo "ss://")" ] ; then
+link_protocol="ss"
 fi
-}
-
-add_ss_link () {
-link="$1"
+link="$(echo "$link" | awk -F 'ss://' '{print $2}')"
+link_input="ss://""$link"
+# 链接2次解码
+link="$(de_2_base64 "$(echo -n $link)")"
+#服务器的描述信息
 if [ ! -z "$(echo -n "$link" | grep '#')" ] ; then
-ss_link_name_url=$(echo -n $link | awk -F '#' '{print $2}')
-ss_link_name="$(get_emoji "$(printf $(echo -n $ss_link_name_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"| sed -n '1p')"
+ss_link_name_url="$(echo -n "$link" | awk -F '#' '{print $2}')"
+ss_link_name="$(echo $(printf $(echo -n "$ss_link_name_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
 link=$(echo -n $link | awk -F '#' '{print $1}')
 fi
-if [ ! -z "$(echo -n "$link" | grep '@')" ] ; then
-	#不将主机名和端口号解析为Base64URL ss://cmM0LW1kNTpwYXNzd2Q=@192.168.100.1:8888/?plugin=obfs-local%3Bobfs%3Dhttp#Example2
-	link3=$(echo -n $link | sed -n '1p' | awk -F '@' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d )
-	link4=$(echo -n $link | sed -n '1p' | awk -F '@' '{print $2}')
-	link2="$link3""@""$link4"
-else
-	#部分信息解析为Base64URL ss://cmM0LW1kNTpwYXNzd2RAMTkyLjE2OC4xMDAuMTo4ODg4Lz9wbHVnaW49b2Jmcy1sb2NhbCUzQm9iZnMlM0RodHRw==#Example2
-	link2=$(echo -n $link | sed -n '1p' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&==/g' | base64 -d)
-	
-fi
-ex_params="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $2}')"
-if [ -z "$ex_params" ] ; then
-	# 兼容漏一个/
-	ex_params="$(echo -n $link2 | sed -n '1p' | awk -F '\\?' '{print $2}')"
-	[ ! -z "$ex_params" ] && link2="$(echo -n $link2 | sed -n '1p' | awk -F '\\?' '{print $1}')"
-else
-	link2="$(echo -n $link2 | sed -n '1p' | awk -F '/\\?' '{print $1}')"
-fi
+# 链接2次解码
+link="$(de_2_base64 "$(echo -n $link)")"
+#不将主机名和端口号解析为Base64URL ss://cmM0LW1kNTpwYXNzd2Q=@192.168.100.1:8888/?plugin=obfs-local%3Bobfs%3Dhttp%3Bobfs-host%3Dwww.bing.com#Example2
+#部分信息解析为Base64URL ss://cmM0LW1kNTpwYXNzd2RAMTkyLjE2OC4xMDAuMTo4ODg4Lz9wbHVnaW49b2Jmcy1sb2NhbCUzQm9iZnMlM0RodHRw==#Example2
+# 链接2次解码 methodpassword 信息
+ss_link_methodpassword=$(echo -n $link | grep -Eo '^[^@]+' | sed -n '1p')
+[ -z "$(echo $ss_link_methodpassword | grep ":")" ] && ss_link_methodpassword="$(de_2_base64 "$(echo -n $ss_link_methodpassword)")"
+ss_link_usage=$(echo -n $link | grep -Eo '@[^:]+[:]+[0-9]+' | grep -Eo '[^@]+[:]+[0-9]+' | sed -n '1p')
+ss_link_server=$(echo -n "$ss_link_usage" | awk -F ':' '{print $1}')
+[ -z "$ss_link_name" ] && ss_link_name="♯"$(echo -n "$ss_link_server")
+ss_link_name="〔$link_protocol〕$ss_link_name"
+ss_link_port=$(echo -n "$ss_link_usage" | awk -F ':' '{print $2}')
+ss_link_password="$(echo -n "$ss_link_methodpassword" | awk -F ':' '{print $2}')"
+ss_link_method=$(echo -n "$ss_link_methodpassword" | awk -F ':' '{print $1}')
+ex_params="$(echo -n $link | grep -Eo 'plugin=.+' | sed -n '1p')"
 if [ ! -z "$ex_params" ] ; then
 	#存在插件
-	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&#]*"  | cut -d '=' -f2)";
-	ex_obfsparam=$(printf $(echo -n $ex_obfsparam | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))
-	ss_link_plugin_opts=" -O origin -o plain --plugin ""$(echo -n "$ex_obfsparam" |  sed -e 's@;@ --plugin-opts "@' | sed -e 's@$@"@')"
-else
-	ss_link_plugin_opts=" -O origin -o plain --plugin --plugin-opts "
+	ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "plugin=[^&#]*" | sed -n '1p'| awk -F 'plugin=' '{print $2}')"
+	ex_obfsparam="$(printf $(echo -n $ex_obfsparam | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+	ss_link_plugin="$(echo -n "$ex_obfsparam" | grep -Eo "^[^;]+" | sed -n '1p' | grep -Eo '^.+[^;]' | sed -n '1p')"
+	ss_link_plugin_opts="$(echo -n "$ex_obfsparam" | grep -Eo ";.+" | grep -Eo "[^;].+" | sed -n '1p')"
 fi
-
-ss_link_methodpassword=$(echo -n $link2 | sed -n '1p' | awk -F '@' '{print $1}')
-ss_link_usage=$(echo -n $link2 | sed -n '1p' | awk -F '@' '{print $2}')
-
-[ -z "$ss_link_name" ] && ss_link_name="♯"$(echo -n "$ss_link_usage" | cut -d ':' -f1)
-ss_link_name="$(echo "$ss_link_name"| sed -n '1p')"
-ss_link_server=$(echo -n "$ss_link_usage" | cut -d ':' -f1)
-ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
-ss_link_password=$(echo -n "$ss_link_methodpassword"  | cut -d ':' -f2 )
-ss_link_method=`echo -n "$ss_link_methodpassword" | cut -d ':' -f1 `
+link_name="$ss_link_name"
+link_server="$ss_link_server"
+link_port="$ss_link_port"
+link_tmp=""
+ss_link_obfs="plain"
+ss_link_protocol="origin"
 
 }
 
-add_ssr_link () {
-link="$1"
-ex_params="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $2}')"
-ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '/\\?' '{print $1}')"
-if [ -z "$ex_params" ] ; then
-	# 兼容漏一个/
-	ex_params="$(echo -n $link | sed -n '1p' | awk -F '\\?' '{print $2}')"
-	ss_link_usage="$(echo -n $link | sed -n '1p' | awk -F '\\?' '{print $1}')"
+de_ssr_link () {
+[ -z "$link_tmp" ] && link_tmp="$1"
+link_tmp=$(echo $link_tmp)
+link="$link_tmp"
+[ -z "$(echo -n $link | grep -Eo "ssr://")" ] && return 1
+add_0
+if [ ! -z "$(echo -n "$link" | grep "ssr://")" ] ; then
+link_protocol="ssr"
 fi
-ex_obfsparam="$(echo -n "$ex_params" | grep -Eo "obfsparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
-ex_protoparam="$(echo -n "$ex_params" | grep -Eo "protoparam=[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
-ex_remarks="$(echo -n "$ex_params" | grep -Eo "remarks[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
-#ex_group="$(echo -n "$ex_params" | grep -Eo "group[^&]*"  | cut -d '=' -f2 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d )"
-
-[ ! -z "$ex_remarks" ] && ss_link_name="$(get_emoji "$(echo -n "$ex_remarks" | sed -e ":a;N;s/\n/_/g;ta" )")"
-[ -z "$ex_remarks" ] && ss_link_name="♯""`echo -n "$ss_link_usage" | cut -d ':' -f1 `"
-ss_link_name="$(echo "$ss_link_name"| sed -n '1p')"
-
-ss_link_server=`echo -n "$ss_link_usage" | cut -d ':' -f1 `
-ss_link_port=`echo -n "$ss_link_usage" | cut -d ':' -f2 `
-ss_link_password=$(echo -n "$ss_link_usage"  | cut -d ':' -f6 | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&==/g' | base64 -d)
-ss_link_method=`echo -n "$ss_link_usage" | cut -d ':' -f4 `
-ss_link_obfs=`echo -n "$ss_link_usage" | cut -d ':' -f5 ` # -o
+link="$(echo "$link" | awk -F 'ssr://' '{print $2}')"
+link_input="ssr://""$link"
+# 链接2次解码
+link="$(de_2_base64 "$(echo -n $link)")"
+#8.8.8.8:443:auth_aes128_md5:chacha20:tls1.2_ticket_auth:bWJsYW5rMXBvcnQ/?obfsparam=b2ZmaWNlY2RuLm1pY3Jvc29mdC5jb20&protoparam=MTgwODM6aGFwcHkwMzAz&remarks=W-WNleerr-WPo10g5pyA5paw5Z-f5ZCNOiB3ZWJsYW5rLnh5eg&group=5aWH5bm75LmL5peFIFt3ZWJsYW5rLnh5el0&udpport=0&uot=0
+#服务器的描述信息
+ss_link_usage=$(echo -n $link | grep -Eo '^[^/?]+' | sed -n '1p')
+ss_link_server=`echo -n "$ss_link_usage" | awk -F ':' '{print $1}'`
+ss_link_port=`echo -n "$ss_link_usage" | awk -F ':' '{print $2}'`
+ss_link_password="$(echo -n "$ss_link_usage" | awk -F ':' '{print $6}' | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"
+ss_link_method=`echo -n "$ss_link_usage" | awk -F ':' '{print $4}'`
+ss_link_obfs=`echo -n "$ss_link_usage" | awk -F ':' '{print $5}'` # -o
 if [ "$ss_link_obfs"x = "tls1.2_ticket_fastauth"x ] ; then
 	ss_link_obfs="tls1.2_ticket_auth"
 fi
-ss_link_protocol="$(echo -n "$ss_link_usage" | cut -d ':' -f3)" # -O
-ss_link_obfsparam=" -g $ex_obfsparam" # -g
-ss_link_protoparam=" -G $ex_protoparam" # -G
+ss_link_protocol="$(echo -n "$ss_link_usage" | awk -F ':' '{print $3}')" # -O
+
+#设置参数
+ex_params=$(echo -n $link | grep -Eo "[/?].+" | sed -n '1p' | grep -Eo '[^/?].+' | sed -n '1p')
+ss_link_obfsparam="$(echo -n "$ex_params" | grep -Eo "obfsparam=[^&]*" | sed -n '1p' | awk -F 'obfsparam=' '{print $2}' | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"
+ss_link_protoparam="$(echo -n "$ex_params" | grep -Eo "protoparam=[^&]*" | sed -n '1p' | awk -F 'protoparam=' '{print $2}' | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"
+ss_link_name="$(echo -n "$ex_params" | grep -Eo "remarks=[^&]*" | sed -n '1p' | awk -F 'remarks=' '{print $2}' | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"
+[ -z "$ss_link_name" ] && ss_link_name="♯"$(echo -n "$ss_link_server")
+ss_link_name="〔$link_protocol〕$ss_link_name"
+link_name="$ss_link_name"
+link_server="$ss_link_server"
+link_port="$ss_link_port"
+link_tmp=""
+
+}
+
+de_vless_link () {
+[ -z "$link_tmp" ] && link_tmp="$1"
+link_tmp=$(echo $link_tmp)
+link="$link_tmp"
+[ -z "$(echo -n $link | grep -Eo "[Vv][ml]ess://")" ] && return 1
+add_0
+if [ ! -z "$(echo -n "$link" | grep "[Vv]less://")" ] ; then
+link="$(echo -n "$link" | sed -e "s@Vless://@vless://@g" | awk -F 'vless://' '{print $2}')"
+link_protocol="vless"
+link_input="vless://""$link"
+fi
+if [ ! -z "$(echo -n "$link" | grep "[Vv]mess://")" ] ; then
+link="$(echo -n "$link" | sed -e "s@Vmess://@vmess://@g" | awk -F 'vmess://' '{print $2}')"
+link_protocol="vmess"
+link_input="vmess://""$link"
+fi
+# 链接2次解码
+link="$(de_2_base64 "$(echo -n $link)")"
+# 详述 https://github.com/XTLS/Xray-core/issues/91# MessAEAD _ VLESS 分享链接标准提
+if [ ! -z "$(echo -n "$link" | grep '#')" ] ; then
+vless_link_name_url="$(echo -n "$link" | awk -F '#' '{print $2}')"
+vless_link_name="$(echo $(printf $(echo -n "$vless_link_name_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
+link="$(echo -n $link | awk -F '#' '{print $1}' | sed -n '1p')"
+fi
+vless_link_uuid_url="$(echo -n $link | grep -Eo '^.+?@' | sed -n '1p' | grep -Eo '^.+[^@]' | sed -n '1p')"
+vless_link_uuid="$(echo $(printf $(echo -n "$vless_link_uuid_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
+vless_link_remote=$(echo -n $link | awk -F "$vless_link_uuid_url@" '{print $2}' | grep -Eo '.+?:[0-9]+?' | sed -n '1p')
+vless_link_remote_host=$(echo -n $vless_link_remote | awk -F ':' '{print $1}')
+vless_link_remote_port=$(echo -n $vless_link_remote | awk -F ':' '{print $2}')
+[ -z "$vless_link_name" ] && vless_link_name="♯"$(echo -n "$vless_link_remote_host")
+vless_link_name="〔$link_protocol〕$vless_link_name"
+link_name="$vless_link_name"
+link_server="$vless_link_remote_host"
+link_port="$vless_link_remote_port"
+[ "$link_read" == "ping" ] && link_read="" && return
+vless_link_specific=$(echo -n $link | grep -Eo "[/?].+" | sed -n '1p' | grep -Eo '[^/?].+' | sed -n '1p')
+if [ ! -z "$vless_link_specific" ] ; then
+
+vless_link_type="$(echo -n "$vless_link_specific" | grep -Eo "type=[^&]*" | awk -F 'type=' '{print $2}' | sed -n '1p')"
+[ -z "$vless_link_type" ] && vless_link_type="tcp"
+
+vless_link_encryption="$(echo -n "$vless_link_specific" | grep -Eo "encryption=[^&]*" | awk -F 'encryption=' '{print $2}' | sed -n '1p')"
+[ "$link_protocol" == "vless" ] && [ -z "$vless_link_encryption" ] && vless_link_encryption="none"
+[ "$link_protocol" == "vmess" ] && [ -z "$vless_link_encryption" ] && vless_link_encryption="auto"
+
+vless_link_alterId="$(echo -n "$vless_link_specific" | grep -Eo "alter[Ii]d=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+
+vless_link_aid="$(echo -n "$vless_link_specific" | grep -Eo "aid=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ -z "$vless_link_aid" ] && [ ! -z "$vless_link_alterId" ] && vless_link_aid="$vless_link_alterId"
+
+vless_link_security="$(echo -n "$vless_link_specific" | grep -Eo "security=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ -z "$vless_link_security" ] && vless_link_security="none"
+
+vless_link_path_url="$(echo -n "$vless_link_specific" | grep -Eo "path=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_path_url" ] && vless_link_path="$(printf $(echo -n $vless_link_path_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+[ -z "$vless_link_path" ] && vless_link_path="/"
+
+vless_link_host_url="$(echo -n "$vless_link_specific" | grep -Eo "host=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_host_url" ] && vless_link_host="$(printf $(echo -n $vless_link_host_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+[ -z "$vless_link_host" ] && vless_link_host="$vless_link_remote_host"
+
+vless_link_headerType="$(echo -n "$vless_link_specific" | grep -Eo "header[Tt]ype=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ -z "$vless_link_headerType" ] && vless_link_headerType="none"
+
+vless_link_seed_url="$(echo -n "$vless_link_specific" | grep -Eo "seed=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_seed_url" ] && vless_link_seed="$(printf $(echo -n $vless_link_seed_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
+vless_link_quicSecurity="$(echo -n "$vless_link_specific" | grep -Eo "quic[Ss]ecurity=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ -z "$vless_link_quicSecurity" ] && vless_link_quicSecurity="none"
+
+vless_link_key_url="$(echo -n "$vless_link_specific" | grep -Eo "key=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_key_url" ] && vless_link_key="$(printf $(echo -n $vless_link_key_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
+vless_link_serviceName="$(echo -n "$vless_link_specific" | grep -Eo "service[Nn]ame=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+
+vless_link_mode="$(echo -n "$vless_link_specific" | grep -Eo "mode=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ -z "$vless_link_mode" ] && vless_link_mode="gun"
+
+vless_link_sni="$(echo -n "$vless_link_specific" | grep -Eo "sni=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ -z "$vless_link_sni" ] && vless_link_sni="$vless_link_remote_host"
+
+vless_link_alpn_url="$(echo -n "$vless_link_specific" | grep -Eo "alpn=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_alpn_url" ] && vless_link_alpn="$(printf $(echo -n $vless_link_alpn_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
+vless_link_allowInsecure="$(echo -n "$vless_link_specific" | grep -Eo "allow[Ii]nsecure=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+
+vless_link_flow="$(echo -n "$vless_link_specific" | grep -Eo "flow=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+
+fi
+link_tmp=""
+
+}
+
+de_vmess_link () {
+[ -z "$link_tmp" ] && link_tmp="$1"
+link_tmp=$(echo $link_tmp)
+link="$link_tmp"
+[ -z "$(echo -n $link | grep -Eo "[Vv]mess://")" ] && return 1
+add_0
+if [ ! -z "$(echo -n "$link" | grep "[Vv]mess://")" ] ; then
+link="$(echo -n "$link" | sed -e "s@Vmess://@vmess://@g" | awk -F 'vmess://' '{print $2}')"
+link_protocol="vmess"
+link_input="vmess://""$link"
+fi
+# 链接2次解码
+link="$(de_2_base64 "$(echo -n $link)")"
+# 详述 https://github.com/2dust/v2rayN/wiki/分享链接格式说明(ver-2)
+# 实在看不懂这说明，链接大概率不兼容
+#link="$(echo $link | jq -c .)"
+vless_link_remote_host="$(echo "$link" | jq -r .add | sed 's/[ \t]*//g')"
+[ "$vless_link_remote_host" == "null" ] && vless_link_remote_host=""
+link_server="$vless_link_remote_host"
+if [ ! -z "$vless_link_remote_host" ] ; then
+vless_link_name="$(echo "$link" | jq -r .ps | sed 's/[ \t]*//g')"
+[ "$vless_link_name" == "null" ] && vless_link_name=""
+[ -z "$vless_link_name" ] && vless_link_name="♯""$vless_link_remote_host"
+vless_link_name="〔$link_protocol〕$vless_link_name"
+link_name="$vless_link_name"
+vless_link_remote_port="$(echo "$link" | jq -r .port | sed 's/[ \t]*//g')"
+link_port="$vless_link_remote_port"
+[ "$link_read" == "ping" ] && link_read="" && return
+vless_link_uuid="$(echo "$link" | jq -r .id | sed 's/[ \t]*//g')"
+vless_link_aid="$(echo "$link" | jq -r .aid | sed 's/[ \t]*//g')"
+# scy: 加密方式(security),没有时值默认auto
+vless_link_encryption="$(echo "$link" | jq -r .scy)"
+[ "$vless_link_encryption" == "null" ] && vless_link_encryption=""
+[ -z "$vless_link_encryption" ] && vless_link_encryption="auto"
+# net: 传输协议(tcp\kcp\ws\h2\quic)
+vless_link_type="$(echo "$link" | jq -r .net)"
+[ "$vless_link_type" == "null" ] && vless_link_type=""
+[ -z "$vless_link_type" ] && vless_link_type="tcp"
+# type: 伪装类型(none\http\srtp\utp\wechat-video) *tcp or kcp or QUIC
+vless_link_headerType="$(echo "$link" | jq -r .type)"
+vless_link_security="$(echo "$link" | jq -r .tls)"
+vless_link_sni="$(echo "$link" | jq -r .sni)"
+
+vless_link_v="$(echo "$link" | jq -r .v)"
+[ "$vless_link_v" == "null" ] && vless_link_v="0"
+if [ "$vless_link_v" == "2" ]; then
+# host: 伪装的域名
+vless_link_host="$(echo "$link" | jq -r .host)"
+case $vless_link_type in
+	quic)
+		vless_link_quicSecurity="$(echo "$link" | jq -r .host)"
+		[ "$vless_link_quicSecurity" == "null" ] && vless_link_quicSecurity=""
+		[ -z "$vless_link_quicSecurity" ] && vless_link_quicSecurity="none"
+	;;
+esac
+# path: path
+vless_link_path="$(echo "$link" | jq -r .path)"
+case $vless_link_type in
+	quic)
+		vless_link_key="$(echo "$link" | jq -r .path)"
+		[ "$vless_link_key" == "null" ] && vless_link_key=""
+		[ "$vless_link_quicSecurity" == "none" ] && vless_link_key=""
+	;;
+	kcp)
+		vless_link_seed="$(echo "$link" | jq -r .path)"
+	;;
+	grpc)
+		vless_link_serviceName="$(echo "$link" | jq -r .path)"
+	;;
+esac
+fi
+if [ "$vless_link_v" -lt 2 ] ; then
+# 不兼容更旧规则，找不到说明
+vless_link_path=""
+vless_link_host=""
+fi
+[ "$vless_link_remote_port" == "null" ] && vless_link_remote_port=""
+[ "$vless_link_uuid" == "null" ] && vless_link_uuid=""
+[ "$vless_link_aid" == "null" ] && vless_link_aid=""
+[ "$vless_link_security" == "null" ] && vless_link_security=""
+[ -z "$vless_link_security" ] && vless_link_security="none"
+[ "$vless_link_headerType" == "null" ] && vless_link_headerType=""
+[ -z "$vless_link_headerType" ] && vless_link_headerType="none"
+[ "$vless_link_sni" == "null" ] && vless_link_sni=""
+[ "$vless_link_serviceName" == "null" ] && vless_link_serviceName=""
+[ "$vless_link_host" == "null" ] && vless_link_host=""
+[ -z "$vless_link_host" ] && vless_link_host="$vless_link_remote_host"
+[ "$vless_link_path" == "null" ] && vless_link_path=""
+[ -z "$vless_link_path" ] && vless_link_path="/"
+
+else
+# 使用 vless 分享链接规则
+de_vless_link "$link_tmp"
+fi
+link_tmp=""
+
+}
+
+de_trojan_link () {
+
+# 未配置 trojan 客户端，待完成
+# trojan://321a@1.1.1.1:123?peer=abc.com#test.%2B
+# https://github.com/p4gefau1t/trojan-go/issues/132
+[ -z "$link_tmp" ] && link_tmp="$1"
+link_tmp=$(echo $link_tmp)
+link="$link_tmp"
+link_tmp=""
+[ -z "$(echo -n $link | grep -Eo "trojan://")" ] && return 1
+add_0
+if [ ! -z "$(echo -n "$link" | grep "trojan://")" ] ; then
+link_protocol="trojan"
+fi
+link="$(echo "$link" | awk -F 'trojan://' '{print $2}')"
+link_input="trojan://""$link"
+# 链接2次解码
+link="$(de_2_base64 "$(echo -n $link)")"
+#服务器的描述信息
+if [ ! -z "$(echo -n "$link" | grep '#')" ] ; then
+trojan_link_name_url="$(echo -n $link | awk -F '#' '{print $2}')"
+trojan_link_name="$(echo $(printf $(echo -n "$trojan_link_name_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
+link=$(echo -n $link | awk -F '#' '{print $1}')
+link3=$(echo -n $link | awk -F '@' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')
+link4=$(echo -n $link | awk -F '@' '{print $2}')
+link2="$link3""@""$link4"
+trojan_link_password=$(echo -n $link2 | grep -Eo '^.+@' | sed -n '1p' | grep -Eo '^.+[^@]' | sed -n '1p')
+trojan_link_usage=$(echo -n $link2 | awk -F "$trojan_link_password@" '{print $2}' | grep -Eo '.+?:[0-9]+?' | sed -n '1p')
+trojan_link_server=$(echo -n "$trojan_link_usage" | awk -F ':' '{print $1}')
+[ -z "$trojan_link_name" ] && trojan_link_name="♯"$(echo -n "$trojan_link_server")
+trojan_link_name="〔$link_protocol〕$trojan_link_name"
+trojan_link_port=$(echo -n "$trojan_link_usage" | awk -F ':' '{print $2}')
+link_name="$trojan_link_name"
+link_server="$trojan_link_server"
+link_port="$trojan_link_port"
+fi
 
 }
 
 add_0 () {
+link_protocol=""
+link_name=""
+link_server=""
+link_port=""
+link_input=""
+
 ss_link_name=""
 ss_link_server=""
 ss_link_port=""
@@ -147,674 +388,39 @@ ss_link_obfs=""
 ss_link_protocol=""
 ss_link_obfsparam=""
 ss_link_protoparam=""
+ss_link_plugin=""
 ss_link_plugin_opts=""
-}
 
-clear_link () {
+vless_link_name=""
+vless_link_uuid=""
+vless_link_remote_host=""
+vless_link_remote_port=""
+vless_link_type=""
+vless_link_encryption=""
+vless_link_alterId=""
+vless_link_aid=""
+vless_link_security=""
+vless_link_path=""
+vless_link_host=""
+vless_link_headerType=""
+vless_link_seed=""
+vless_link_quicSecurity=""
+vless_link_key=""
+vless_link_serviceName=""
+vless_link_mode=""
+vless_link_sni=""
+vless_link_alpn=""
+vless_link_allowInsecure=""
+vless_link_flow=""
 
-logger -t "【SS】" "服务器订阅：清空上次订阅节点配置"
-# 自定义节点配置靠前保存
-mkdir -p /tmp/ss/link
-ss_x=`nvram get rt_ssnum_x`
-ss_x=$(( ss_x - 1 ))
-# 导出节点配置
-ss_s=/tmp/ss/link/daochu_1.txt
-echo -n "" > $ss_s
-for ss_1i in $(seq 0 $ss_x)
-do
-    echo rt_ss_name_x$ss_1i=$(nvram get rt_ss_name_x$ss_1i) >> $ss_s
-    echo rt_ss_port_x$ss_1i=$(nvram get rt_ss_port_x$ss_1i) >> $ss_s
-    echo rt_ss_password_x$ss_1i=$(nvram get rt_ss_password_x$ss_1i) >> $ss_s
-    echo rt_ss_server_x$ss_1i=$(nvram get rt_ss_server_x$ss_1i) >> $ss_s
-    echo rt_ss_usage_x$ss_1i=$(nvram get rt_ss_usage_x$ss_1i) >> $ss_s
-    echo rt_ss_method_x$ss_1i=$(nvram get rt_ss_method_x$ss_1i) >> $ss_s
-done
-# 删除🔗订阅连接
-cat /tmp/ss/link/daochu_1.txt | sort -u | grep -v "^$" > /tmp/ss/link/daochu_2.txt
-cat /tmp/ss/link/daochu_2.txt | grep "🔗" | cut -d '=' -f1 | awk -F '_x' '{print $2}' | sort -u > /tmp/ss/link/daochu_3.txt
-if [ ! -s /tmp/ss/link/daochu_3.txt ] ; then
-    echo "不含订阅连接"
-    rm -rf /tmp/ss/link
-    return
-fi
-while read line
-do
-    sed -Ei "/rt_ss_name_x$line=|rt_ss_port_x$line=|rt_ss_password_x$line=|rt_ss_server_x$line=|rt_ss_usage_x$line=|rt_ss_method_x$line=/d" /tmp/ss/link/daochu_2.txt
-done < /tmp/ss/link/daochu_3.txt
-# 重排序
-ss_s=/tmp/ss/link/daochu_2.txt
-for ss_1i in $(seq 0 $ss_x)
-do
-    for ss_2ii in $(seq $ss_1i $ss_x)
-    do
-        ss_3iii=0
-        if [ ! -z "$(cat $ss_s | grep "rt_ss_name_x$ss_2ii=")" ] ; then
-            sed -Ei s/rt_ss_name_x$ss_2ii=/rt_ss_name_x$ss_1i=/g $ss_s
-            sed -Ei s/rt_ss_port_x$ss_2ii=/rt_ss_port_x$ss_1i=/g $ss_s
-            sed -Ei s/rt_ss_password_x$ss_2ii=/rt_ss_password_x$ss_1i=/g $ss_s
-            sed -Ei s/rt_ss_server_x$ss_2ii=/rt_ss_server_x$ss_1i=/g $ss_s
-            sed -Ei s/rt_ss_usage_x$ss_2ii=/rt_ss_usage_x$ss_1i=/g $ss_s
-            sed -Ei s/rt_ss_method_x$ss_2ii=/rt_ss_method_x$ss_1i=/g $ss_s
-            ss_3iii=1
-        fi
-        if [ "$ss_3iii"x == "1x" ] ; then
-            break
-        fi
-    done
-done
-# 提取运行命令
-while read line
-do
-    ss_a="$(echo $line  | grep -Eo  'rt_ss_.*=' | awk -F '=' '{print $1}')"
-    ss_b="$(echo $line | awk -F $ss_a'=' '{print $2}' )"
-    eval "nvram set $ss_a=\"\$ss_b\""
-done < /tmp/ss/link/daochu_2.txt
-# 保存有效节点数量
-rt_ssnum_x=$(cat /tmp/ss/link/daochu_2.txt | grep rt_ss_name_x | wc -l)
-[ -z $rt_ssnum_x ] && rt_ssnum_x="0"
-nvram set rt_ssnum_x=$rt_ssnum_x
-# 写入空白记录 nvram unset 
-ss_x=`nvram get rt_ssnum_x`
-ss_x=$(( ss_x - 1 ))
-# 导出节点配置
-nvram showall | grep '=' | grep rt_ss_ | sed 's/^/nvram unset /' | sort -u > /tmp/ss/link/daochu_1.txt
-# 删除非订阅连接
-cat /tmp/ss/link/daochu_1.txt | sort -u | grep -v "^$" > /tmp/ss/link/daochu_2.txt
-seq 0 $ss_x | awk '{print "_x"$0"="}' > /tmp/ss/link/daochu_3.txt
-while read line
-do
-    sed -Ei "/rt_ss_name$line|rt_ss_port$line|rt_ss_password$line|rt_ss_server$line|rt_ss_usage$line|rt_ss_method$line/d" /tmp/ss/link/daochu_2.txt
-done < /tmp/ss/link/daochu_3.txt
-#sed -Ei "/$(cat /tmp/ss/link/daochu_3.txt | sed ":a;N;s/\n/|/g;ta")/d" /tmp/ss/link/daochu_2.txt
-# 提取运行命令
-cat /tmp/ss/link/daochu_2.txt | sort -u | awk -F '=' '{print $1}' > /tmp/ss/link/daochu_4.txt
-[ -s /tmp/ss/link/daochu_4.txt ] && source /tmp/ss/link/daochu_4.txt
-rm -rf /tmp/ss/link
-}
+vless_link_v=""
+[ -z "$vless_link_v" ] && vless_link_v="0"
+[ "$vless_link_v" -lt 1 ] && vless_link_v="0" || { [ "$vless_link_v" -ge 0 ] || vless_link_v="0" ; }
 
-down_link () {
-if [ -z  "$(echo "$ssr_link_i" | grep 'http:\/\/')""$(echo "$ssr_link_i" | grep 'https:\/\/')" ]  ; then
-	logger -t "【SS】" "$ssr_link_i"
-	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
-	return
-fi
-mkdir -p /tmp/ss/link
-#logger -t "【SS】" "订阅文件下载: $ssr_link_i"
-rm -f /tmp/ss/link/0_link.txt
-wgetcurl.sh /tmp/ss/link/0_link.txt "$ssr_link_i" "$ssr_link_i" N
-if [ ! -s /tmp/ss/link/0_link.txt ] ; then
-	rm -f /tmp/ss/link/0_link.txt
-	curl -L --user-agent "$user_agent" -o /tmp/ss/link/0_link.txt "$ssr_link_i"
-fi
-if [ ! -s /tmp/ss/link/0_link.txt ] ; then
-	rm -f /tmp/ss/link/0_link.txt
-	wget -T 5 -t 3 --user-agent "$user_agent" -O /tmp/ss/link/0_link.txt "$ssr_link_i"
-fi
-if [ ! -s /tmp/ss/link/0_link.txt ] ; then
-	logger -t "【SS】" "$ssr_link_i"
-	logger -t "【SS】" "错误！！SSR 服务器订阅文件下载失败！请检查下载地址"
-	return
-fi
-dos2unix /tmp/ss/link/0_link.txt
-sed -e 's@\r@@g' -i /tmp/ss/link/0_link.txt
-sed -e '/^$/d' -i /tmp/ss/link/0_link.txt
-if [ ! -z "$(cat /tmp/ss/link/0_link.txt | grep "ssd://")" ] ; then
-	logger -t "【SS】" "解码【ssd://】订阅文件"
-	ssd_link /tmp/ss/link/0_link.txt /www/link/link.js
-	[ -f /www/link/link.js ] && { sed -Ei '/\[\]\]|^$/d' /www/link/link.js ; echo -n '[]]' >> /www/link/link.js ; }
-	return
-fi
-sed -e 's/$/&==/g' -i /tmp/ss/link/0_link.txt
-sed -e "s/_/\//g" -i /tmp/ss/link/0_link.txt
-sed -e "s/\-/\+/g" -i /tmp/ss/link/0_link.txt
-cat /tmp/ss/link/0_link.txt | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/ss/link/3_link.txt
-if [ -s /tmp/ss/link/3_link.txt ] ; then
-	logger -t "【SS】" "警告！！SSR 服务器订阅文件下载包含非 BASE64 编码字符！"
-	logger -t "【SS】" "请检查服务器配置和链接："
-	logger -t "【SS】" "$ssr_link_i"
-	rm -f /tmp/ss/link/3_link.txt /tmp/ss/link/0_link.txt
-	return
-fi
-rm -f /tmp/ss/link/3_link.txt
-# 开始解码订阅节点配置
-cat /tmp/ss/link/0_link.txt | grep -Eo [A-Za-z0-9+/=]+ | tr -d "\n" > /tmp/ss/link/1_link.txt
-base64 -d /tmp/ss/link/1_link.txt > /tmp/ss/link/2_link.txt
-rm -f /tmp/ss/link/0_link.txt /tmp/ss/link/1_link.txt
-if [ "$down_i_link" == "1" ] ; then
-# 初次导入节点清空旧的订阅
-touch /etc/storage/app_24.sh ;
-sed -Ei '/^🔗/d' /etc/storage/app_24.sh
-sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
-down_i_link=0
-fi
-if [ ! -z "$(cat /www/link_d.js | grep "app_24.sh")" ] ; then
- # 批量导入链接节点
-echo >> /etc/storage/app_24.sh
-sed -Ei 's@^@🔗@g' /tmp/ss/link/2_link.txt
-cat /tmp/ss/link/2_link.txt >> /etc/storage/app_24.sh
-sed -Ei '/dellink_ss|^$/d' /etc/storage/app_24.sh
-B_restart=`"$(cat /etc/storage/app_24.sh | grep -v "^🔗")" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-nvram set app_24_sh_status=$B_restart
-if [ -s /etc/storage/app_24.sh ] ; then
- # 备份提取批量导入链接节点
-logger -t "【SS】" "批量导入链接节点：开始解码"
-mkdir -p /tmp/link
-rm -f /tmp/link/link.txt
-do_link "/etc/storage/app_24.sh" "/tmp/link/link.txt"
-logger -t "【SS】" "批量导入链接节点：完成解码"
-fi
-else
- # js 数据格式保存
-do_link "/tmp/ss/link/2_link.txt" "/www/link/link.js"
-[ -f /www/link/link.js ] && { sed -Ei '/\[\]\]|^$/d' /www/link/link.js ; echo -n '[]]' >> /www/link/link.js ; }
-if [ ! -f /www/link/link.js ] ; then
-# 保存有效节点数量
-rt_ssnum_x=`nvram get rt_ssnum_x`
-[ -z $rt_ssnum_x ] && rt_ssnum_x=0 && nvram set rt_ssnum_x=0
-[ $rt_ssnum_x -lt $do_i ] && nvram set rt_ssnum_x=$do_i
-nvram commit
-fi
-fi
-rm -rf /tmp/ss/link
-}
-
-do_link () {
-
-mkdir -p /tmp/ss/link
-mkdir -p /tmp/link
-rm -f /tmp/ss/link/ssr_link.txt  /tmp/ss/link/ss_link.txt
-cp $1 /tmp/ss/link/do_link.txt
-dos2unix /tmp/ss/link/do_link.txt
-sed -Ei 's@^🔗@@g' /tmp/ss/link/do_link.txt
-sed -e 's@\r@@g' -i /tmp/ss/link/do_link.txt
-sed -e  's@vmess://@\nvmess:://@g' -i /tmp/ss/link/do_link.txt
-sed -e  's@ssr://@\nssr://@g' -i /tmp/ss/link/do_link.txt
-sed -e  's@ss://@\nss://@g' -i /tmp/ss/link/do_link.txt
-sed -e  's@vmess:://@vmess://@g' -i /tmp/ss/link/do_link.txt
-sed -e '/^$/d' -i /tmp/ss/link/do_link.txt
-echo >> /tmp/ss/link/do_link.txt
-
-while read line
-do
-ssr_line=`echo -n $line | sed -n '1p' | grep 'ssr://'`
-if [ ! -z "$ssr_line" ] ; then
-	echo  "$ssr_line" | awk -F 'ssr://' '{print $2}' >> /tmp/ss/link/ssr_link.txt
-fi
-ss_line=`echo -n $line | sed -n '1p' |grep '^ss://'`
-if [ ! -z "$ss_line" ] ; then
-	echo  "$ss_line" | awk -F 'ss://' '{print $2}' >> /tmp/ss/link/ss_link.txt
-fi
-done < /tmp/ss/link/do_link.txt
-
-#echo > /tmp/ss/link/c_link.txt
-
-do_i=`nvram get rt_ssnum_x`
-if [ -f /tmp/ss/link/ssr_link.txt ] ; then
-	sed -e 's/$/&==/g' -i /tmp/ss/link/ssr_link.txt
-	sed -e "s/_/\//g" -i /tmp/ss/link/ssr_link.txt
-	sed -e "s/\-/\+/g" -i /tmp/ss/link/ssr_link.txt
-	awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ssr_link.txt > /tmp/ss/link/ssr_link2.txt
-	while read line
-	do
-	if [ ! -z "$line" ] ; then
-		add_0
-		add_ssr_link "$line"
-		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
-		if [ ! -f /www/link/link.js ] ; then
-			eval "nvram set rt_ss_name_x$do_i=\"🔗$ss_link_name\""
-			eval "nvram set rt_ss_port_x$do_i=$ss_link_port"
-			eval "nvram set rt_ss_password_x$do_i=\"$ss_link_password\""
-			eval "nvram set rt_ss_server_x$do_i=$ss_link_server"
-			eval "nvram set rt_ss_usage_x$do_i=\"-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam --plugin --plugin-opts \""
-			eval "nvram set rt_ss_method_x$do_i=$ss_link_method"
-			do_i=$(( do_i + 1 ))
-		else
-			link_echo=""
-			link_echo="$link_echo"'["🔗'"$(base64encode "$ss_link_name")"'", '
-			link_echo="$link_echo"'"'"$ss_link_server"'", '
-			link_echo="$link_echo"'"'"$ss_link_port"'", '
-			link_echo="$link_echo"'"'"$(base64encode "$ss_link_password")"'", '
-			link_echo="$link_echo"'"'"$ss_link_method"'", '
-			link_echo="$link_echo"'"", '
-			link_echo="$link_echo"'"", '
-			#link_echo="$link_echo"'"-o '"$ss_link_obfs"' -O '"$ss_link_protocol $ss_link_obfsparam $ss_link_protoparam"'", '
-			link_echo="$link_echo"'"'"$(base64encode "-o $ss_link_obfs -O $ss_link_protocol $ss_link_obfsparam $ss_link_protoparam --plugin --plugin-opts ")"'", '
-			#SS:-o plain -O origin  
-			#if [ "$ss_link_obfs" == "plain" ] && [ "$ss_link_protocol" == "origin" ] ; then
-			#link_echo="$link_echo"'"ss"], '
-			#else
-			link_echo="$link_echo"'"ssr"], '
-			#fi
-			echo "$link_echo" >> $2
-			sed -Ei '/\[\]\]|dellink_ss|^$/d' $2
-			echo '[]]' >> $2
-		fi
-	fi
-	done < /tmp/ss/link/ssr_link2.txt
-fi
-
-if [ -f /tmp/ss/link/ss_link.txt ] ; then
-	#awk  'BEGIN{FS="\n";}  {cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' /tmp/ss/link/ss_link.txt > /tmp/ss/link/ss_link2.txt
-	while read line
-	do
-	if [ ! -z "$line" ] ; then
-		add_0
-		add_ss_link "$line"
-		#echo  $ss_link_name $ss_link_server $ss_link_port $ss_link_password $ss_link_method $ss_link_obfs $ss_link_protocol >> /tmp/ss/link/c_link.txt
-		if [ ! -f /www/link/link.js ] ; then
-			eval "nvram set rt_ss_name_x$do_i=\"🔗$ss_link_name\""
-			eval "nvram set rt_ss_port_x$do_i=$ss_link_port"
-			eval "nvram set rt_ss_password_x$do_i=\"$ss_link_password\""
-			eval "nvram set rt_ss_server_x$do_i=$ss_link_server"
-			eval "nvram set rt_ss_method_x$do_i=$ss_link_method"
-			eval "nvram set rt_ss_usage_x$do_i=\"$ss_link_plugin_opts\""
-			do_i=$(( do_i + 1 ))
-		else
-			link_echo=""
-			link_echo="$link_echo"'["'"🔗$(base64encode "$ss_link_name")"'", '
-			link_echo="$link_echo"'"'"$ss_link_server"'", '
-			link_echo="$link_echo"'"'"$ss_link_port"'", '
-			link_echo="$link_echo"'"'"$(base64encode "$ss_link_password")"'", '
-			link_echo="$link_echo"'"'"$ss_link_method"'", '
-			link_echo="$link_echo"'"", '
-			link_echo="$link_echo"'"", '
-			link_echo="$link_echo"'"'"$(base64encode "$ss_link_plugin_opts")"'", '
-			link_echo="$link_echo"'"ss"], '
-			echo "$link_echo" >> $2
-			sed -Ei '/\[\]\]|dellink_ss|^$/d' $2
-			echo '[]]' >> $2
-		fi
-	fi
-	done < /tmp/ss/link/ss_link.txt
-fi
-
-rm -rf /tmp/ss/link
-}
-
-ssd_link () {
-
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-jq_check
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【SS】" "错误！找不到 jq 程序"
-	return 1
-fi
-fi
-if [ "$down_i_link" == "1" ] ; then
-# 初次导入节点清空旧的订阅
-touch /etc/storage/app_24.sh ;
-sed -Ei '/^🔗/d' /etc/storage/app_24.sh
-sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
-down_i_link=0
-fi
-mkdir -p /tmp/ss/link
-mkdir -p /tmp/link
-rm -f /tmp/ss/link/ssd_link.txt
-cp $1 /tmp/ss/link/ssd_link.txt
-sed -e  's@ssd://@@g' -i /tmp/ss/link/ssd_link.txt
-sed -e  's@$@==@g' -i /tmp/ss/link/ssd_link.txt
-ssd_jq_link="$(cat /tmp/ss/link/ssd_link.txt | sed -n '1p' | base64 -d)"
-ssd_port="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
-ssd_password="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
-ssd_encryption="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
-ssd_plugin="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
-ssd_options="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
-ssd_expiry="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["expiry"])')" # 时间
-ssd_airport="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["airport"])')" # 名称
-ssd_length="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers"]) | length')" # 数量
-[ "$ssd_port" == "null" ] && ssd_port=""
-[ "$ssd_encryption" == "null" ] && ssd_encryption=""
-[ "$ssd_password" == "null" ] && ssd_password=""
-[ "$ssd_plugin" == "null" ] && ssd_plugin=""
-[ "$ssd_options" == "null" ] && ssd_options=""
-logger -t "【SSD订阅】" "【$ssd_airport】过期时间： $ssd_expiry ；节点数量： $ssd_length"
-ssd_length=$(( ssd_length - 1 ))
-if [ "$ssd_length" -ge 0 ] ; then
-	for ssd_x in $(seq 0 $ssd_length)
-	do
-	ssd_jq_x_link="$(echo $ssd_jq_link | jq --compact-output --raw-output 'getpath(["servers",'"$ssd_x"'])')"
-	ssd_server="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["server"])')" # 服务器
-	ssd_remarks="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["remarks"])')" # 节点名称
-	ssd_x_ratio="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["ratio"])')" # ratio
-	ssd_x_ratio="$(echo "$ssd_x_ratio" | awk '{printf("%5.3f\n",$1)}')"
-	[ "$ssd_length" -gt 0 ] && [ "$ssd_x" -gt 0 ] && ilog="$(echo "$ssd_x,$ssd_length" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
-	[ "0" == "$ssd_x" ] && ilog="  0"
-	[ "$ssd_length" == "$ssd_x" ] && ilog=100
-	[ "$ilog" -gt 100 ] && ilog=100
-	logger -t "【SSD订阅$ilog%】" "比率:「$ssd_x_ratio」 [ $ssd_server ] $ssd_remarks"
-	[ ! -z "$(echo $ssd_jq_x_link | grep '"port"')" ] && ssd_x_port="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["port"])')" # 端口
-	[ ! -z "$(echo $ssd_jq_x_link | grep '"encryption"')" ] && ssd_x_encryption="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["encryption"])')" # 加密
-	[ ! -z "$(echo $ssd_jq_x_link | grep '"password"')" ] && ssd_x_password="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["password"])')" # 密码
-	[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin"')" ] && ssd_x_plugin="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin"])')" # plugin
-	[ ! -z "$(echo $ssd_jq_x_link | grep '"plugin_options"')" ] && ssd_x_options="$(echo $ssd_jq_x_link | jq --compact-output --raw-output 'getpath(["plugin_options"])')" # plugin_options
-	[ "$ssd_x_ratio" == "null" ] && ssd_x_ratio=""
-	[ "$ssd_x_ratio" == "1" ] && ssd_x_ratio=""
-	[ "$ssd_x_ratio" == "1.000" ] && ssd_x_ratio=""
-	[ ! -z "$ssd_x_ratio" ] && ssd_x_ratio="「$ssd_x_ratio」"
-	[ "$ssd_x_port" == "null" ] && ssd_x_port=""
-	[ "$ssd_x_encryption" == "null" ] && ssd_x_encryption=""
-	[ "$ssd_x_password" == "null" ] && ssd_x_password=""
-	[ "$ssd_x_plugin" == "null" ] && ssd_x_plugin=""
-	[ "$ssd_x_options" == "null" ] && ssd_x_options=""
-	[ -z "$ssd_x_port" ] && ssd_x_port="$ssd_port"
-	[ -z "$ssd_x_encryption" ] && ssd_x_encryption="$ssd_encryption"
-	[ -z "$ssd_x_password" ] && ssd_x_password="$ssd_password"
-	[ -z "$ssd_x_plugin" ] && ssd_x_plugin="$ssd_plugin"
-	[ -z "$ssd_x_options" ] && ssd_x_options="$ssd_options"
-	ss_link_plugin_opts=" -O origin -o plain --plugin $ssd_x_plugin --plugin-opts $ssd_x_options "
-	link_echo=""
-	link_echo="$link_echo"'["'"🔗$(base64encode "$ssd_remarks $ssd_x_ratio")"'", '
-	link_echo="$link_echo"'"'"$ssd_server"'", '
-	link_echo="$link_echo"'"'"$ssd_x_port"'", '
-	link_echo="$link_echo"'"'"$(base64encode "$ssd_x_password")"'", '
-	link_echo="$link_echo"'"'"$ssd_x_encryption"'", '
-	link_echo="$link_echo"'"", '
-	link_echo="$link_echo"'"", '
-	link_echo="$link_echo"'"'"$(base64encode "$ss_link_plugin_opts")"'", '
-	link_echo="$link_echo"'"ss"], '
-	echo "$link_echo" >> $2
-	sed -Ei '/\[\]\]|dellink_ss|^$/d' $2
-	echo '[]]' >> $2
-	done
-fi
-rm -rf /tmp/ss/link
-}
-
-start_link () {
-
-rt_ssnum_x=$(nvram get rt_ssnum_x)
-[ -z $rt_ssnum_x ] && rt_ssnum_x="0"
-[ $rt_ssnum_x -lt 0 ] && rt_ssnum_x="0" || { [ $rt_ssnum_x -ge 0 ] || rt_ssnum_x="0" ; }
-nvram set rt_ssnum_x=$rt_ssnum_x
-
-rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
-if [ "$rt_ssnum_x_tmp" = "clean" ] ; then
-	shlinksh=$$
-	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
-	rm -f /www/link/link.js
-	echo "var ACL2List = [[], " > /www/link/link.js
-	echo '["🔗显示测试，请重新更新订阅", "192.168.123.1", "8888", "passwd", "aes-128-gcm", "btn-success", "11 ms", " -O origin -o plain --plugin --plugin-opts ", "ss"],' >> /www/link/link.js
-	echo '[]]' >> /www/link/link.js
-	echo '🔗ss://YWVzLTEyOC1nY206dGVzdA==@192.168.100.1:8888#Example1' > /etc/storage/app_24.sh
-	echo '🔗ss://cmM0LW1kNTpwYXNzd2Q=@192.168.100.1:8888/?plugin=obfs-local%3Bobfs%3Dhttp#Example2' >> /etc/storage/app_24.sh
-	nvram set rt_ssnum_x_tmp=0
-	nvram commit
-	logger -t "【SS】" "完成重置订阅文件，请重新更新订阅"
-	rm -f /tmp/link_matching/link_matching.txt
-	exit
-fi
-
-rt_ssnum_x_tmp="`nvram get rt_ssnum_x_tmp`"
-if [ "$rt_ssnum_x_tmp" = "del" ] ; then
-	shlinksh=$$
-	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
-	#echo -n '' > /www/link/link.js
-	sed -Ei '/🔗|dellink_ss|^$/d' /www/link/link.js
-	sed -Ei '/🔗|dellink_ss|^$/d' /etc/storage/app_24.sh
-	clear_link
-	nvram set rt_ssnum_x_tmp=0
-	nvram commit
-	logger -t "【SS】" "完成清空上次订阅节点配置 请按【F5】刷新 web 查看"
-	rm -f /tmp/link_matching/link_matching.txt
-	exit
-fi
-
-A_restart="$(nvram get ss_link_status)"
-#B_restart="$ssr_link"
-B_restart=`echo -n "$ssr_link$ss_link_up" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" != "$B_restart" ] ; then
-nvram set ss_link_status=$B_restart
-	if [ -z "$ssr_link" ] ; then
-		cru.sh d ss_link_update
-		logger -t "【SS】" "停止 SS 服务器订阅"
-		return
-	else
-		if [ "$ss_link_up" != 1 ] ; then
-			cru.sh a ss_link_update "12 */6 * * * $scriptfilepath uplink &" &
-			logger -t "【SS】" "启动 SS 服务器订阅，添加计划任务 (Crontab)，每6小时更新"
-		else
-			cru.sh d ss_link_update
-		fi
-	fi
-fi
-if [ -z "$ssr_link" ] ; then
-	return
-fi
-shlinksh=$$
-eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
-
-if [ ! -f /www/link/link.js ] ; then
-	# 清空上次订阅节点配置
-	clear_link
-else
-	logger -t "【SS】" "服务器订阅：开始更新"
-fi
-ssr_link="$(echo "$ssr_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
-ssr_link_i=""
-if [ -f /www/link/link.js ]  ; then
-[ ! -s /www/link/link.js ] &&  { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; echo '[]]' >> /www/link/link.js ; }
-[ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] && { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; echo '[]]' >> /www/link/link.js ; }
-rm -f /tmp/link_matching/link_matching.txt
-fi
-down_i_link="1"
-if [ ! -z "$(echo "$ssr_link" | awk -F ' ' '{print $2}')" ] ; then
-	for ssr_link_ii in $ssr_link
-	do
-		ssr_link_i="$ssr_link_ii"
-		down_link
-		rm -rf /tmp/ss/link
-	done
-else
-	ssr_link_i="$ssr_link"
-	down_link
-	rm -rf /tmp/ss/link
-fi
-if [ -f /www/link/link.js ]  ; then
-sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-echo '[]]' >> /www/link/link.js
-fi
-logger -t "【SS】" "服务器订阅：更新完成"
-if [ "$ss_link_ping" != 1 ] ; then
-	/etc/storage/script/sh_ezscript.sh allping
-else
-	echo "🔗$ss_link_name：停止ping订阅节点"
-fi
+trojan_link_name=""
+trojan_link_server=""
+trojan_link_port=""
+trojan_link_password=""
 
 }
 
-check_link () {
-
-a2_tmp="$1"
-ssr_link="`nvram get ssr_link`"
-ss_link_up=`nvram get ss_link_up`
-ss_link_ping=`nvram get ss_link_ping`
-app_99="$(nvram get app_99)"
-if [ "$app_99" == 1 ] ; then
-	ss_link_ping=0
-	nvram set ss_link_ping=0
-fi
-
-mkdir -p /etc/storage/link
-touch /etc/storage/link/link.js
-if [ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] ; then
-# 使用 /etc/storage/link 保存订阅节点
-logger -t "【SS】" "服务器订阅：由原来 NVRAM 保存节点配置，转为使用 /etc/storage/link 保存订阅节点"
-# 清空上次订阅节点配置
-clear_link
-nvram commit
-fi
-# 初始化 /etc/storage/link/link.js
-if [ -f /www/link/link.js ] && [ ! -s /www/link/link.js ] ; then
-	rm -f /www/link/link.js
-	echo "var ACL2List = [[], " > /www/link/link.js
-	echo '[]]' >> /www/link/link.js
-fi
-if [ -f /www/link/link.js ] && [ "$(sed -n 1p /www/link/link.js)" != "var ACL2List = [[], " ] ; then
-	rm -f /www/link/link.js
-	echo "var ACL2List = [[], " > /www/link/link.js
-	echo '[]]' >> /www/link/link.js
-fi
-if [ "$a2_tmp" != "X_check_app_24" ] ; then
-check_app_24
-fi
-}
-
-check_app_24 () {
-a1_tmp="$1"
-check_link "X_check_app_24"
-touch /etc/storage/app_24.sh
-if [ -s /etc/storage/app_24.sh ] ; then
-app_95="$(nvram get app_95)"
-A_restart="$(nvram get app_24_sh_status)"
-B_restart="$app_95""$(cat /etc/storage/app_24.sh | grep -v "^🔗")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" == "$B_restart" ] ; then
- # 文件没更新，停止ping
-a1_tmp="X_allping"
-fi
- # 读取批量导入链接节点
-if [ ! -z "$(cat /etc/storage/app_24.sh | grep -v "^#" | grep -v "^$" | grep -v "vmess://" | grep "ss://\|ssr://" )" ] && [ "$(cat /tmp/link/link.txt | grep -v '\[\]\]' | grep -v "ACL2List = " | grep -v "^#" | grep -v "^$" | wc -l)" == "0" ] ; then
-A_restart=""
-fi
-if [ "$A_restart" != "$B_restart" ] ; then
-nvram set app_24_sh_status=$B_restart
- # 备份提取批量导入链接节点
-logger -t "【SS】" "批量导入链接节点：开始解码"
-mkdir -p /tmp/link
-rm -f /tmp/link/link.txt
-do_link "/etc/storage/app_24.sh" "/tmp/link/link.txt"
-logger -t "【SS】" "批量导入链接节点：完成解码"
-if [ "$a1_tmp" != "X_allping" ] ; then
-rm -f /tmp/link_matching/link_matching.txt
-ss_link_ping=`nvram get ss_link_ping`
-if [ "$ss_link_ping" != 1 ] ; then
-	/etc/storage/script/sh_ezscript.sh allping
-else
-	echo "🔗$ss_link_name：停止ping订阅节点"
-fi
-fi
-fi
-fi
-
-}
-
-jq_check () {
-
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	for h_i in $(seq 1 2) ; do
-	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
-	[[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/jq
-	done
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
-	rm -f /opt/bin/jq
-	/etc/storage/script/Sh01_mountopt.sh optwget
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	#opkg update
-	#opkg install jq
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【jq_check】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
-	return 1
-fi
-fi
-fi
-fi
-fi
-}
-
-addlink_ss () {
-
-
-rt_ss_name_x_0="$(base64encode "$(nvram get rt_ss_name_x_0)")"
-rt_ss_server_x_0="$(nvram get rt_ss_server_x_0)"
-rt_ss_port_x_0="$(nvram get rt_ss_port_x_0)"
-rt_ss_password_x_0="$(base64encode "$(nvram get rt_ss_password_x_0)")"
-rt_ss_method_x_0="$(nvram get rt_ss_method_x_0)"
-rt_ss_usage_x_0="$(base64encode "$(nvram get rt_ss_usage_x_0)")"
-ss_type_x_0="$(nvram get ss_type_x_0)"
-
-
-[ ! -s /www/link/link.js ] && { rm -f /www/link/link.js ; echo "var ACL2List = [[], " > /www/link/link.js ; }
-sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-echo '["'"$rt_ss_name_x_0"'", "'"$rt_ss_server_x_0"'", "'"$rt_ss_port_x_0"'", "'"$rt_ss_password_x_0"'", "'"$rt_ss_method_x_0"'", "", "", "'"$rt_ss_usage_x_0"'", "'"$ss_type_x_0"'"], ' >> /www/link/link.js
-echo '[]]' >> /www/link/link.js
-}
-
-dellink_ss () {
-
-shift
-
-while [ $# != 0 ]
-do
-if [ -z "$(echo "$1" | grep "A")" ] && [ -z "$(echo "$1" | grep "ss")" ] && [ ! -z "$1" ] ; then
-del_x="$1"
-del_x="$(echo "$del_x" | tr -d '_' | tr -d ' ')"
-[ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -ge 0 ] || del_x="0" ; }
-if [ "$del_x" -gt 1 ] ; then
-	if [ -z "$(sed -n "$del_x"p /www/link/link.js | grep "\[\"🔗")" ] ; then
-		sed -i "$del_x""c dellink_ss" /www/link/link.js
-	else
-		sed -i "$del_x"'{N;s/🔗//}' /www/link/link.js
-	fi
-fi
-
-fi
-if [ ! -z "$(echo "$1" | grep "A")" ] && [ -z "$(echo "$1" | grep "ss")" ] && [ ! -z "$1" ] ; then
-del_x="$1"
-del_x="$(echo "$del_x" | tr -d 'A' | tr -d '_' | tr -d ' ')"
-[ "$del_x" -lt 1 ] && del_x="0" || { [ "$del_x" -ge 0 ] || del_x="0" ; }
-[ -s /etc/storage/app_24.sh ] && sed -i "$del_x""c dellink_ss" /etc/storage/app_24.sh
-fi
-shift
-done
-sed -Ei '/\[\]\]|dellink_ss|^$/d' /www/link/link.js
-echo '[]]' >> /www/link/link.js
-sed -Ei '/dellink_ss|^$/d' /etc/storage/app_24.sh
-}
-
-if [ "$sh_link_sh" != "sh_link_sh" ] ; then
-case $ACTION in
-addlink)
-	check_link
-	logger -t "【SS】" "addlink： $2"
-	[ "$2" = "ss" ] || [ "$2" = "ssr" ]  && { [ -f /www/link/link.js ] && addlink_ss $@ ; }
-	;;
-dellink)
-	check_link
-	logger -t "【SS】" "dellink： $@"
-	[ -f /www/link/link.js ] && dellink_ss $@
-	;;
-stop)
-	check_link
-	shlinksh=$$
-	eval $(ps -w | grep "sh_link.sh" | grep -v grep | grep -v "$shlinksh" | awk '{print "kill -9 "$1";";}')
-	;;
-start)
-	check_link
-	start_link
-	;;
-start_nvram)
-	rm -f /etc/storage/link/link.js
-	check_link
-	start_link
-	;;
-check)
-	check_link
-	;;
-check_app_24)
-	check_app_24
-	;;
-clear_link)
-	clear_link
-	nvram set rt_ssnum_x_tmp=clean
-	start_link
-	;;
-*)
-	check_link
-	start_link
-	;;
-esac
-fi

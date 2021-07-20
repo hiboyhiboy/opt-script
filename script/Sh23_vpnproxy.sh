@@ -66,6 +66,7 @@ vpnproxy_get_status () {
 A_restart=`nvram get vpnproxy_status`
 B_restart="$vpnproxy_enable$vpnproxy_wan_port$vpnproxy_vpn_port"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set vpnproxy_status=$B_restart
 	needed_restart=1

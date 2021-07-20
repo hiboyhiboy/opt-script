@@ -49,6 +49,7 @@ dnspod_get_status () {
 A_restart=`nvram get dnspod_status`
 B_restart="$dnspod_enable$dnspod_username$dnspod_password$dnspod_Token$dnspod_domian$dnspod_host$dnspod_domian2$dnspod_host2$dnspod_domian6$dnspod_host6$dnspod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set dnspod_status=$B_restart
 	needed_restart=1
@@ -79,6 +80,9 @@ fi
 dnspod_keep () {
 dnspod_start
 logger -t "【DNSPod动态域名】" "守护进程启动"
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof Sh41_dnspod.sh\`" ] && nvram set dnspod_status=00 && logger -t "【dnspod】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【dnspod】|^$/d' /tmp/script/_opt_script_check # 【dnspod】
+OSC
 while true; do
 sleep 41
 sleep $dnspod_interval
@@ -92,6 +96,7 @@ done
 }
 
 dnspod_close () {
+sed -Ei '/【dnspod】|^$/d' /tmp/script/_opt_script_check
 kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_dnspod"
 kill_ps "_dnspod.sh"

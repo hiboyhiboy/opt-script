@@ -77,6 +77,7 @@ ssserver_get_status () {
 A_restart=`nvram get ssserver_status`
 B_restart="$ssserver_enable$ssserver_method$ssserver_password$ssserver_port$ssserver_time$ssserver_udp$ssserver_ota$ssserver_usage"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ssserver_status=$B_restart
 	needed_restart=1

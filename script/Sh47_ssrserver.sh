@@ -65,6 +65,7 @@ ssrserver_get_status () {
 A_restart=`nvram get ssrserver_status`
 B_restart="$ssrserver_enable$ssrserver_update$(cat /etc/storage/SSRconfig_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ssrserver_status=$B_restart
 	needed_restart=1

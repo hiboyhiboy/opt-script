@@ -62,6 +62,7 @@ serverchan_get_status () {
 A_restart=`nvram get serverchan_status`
 B_restart="$serverchan_enable$serverchan_sckey$serverchan_notify_1$serverchan_notify_2$serverchan_notify_3$serverchan_notify_4$(cat /etc/storage/serverchan_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set serverchan_status=$B_restart
 	needed_restart=1
@@ -175,7 +176,7 @@ serverchan_notify_1=`nvram get serverchan_notify_1`
 serverchan_notify_2=`nvram get serverchan_notify_2`
 serverchan_notify_3=`nvram get serverchan_notify_3`
 serverchan_notify_4=`nvram get serverchan_notify_4`
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 mkdir -p /tmp/var
 resub=1
 # 获得外网地址

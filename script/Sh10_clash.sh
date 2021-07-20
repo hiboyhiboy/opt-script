@@ -38,7 +38,10 @@ fi
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 #nvramshow=`nvram showall | grep '=' | grep clash | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-mismatch="$(nvram get app_101)"
+clash_input="$(nvram get app_93)"
+[ -z $clash_input ] && clash_input=0 && nvram set clash_input=0
+clash_mixed="$(nvram get app_101)"
+[ -z $clash_mixed ] && clash_mixed=0 && nvram set clash_mixed=0
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_port=`nvram get app_6`
@@ -99,8 +102,8 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$mismatch$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114"
-B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114"
+B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")""$(cat /etc/storage/app_33.sh | grep -v '^#' | grep -v "^$")"
 [ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
 [ "$(nvram get app_86)" = "clash_wget_geoip" ] && update_geoip
@@ -109,6 +112,7 @@ if [ "$(nvram get app_86)" = "clash_save_yml" ] ; then
 reload_api
 fi
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set clash_status=$B_restart
 	needed_restart=1
@@ -130,11 +134,12 @@ fi
 }
 
 clash_get_2_status () {
-C_restart=`nvram get clash_2_status`
-D_restart="$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
-D_restart=`echo -n "$D_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$C_restart" != "$D_restart" ] ; then
-	nvram set clash_2_status=$D_restart
+D_restart=`nvram get clash_2_status`
+C_restart="$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
+C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_C_re
+if [ "$D_restart" != "$C_restart" ] ; then
+	nvram set clash_2_status=$C_restart
 	needed_2_restart=1
 else
 	needed_2_restart=0
@@ -174,25 +179,28 @@ sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
 	[ -z "\`pidof clash\`" ] || [ ! -s "$SVC_PATH" ] && nvram set clash_status=00 && logger -t "【clash】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check # 【clash】
 OSC
-return
+#return
 fi
 clash_enable=`nvram get app_88`
 while [ "$clash_enable" = "1" ]; do
 	clash_follow=`nvram get clash_follow`
 	if [ "$clash_follow" = "1" ] ; then
 		echo clash_follow
+		ss_internet="$(nvram get ss_internet)"
+		[ "$ss_internet" != "1" ] && nvram set ss_internet="1"
 	fi
-sleep 218
+sleep 68
 clash_enable=`nvram get app_88`
 done
 }
 
 clash_close () {
 kill_ps "$scriptname keep"
+nvram set ss_internet="0"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
 # 保存web节点选择
-reload_yml "check" ; reload_yml "save"
+#reload_yml "check" ; reload_yml "save"
 killall clash
 killall -9 clash
 restart_dhcpd
@@ -204,6 +212,8 @@ kill_ps "$scriptname"
 
 clash_start () {
 check_webui_yes
+ss_internet="$(nvram get ss_internet)"
+[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
 SVC_PATH="$(which clash)"
 [ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/clash"
 if [ ! -s "$SVC_PATH" ] ; then
@@ -300,6 +310,13 @@ sleep 7
 [ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
 [ -z "`pidof clash`" ] && logger -t "【clash】" "启动失败, 注意检clash是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
 clash_get_status
+if [ "$clash_mixed" == "1" ] ; then
+logger -t "【clash】" "双开 clash 开启 mixed 代理"
+su_cmd2="$SVC_PATH -d /opt/app/clash/config2"
+eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
+
+fi
+
 
 if [ "$clash_follow" = "1" ] ; then
 Sh99_ss_tproxy.sh auser_check "Sh10_clash.sh"
@@ -321,8 +338,9 @@ logger -t "【clash】" "①电脑设置 DNS 自动获取路由 ip。检查 host
 logger -t "【clash】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
 # 透明代理
 fi
+nvram set ss_internet="1"
 # 恢复web节点选择
-reload_yml "check" ; reload_yml "set"
+#reload_yml "check" ; reload_yml "set"
 eval "$scriptfilepath keep &"
 
 exit 0
@@ -486,41 +504,12 @@ else
 	cp -f $yml_tmp $app_20
 	#yq w -i $app_20 allow-lan true
 	#rm_temp
-	#config_nslookup_server /etc/storage/app_20.sh
 	logger -t "【clash】" "下载 clash 配置完成！"
 	rm -f $yml_tmp
 fi
 [ "$app_120" == "2" ] && nvram set clash_status=wget_yml
 logger -t "【clash】" "服务器订阅：更新完成"
 logger -t "【clash】" "请按F5或刷新 web 页面刷新配置"
-}
-
-
-jq_check () {
-
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	for h_i in $(seq 1 2) ; do
-	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
-	[[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/jq
-	done
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【jq_check】" "找不到 jq，安装 opt 程序"
-	rm -f /opt/bin/jq
-	/etc/storage/script/Sh01_mountopt.sh optwget
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	#opkg update
-	#opkg install jq
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【jq_check】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
-	return 1
-fi
-fi
-fi
-fi
-fi
 }
 
 yq_check () {
@@ -580,38 +569,6 @@ cp -f $dns_ip $config_yml
 rm -f $dns_ip
 fi
 
-}
-
-config_nslookup_server () {
-[ -z "$mismatch" ] && return
-mkdir -p /tmp/clash
-cat $1 | grep '^  server: ' > /tmp/clash/server.txt
-ilox=$(cat /tmp/clash/server.txt | wc -l)
-do_i=0
-while read Proxy_server1
-do
-Proxy_server2="$(echo "$Proxy_server1" | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -E "$mismatch")"
-if [ -z $(echo "$Proxy_server2" | grep -E -o '([0-9]+\.){3}[0-9]+') ] && [ ! -z "$Proxy_server2" ] ; then 
-ilog=""
-[ "$do_i" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$do_i,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
-[ -z "$ilog" ] && ilog="  0"
-[ "$ilog" -gt 100 ] && ilog=100
-[ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp % 【$Proxy_server2】"
-if [ -z $(echo "$Proxy_server2" | grep : | grep -v "\.") ] ; then 
-resolveip=`ping -4 -n -q -c1 -w1 -W1 $Proxy_server2 | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
-[ -z "$resolveip" ] && resolveip=`ping -6 -n -q -c1 -w1 -W1 $Proxy_server2 | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'` 
-Proxy_server3=$resolveip
-sed -e 's/^  server: '"$Proxy_server2"'/  server: '"$Proxy_server3"'/g' -i $1
-fi
-fi
-do_i=`expr $do_i + 1`
-done < /tmp/clash/server.txt
-rm -f /tmp/clash/server.txt
-ilog=""
-[ "$do_i" -gt 0 ] && [ "$ilox" -gt 0 ] && ilog="$(echo "$do_i,$ilox" | awk -F ',' '{printf("%3.0f\n", $1/$2*100)}')"
-[ -z "$ilog" ] && ilog="  0"
-[ "$ilog" -gt 100 ] && ilog=100
-[ "$ilog_tmp" != "$ilog" ] && ilog_tmp=$ilog && logger -t "【clash】" "服务器域名转换IP完成 $ilog_tmp %"
 }
 
 rm_temp () {
@@ -686,6 +643,60 @@ EEE
 	chmod 755 "$app_21"
 fi
 
+app_33="/etc/storage/app_33.sh"
+if [ ! -f "$app_33" ] || [ ! -s "$app_33" ] ; then
+	cat > "$app_33" <<-\EEE
+#!/bin/bash
+[ -z "$config_yml" ] && config_yml="/opt/app/clash/config/config.yaml"
+# 先删除旧配置
+echo '- command: delete
+  path: proxies(name==V2Ray本地代理)
+- command: delete
+  path: proxy-groups[*].proxies.(.==V2Ray本地代理)
+- command: delete
+  path: proxies(name==SS本地代理)
+- command: delete
+  path: proxy-groups[*].proxies.(.==SS本地代理)
+' | yq w -i -s - $config_yml
+
+# 再添加本地代理节点，若不支持udp需禁用
+echo '- command: update 
+  path: proxies[+]
+  value:
+    name: V2Ray本地代理
+    type: socks5
+    server: 127.0.0.1
+    port: 1088
+    # username: username
+    # password: password
+    # tls: true
+    # skip-cert-verify: true
+    udp: true
+- command: update 
+  path: proxy-groups[*].proxies[+]
+  value:
+    V2Ray本地代理
+- command: update 
+  path: proxies[+]
+  value:
+    name: SS本地代理
+    type: socks5
+    server: 127.0.0.1
+    port: 1081
+    # username: username
+    # password: password
+    # tls: true
+    # skip-cert-verify: true
+    udp: true
+- command: update 
+  path: proxy-groups[*].proxies[+]
+  value:
+    SS本地代理
+' | yq w -i -s - $config_yml
+EEE
+	chmod 755 "$app_33"
+fi
+
 }
 
 initconfig
@@ -729,12 +740,12 @@ if [ "$secret" != "$clash_secret" ] ; then
 yq w -i /etc/storage/app_20.sh secret "$clash_secret"
 rm_temp
 fi
+mkdir -p /opt/app/clash/config
 if [ "$app_default_config" = "1" ] ; then
 logger -t "【clash】" "不改写配置，直接使用原始配置启动！（有可能端口不匹配导致功能失效）"
 logger -t "【clash】" "请手动修改配置， HTTP 代理端口：7890"
 logger -t "【clash】" "请手动修改配置， SOCKS5 代理端口：7891"
 logger -t "【clash】" "请手动修改配置，透明代理端口：7892"
-mkdir -p /opt/app/clash/config
 cp -f /etc/storage/app_20.sh /opt/app/clash/config/config.yaml
 else
  # 改写配置适配脚本
@@ -765,21 +776,26 @@ initconfig
 cp -f /etc/storage/app_21.sh $config_dns_yml
 
 fi
-
 logger -t "【clash】" "初始化 clash 配置"
-mkdir -p /opt/app/clash/config
 config_yml="/opt/app/clash/config/config.yaml"
 rm_temp
 cp -f /etc/storage/app_20.sh $config_yml
 rm -f /opt/app/clash/config/config.yml
 ln -sf $config_yml /opt/app/clash/config/config.yml
+if [ "$clash_input" == "1" ] ; then
+logger -t "【clash】" "配置 clash 添加本地代理节点"
+# 更新 yq
+[ -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && rm -rf /opt/bin/yq /opt/opt_backup/bin/yq
+wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
+[ ! -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && source /etc/storage/app_33.sh
+if [ ! -s $config_yml ] ; then
+logger -t "【clash】" "yq 添加本地代理节点 配置错误！请检查配置！"
+cp -f /etc/storage/app_20.sh $config_yml
+fi
+fi
 sed -Ei '/^$/d' $config_yml
 yq w -i $config_yml allow-lan true
 rm_temp
-# sed -e '/^$/d' -i $config_yml
-# sed -r 's@^[ ]+#@#@g' -i $config_yml
-# sed -e '/^#/d' -i $config_yml
-# sed -e 's@#@♯@g' -i $config_yml
 logger -t "【clash】" "允许局域网的连接"
 if [ "$clash_http_enable" != "0" ] ; then
 yq w -i $config_yml port 7890
@@ -808,7 +824,6 @@ fi
 logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
 yq d -i $config_yml dns
 rm_temp
-config_nslookup_server $config_yml
 yq w -i $config_yml external-controller $clash_ui
 rm_temp
 yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
@@ -831,9 +846,43 @@ cat /tmp/clash/dns.yml >> $config_yml
 #yq m -x -i $config_yml /tmp/clash/dns.yml
 #rm_temp
 #merge_dns_ip
+update_2_yml
 fi
 fi
 logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
+}
+
+update_2_yml () {
+[ "$clash_mixed" != "1" ] && return
+logger -t "【clash】" "初始化 clash 双开 mixed 代理"
+mkdir -p /opt/app/clash/config2
+ln -sf /opt/app/clash/config/Country.mmdb /opt/app/clash/config2/Country.mmdb
+config_2_yml="/opt/app/clash/config2/config.yaml"
+rm_temp
+cp -f /opt/app/clash/config/config.yaml $config_2_yml
+rm -f /opt/app/clash/config2/config.yml
+ln -sf $config_2_yml /opt/app/clash/config2/config.yml
+yq d -i $config_2_yml port
+rm_temp
+yq d -i $config_2_yml socks-port
+rm_temp
+yq d -i $config_2_yml redir-port
+rm_temp
+yq d -i $config_2_yml tproxy-port
+rm_temp
+yq d -i $config_2_yml mixed-port
+rm_temp
+yq d -i $config_2_yml dns
+rm_temp
+#yq w -i $config_2_yml dns.listen 9053
+#rm_temp
+#yq d -i $config_2_yml dns.ipv6
+#rm_temp
+yq w -i $config_2_yml mixed-port 7893
+rm_temp
+yq w -i $config_2_yml external-controller "0.0.0.0:9091"
+
+
 }
 
 reload_api () {
@@ -841,10 +890,10 @@ reload_api () {
 [ -z "`pidof clash`" ] && return
 #api热重载
 reload_yml "check"
-reload_yml "save"
+#reload_yml "save"
 update_yml
 reload_yml "reload"
-reload_yml "set"
+#reload_yml "set"
 Sh99_ss_tproxy.sh auser_check "Sh10_clash.sh"
 ss_tproxy_set "Sh10_clash.sh"
 Sh99_ss_tproxy.sh x_resolve_svraddr "Sh10_clash.sh"
@@ -866,13 +915,13 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		eturn 1
 	fi
 fi
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-jq_check
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "错误！找不到 jq 程序"
-	return 1
-fi
-fi
+# if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+# jq_check
+# if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	# logger -t "【clash】" "错误！找不到 jq 程序"
+	# return 1
+# fi
+# fi
 mkdir -p /etc/storage/clash
 secret="$(yq r /opt/app/clash/config/config.yaml secret)"
 rm_temp
@@ -880,23 +929,24 @@ rm_temp
 api_port="$(yq r /opt/app/clash/config/config.yaml external-controller | awk -F ':' '{print $2}')"
 rm_temp
 fi
-if [ "$1" == "save" ] ; then
-logger -t "【clash】" "保存web节点选择"
-curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).name' > /tmp/Selector_name.txt
-[ -s /tmp/Selector_name.txt ] && { rm -f /etc/storage/clash/Selector_name.txt ;  cat /tmp/Selector_name.txt | while read now_txt; do enc "$now_txt" >> /etc/storage/clash/Selector_name.txt ; done ; }
-curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).now' > /tmp/Selector_now.txt
-[ -s /tmp/Selector_now.txt ] && cp -f /tmp/Selector_now.txt /etc/storage/clash/Selector_now.txt
-rm -f /tmp/Selector_name.txt /tmp/Selector_now.txt
-logger -t "【clash】" "保存web节点选择，完成！"
-fi
-if [ "$1" == "set" ] ; then
-logger -t "【clash】" "恢复web节点选择"
-[ -s /etc/storage/clash/Selector_name.txt ] && [ -s /etc/storage/clash/Selector_now.txt ] && eval "$(awk 'NR==FNR{a[NR]=$0}NR>FNR{print "curl -X PUT -w \"\%\{http_code\}\" -H \"Authorization: Bearer '$secret'\" -H \"Content-Type: application\/json\" -d \047\{\"name\": \""$0"\"\}\047  \047http://127.0.0.1:'"$api_port"'/proxies/"a[FNR]"\047"}' /etc/storage/clash/Selector_name.txt /etc/storage/clash/Selector_now.txt)"
-logger -t "【clash】" "恢复web节点选择，完成！"
-fi
+# if [ "$1" == "save" ] ; then
+# logger -t "【clash】" "保存web节点选择"
+# curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).name' > /tmp/Selector_name.txt
+# [ -s /tmp/Selector_name.txt ] && { rm -f /etc/storage/clash/Selector_name.txt ;  cat /tmp/Selector_name.txt | while read now_txt; do enc "$now_txt" >> /etc/storage/clash/Selector_name.txt ; done ; }
+# curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).now' > /tmp/Selector_now.txt
+# [ -s /tmp/Selector_now.txt ] && cp -f /tmp/Selector_now.txt /etc/storage/clash/Selector_now.txt
+# rm -f /tmp/Selector_name.txt /tmp/Selector_now.txt
+# logger -t "【clash】" "保存web节点选择，完成！"
+# fi
+# if [ "$1" == "set" ] ; then
+# logger -t "【clash】" "恢复web节点选择"
+# [ -s /etc/storage/clash/Selector_name.txt ] && [ -s /etc/storage/clash/Selector_now.txt ] && eval "$(awk 'NR==FNR{a[NR]=$0}NR>FNR{print "curl -X PUT -w \"\%\{http_code\}\" -H \"Authorization: Bearer '$secret'\" -H \"Content-Type: application\/json\" -d \047\{\"name\": \""$0"\"\}\047  \047http://127.0.0.1:'"$api_port"'/proxies/"a[FNR]"\047"}' /etc/storage/clash/Selector_name.txt /etc/storage/clash/Selector_now.txt)"
+# logger -t "【clash】" "恢复web节点选择，完成！"
+# fi
 if [ "$1" == "reload" ] ; then
 logger -t "【clash】" "api热重载配置"
 curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config/config.yaml"}' 'http://127.0.0.1:'"$api_port"'/configs?force=true'
+[ "$clash_mixed" == "1" ] && curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config2/config.yaml"}' 'http://127.0.0.1:9091/configs?force=true'
 logger -t "【clash】" "api热重载配置，完成！"
 fi
 

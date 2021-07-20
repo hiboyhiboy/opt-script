@@ -13,7 +13,7 @@ hiboyscript="https://opt.cn2qq.com/opt-script"
 hiboyfile2="https://raw.githubusercontent.com/hiboyhiboy/opt-file/master"
 hiboyscript2="https://raw.githubusercontent.com/hiboyhiboy/opt-script/master"
 # --user-agent
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 ACTION=$1
 scriptfilepath=$(cd "$(dirname "$0")"; pwd)/$(basename $0)
 #echo $scriptfilepath
@@ -26,45 +26,23 @@ cmd_log2=' 2>&1 | awk '"'"'{cmd="logger -t '"'"'"'"'"'"'"'"'【'"'"'$cmd_name'"'
 chmod 755 /etc/storage/*.sh
 ulimit -HSn 65536
 
-x_check_timeout_network_x()
-{
-[ -z "$(which check_network)" ] && return
-check_tmp="/tmp/check_timeout/$1"
-[ "$2" == "2" ] && ss_link_3="0" && re_txt=4
-check_network "$ss_link_3"
-if [ "$?" != "0" ] ; then
-	check_network "$ss_link_3"
-	if [ "$?" == "0" ] ; then
-	echo "check$2=200" >> $check_tmp
-	else
-	echo "check$2=404" >> $check_tmp
-	fi
-else
-	echo "check$2=200" >> $check_tmp
-fi
-echo "check$re_txt=200" >> $check_tmp
-sleep 8
-rm -f $check_tmp
-}
-
 x_wget_check_timeout_network_x()
 {
 [ -z "$(which wget)" ] && return
 check_tmp="/tmp/check_timeout/$1"
-[ "$2" == "2" ] && ss_link_3="$ss_link_2" && re_txt=4
-wget --user-agent "$user_agent" -q  -T 3 -t 1 "$ss_link_3" -O /dev/null
+wget --user-agent "$user_agent" -q  -T 3 -t 1 "$ss_link_2" -O /dev/null --spider --server-response
 if [ "$?" != "0" ] ; then
-	wget --user-agent "$user_agent" -q  -T 3 -t 2 "$ss_link_3" -O /dev/null
+	wget --user-agent "$user_agent" -q  -T 3 -t 2 "http://www.google.com/" -O /dev/null --spider --server-response
 	if [ "$?" == "0" ] ; then
-	echo "check$2=200" >> $check_tmp
+	echo "check2=200" >> $check_tmp
 	else
-	echo "check$2=404" >> $check_tmp
+	echo "check2=404" >> $check_tmp
 	fi
 else
-	echo "check$2=200" >> $check_tmp
+	echo "check2=200" >> $check_tmp
 fi
-echo "check$re_txt=200" >> $check_tmp
-sleep 8
+echo "checkB=200" >> $check_tmp
+sleep 3
 rm -f $check_tmp
 }
 
@@ -72,74 +50,51 @@ x_curl_check_timeout_network_x()
 {
 [ -z "$(which curl)" ] && return
 check_tmp="/tmp/check_timeout/$1"
-[ "$2" == "2" ] && ss_link_3="$ss_link_2" && re_txt=4
-check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)"
+check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null -I)"
 if [ "$check_code" != "200" ] ; then
-	check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_3" -o /dev/null)"
+	check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "http://www.google.com/" -o /dev/null -I)"
 	if [ "$check_code" == "200" ] ; then
-	echo "check$2=200" >> $check_tmp
+	echo "check2=200" >> $check_tmp
 	else
-	echo "check$2=404" >> $check_tmp
+	echo "check2=404" >> $check_tmp
 	fi
 else
-	echo "check$2=200" >> $check_tmp
+	echo "check2=200" >> $check_tmp
 fi
-echo "check$re_txt=200" >> $check_tmp
-sleep 8
+echo "checkA=200" >> $check_tmp
+sleep 3
 rm -f $check_tmp
 }
 
 check_timeout_network()
 {
 mkdir -p /tmp/check_timeout
-[ "$2" == "check" ] && rm -f /tmp/check_timeout/check
+[ -s /tmp/check_timeout/check ] && source /tmp/check_timeout/check
+if [ "$2" == "check" ] || [ "$check2" == "404" ] ; then
+rm -f /tmp/check_timeout/check
+fi
 [ ! -f /tmp/check_timeout/ver_time ] && echo -n "0" > /tmp/check_timeout/ver_time
-if [ $(($(date "+%y%m%d%H%M") - $(cat /tmp/check_timeout/ver_time))) -ge 1 ] || [ ! -s /tmp/check_timeout/check ] ; then
-	echo "check_timeout_network 开始新的检测"
-	echo -n "$(date "+%y%m%d%H%M")" > /tmp/check_timeout/ver_time
+new_time=$(date "+%y%m%d%H%M")
+if [ $(($new_time - $(cat /tmp/check_timeout/ver_time))) -ge 3 ] || [ ! -s /tmp/check_timeout/check ] ; then
+	echo "$new_time check_timeout_network 开始新的检测"
+	echo -n "$new_time" > /tmp/check_timeout/ver_time
 else
-	echo "check_timeout_network 间隔少于1分钟直接返回上次检测值"
-	[ -s /tmp/check_timeout/check ] && source /tmp/check_timeout/check
+	echo "$new_time check_timeout_network 间隔少于3分钟直接返回上次检测值 $check2"
 	return
 fi
 ss_link_2=`nvram get ss_link_2`
+checkA="404"
+checkB="404"
 check2="404"
-check4="404"
-if [ "$1" != "wget_check" ] ; then
-SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
-[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
-rm -f /tmp/check_timeout/$RND_NUM
-eval 'x_check_timeout_network_x "$RND_NUM" "2"' &
-sleep 1
-i_timeout=1
-while [ "$check4" == "404" ] ;
-do
-sleep 1
-[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
-i_timeout=`expr $i_timeout + 1`
-if [ "$i_timeout" -gt 10 ] ; then
-echo "【check_timeout_network】 网络连接，超时 10 秒！ $check2"
-break
-fi
-done
-[ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
-rm -f /tmp/check_timeout/$RND_NUM
-echo "check2=$check2" >> /tmp/check_timeout/check
-fi
 
-if [ ! -z "$(which curl)" ] ; then 
-if [ "$check2" == "404" ] ; then 
+if [ ! -z "$(which curl)" ] ; then
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 [ "$RND_NUM" -lt 2 ] && RND_NUM="2" || { [ "$RND_NUM" -ge 2 ] || RND_NUM="2" ; }
 rm -f /tmp/check_timeout/$RND_NUM
-check2="404"
-check4="404"
-eval 'x_curl_check_timeout_network_x "$RND_NUM" "2"' &
-sleep 1
+eval 'x_curl_check_timeout_network_x "$RND_NUM"' &
 i_timeout=1
-while [ "$check4" == "404" ] ;
+while [ "$checkA" == "404" ] ;
 do
 sleep 1
 [ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
@@ -153,18 +108,15 @@ done
 rm -f /tmp/check_timeout/$RND_NUM
 echo "check2=$check2" > /tmp/check_timeout/check
 fi
-fi
 
 if [ "$check2" == "404" ] ; then 
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 1 100|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 [ "$RND_NUM" -lt 3 ] && RND_NUM="3" || { [ "$RND_NUM" -ge 3 ] || RND_NUM="3" ; }
 rm -f /tmp/check_timeout/$RND_NUM
-check2="404"
-check4="404"
-eval 'x_wget_check_timeout_network_x "$RND_NUM" "2"' &
+eval 'x_wget_check_timeout_network_x "$RND_NUM"' &
 i_timeout=1
-while [ "$check4" == "404" ] ;
+while [ "$checkB" == "404" ] ;
 do
 sleep 1
 [ -s /tmp/check_timeout/$RND_NUM ] && source /tmp/check_timeout/$RND_NUM
@@ -249,4 +201,13 @@ if [ ! -f /tmp/webui_yes ] ; then
 	exit 0
 fi
 }
+
+cut_B_re () {
+B_restart="$(echo ${B_restart:0-5})"
+}
+
+cut_C_re () {
+C_restart="$(echo ${C_restart:0-5})"
+}
+
 

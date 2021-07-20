@@ -66,6 +66,7 @@ tinyproxy_get_status () {
 A_restart=`nvram get tinyproxy_status`
 B_restart="$tinyproxy_enable$tinyproxy_path$tinyproxy_port$(cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set tinyproxy_status=$B_restart
 	needed_restart=1

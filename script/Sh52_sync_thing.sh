@@ -80,6 +80,7 @@ syncthing_get_status () {
 A_restart=`nvram get syncthing_status`
 B_restart="$syncthing_enable$syncthing_wan$syncthing_wan_port"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set syncthing_status=$B_restart
 	needed_restart=1

@@ -89,6 +89,7 @@ huaweidns_get_status () {
 A_restart=`nvram get huaweidns_status`
 B_restart="$huaweidns_enable$huaweidns_username$huaweidns_password$huaweidns_domian$huaweidns_host$huaweidns_domian2$huaweidns_host2huaweidns_domian6$huaweidns_host6$huaweidns_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set huaweidns_status=$B_restart
 	needed_restart=1
@@ -120,6 +121,9 @@ get_token
 get_Zone_ID
 huaweidns_start
 logger -t "【huaweidns动态域名】" "守护进程启动"
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof Sh43_huaweidns.sh\`" ] && nvram set huaweidns_status=00 && logger -t "【huaweidns】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【huaweidns】|^$/d' /tmp/script/_opt_script_check # 【huaweidns】
+OSC
 expires_time=1
 while true; do
 sleep 43
@@ -138,7 +142,7 @@ done
 }
 
 huaweidns_close () {
-
+sed -Ei '/【huaweidns】|^$/d' /tmp/script/_opt_script_check
 kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_huaweidns"
 kill_ps "_huaweidns.sh"

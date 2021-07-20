@@ -91,6 +91,7 @@ aliddns_get_status () {
 A_restart=`nvram get aliddns_status`
 B_restart="$aliddns_enable$aliddns_interval$aliddns_ak$aliddns_sk$aliddns_domain$aliddns_name$aliddns_domain2$aliddns_name2$aliddns_domain6$aliddns_name6$aliddns_ttl$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set aliddns_status=$B_restart
 	needed_restart=1
@@ -120,6 +121,9 @@ fi
 aliddns_keep () {
 aliddns_start
 logger -t "【AliDDNS动态域名】" "守护进程启动"
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof Sh42_aliddns.sh\`" ] && nvram set aliddns_status=00 && logger -t "【aliddns】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【aliddns】|^$/d' /tmp/script/_opt_script_check # 【aliddns】
+OSC
 while true; do
 sleep 43
 sleep $aliddns_interval
@@ -134,7 +138,7 @@ done
 }
 
 aliddns_close () {
-
+sed -Ei '/【aliddns】|^$/d' /tmp/script/_opt_script_check
 kill_ps "$scriptname keep"
 kill_ps "/tmp/script/_aliddns"
 kill_ps "_aliddns.sh"

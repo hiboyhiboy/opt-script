@@ -148,6 +148,7 @@ wxsend_get_status () {
 A_restart=`nvram get wxsend_status`
 B_restart="$wxsend_enable$wxsend_port$tmall_enable$wxsend_appid$wxsend_appsecret$wxsend_touser$wxsend_template_id$wxsend_cgi$wxsend_notify_1$wxsend_notify_2$wxsend_notify_3$wxsend_notify_4$(cat /etc/storage/app_30.sh | grep -v '^#' | grep -v "^$")$(cat /etc/storage/app_31.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set wxsend_status=$B_restart
 	needed_restart=1

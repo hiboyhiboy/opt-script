@@ -88,6 +88,7 @@ chinadns_get_status () {
 A_restart=`nvram get chinadns_status`
 B_restart="$chinadns_enable$chinadns_path$chinadns_m$chinadns_d$chinadns_dnss"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set chinadns_status=$B_restart
 	needed_restart=1

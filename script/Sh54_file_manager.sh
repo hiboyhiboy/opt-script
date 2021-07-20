@@ -72,6 +72,7 @@ filemanager_get_status () {
 A_restart=`nvram get filemanager_status`
 B_restart="$filemanager_enable$caddy_enable$filemanager_wan$filemanager_wan_port$(cat /etc/storage/app_5.sh /etc/storage/app_11.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set filemanager_status=$B_restart
 	needed_restart=1

@@ -68,6 +68,7 @@ ddnsto_get_status () {
 A_restart=`nvram get ddnsto_status`
 B_restart="$ddnsto_enable$ddnsto_token"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ddnsto_status=$B_restart
 	needed_restart=1

@@ -1,19 +1,16 @@
 #!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
+source /etc/storage/script/sh_link.sh
+
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
-v2ray_enable=`nvram get v2ray_enable`
-[ -z $v2ray_enable ] && v2ray_enable=0 && nvram set v2ray_enable=0
 ipt2socks_enable=`nvram get app_104`
 [ -z $ipt2socks_enable ] && ipt2socks_enable=0 && nvram set app_104=0
-v2ray_follow=`nvram get v2ray_follow`
-[ -z $v2ray_follow ] && v2ray_follow=0 && nvram set v2ray_follow=0
 app_95="$(nvram get app_95)"
 ss_matching_enable="$(nvram get ss_matching_enable)"
 [ -z $ss_matching_enable ] && ss_matching_enable=0 && nvram set ss_matching_enable=0
 [ "$ss_matching_enable" == "0" ] && [ -z "$app_95" ] && app_95="." && nvram set app_95="."
-[ "$ss_matching_enable" == "1" ] && [ ! -z "$app_95" ] && app_95="" && nvram set app_95=""
 ss_ip46=`nvram get ss_ip46`
 [ -z $ss_ip46 ] && ss_ip46=0 && nvram set ss_ip46=0
 ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
@@ -48,18 +45,11 @@ if [ "$ss_threads" != "1" ] ;then
 	fi
 fi
 fi
-v2ray_path=`nvram get v2ray_path`
-[ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
-
 koolproxy_enable=`nvram get koolproxy_enable`
 ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
-ss_update=`nvram get ss_update`
-ss_update_hour=`nvram get ss_update_hour`
-ss_update_min=`nvram get ss_update_min`
 
 ss_keep_check=`nvram get ss_keep_check`
 [ -z $ss_keep_check ] && ss_keep_check=1 && nvram set ss_keep_check=$ss_keep_check
-#================华丽的分割线====================================
 #set -x
 #初始化开始
 FWI="/tmp/firewall.shadowsocks.pdcn" # firewall include file
@@ -67,10 +57,6 @@ FWI="/tmp/firewall.shadowsocks.pdcn" # firewall include file
 ss_type=`nvram get ss_type`
 [ -z $ss_type ] && ss_type=0 && nvram set ss_type=$ss_type
 ss_run_ss_local=`nvram get ss_run_ss_local`
-
-kcptun_enable=`nvram get kcptun_enable`
-[ -z $kcptun_enable ] && kcptun_enable=0 && nvram set kcptun_enable=$kcptun_enable
-[ "$kcptun_enable" = "0" ] && kcptun_server=""
 
 ss_server=`nvram get ss_server`
 ss_server_port=`nvram get ss_server_port`
@@ -122,7 +108,7 @@ ss_upd_rules=`nvram get ss_upd_rules`
 # 单机但限定目的端口  192.168.123.10 --dport 3000:30010
 # 如果需要更加细节的设置，可以让用户自己修改一个iptables 文件来处理。
 
-ss_usage=" `nvram get ss_usage`"
+ss_usage="$(nvram get ss_usage)"
 
 LAN_AC_IP=`nvram get LAN_AC_IP`
 [ -z $LAN_AC_IP ] && LAN_AC_IP=0 && nvram set LAN_AC_IP=$LAN_AC_IP
@@ -132,9 +118,6 @@ ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
 ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
 
-ss_check=`nvram get ss_check`
-ss_updatess=`nvram get ss_updatess`
-[ -z $ss_updatess ] && ss_updatess=0 && nvram set ss_updatess=$ss_updatess
 
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 chinadns_enable=`nvram get app_1`
@@ -170,23 +153,6 @@ ss_link_2=`nvram get ss_link_2`
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 ss_link_1=`nvram get ss_link_1`
 [ "$ss_link_1" -lt 66 ] && ss_link_1="66" || { [ "$ss_link_1" -ge 66 ] || { ss_link_1="66" ; nvram set ss_link_1="66" ; } ; }
-if [ "$ss_enable" != "0" ] ; then
-	kcptun_server=`nvram get kcptun_server`
-	if [ "$kcptun_enable" != "0" ] ; then
-		if [ -z $(echo $kcptun_server | grep : | grep -v "\.") ] ; then 
-		resolveip=`ping -4 -n -q -c1 -w1 -W1 $kcptun_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
-		[ -z "$resolveip" ] && resolveip=`ping -6 -n -q -c1 -w1 -W1 $kcptun_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
-		[ -z "$resolveip" ] && resolveip=`arNslookup $kcptun_server | sed -n '1p'` 
-		[ -z "$resolveip" ] && resolveip=`arNslookup6 $kcptun_server | sed -n '1p'` 
-		kcptun_server=$resolveip
-		else
-		# IPv6
-		kcptun_server=$kcptun_server
-		fi
-	else
-		kcptun_server=""
-	fi
-fi
 
 #检查 dnsmasq 目录参数
 #confdir=`grep "/tmp/ss/dnsmasq.d" /etc/storage/dnsmasq/dnsmasq.conf | sed 's/.*\=//g'`
@@ -202,7 +168,7 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss)" ]  && [ !
 	chmod 777 /tmp/script/_ss
 fi
 
-ss_tproxy_set() {
+ss_tproxy_set () {
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
 if [ "$1" != "$ss_tproxy_auser" ] ; then
 	logger -t "【SS】" "脚本 [Sh99_ss_tproxy.sh] 当前使用者: $auser_b ，跳过 $auser_a 的运行命令"
@@ -323,8 +289,7 @@ echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
 fi
 }
 
-SSJSON_sh()
-{
+SSJSON_sh () {
 
 config_file="$1"
 if [ "$2" == "1" ]; then
@@ -344,12 +309,12 @@ local_port_json="$5"
 fi
 password_json="$(nvram get ss_key)"
 method_json="$(nvram get ss_method | tr 'A-Z' 'a-z')"
-protocol_json="$ssr_protocol"
-protocol_param_json="$ssr_type_protocol_custom"
-obfs_json="$ssr_obfs"
-obfs_param_json="$ssr_type_obfs_custom"
-plugin_json="$ss_plugin_name"
-obfs_plugin_json="$ss_plugin_config"
+protocol_json="$(nvram get ssr_type_protocol)"
+protocol_param_json="$(nvram get ssr_type_protocol_custom)"
+obfs_json="$(nvram get ssr_type_obfs)"
+obfs_param_json="$(nvram get ssr_type_obfs_custom)"
+plugin_json="$(nvram get ss_plugin_name)"
+obfs_plugin_json="$(nvram get ss_plugin_config)"
 fi
 
 cat > "$config_file" <<-SSJSON
@@ -373,8 +338,7 @@ SSJSON
 
 }
 
-usage_switch()
-{
+usage_switch () {
 
 # 高级启动参数分割
 echo -n "$1" \
@@ -420,57 +384,41 @@ echo -n "$1" \
 [ -f /lib/libsodium.so.23 ] && libsodium_so=libsodium.so.23
 [ -f /lib/libsodium.so.18 ] && libsodium_so=libsodium.so.18
 
-start_ss_redir()
-{
+start_ss_redir () {
 
 ss_plugin_client_name="$(nvram get ss_plugin_client_name)"
 [ ! -z "$ss_plugin_client_name" ] && { kill_ps "$ss_plugin_client_name" ; ss_plugin_client_name="" ; nvram set ss_plugin_client_name="" ; }
 [ -z "$ss_server" ] && { logger -t "【SS】" "[错误!!] SS服务器没有设置"; stop_SS; clean_SS; } 
+
+if [ ! -z "$ss_usage" ] ; then
+# 高级启动参数分割
+ss_usage="$(usage_switch "$ss_usage")"
+# 删除混淆、协议、分割符号
+ss_usage="$(echo "$ss_usage" | sed -r 's/\ -g[ ]+[^丨]+//g' | sed -r 's/\ -G[ ]+[^丨]+//g' | sed -r 's/\ -o[ ]+[^丨]+//g' | sed -r 's/\ -O[ ]+[^丨]+//g' | sed -r 's/\ --plugin-opts[ ]+[^丨]+//g' | sed -r 's/\ --plugin[ ]+[^丨]+//g' | sed -e "s@丨@@g" | sed -e "s@  @ @g" | sed -e "s@  @ @g")"
+ss_usage="$(echo $ss_usage)"
+nvram set ss_usage="$ss_usage"
+fi
 if [ "$ss_udp_enable" == 1 ] ; then
 ss_usage=" $ss_usage -u "
 else
 ss_usage=" $ss_usage "
 fi
 
-# 高级启动参数分割
-ss_usage="$(usage_switch "$ss_usage")"
+ssr_type_obfs="$(nvram get ssr_type_obfs)"
+[ -z "$ssr_type_obfs" ] && ssr_type_obfs="plain" && nvram set ssr_type_obfs="$ssr_type_obfs"
+ssr_type_protocol="$(nvram get ssr_type_protocol)"
+[ -z "$ssr_type_protocol" ] && ssr_type_protocol="origin" && nvram set ssr_type_protocol="$ssr_type_protocol"
+ssr_type_obfs_custom="$(nvram get ssr_type_obfs_custom)"
+ssr_type_protocol_custom="$(nvram get ssr_type_protocol_custom)"
 
-ssr_type_obfs_custom=""
-ssr_type_protocol_custom=""
-
-# 混淆插件方式
-ss_usage_custom="$(echo "$ss_usage" | grep -Eo '\-o[ ]+[^丨]+')"
-if [ ! -z "$ss_usage_custom" ] ; then
-	ssr_obfs="$(echo $ss_usage_custom | sed -e "s@^-o@@g" | sed -e "s@ @@g")"
-	logger -t "【SS】" "ssr混淆插件方式: $ssr_obfs"
-fi
-# 协议插件方式
-ss_usage_custom="$(echo "$ss_usage" | grep -Eo '\-O[ ]+[^丨]+')"
-if [ ! -z "$ss_usage_custom" ] ; then
-	ssr_protocol="$(echo $ss_usage_custom | sed -e "s@^-O@@g" | sed -e "s@ @@g")"
-	logger -t "【SS】" "ssr协议插件方式: $ssr_protocol"
-fi
-# 混淆参数
-ss_usage_obfs_custom="$(echo "$ss_usage" | grep -Eo '\-g[ ]+[^丨]+')"
-if [ ! -z "$ss_usage_obfs_custom" ] ; then 
-	ssr_type_obfs_custom="$(echo $ss_usage_obfs_custom | sed -e "s@^-g@@g" | sed -e "s@^ @@g")"
-	logger -t "【SS】" "高级启动参数选项内容含有 -g $ssr_type_obfs_custom ，优先使用此 混淆参数"
-fi
-# 协议参数
-ss_usage_protocol_custom="$(echo "$ss_usage" | grep -Eo '\-G[ ]+[^丨]+')"
-if [ ! -z "$ss_usage_protocol_custom" ] ; then 
-	ssr_type_protocol_custom="$(echo $ss_usage_protocol_custom | sed -e "s@^-G@@g" | sed -e "s@ @@g")"
-	logger -t "【SS】" "高级启动参数选项内容含有 -G $ssr_type_protocol_custom ，优先使用此 协议参数"
-fi
-
-[ -z "$ssr_obfs" ] && ssr_obfs="plain"
-[ -z "$ssr_protocol" ] && ssr_protocol="origin"
 
 if [ "$ss_method" == "aes-128-cfb" ] || [ "$ss_method" == "aes-128-ctr" ] || [ "$ss_method" == "aes-128-gcm" ] || [ "$ss_method" == "aes-192-cfb" ] || [ "$ss_method" == "aes-192-ctr" ] || [ "$ss_method" == "aes-192-gcm" ] || [ "$ss_method" == "aes-256-cfb" ] || [ "$ss_method" == "aes-256-ctr" ] || [ "$ss_method" == "aes-256-gcm" ] || [ "$ss_method" == "bf-cfb" ] || [ "$ss_method" == "camellia-128-cfb" ] || [ "$ss_method" == "camellia-192-cfb" ] || [ "$ss_method" == "camellia-256-cfb" ] || [ "$ss_method" == "chacha20" ] || [ "$ss_method" == "chacha20-ietf" ] || [ "$ss_method" == "chacha20-ietf-poly1305" ] || [ "$ss_method" == "rc4-md5" ] || [ "$ss_method" == "salsa20" ] || [ "$ss_method" == "xchacha20-ietf-poly1305" ] ; then
 	# SS 协议
-if [ "$ssr_obfs" == "plain" ] && [ "$ssr_protocol" == "origin" ] ; then
+if [ "$ssr_type_obfs" == "plain" ] && [ "$ssr_type_protocol" == "origin" ] ; then
 	[ "$ss_type" == "1" ] && nvram set ss_type=0
 	ss_type=0
+	nvram set ssr_type_obfs_custom=""
+	nvram set ssr_type_protocol_custom=""
 	ssr_type_obfs_custom=""
 	ssr_type_protocol_custom=""
 else
@@ -481,14 +429,14 @@ else
 	[ "$ss_type" == "0" ] && nvram set ss_type=1
 	ss_type=1
 fi
-if [ "$ssr_obfs" != "plain" ] || [ "$ssr_protocol" != "origin" ] ; then
+if [ "$ssr_type_obfs" != "plain" ] || [ "$ssr_type_protocol" != "origin" ] ; then
 	# SSR 协议
 	ss_type=1
 fi
 if [ ! -z "$ssr_type_obfs_custom" ] || [ ! -z "$ssr_type_protocol_custom" ] ; then
 	ss_type=1
 fi
-ssrr_custom="$(echo $ssr_protocol | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
+ssrr_custom="$(echo $ssr_type_protocol | grep -Eo 'auth_chain_c|auth_chain_d|auth_chain_e|auth_chain_f')"
 if [ ! -z "$ssrr_custom" ] ; then 
 	# SSRR 协议
 	ssrr_type=1
@@ -497,49 +445,32 @@ if [ ! -z "$ssrr_custom" ] ; then
 fi
 
 # 插件名称
-ss_usage_custom="$(echo "$ss_usage" | grep -Eo '\-\-plugin[ ]+[^丨]+')"
-if [ ! -z "$ss_usage_custom" ] ; then
-	ss_plugin_name="$(echo $ss_usage_custom | sed -e "s@^--plugin@@g" | sed -e "s@ @@g")"
-	logger -t "【SS】" "高级启动参数选项内容含有 --plugin $ss_plugin_name ，优先使用此 插件名称"
-fi
-
+ss_plugin_name="$(nvram get ss_plugin_name)"
 # 插件参数
-ss_usage_custom="$(echo "$ss_usage" | grep -Eo '\-\-plugin\-opts[ ]+[^丨]+')"
-if [ ! -z "$ss_usage_custom" ] ; then 
-	ss_plugin_config="$(echo $ss_usage_custom | sed -e "s@^--plugin-opts@@g" | sed -e "s@ @@g")"
-	ss_plugin_config="$(echo $ss_plugin_config | sed -e 's@^"@@g' | sed -e 's@"$@@g')"
-	logger -t "【SS】" "高级启动参数选项内容含有 --plugin-opts $ss_plugin_config ，优先使用此 插件参数"
-fi
+ss_plugin_config="$(nvram get ss_plugin_config)"
 
 # 插件名称 插件参数 调整名称
-[ ! -z "$(echo "$ss_plugin_name" | grep "simple-obfs")" ] && ss_plugin_name="obfs-local"
-[ ! -z "$(echo "$ss_plugin_config" | grep "obfs-host")" ] && ss_plugin_name="obfs-local"
-[ ! -z "$(echo "$ss_plugin_config" | grep "obfs=tls")" ] && ss_plugin_name="obfs-local"
-[ ! -z "$(echo "$ss_plugin_config" | grep "obfs=http")" ] && ss_plugin_name="obfs-local"
-[ ! -z "$(echo "$ss_plugin_config" | grep "undefined")" ] && ss_plugin_config=""
-[ ! -z "$(echo "$ss_plugin_config" | grep "Undefined")" ] && ss_plugin_config=""
-[ ! -z "$(echo "$ss_plugin_config" | grep "null")" ] && ss_plugin_config=""
-[ ! -z "$(echo "$ss_plugin_config" | grep "Null")" ] && ss_plugin_config=""
-[ ! -z "$(echo "$ss_plugin_name" | grep "GoQuiet")" ] && ss_plugin_name="gq-client"
-[ ! -z "$(echo "$ss_plugin_name" | grep "goquiet")" ] && ss_plugin_name="gq-client"
-[ ! -z "$(echo "$ss_plugin_name" | grep "kcptun")" ] && ss_plugin_name="ss_kcptun"
-[ ! -z "$(echo "$ss_plugin_name" | grep "client_linux_mipsle")" ] && ss_plugin_name="ss_kcptun"
-[ ! -z "$(echo "$ss_plugin_name" | grep "Cloak")" ] && ss_plugin_name="ck-client"
-[ ! -z "$(echo "$ss_plugin_name" | grep "cloak")" ] && ss_plugin_name="ck-client"
-[ ! -z "$(echo "$ss_plugin_name" | grep "v2ray")" ] && ss_plugin_name="v2ray-plugin"
-[ ! -z "$(echo "$ss_plugin_name" | grep "V2ray")" ] && ss_plugin_name="v2ray-plugin"
-[ ! -z "$(echo "$ss_plugin_name" | grep "undefined")" ] && ss_plugin_name=""
-[ ! -z "$(echo "$ss_plugin_name" | grep "Undefined")" ] && ss_plugin_name=""
-[ ! -z "$(echo "$ss_plugin_name" | grep "null")" ] && ss_plugin_name=""
-[ ! -z "$(echo "$ss_plugin_name" | grep "Null")" ] && ss_plugin_name=""
+ss_tmp=0
+[ ! -z "$(echo "$ss_plugin_name" | grep "simple-obfs")" ] && ss_plugin_name="obfs-local" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs-host")" ] && ss_plugin_name="obfs-local" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs=tls")" ] && ss_plugin_name="obfs-local" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_config" | grep "obfs=http")" ] && ss_plugin_name="obfs-local" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_config" | grep "[Uu]ndefined")" ] && ss_plugin_config="" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_config" | grep "[Nn]ull")" ] && ss_plugin_config="" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_name" | grep "[Gg]oQuiet")" ] && ss_plugin_name="gq-client" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_name" | grep "kcptun")" ] && ss_plugin_name="ss_kcptun" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_name" | grep "client_linux_mipsle")" ] && ss_plugin_name="ss_kcptun" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_name" | grep "[Cc]loak")" ] && ss_plugin_name="ck-client" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_name" | grep "[Vv]2ray")" ] && ss_plugin_name="v2ray-plugin" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_name" | grep "[Uu]ndefined")" ] && ss_plugin_name="" && ss_tmp=1
+[ ! -z "$(echo "$ss_plugin_name" | grep "[Nn]ull")" ] && ss_plugin_name="" && ss_tmp=1
+[ "$ss_tmp" == "1" ] && nvram set ss_plugin_name="$ss_plugin_name"
+[ "$ss_tmp" == "1" ] && nvram set ss_plugin_config="$ss_plugin_config"
 [ ! -z "$ss_plugin_name" ] && { ss_plugin_client_name="$ss_plugin_name" ; nvram set ss_plugin_client_name="$ss_plugin_client_name" ; }
 ss_plugin_client_name="$(nvram get ss_plugin_client_name)"
 [ ! -z "$ss_plugin_client_name" ] && [ -z "$ss_plugin_name" ] && { kill_ps "$ss_plugin_client_name" ; ss_plugin_client_name="" ; nvram set ss_plugin_client_name="" ; }
 [ ! -z "$ss_plugin_client_name" ] && kill_ps "$ss_plugin_client_name"
 
-# 删除混淆、协议、分割符号
-options1="$(echo "$ss_usage" | sed -r 's/\ -g[ ]+[^丨]+//g' | sed -r 's/\ -G[ ]+[^丨]+//g' | sed -r 's/\ -o[ ]+[^丨]+//g' | sed -r 's/\ -O[ ]+[^丨]+//g' | sed -r 's/\ --plugin-opts[ ]+[^丨]+//g' | sed -r 's/\ --plugin[ ]+[^丨]+//g' | sed -e "s@丨@@g" | sed -e "s@  @ @g" | sed -e "s@  @ @g")"
-# 高级启动参数分割完成
 
 # 启动程序
 ss_s1_redir_port=1090
@@ -604,8 +535,7 @@ fi
 
 }
 
-start_ss_redir_check()
-{
+start_ss_redir_check () {
 
 sleep 1
 [ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "启动成功" && ss_restart o
@@ -618,22 +548,15 @@ fi
 
 }
 
-killall_ss_redir()
-{
-
+killall_ss_redir () {
 kill_ps "ss-redir_"
-
 }
 
-killall_ss_local()
-{
-
+killall_ss_local () {
 kill_ps "ss-local_"
-
 }
 
-swap_ss_redir()
-{
+swap_ss_redir () {
 
 kill_ps "$scriptname keep"
 kill_ps "$scriptname"
@@ -651,8 +574,7 @@ Sh99_ss_tproxy.sh s_ss_tproxy_check "Sh15_ss.sh"
 
 }
 
-check_ssr()
-{
+check_ssr () {
 
 if [ "$ssrr_type" = "1" ] ; then 
 logger -t "【SS】" "高级启动参数选项内容含有 ssrr 协议: $ssrr_custom"
@@ -858,58 +780,13 @@ fi
 fi
 }
 
-clean_ss_rules()
-{
+clean_ss_rules () {
 echo "clean_ss_rules"
 Sh99_ss_tproxy.sh off_stop "Sh15_ss.sh"
 }
 
-arNslookup() {
-mkdir -p /tmp/arNslookup
-nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":" > /tmp/arNslookup/$$ &
-I=5
-while [ ! -s /tmp/arNslookup/$$ ] ; do
-		I=$(($I - 1))
-		[ $I -lt 0 ] && break
-		sleep 1
-done
-killall nslookup
-if [ -s /tmp/arNslookup/$$ ] ; then
-cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-rm -f /tmp/arNslookup/$$
-else
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
-		if [ $? -eq 0 ]; then
-		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
-		fi
-	else
-		Address="`curl --user-agent "$user_agent" -s http://119.29.29.29/d?dn=$1`"
-		if [ $? -eq 0 ]; then
-		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
-		fi
-	fi
-fi
-}
 
-arNslookup6() {
-mkdir -p /tmp/arNslookup
-nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep ":" > /tmp/arNslookup/$$ &
-I=5
-while [ ! -s /tmp/arNslookup/$$ ] ; do
-		I=$(($I - 1))
-		[ $I -lt 0 ] && break
-		sleep 1
-done
-killall nslookup
-if [ -s /tmp/arNslookup/$$ ] ; then
-	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-	rm -f /tmp/arNslookup/$$
-fi
-}
-
-gen_include() {
+gen_include () {
 [ -n "$FWI" ] || return 0
 [ -n "$FWI" ] && echo '#!/bin/bash' >$FWI
 cat <<-CAT >>$FWI
@@ -921,10 +798,7 @@ return $?
 }
 
 
-#================华丽的分割线====================================
-
-start_SS()
-{
+start_SS () {
 check_webui_yes
 	logger -t "【SS】" "启动 SS"
 	logger -t "【SS】" "ss-redir start.【$app_97】"
@@ -941,9 +815,9 @@ echo "Debug: $DNS_Server"
 		nvram set gfwlist3="ss-local start.【$app_97】"
 		logger -t "【ss-local】" "本地代理启动. 可以配合 Proxifier、chrome(switchysharp、SwitchyOmega) 代理插件使用."
 		logger -t "【ss-local】" "shadowsocks 进程守护启动"
-		ss_cron_job
 		ss_get_status "c1"
 		nvram set button_script_2_s="SS"
+		nvram set ss_internet="1"
 		eval "$scriptfilepath keep &"
 		exit 0
 	fi
@@ -972,7 +846,6 @@ fi
 	logger -t "【SS】" "③电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
 	logger -t "【SS】" "shadowsocks 进程守护启动"
 	nvram set ss_internet="1"
-	ss_cron_job
 	ss_get_status "c1"
 if [ "$ss_dnsproxy_x" = "2" ] ; then
 	logger -t "【SS】" "使用 dnsmasq ，开启 ChinaDNS 防止域名污染"
@@ -986,44 +859,7 @@ eval "$scriptfilepath keep &"
 exit 0
 }
 
-
-
-clean_SS()
-{
-
-# 重置 SS IP 规则文件并重启 SS
-logger -t "【SS】" "重置 SS IP 规则文件并重启 SS"
-sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-if [ "$ss_enable" != "1" ]  ; then
-stop_SS
-restart_dhcpd
-return
-else
-nvram set ss_status="cleanss"
-nvram set kcptun_status="cleanss"
-fi
-mkdir -p /tmp/ss/dnsmasq.d
-rm -rf /tmp/ss/dnsmasq.d/*
-cd /tmp/ss/
-rm_tmp="`ls -p /tmp/ss | grep -v dnsmasq.d/ | grep -v link/`"
-[ ! -z "$rm_tmp" ] && rm -rf $rm_tmp
-rm_tmp=""
-rm -f /opt/bin/ss-redir /opt/bin/ssr-redir /opt/bin/ss-local /opt/bin/ssr-local /opt/bin/obfs-local
-rm -f /opt/bin/ss0-redir /opt/bin/ssr0-redir /opt/bin/ss0-local /opt/bin/ssr0-local
-rm -f /opt/bin/pdnsd /opt/bin/dnsproxy
- #rm -f /etc/storage/china_ip_list.txt /etc/storage/basedomain.txt
- #[ ! -f /etc/storage/china_ip_list.txt ] && tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp && ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
- #[ ! -f /etc/storage/basedomain.txt ] && tar -xzvf /etc_ro/basedomain.tgz -C /tmp && ln -sf /tmp/basedomain.txt /etc/storage/basedomain.txt
-sync
-/tmp/script/_kcp_tun &
-eval "$scriptfilepath &"
-exit 0
-}
-
-
-stop_SS()
-{
+stop_SS () {
 kill_ps "$scriptname keep"
 kill_ps "sh_ezscript.sh"
 kill_ps "Sh15_ss.sh"
@@ -1064,10 +900,10 @@ if [ "$1" = "o" ] ; then
 fi
 if [ "$1" = "x" ] ; then
 	if [ -f $relock ] ; then
-		if [ ! -z "$app_95" ] ; then
+		if [ "$ss_matching_enable" == "0" ] ; then
 			[ -f $relock ] && rm -f $relock
-			logger -t "【SS_restart】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
-			/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+			logger -t "【SS_restart】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_ss_matching.txt"
+			ss_link_matching & 
 			sleep 10
 		fi
 		logger -t "【ss】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -1100,8 +936,9 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$ss_update$ss_update_hour$ss_update_min$lan_ipaddr$ss_updatess$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_check$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_status=$B_restart
 	needed_restart=1
@@ -1117,6 +954,7 @@ ss_get_status2 () {
 A_restart="$(nvram get ss_status2)"
 B_restart="$ss_server$ss_server_port$ss_method$ss_key$ss_usage"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 nvram set ss_status2="$B_restart"
 if [ "$needed_restart" = "1" ] ; then
 	nvram set ss_status2="$B_restart"
@@ -1130,11 +968,12 @@ fi
 fi
 }
 
-check_setting()
-{
+check_setting () {
 check_webui_yes
 needed_restart=0
-sh_link.sh check_app_24
+ping_ss_link
+start_ss_link
+json_mk_ss
 ss_get_status
 if [ "$ss_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof ss-redir`" ] && logger -t "【SS】" "停止 ss-redir" && stop_SS
@@ -1146,7 +985,7 @@ if [ "$ss_enable" = "1" ] ; then
 	[ $ss_server_port ] || logger -t "【SS】" "服务器端口:未填写"
 	[ $ss_method ] || logger -t "【SS】" "加密方式:未填写"
 	[ $ss_server ] && [ $ss_server_port ] && [ $ss_method ] \
-	 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; [ ! -z "$app_95" ] && /etc/storage/script/sh_ezscript.sh ss_link_matching; sleep 20; exit 1; }
+	 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; [ "$ss_matching_enable" == "0" ] ss_link_matching; sleep 20; exit 1; }
 	if [ "$needed_restart" = "2" ] ; then
 		logger -t "【SS】" "检测:更换线路配置，进行快速切换服务器。"
 		swap_ss_redir
@@ -1262,7 +1101,7 @@ if [ "$ss_rebss_n" != 0 ] ; then
 		fi
 		sleep 5
 		nvram set ss_link_status=""
-		sh_link.sh
+		eval "$scriptfilepath uplink &"
 	fi
 fi
 sleep 3
@@ -1282,7 +1121,7 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 		exit 0
 	fi
 	if [ "$ss_mode_x" = "3" ] ; then
-		sleep_rnd
+		sleep 20
 		#跳出当前循环
 		continue
 	fi
@@ -1324,49 +1163,48 @@ ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  1、直连；0、走代�
 
 check2=404
 check_timeout_network "wget_check"
+if [ "$check2" == "404" ] ; then
+#404
+Sh99_ss_tproxy.sh auser_check "Sh15_ss.sh"
+Sh99_ss_tproxy.sh s_ss_tproxy_check "Sh15_ss.sh"
+sleep 5
+check2=404
+check_timeout_network "wget_check" "check"
+fi
 if [ "$check2" == "200" ] ; then
+#200
 	echo "[$LOGTIME] SS $app_97 have no problem."
+	logger -t "【SS】" " SS 服务器 【$app_97】 恢复正常"
+	ss_internet="$(nvram get ss_internet)"
+	[ "$ss_internet" != "1" ] && nvram set ss_internet="1"
 	if [ "$rebss" != "0" ] ; then
 	rebss="0"
-	nvram set ss_rebss_b=0
-	nvram set ss_internet="1"
+	ss_rebss_b="$(nvram get ss_rebss_b)"
+	[ "$ss_rebss_b" != "0" ] && nvram set ss_rebss_b=0
 	fi
 	sleep_rnd
 	#跳出当前循环
 	continue
 fi
 
+
 #404
-Sh99_ss_tproxy.sh auser_check "Sh15_ss.sh"
-Sh99_ss_tproxy.sh s_ss_tproxy_check "Sh15_ss.sh"
-check2=404
-check_timeout_network "wget_check" "check"
-if [ "$check2" == "200" ] ; then
-	echo "[$LOGTIME] SS $app_97 have no problem."
-	if [ "$rebss" != "0" ] ; then
-	rebss="0"
-	nvram set ss_rebss_b=0
-	nvram set ss_internet="1"
-	fi
-	sleep_rnd
-	#跳出当前循环
-	continue
-fi
-#404
-if [ ! -z "$app_95" ] ; then
-	nvram set ss_internet="2"
+if [ "$ss_matching_enable" == "0" ] ; then
+	ss_internet="$(nvram get ss_internet)"
+	[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
 	rebss=`expr $rebss + 1`
 	nvram set ss_rebss_b="$rebss"
 	logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
-	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
-	/etc/storage/script/sh_ezscript.sh ss_link_matching & 
+	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_ss_matching.txt"
+	ss_link_matching & 
 	sleep 10
 	#跳出当前循环
 	continue
 fi
 
 #404
-nvram set ss_internet="0"
+ss_internet="$(nvram get ss_internet)"
+[ "$ss_internet" != "0" ] && nvram set ss_internet="0"
 logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
@@ -1377,49 +1215,371 @@ done
 
 }
 
-ss_link_cron_job(){
-
-/etc/storage/script/sh_link.sh
-
-}
-
-SS_swap(){
-
-ss_internet=`nvram get ss_internet`
-if [ "$ss_internet" != "1" ] ; then
-	logger -t "【ss】" "注意！各线路正在启动，请等待启动后再尝试切换"
-fi
-if [ ! -z "$app_95" ] && [ "$ss_internet" = "1" ] ; then
-	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link_matching/link_matching.txt"
-	nvram set ss_internet="2"
-	/etc/storage/script/sh_ezscript.sh ss_link_matching & 
-	sleep 10
+json_mk_ss () {
+mkdir -p /tmp/ss
+link_tmp="$(nvram get app_75)"
+if [ -z "$link_tmp" ] ; then
 	return
 fi
+nvram set app_75=""
+
+# 解码获取信息
+link_de_protocol "$link_tmp" "0ss0ssr0"
+if [ "$link_protocol" != "ss" ] && [ "$link_protocol" != "ssr" ] ; then
+	return 1
+fi
+nvram set app_97="$link_name"
+nvram set app_76="$link_input"
+logger -t "【ss】" "应用 $link_protocol 配置： $link_name"
+if [ "$link_protocol" == "ss" ] ; then
+ss_type=0
+fi
+if [ "$link_protocol" == "ssr" ] ; then
+ss_type=1
+fi
+nvram set ss_type=$ss_type
+ss_server="$ss_link_server"
+nvram set ss_server=$ss_server
+ss_server_port="$ss_link_port"
+nvram set ss_server_port=$ss_server_port
+ss_key="$ss_link_password"
+nvram set ss_key=$ss_key
+ss_method="$ss_link_method"
+nvram set ss_method=$ss_method
+ssr_type_protocol="$ss_link_protocol"
+nvram set ssr_type_protocol=$ssr_type_protocol
+ssr_type_obfs="$ss_link_obfs"
+nvram set ssr_type_obfs=$ssr_type_obfs
+ssr_type_protocol_custom="$ss_link_protoparam"
+nvram set ssr_type_protocol_custom=$ssr_type_protocol_custom
+ssr_type_obfs_custom="$ss_link_obfsparam"
+nvram set ssr_type_obfs_custom=$ssr_type_obfs_custom
+ss_plugin_name="$ss_link_plugin"
+nvram set ss_plugin_name=$ss_plugin_name
+ss_plugin_config="$ss_link_plugin_opts"
+nvram set ss_plugin_config=$ss_plugin_config
+
 }
 
-ss_cron_job(){
-	[ -z $ss_update ] && ss_update=0 && nvram set ss_update=$ss_update
-	[ -z $ss_update_hour ] && ss_update_hour=23 && nvram set ss_update_hour=$ss_update_hour
-	[ -z $ss_update_min ] && ss_update_min=59 && nvram set ss_update_min=$ss_update_min
-	[ "$ss_mode_x" = "3" ] && ss_update=2 #3为ss-local 建立本地 SOCKS 代理
-	if [ "0" == "$ss_update" ]; then
-	[ $ss_update_hour -gt 23 ] && ss_update_hour=23 && nvram set ss_update_hour=$ss_update_hour
-	[ $ss_update_hour -lt 0 ] && ss_update_hour=0 && nvram set ss_update_hour=$ss_update_hour
-	[ $ss_update_min -gt 59 ] && ss_update_min=59 && nvram set ss_update_min=$ss_update_min
-	[ $ss_update_min -lt 0 ] && ss_update_min=0 && nvram set ss_update_min=$ss_update_min
-		logger -t "【ss】" "开启规则定时更新，每天"$ss_update_hour"时"$ss_update_min"分，检查在线规则更新..."
-		cru.sh a ss_update "$ss_update_min $ss_update_hour * * * $scriptfilepath update &" &
-	elif [ "1" == "$ss_update" ]; then
-	#[ $ss_update_hour -gt 23 ] && ss_update_hour=23 && nvram set ss_update_hour=$ss_update_hour
-	[ $ss_update_hour -lt 0 ] && ss_update_hour=0 && nvram set ss_update_hour=$ss_update_hour
-	[ $ss_update_min -gt 59 ] && ss_update_min=59 && nvram set ss_update_min=$ss_update_min
-	[ $ss_update_min -lt 0 ] && ss_update_min=0 && nvram set ss_update_min=$ss_update_min
-		logger -t "【ss】" "开启规则定时更新，每隔"$ss_update_inter_hour"时"$ss_update_inter_min"分，检查在线规则更新..."
-		cru.sh a ss_update "$ss_update_min */$ss_update_hour * * * $scriptfilepath update &" &
-	else
-		logger -t "【ss】" "规则自动更新关闭状态，不启用自动更新..."
+ping_ss_link () {
+
+	ss_x_tmp="`nvram get app_77`"
+	if [ "$ss_x_tmp" != "ping_link" ] ; then
+		return
 	fi
+	nvram set app_77=""
+	ss_x_tmp=""
+	mkdir -p /tmp/link/matching
+	rm -f /tmp/link/matching/link_ss_matching.txt
+	rm -f /tmp/link/matching/link_ss_matching_0.txt
+	mkdir -p /tmp/link/tmp_ss
+	rm -rf /tmp/link/tmp_ss/*
+	rm -f /tmp/link/ping_ss.txt
+	touch /tmp/link/ping_ss.txt
+	rm -f /tmp/link/ping_server_error.txt
+	touch /tmp/link/ping_server_error.txt
+	i_ping="0"
+	while read line
+	do
+	line="$(echo $line)"
+	if [ ! -z "$line" ] && [ -z "$(echo $line | grep "^#")" ] ; then
+		i_ping=`expr $i_ping + 1`
+		x_ping_x "$i_ping" &
+		usleep 100000
+	fi
+	done < /etc/storage/app_24.sh
+	ilox="$(ls -l /tmp/link/tmp_ss/ |wc -l)"
+	i_x_ping="1"
+	while [ "$i_ping" != "$ilox" ];
+	do
+	sleep 1
+	ilox="$(ls -l /tmp/link/tmp_ss/ |wc -l)"
+	i_x_ping=`expr $i_x_ping + 1`
+	if [ "$i_x_ping" -gt 30 ] ; then
+	logger -t "【ping】" "刷新 ping 失败！超时 30 秒！ 请重新按【ping】按钮再次尝试。"
+	break
+	fi
+	done
+	echo -n 'var ping_data = "' >> /tmp/link/ping_ss.txt
+	for ilox in $(ls /tmp/link/tmp_ss/)
+	do
+	echo -n "$(cat /tmp/link/tmp_ss/$ilox)"  >> /tmp/link/ping_ss.txt
+	done
+	echo -n '";' >> /tmp/link/ping_ss.txt
+	sed -Ei '/^$/d' /tmp/link/ping_ss.txt
+	rm -rf /tmp/link/tmp_ss/*
+	rm -rf /www/link/ping_ss.js
+	cp -f /tmp/link/ping_ss.txt /www/link/ping_ss.js
+
+}
+
+x_ping_x () {
+# 解码获取信息
+link_read="ping"
+link_de_protocol "$line" "0ss0ssr0"
+ping_re="$(echo /tmp/link/tmp_ss/$1)"
+if [ "$link_protocol" != "ss" ] && [ "$link_protocol" != "ssr" ] ; then
+# 返回空数据
+touch $ping_re
+return
+fi
+ping_i="$(echo "00000"$1)"
+ping_i="${ping_i:0-3}"
+if [ ! -z "$(echo "$link_name" | grep -Eo "剩余流量|过期时间")" ] || [ ! -z "$(echo "$link_server" | grep -Eo "剩余流量|过期时间")" ] || [ ! -z "$(echo "$link_server" | grep -Eo "google.com|8.8.8.8")" ] ; then
+# 返回空数据
+touch $ping_re
+return
+fi
+
+if [[ "$(tcping -h 2>&1 | wc -l)" -gt 5 ]] ; then
+resolveip=`ping -4 -n -q -c1 -w1 -W1 $link_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+if [ ! -z "$resolveip" ] ; then
+ipset -! add proxyaddr $resolveip
+ipset -! add ad_spec_dst_sp $resolveip
+tcping_text=`tcping -p $link_port -c 1 $resolveip`
+tcping_time=`echo $tcping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+[[ "$tcping_time" -gt 2 ]] || tcping_time="0"
+[[ "$tcping_time" -lt 2 ]] && tcping_time="0"
+fi
+fi
+[ "$tcping_time" == "0" ] && ping_time="0" ||  ping_time="$tcping_time"
+if [ "$ping_time" == "0" ] ; then
+if [ ! -z "$(cat /tmp/ping_server_error.txt | grep "error_""$link_server""_error")" ] ; then
+ping_text=""
+else
+ping_text=`ping -4 $link_server -w 3 -W 3 -q`
+fi
+ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+fi
+if [ ! -z "$ping_time" ] ; then
+	echo "ping$ping_i：$ping_time ms ✔️ $link_server"
+	[ "$tcping_time" == "0" ] && logger -t "【  ping$ping_i】" "$ping_time ms ✔️ $link_server $link_name"
+	[ "$tcping_time" != "0" ] && logger -t "【tcping$ping_i】" "$ping_time ms ✔️ $link_server $link_name"
+	echo 🔗$link_server"="$ping_time🔗 >> "$ping_re"
+else
+	echo "ping$ping_i：>1000 ms ❌ $link_server"
+	logger -t "【  ping$ping_i】" ">1000 ms ❌ $link_server $link_name"
+	echo "error_""$link_server""_error" >> /tmp/ping_server_error.txt
+	echo 🔗$link_server"=>"1000🔗 >> "$ping_re"
+fi
+touch $ping_re
+# 排序节点
+
+if [ "$link_protocol" == "ss" ] || [ "$link_protocol" == "ssr" ] ; then
+[ -z "$ping_time" ] && ping_time=9999
+[ "$ping_time" -gt 9999 ] && ping_time=9999
+get_ping="00000""$ping_time"
+get_ping="$(echo -n "${get_ping:0-4}")"
+echo $get_ping"$link_name""↪️""$link_input""↩️" >> /tmp/link/matching/link_ss_matching_0.txt
+fi
+
+}
+
+start_ss_link () {
+
+ss_x_tmp="`nvram get app_77`"
+if [ ! -z "$ss_x_tmp" ] ; then
+nvram set app_77=""
+fi
+if [ "$ss_x_tmp" = "del_link" ] ; then
+	# 清空上次订阅节点配置
+	rm -f /tmp/link/matching/link_ss_matching.txt
+	rm -f /www/link/ss.js
+	rm -f /www/link/ss.js
+	sed -Ei '/🔗|dellink_ss|^$/d' /etc/storage/app_24.sh
+	ss_x_tmp=""
+	logger -t "【ss】" "完成清空上次订阅节点配置 请按【F5】刷新 web 查看"
+	return
+fi
+if [ "$ss_x_tmp" = "link_ss_matching" ] ; then
+	link_ss_matching
+	return
+fi
+
+ss_link="`nvram get ssr_link`"
+ss_link_up=`nvram get ss_link_up`
+ss_link_ping=`nvram get ss_link_ping`
+A_restart=`nvram get ss_link_status`
+B_restart=`echo -n "$ss_link$ss_link_up" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
+if [ "$A_restart" != "$B_restart" ] ; then
+nvram set ss_link_status=$B_restart
+	if [ -z "$ss_link" ] ; then
+		cru.sh d ss_link_update
+		logger -t "【ss】" "停止 ss 服务器订阅"
+		return
+	else
+		if [ "$ss_link_up" != 1 ] ; then
+			cru.sh a ss_link_update "15 */6 * * * $scriptfilepath up_link &" &
+			logger -t "【ss】" "启动 ss 服务器订阅，添加计划任务 (Crontab)，每6小时更新"
+		else
+			cru.sh d ss_link_update
+		fi
+	fi
+fi
+if [ -z "$ss_link" ] ; then
+	return
+fi
+
+if [ "$ss_x_tmp" != "up_link" ] ; then
+	return
+fi
+
+logger -t "【ss】" "服务器订阅：开始更新"
+
+ss_link="$(echo "$ss_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
+rm -f /www/link/vmess.js
+rm -f /www/link/ss.js
+rm -f /tmp/link/matching/link_ss_matching.txt
+down_i_link="1"
+if [ ! -z "$(echo "$ss_link" | awk -F ' ' '{print $2}')" ] ; then
+	for ss_link_i in $ss_link
+	do
+		down_link "$ss_link_i"
+		rm -rf /tmp/link/ss/*
+	done
+else
+	down_link "$ss_link"
+	rm -rf /tmp/link/ss/*
+fi
+logger -t "【ss】" "服务器订阅：更新完成"
+if [ "$ss_link_ping" != 1 ] ; then
+	nvram set app_77="ping_link"
+	ping_ss_link
+	app_99="$(nvram get app_99)"
+	if [ "$app_99" == 1 ] ; then
+		rm -f /tmp/link/matching/link_ss_matching.txt
+		link_ss_matching
+	fi
+else
+	echo "【ss】：停止ping订阅节点"
+fi
+
+}
+
+down_link () {
+http_link="$(echo $1)"
+if [ -z  "$(echo "$http_link" | grep 'http:\/\/')""$(echo "$http_link" | grep 'https:\/\/')" ]  ; then
+	logger -t "【SS】" "$http_link"
+	logger -t "【SS】" "错误！！ss 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
+	return
+fi
+mkdir -p /tmp/link/ss/
+#logger -t "【ss】" "订阅文件下载: $http_link"
+rm -f /tmp/link/ss/0_link.txt
+wgetcurl.sh /tmp/link/ss/0_link.txt "$http_link" "$http_link" N
+if [ ! -s /tmp/link/ss/0_link.txt ] ; then
+	rm -f /tmp/link/ss/0_link.txt
+	curl -L --user-agent "$user_agent" -o /tmp/link/ss/0_link.txt "$http_link"
+fi
+if [ ! -s /tmp/link/ss/0_link.txt ] ; then
+	rm -f /tmp/link/ss/0_link.txt
+	wget -T 5 -t 3 --user-agent "$user_agent" -O /tmp/link/ss/0_link.txt "$http_link"
+fi
+if [ ! -s /tmp/link/ss/0_link.txt ] ; then
+	logger -t "【ss】" "$http_link"
+	logger -t "【ss】" "错误！！ss 服务器订阅文件下载失败！请检查下载地址"
+	return
+fi
+dos2unix /tmp/link/ss/0_link.txt
+sed -e 's@\r@@g' -i /tmp/link/ss/0_link.txt
+sed -e '/^$/d' -i /tmp/link/ss/0_link.txt
+if [ ! -z "$(cat /tmp/link/ss/0_link.txt | grep "ssd://")" ] ; then
+	logger -t "【ss】" "不支持【ssd://】订阅文件"
+	return
+fi
+http_link_d1="$(cat /tmp/link/ss/0_link.txt | grep "://" | wc -l)"
+[ "$http_link_d1" -eq 0 ] && http_link_dd="1" #没找到链接，需要2次解码
+if [ "$http_link_d1" -eq 1 ] ; then #找到1个链接，尝试解码
+http_link_dd_text="$(cat /tmp/link/ss/0_link.txt  | awk -F '://' '{print $2}')"
+http_link_dd_text="$(echo $http_link_dd_text | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"
+# 含多个链接，不需2次解码
+http_link_d2="$(echo $http_link_dd_text | grep "://" | wc -l)"
+[ "$http_link_d2" -eq 0 ] && http_link_dd="0" #没找到链接，不需2次解码
+[ "$http_link_d2" -gt 0 ] && http_link_dd="1" #含多个链接，需要2次解码
+fi
+[ "$http_link_d1" -gt 1 ] && http_link_dd="0" #含多个链接，不需2次解码
+if [ "$http_link_dd" == "1" ] ; then
+# 需要2次解码
+if [ "$(cat /tmp/link/ss/0_link.txt | grep "://" | wc -l)" != "0" ] ; then
+cat /tmp/link/ss/0_link.txt | awk -F '://' '{cmd=sprintf("echo -n %s|base64 -d", $2);  system(cmd); print "";}' > /tmp/link/ss/1_link.txt
+else
+cat /tmp/link/ss/0_link.txt | awk '{cmd=sprintf("echo -n %s|base64 -d", $1);  system(cmd); print "";}' > /tmp/link/ss/1_link.txt
+fi
+else
+# 不需2次解码
+mv -f /tmp/link/ss/0_link.txt /tmp/link/ss/1_link.txt
+fi
+touch /etc/storage/app_24.sh
+sed -Ei '/^🔗/d' /etc/storage/app_24.sh
+sed -Ei '/^$/d' /tmp/link/ss/1_link.txt
+sed -Ei 's@^@'🔗'@g' /tmp/link/ss/1_link.txt
+cat /tmp/link/ss/1_link.txt >> /etc/storage/app_24.sh
+sed -Ei '/dellink_ss|^$/d' /etc/storage/app_24.sh
+rm -rf /tmp/link/ss/*
+
+}
+
+link_ss_matching () {
+
+# 排序节点
+mkdir -p /tmp/link/matching
+rm -f /tmp/link/matching/link_ss_matching_1.txt
+if [ ! -f /tmp/link/matching/link_ss_matching.txt ] || [ ! -s /tmp/link/matching/link_ss_matching.txt ] ; then
+if [ ! -f /tmp/link/matching/link_ss_matching_0.txt ] || [ ! -s /tmp/link/matching/link_ss_matching_0.txt ] ; then
+nvram set app_77="ping_link"
+ping_ss_link
+fi
+match="$(nvram get app_95)"
+[ "$match" == "*" ] && match="."
+mismatch="$(nvram get app_96)"
+while read line
+do
+line="$(echo $line)"
+if [ ! -z "$line" ] ; then
+	[ ! -z "$match" ] && line2="$(echo "$line" | grep -E "$match" | grep -v -E "剩余流量|过期时间")"
+	[ ! -z "$mismatch" ] && line2="$(echo "$line" | grep -v -E "$mismatch" | grep -v -E "剩余流量|过期时间")"
+	if [ ! -z "$line2" ] ; then
+	echo $line2 >> /tmp/link/matching/link_ss_matching_1.txt
+	fi
+fi
+done < /tmp/link/matching/link_ss_matching_0.txt
+if [ -f /tmp/link/matching/link_ss_matching_1.txt ] && [ -s /tmp/link/matching/link_ss_matching_1.txt ] ; then
+sed -Ei '/^$/d' /tmp/link/matching/link_ss_matching_1.txt
+cat /tmp/link/matching/link_ss_matching_1.txt | sort | grep -v "^$" > /tmp/link/matching/link_ss_matching.txt
+rm -f /tmp/link/matching/link_ss_matching_1.txt
+logger -t "【自动选用节点】" "重新生成自动选用节点列表： /tmp/link/matching/link_ss_matching.txt"
+fi
+fi
+
+# 选用节点
+if [ -z "$(cat /tmp/link/matching/link_ss_matching.txt | grep -v 已经自动选用节点)" ] ; then
+sed -e 's/已经自动选用节点//g' -i /tmp/link/matching/link_ss_matching.txt
+fi
+i_matching=1
+while read line
+do
+if [ ! -z "$(echo "$line" | grep -v "已经自动选用节点" )" ] ; then
+sed -i $i_matching's/^/已经自动选用节点/' /tmp/link/matching/link_ss_matching.txt
+# 选用节点
+logger -t "【自动选用节点】" "自动选用节点：""$(echo "$line" | grep -Eo '^[^↪️]+')"
+nvram set app_75="$(echo "$line" | grep -Eo "↪️.*[^↩️]" | grep -Eo "[^↪️].*")"
+# 重启ss
+[ "$ss_enable" == "0" ] && return
+eval "$scriptfilepath &"
+exit
+break
+fi
+i_matching=`expr $i_matching + 1`
+done < /tmp/link/matching/link_ss_matching.txt
+
+}
+
+del_LinkList () {
+logger -t "【del_LinkList】" "$1"
+del_x=$(($1 + 1))
+[ -s /etc/storage/app_24.sh ] && sed -i "$del_x""c dellink_ss" /etc/storage/app_24.sh
+sed -Ei '/dellink_ss|^$/d' /etc/storage/app_24.sh
 }
 
 initopt () {
@@ -1603,7 +1763,29 @@ updatess)
 	Sh99_ss_tproxy.sh
 	;;
 uplink)
-	ss_link_cron_job &
+	nvram set app_77="up_link"
+	check_setting
+	;;
+up_link)
+	nvram set app_77="up_link"
+	check_setting
+	;;
+del_link)
+	nvram set app_77="del_link"
+	check_setting
+	;;
+ping_link)
+	nvram set app_77="ping_link"
+	check_setting
+	;;
+link_ss_matching)
+	link_ss_matching
+	;;
+json_mk_ss)
+	json_mk_ss
+	;;
+del_LinkList)
+	del_LinkList $2
 	;;
 stop)
 	stop_SS
@@ -1613,14 +1795,6 @@ repdnsd)
 	;;
 help)
 	echo "Usage: $0 {start|rules|flush|update|stop}"
-	;;
-update_optss)
-	ss_restart o
-	clean_SS
-	exit 0
-	;;
-swapss)
-	SS_swap
 	;;
 *)
 	check_setting

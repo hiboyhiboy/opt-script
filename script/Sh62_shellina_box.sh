@@ -75,6 +75,7 @@ shellinabox_get_status () {
 A_restart=`nvram get shellinabox_status`
 B_restart="$shellinabox_enable$shellinabox_port$shellinabox_css$shellinabox_options$shellinabox_wan$shellinabox_options_ttyd"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set shellinabox_status=$B_restart
 	needed_restart=1

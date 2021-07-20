@@ -72,6 +72,7 @@ lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get meow_status`
 B_restart="$meow_enable$meow_path$lan_ipaddr$ss_s1_local_port$ss_mode_x$(cat /etc/storage/meow_script.sh /etc/storage/meow_config_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set meow_status=$B_restart
 	needed_restart=1

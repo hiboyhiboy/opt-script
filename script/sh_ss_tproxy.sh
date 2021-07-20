@@ -651,10 +651,13 @@ update_gfwlist_file() {
 		local raw_url='https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt'
 		wgetcurl_checkmd5 $tmp_base64_gfwlist  "$url" "$raw_url" N 5
 		if [ -s $tmp_base64_gfwlist ] && [ -z "$(cat $tmp_base64_gfwlist | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
-		sed -e  's@$@==@g' -i $tmp_base64_gfwlist
+		sed -e  ':a;N;$!ba;s/\n//g' -i $tmp_base64_gfwlist
+		sed -e  ':a;N;$!ba;s/\r//g' -i $tmp_base64_gfwlist
+		sed -e  's@$@====@g' -i $tmp_base64_gfwlist
 		cat $tmp_base64_gfwlist | base64 -d > $tmp_down_file
 		rm -f $tmp_base64_gfwlist 
-		[ -z "$(cat $tmp_down_file | grep google )" ] && { rm -f $tmp_down_file ; logger -t "【update_gfwlist】" "错误！！！ base64 解码官方 gfwlist 无数据" ; }
+		[ -z "$(cat $tmp_down_file | grep google )" ] && { rm -f $tmp_down_file ; logger -t "【update_gfwlist】" "错误！！！找不到 google ，base64 解码官方 gfwlist 数据不完整" ; }
+		[ -z "$(cat $tmp_down_file | grep '\-\-\-EOF\-\-\-' )" ] && { rm -f $tmp_down_file ; logger -t "【update_gfwlist】" "错误！！！ 找不到 EOF ， base64 解码官方 gfwlist 数据不完整" ; }
 		if [ -s $tmp_down_file ] ; then
 		cat $tmp_down_file | sort -u |
 			sed '/^$\|@@/d'|

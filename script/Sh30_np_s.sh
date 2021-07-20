@@ -74,6 +74,7 @@ nps_get_status () {
 A_restart=`nvram get nps_status`
 B_restart="$nps_enable$nps_version$npsc_enable$npss_enable$(cat /etc/storage/app_15.sh /etc/storage/app_16.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set nps_status=$B_restart
 	needed_restart=1
