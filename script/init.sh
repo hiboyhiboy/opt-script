@@ -32,7 +32,7 @@ x_wget_check_timeout_network_x()
 check_tmp="/tmp/check_timeout/$1"
 wget --user-agent "$user_agent" -q  -T 3 -t 1 "$ss_link_2" -O /dev/null --spider --server-response
 if [ "$?" != "0" ] ; then
-	wget --user-agent "$user_agent" -q  -T 3 -t 2 "http://www.google.com/" -O /dev/null --spider --server-response
+	wget --user-agent "$user_agent" -q  -T 3 -t 2 "1.1.1.1" -O /dev/null --spider --server-response
 	if [ "$?" == "0" ] ; then
 	echo "check2=200" >> $check_tmp
 	else
@@ -52,7 +52,7 @@ x_curl_check_timeout_network_x()
 check_tmp="/tmp/check_timeout/$1"
 check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "$ss_link_2" -o /dev/null -I)"
 if [ "$check_code" != "200" ] ; then
-	check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "http://www.google.com/" -o /dev/null -I)"
+	check_code="$(curl -L --connect-timeout 3 --user-agent "$user_agent" -s -w "%{http_code}" "1.1.1.1" -o /dev/null -I)"
 	if [ "$check_code" == "200" ] ; then
 	echo "check2=200" >> $check_tmp
 	else

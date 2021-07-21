@@ -8,9 +8,9 @@ ss_enable=`nvram get ss_enable`
 ipt2socks_enable=`nvram get app_104`
 [ -z $ipt2socks_enable ] && ipt2socks_enable=0 && nvram set app_104=0
 app_95="$(nvram get app_95)"
+[ -z "$app_95" ] && app_95="." && nvram set app_95="."
 ss_matching_enable="$(nvram get ss_matching_enable)"
 [ -z $ss_matching_enable ] && ss_matching_enable=0 && nvram set ss_matching_enable=0
-[ "$ss_matching_enable" == "0" ] && [ -z "$app_95" ] && app_95="." && nvram set app_95="."
 ss_ip46=`nvram get ss_ip46`
 [ -z $ss_ip46 ] && ss_ip46=0 && nvram set ss_ip46=0
 ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
@@ -804,7 +804,6 @@ check_webui_yes
 	logger -t "【SS】" "ss-redir start.【$app_97】"
 	nvram set gfwlist3="ss-redir start.【$app_97】"
 	nvram set ss_internet="2"
-	rm -f /tmp/check_timeout/*
 
 echo "Debug: $DNS_Server"
 	logger -t "【SS】" "###############启动程序###############"
@@ -860,23 +859,20 @@ exit 0
 }
 
 stop_SS () {
+sed -Ei '/【SS】|^$/d' /tmp/script/_opt_script_check
 kill_ps "$scriptname keep"
 kill_ps "sh_ezscript.sh"
 kill_ps "Sh15_ss.sh"
 clean_ss_rules
 cru.sh d ss_update &
-rm -f /tmp/check_timeout/*
-ss-rules -f
+#ss-rules -f
 nvram set ss_internet="0"
-rm -f $confdir/r.wantoss.conf
-sed -Ei "/conf-dir=$confdir_x/d" /etc/storage/dnsmasq/dnsmasq.conf
-restart_dhcpd
 killall_ss_redir
 killall_ss_local
 ss_plugin_client_name="$(nvram get ss_plugin_client_name)"
 [ ! -z "$ss_plugin_client_name" ] && { kill_ps "$ss_plugin_client_name" ; ss_plugin_client_name="" ; nvram set ss_plugin_client_name="" ; }
-killall pdnsd dnsproxy sh_sskeey_k.sh
-killall -9 pdnsd dnsproxy sh_sskeey_k.sh
+killall pdnsd dnsproxy
+killall -9 pdnsd dnsproxy
 rm -f /tmp/sh_sskeey_k.sh
 [ -f /opt/etc/init.d/S24chinadns ] && { rm -f /var/log/chinadns.lock; /opt/etc/init.d/S24chinadns stop& }
 [ -f /opt/etc/init.d/S26pdnsd ] && { rm -f /var/log/pdnsd.lock; /opt/etc/init.d/S26pdnsd stop& }
@@ -1011,7 +1007,7 @@ ss_link_1=`nvram get ss_link_1`
 ss_internet=`nvram get ss_internet`
 if [ "$ss_internet" = "1" ] ; then
 	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-	RND_NUM=`echo $SEED 30 60|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	RND_NUM=`echo $SEED 50 80|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 	[ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
 	sleep $RND_NUM
 	sleep $ss_link_1
@@ -1022,36 +1018,24 @@ fi
 
 SS_keep () {
 gen_include
-cat > "/tmp/sh_sskeey_k.sh" <<-SSMK
-#!/bin/bash
-source /etc/storage/script/init.sh
-for ss_1i in \$(seq 0 16)
-do
-NUM=\`ps -w | grep "Sh15_ss.sh keep" | grep -v grep |wc -l\`
-if [ "\$NUM" -lt "1" ] ; then
-break
+logger -t "【SS】" "守护进程启动"
+/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+if [ -s /tmp/script/_opt_script_check ]; then
+sed -Ei '/【SS】|^$/d' /tmp/script/_opt_script_check
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+	NUM=\`grep "Sh15_ss.sh keep" /tmp/ps | grep -v grep |wc -l\` # 【SS】
+	if [ "\$NUM" -lt "1" ] ; then # 【SS】
+		logger -t "【SS】" "重新启动\$NUM" # 【SS】
+		nvram set ss_status=00 && eval "$scriptfilepath &" && sed -Ei '/【SS】|^$/d' /tmp/script/_opt_script_check # 【SS】
+	fi # 【SS】
+OSC
+#return
 fi
-sleep 60
-done
-ss_enable=\`nvram get ss_enable\`
-if [ "\$ss_enable" = "1" ] ; then
-rm -f /tmp/check_timeout/*
-kill_ps "$scriptname"
-eval "$scriptfilepath keep &"
-exit 0
-fi
-SSMK
-chmod 777 "/tmp/sh_sskeey_k.sh"
-kill_ps "$scriptname keep"
-kill_ps "Sh15_ss.sh"
-rm -f /tmp/check_timeout/*
-killall sh_sskeey_k.sh
-killall -9 sh_sskeey_k.sh
-/tmp/sh_sskeey_k.sh &
+sleep 20
 ss_run_ss_local=`nvram get ss_run_ss_local`
 ss_mode_x=`nvram get ss_mode_x`
-/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-sleep 15
+ss_link_2=`nvram get ss_link_2`
+ss_link_1=`nvram get ss_link_1`
 ss_enable=`nvram get ss_enable`
 while [ "$ss_enable" = "1" ];
 do
@@ -1121,6 +1105,8 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 		exit 0
 	fi
 	if [ "$ss_mode_x" = "3" ] ; then
+		ss_internet="$(nvram get ss_internet)"
+		[ "$ss_internet" != "1" ] && nvram set ss_internet="1"
 		sleep 20
 		#跳出当前循环
 		continue
@@ -1174,30 +1160,15 @@ fi
 if [ "$check2" == "200" ] ; then
 #200
 	echo "[$LOGTIME] SS $app_97 have no problem."
-	logger -t "【SS】" " SS 服务器 【$app_97】 恢复正常"
 	ss_internet="$(nvram get ss_internet)"
 	[ "$ss_internet" != "1" ] && nvram set ss_internet="1"
 	if [ "$rebss" != "0" ] ; then
+	logger -t "【SS】" " SS 服务器 【$app_97】 恢复正常"
 	rebss="0"
 	ss_rebss_b="$(nvram get ss_rebss_b)"
 	[ "$ss_rebss_b" != "0" ] && nvram set ss_rebss_b=0
 	fi
 	sleep_rnd
-	#跳出当前循环
-	continue
-fi
-
-
-#404
-if [ "$ss_matching_enable" == "0" ] ; then
-	ss_internet="$(nvram get ss_internet)"
-	[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
-	rebss=`expr $rebss + 1`
-	nvram set ss_rebss_b="$rebss"
-	logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
-	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_ss_matching.txt"
-	ss_link_matching & 
-	sleep 10
 	#跳出当前循环
 	continue
 fi
@@ -1208,8 +1179,22 @@ ss_internet="$(nvram get ss_internet)"
 logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
-restart_dhcpd
+#restart_dhcpd
 #/etc/storage/crontabs_script.sh &
+
+#404
+if [ "$ss_matching_enable" == "0" ] ; then
+	logger -t "【SS】" " SS 已启用自动故障转移，若检测 3 次断线则更换节点，当值为 $rebss"
+if [ "$rebss" == "3" ] ; then
+	ss_internet="$(nvram get ss_internet)"
+	[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
+	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_ss_matching.txt"
+	eval "$scriptfilepath ss_link_matching &"
+	sleep 10
+	#跳出当前循环
+	continue
+fi
+fi
 
 done
 
@@ -1531,6 +1516,7 @@ nvram set app_77="ping_link"
 ping_ss_link
 fi
 match="$(nvram get app_95)"
+[ -z "$app_95" ] && app_95="." && nvram set app_95="."
 [ "$match" == "*" ] && match="."
 mismatch="$(nvram get app_96)"
 while read line
@@ -1538,7 +1524,7 @@ do
 line="$(echo $line)"
 if [ ! -z "$line" ] ; then
 	[ ! -z "$match" ] && line2="$(echo "$line" | grep -E "$match" | grep -v -E "剩余流量|过期时间")"
-	[ ! -z "$mismatch" ] && line2="$(echo "$line" | grep -v -E "$mismatch" | grep -v -E "剩余流量|过期时间")"
+	[ ! -z "$mismatch" ] && line2="$(echo "$line2" | grep -v -E "$mismatch" | grep -v -E "剩余流量|过期时间")"
 	if [ ! -z "$line2" ] ; then
 	echo $line2 >> /tmp/link/matching/link_ss_matching_1.txt
 	fi
@@ -1564,11 +1550,15 @@ sed -i $i_matching's/^/已经自动选用节点/' /tmp/link/matching/link_ss_mat
 # 选用节点
 logger -t "【自动选用节点】" "自动选用节点：""$(echo "$line" | grep -Eo '^[^↪️]+')"
 nvram set app_75="$(echo "$line" | grep -Eo "↪️.*[^↩️]" | grep -Eo "[^↪️].*")"
+if [ "$ss_enable" == "0" ] ; then
+eval "$scriptfilepath json_mk_ss &"
+return
+else
 # 重启ss
-[ "$ss_enable" == "0" ] && return
 eval "$scriptfilepath &"
 exit
 break
+fi
 fi
 i_matching=`expr $i_matching + 1`
 done < /tmp/link/matching/link_ss_matching.txt
@@ -1749,11 +1739,8 @@ update)
 	# echo $RND_NUM
 	logger -t "【SS】" "$RND_NUM 秒后进入处理状态, 请稍候"
 	sleep $RND_NUM
-	killall sh_sskeey_k.sh
-	killall -9 sh_sskeey_k.sh
 	nvram set app_111=5
 	Sh99_ss_tproxy.sh
-	[ -s /tmp/sh_sskeey_k.sh ] && /tmp/sh_sskeey_k.sh &
 	;;
 updatess)
 	check_webui_yes

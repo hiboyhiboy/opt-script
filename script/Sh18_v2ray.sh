@@ -30,9 +30,9 @@ if [ "$v2ray_enable" != "0" ] ; then
 link_get="$(nvram get app_74)"
 app_98="$(nvram get app_98)"
 app_95="$(nvram get app_95)"
+[ -z "$app_95" ] && app_95="." && nvram set app_95="."
 ss_matching_enable="$(nvram get ss_matching_enable)"
 [ -z $ss_matching_enable ] && ss_matching_enable=0 && nvram set ss_matching_enable=0
-[ "$ss_matching_enable" == "0" ] && [ -z "$app_95" ] && app_95="." && nvram set app_95="."
 if [ "$v2ray_follow" != 0 ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
 	if [ "Sh18_v2ray.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" ] ; then
@@ -247,7 +247,7 @@ if [ "$ss_rebss_n" != 0 ] ; then
 		fi
 		sleep 5
 		nvram set vmess_link_status=""
-		start_vmess_link
+		eval "$scriptfilepath up_link &"
 	fi
 fi
 sleep 3
@@ -289,7 +289,7 @@ ss_internet="$(nvram get ss_internet)"
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
 logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"
-restart_dhcpd
+#restart_dhcpd
 #/etc/storage/crontabs_script.sh &
 
 #404
@@ -299,7 +299,7 @@ if [ "$rebss" == "3" ] ; then
 	ss_internet="$(nvram get ss_internet)"
 	[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
 	logger -t "【v2ray】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_v2_matching.txt"
-	v2ray_link_v2_matching
+	eval "$scriptfilepath v2ray_link_v2_matching &"
 	sleep 10
 	#跳出当前循环
 	continue
@@ -531,7 +531,7 @@ cd "$(dirname "$v2ray_path")"
 eval "$su_cmd" '"cmd_name=v2ray && '"$su_cmd2"' $cmd_log"' &
 #eval "$su_cmd2 $cmd_log" &
 sleep 4
-restart_dhcpd
+#restart_dhcpd
 [ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动成功 $v2ray_v " && v2ray_restart o
 [ -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 
@@ -714,7 +714,7 @@ ss_link_1=`nvram get ss_link_1`
 ss_internet="$(nvram get ss_internet)"
 if [ "$ss_internet" = "1" ] ; then
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
-RND_NUM=`echo $SEED 30 60|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+RND_NUM=`echo $SEED 50 80|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 [ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
 sleep $RND_NUM
 sleep $ss_link_1
@@ -1911,6 +1911,7 @@ nvram set app_83="ping_link"
 ping_vmess_link
 fi
 match="$(nvram get app_95)"
+[ -z "$app_95" ] && app_95="." && nvram set app_95="."
 [ "$match" == "*" ] && match="."
 mismatch="$(nvram get app_96)"
 while read line
@@ -1918,7 +1919,7 @@ do
 line="$(echo $line)"
 if [ ! -z "$line" ] ; then
 	[ ! -z "$match" ] && line2="$(echo "$line" | grep -E "$match" | grep -v -E "剩余流量|过期时间")"
-	[ ! -z "$mismatch" ] && line2="$(echo "$line" | grep -v -E "$mismatch" | grep -v -E "剩余流量|过期时间")"
+	[ ! -z "$mismatch" ] && line2="$(echo "$line2" | grep -v -E "$mismatch" | grep -v -E "剩余流量|过期时间")"
 	if [ ! -z "$line2" ] ; then
 	echo $line2 >> /tmp/link/matching/link_v2_matching_1.txt
 	fi
@@ -1944,11 +1945,15 @@ sed -i $i_matching's/^/已经自动选用节点/' /tmp/link/matching/link_v2_mat
 # 选用节点
 logger -t "【自动选用节点】" "自动选用节点：""$(echo "$line" | grep -Eo '^[^↪️]+')"
 nvram set app_71="$(echo "$line" | grep -Eo "↪️.*[^↩️]" | grep -Eo "[^↪️].*")"
+if [ "$v2ray_enable" == "0" ] ; then
+eval "$scriptfilepath json_mk_vmess &"
+return 
+else
 # 重启v2ray
-[ "$v2ray_enable" == "0" ] && return
 eval "$scriptfilepath &"
 exit
 break
+fi
 fi
 i_matching=`expr $i_matching + 1`
 done < /tmp/link/matching/link_v2_matching.txt

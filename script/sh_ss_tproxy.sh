@@ -662,9 +662,9 @@ update_gfwlist_file() {
 		cat $tmp_down_file | sort -u |
 			sed '/^$\|@@/d'|
 			sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
-			sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d' |
+			sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d;' |
 			sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
-			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##' | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sort -u >> $tmp_gfwlist
+			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##' | sed 's/^[[:space:]]*//g; /^$/d; /#/d; s/comUSA/com/g;' | sort -u >> $tmp_gfwlist
 		fi
 		else
 		logger -t "【update_gfwlist】" "错误！！！获取官方 gfwlist 下载失败"
