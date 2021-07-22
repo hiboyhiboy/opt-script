@@ -64,14 +64,14 @@ ss_key=`nvram get ss_key`
 ss_method=`nvram get ss_method | tr 'A-Z' 'a-z'`
 
 ss_s1_local_address=`nvram get ss_s1_local_address`
+[ -z $ss_s1_local_address ] && ss_s1_local_address="0.0.0.0" && nvram set ss_s1_local_address=$ss_s1_local_address
 ss_s1_local_port=`nvram get ss_s1_local_port`
+[ -z $ss_s1_local_port ] && ss_s1_local_port=1081 && nvram set ss_s1_local_port=$ss_s1_local_port
 
 ss_pdnsd_wo_redir=`nvram get ss_pdnsd_wo_redir` #pdnsd  0、走代理；1、直连
 [ -z $ss_pdnsd_wo_redir ] && ss_pdnsd_wo_redir=0 && nvram set ss_pdnsd_wo_redir=$ss_pdnsd_wo_redir
 ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
 [ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
-ss_working_port=`nvram get ss_working_port` #working port 
-[ "$ss_enable" != "0" ] && [ $ss_working_port != 1090 ] && ss_working_port=1090 && nvram set ss_working_port=$ss_working_port
 ss_multiport=`nvram get ss_multiport`
 [ -z "$ss_multiport" ] && ss_multiport="22,80,443" && nvram set ss_multiport=$ss_multiport
 [ -n "$ss_multiport" ] || ss_multiport="22,80,443" # 处理多端口设定
@@ -79,20 +79,6 @@ ss_multiport=`nvram get ss_multiport`
 
 # DNS 端口，用于防止域名污染用的PDNSD
 DNS_Server=127.0.0.1#8053
-
-ss_3p_enable=`nvram get ss_3p_enable`
-ss_3p_gfwlist=`nvram get ss_3p_gfwlist`
-ss_3p_kool=`nvram get ss_3p_kool`
-
-
-ss_sub1=`nvram get ss_sub1`
-ss_sub2=`nvram get ss_sub2`
-ss_sub3=`nvram get ss_sub3`
-ss_sub4=`nvram get ss_sub4`
-ss_sub5=`nvram get ss_sub5`
-ss_sub6=`nvram get ss_sub6`
-ss_sub7=`nvram get ss_sub7`
-ss_sub8=`nvram get ss_sub8`
 
 ss_tochina_enable=`nvram get ss_tochina_enable`
 [ -z $ss_tochina_enable ] && ss_tochina_enable=0 && nvram set ss_tochina_enable=$ss_tochina_enable
@@ -334,6 +320,7 @@ cat > "$config_file" <<-SSJSON
 "plugin_opts": "$obfs_plugin_json",
 "reuse_port": true
 }
+
 SSJSON
 
 }
@@ -932,7 +919,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_sub4$ss_sub1$ss_sub2$ss_sub3$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
