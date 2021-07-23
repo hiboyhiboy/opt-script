@@ -368,6 +368,9 @@ fi
 
 update_app () {
 mkdir -p /opt/app/speedup
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/speedup/Advanced_Extensions_speedup.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/speedup/Advanced_Extensions_speedup.asp
 fi
@@ -405,6 +408,9 @@ updateapp4)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 start_path)
 	speedup_start_path

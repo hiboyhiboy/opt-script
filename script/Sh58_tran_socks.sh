@@ -326,11 +326,11 @@ echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr6.conf
 ss_server=`nvram get ss_server`
 echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # v2ray
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
-echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+#server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+#echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # clash
-grep '^  server: ' /etc/storage/app_20.sh | tr -d ' ' | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
-cat /etc/storage/app_20.sh | tr -d ' ' | grep -E -o \"server\":\"\[\^\"\]+ | sed -e 's/server\|://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+#grep '^  server: ' /etc/storage/app_20.sh | tr -d ' ' | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+#cat /etc/storage/app_20.sh | tr -d ' ' | grep -E -o \"server\":\"\[\^\"\]+ | sed -e 's/server\|://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 kcptun_server=`nvram get kcptun_server`
 echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # transocks ipt2socks 
@@ -409,6 +409,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/transocks
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/transocks/Advanced_Extensions_transocks.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/transocks/Advanced_Extensions_transocks.asp
 	[ -f /opt/bin/transocks ] && rm -f /opt/bin/transocks /opt/opt_backup/bin/transocks /opt/bin/kumasocks /opt/opt_backup/bin/kumasocks
@@ -445,6 +448,9 @@ updateapp10)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#transocks_check

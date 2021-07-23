@@ -478,6 +478,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/wxsend
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/wxsend/Advanced_Extensions_wxsend.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/wxsend/Advanced_Extensions_wxsend.asp
 fi
@@ -521,6 +524,9 @@ updateapp22)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#wxsend_check

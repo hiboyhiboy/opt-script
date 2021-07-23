@@ -374,6 +374,9 @@ fi
 
 update_app () {
 mkdir -p /opt/app/cryfs
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/cryfs/Advanced_Extensions_cryfs.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/cryfs/Advanced_Extensions_cryfs.asp
 	opkg update
@@ -413,6 +416,9 @@ updateapp15)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#cryfs_check

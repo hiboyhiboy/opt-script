@@ -303,6 +303,9 @@ fi
 
 update_app () {
 mkdir -p /opt/app/filemanager
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/filemanager/Advanced_Extensions_filemanager.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/filemanager/Advanced_Extensions_filemanager.asp
 	[ -f "$filemanager_upanPath/filemanager/filemanager" ] && rm -f $filemanager_upanPath/filemanager/filemanager
@@ -340,6 +343,9 @@ updateapp5)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 initconfig)
 	initconfig

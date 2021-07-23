@@ -569,6 +569,9 @@ initconfig
 
 
 update_app () {
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/bin/dns2tcp /opt/opt_backup/bin/dns2tcp /opt/bin/smartdns /opt/opt_backup/bin/smartdns /opt/bin/chinadns_ng /opt/opt_backup/bin/chinadns_ng /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp /opt/app/chinadns_ng/gfwlist.txt /opt/app/chinadns_ng/chnroute6.ipset /opt/app/chinadns_ng/chnroute.ipset
 fi
@@ -605,6 +608,9 @@ updateapp19)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 *)
 	chinadns_ng_check

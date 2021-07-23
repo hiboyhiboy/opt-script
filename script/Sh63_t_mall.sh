@@ -432,6 +432,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/tmall
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/tmall/Advanced_Extensions_tmall.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/tmall/Advanced_Extensions_tmall.asp
 fi
@@ -467,6 +470,9 @@ updateapp13)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#tmall_check

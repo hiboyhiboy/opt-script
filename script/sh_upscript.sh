@@ -7,6 +7,12 @@ scriptt=`nvram get scriptt`
 scripto=`nvram get scripto`
 [ "$ACTION" = "upscript" ] && upscript_enable=1
 
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep _upscript)" ]  && [ ! -s /tmp/script/_upscript ]; then
+	mkdir -p /tmp/script
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_upscript
+	chmod 777 /tmp/script/_upscript
+fi
+
 file_o_check () {
 
 #获取script的sh*文件MD5
@@ -26,7 +32,7 @@ fi
 if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2021-7-22"
+	nvram set scripto="2021-7-23"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -124,6 +130,20 @@ sync;echo 3 > /proc/sys/vm/drop_caches
 /etc/storage/crontabs_script.sh 
 }
 
+all_up_web () {
+logger -t "【WebUI】" "遍历更新 web 页面"
+# 解压内置 asp 文件
+[ -s /etc_ro/www_asp.tgz ] && { tar -xzvf /etc_ro/www_asp.tgz -C /tmp ;  chmod 666 /tmp/www_asp -R ; }
+chmod 777 /etc/storage/script -R
+# start all services Sh??_* in /etc/storage/script
+for i in `ls /etc/storage/script/Sh??_* 2>/dev/null` ; do
+	[ ! -x "${i}" ] && continue
+	eval ${i} update_asp
+done
+/etc/storage/www_sh/menu_title.sh
+sync;echo 3 > /proc/sys/vm/drop_caches
+}
+
 case $ACTION in
 check_opt)
 	check_opt
@@ -145,6 +165,15 @@ stop)
 	kill_ps "$scriptname"
 	;;
 start)
+	start_upscript
+	check_opt
+	;;
+upweb)
+	all_up_web
+	check_opt
+	;;
+upscript)
+	upscript_enable=1
 	start_upscript
 	check_opt
 	;;

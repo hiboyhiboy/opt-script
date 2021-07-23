@@ -326,6 +326,9 @@ chmod 777 /etc/storage/app_3.sh /etc/storage/app_4.sh /etc/storage/app_6.sh
 initconfig
 
 update_app () {
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
+fi
 if [ "$1" = "del1" ] ; then
 	rm -rf /etc/storage/app_3.sh /opt/bin/udp2raw /opt/opt_backup/bin/udp2raw /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
 fi
@@ -379,6 +382,9 @@ updateapp_3)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 *)
 	upd2pro_check

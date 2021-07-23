@@ -221,6 +221,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
+clash_get_releases
 for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
 wgetcurl_file "$SVC_PATH" "$hiboyfile/clash" "$hiboyfile2/clash"
@@ -434,11 +435,11 @@ echo "" > /opt/app/ss_tproxy/conf/proxy_svraddr6.conf
 ss_server=`nvram get ss_server`
 echo "$ss_server" > /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # v2ray
-server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
-echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+#server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
+#echo "$server_addresses" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 # clash
-grep '^  server: ' /etc/storage/app_20.sh | tr -d ' ' | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
-cat /etc/storage/app_20.sh | tr -d ' ' | grep -E -o \"server\":\"\[\^\"\]+ | sed -e 's/server\|://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+#grep '^  server: ' /etc/storage/app_20.sh | tr -d ' ' | sed -e 's/server://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
+#cat /etc/storage/app_20.sh | tr -d ' ' | grep -E -o \"server\":\"\[\^\"\]+ | sed -e 's/server\|://g' | sed -e 's/"\|'"'"'\| //g' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 kcptun_server=`nvram get kcptun_server`
 echo "$kcptun_server" >> /opt/app/ss_tproxy/conf/proxy_all_svraddr.conf
 
@@ -703,6 +704,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/clash
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/clash/Advanced_Extensions_clash.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/clash/Advanced_Extensions_clash.asp /opt/bin/clash /opt/app/clash/config/Country.mmdb /opt/app/clash/config/Country_mmdb /opt/app/clash/clash_webs
 fi
@@ -952,6 +956,29 @@ fi
 
 }
 
+
+clash_get_releases(){
+app_78="$(nvram get app_78)"
+link_get=""
+if [ "$app_78" == "premium" ] ; then
+link_get="clash-premium"
+logger -t "【clash】" "更换 premium (闭源版) 主程序: https://github.com/Dreamacro/clash/releases/tag/premium"
+fi
+if [ "$app_78" == "experimental" ] ; then
+link_get="clash"
+logger -t "【clash】" "更换支持Vless+XTLS的CDN核心 experimental 主程序: https://github.com/ClashDotNetFramework/experimental-clash"
+fi
+if [ ! -z "$link_get" ] ; then
+nvram set app_78=""
+SVC_PATH="$(which clash)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/clash"
+rm -rf "$SVC_PATH" /opt/opt_backup/bin/clash
+logger -t "【clash】" "自动下载 clash 主程序"
+wgetcurl_file "$SVC_PATH" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
+fi
+}
+
+
 urlencode() {
 	# urlencode <string>
 	out=""
@@ -989,6 +1016,9 @@ updateapp18)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#clash_check

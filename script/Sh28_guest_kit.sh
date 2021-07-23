@@ -252,6 +252,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/guestkit
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/guestkit/Advanced_Extensions_guestkit.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/guestkit/Advanced_Extensions_guestkit.asp
 	[ -f /opt/bin/guestkit ] && rm -f /opt/bin/guestkit /opt/opt_backup/bin/guestkit
@@ -289,6 +292,9 @@ updateapp9)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#guestkit_check

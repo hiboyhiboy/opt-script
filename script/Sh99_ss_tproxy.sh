@@ -603,6 +603,9 @@ sh_ss_tproxy.sh "$@"
 
 update_app () {
 mkdir -p /opt/app/ss_tproxy
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp
+fi
 if [ "$1" = "del" ] ; then
 	nvram set ss_tproxy_auser=""
 	rm -rf /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp
@@ -679,6 +682,9 @@ updateapp21)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#ss_tproxy_check

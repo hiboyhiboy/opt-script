@@ -656,6 +656,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/translate
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/translate/Advanced_Extensions_translate.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/translate/Advanced_Extensions_translate.asp
 	[ -f /opt/bin/translate ] && rm -f /opt/bin/translate
@@ -692,6 +695,9 @@ updateapp11)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#translate_check

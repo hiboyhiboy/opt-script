@@ -190,6 +190,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/ddnsto
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/ddnsto/Advanced_Extensions_ddnsto.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/ddnsto/Advanced_Extensions_ddnsto.asp
 	[ -f /opt/bin/ddnsto ] && rm -f /opt/bin/ddnsto /opt/opt_backup/bin/ddnsto
@@ -227,6 +230,9 @@ updateapp16)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#ddnsto_check

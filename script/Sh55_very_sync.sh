@@ -252,6 +252,9 @@ fi
 
 update_app () {
 mkdir -p /opt/app/verysync
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/verysync/Advanced_Extensions_verysync.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/verysync/Advanced_Extensions_verysync.asp
 	[ -f $verysync_upanPath/verysync/verysync ] && rm -f $verysync_upanPath/verysync/verysync
@@ -286,6 +289,9 @@ updateapp6)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#verysync_check

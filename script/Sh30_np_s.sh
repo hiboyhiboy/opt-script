@@ -433,6 +433,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/nps
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/nps/Advanced_Extensions_nps.asp
+fi
 if [ "$1" = "del" ] ; then
 	nps_version=""
 	nvram set app_57=""
@@ -474,6 +477,9 @@ updateapp14)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#nps_check

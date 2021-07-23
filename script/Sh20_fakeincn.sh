@@ -608,6 +608,9 @@ chmod 777 /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh
 initconfig
 
 update_app () {
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
 fi
@@ -648,6 +651,9 @@ updateapp2)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 *)
 	fakeincn_check

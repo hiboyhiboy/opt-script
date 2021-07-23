@@ -274,6 +274,9 @@ fi
 }
 
 update_app () {
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/chinadns/Advanced_Extensions_chinadns.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf $chinadns_path /opt/opt_backup/bin/chinadns /opt/app/chinadns/Advanced_Extensions_chinadns.asp /opt/app/chinadns/chinadns_iplist.txt
 fi
@@ -313,6 +316,9 @@ updateapp1)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 *)
 	chinadns_check

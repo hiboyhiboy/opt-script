@@ -195,6 +195,9 @@ fi
 
 update_app () {
 mkdir -p /opt/app/virtualhere
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp
 	[ -f /opt/bin/virtualhere ] && rm -f /opt/bin/virtualhere /opt/opt_backup/bin/virtualhere
@@ -231,6 +234,9 @@ updateapp8)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#virtualhere_check

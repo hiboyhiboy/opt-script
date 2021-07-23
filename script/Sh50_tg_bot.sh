@@ -361,6 +361,9 @@ initconfig
 
 update_app () {
 mkdir -p /opt/app/tgbot
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/tgbot/Advanced_Extensions_tgbot.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/tgbot/Advanced_Extensions_tgbot.asp
 fi
@@ -401,6 +404,9 @@ updateapp12)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#tgbot_check
