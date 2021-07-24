@@ -6,9 +6,9 @@ de_2_base64 () {
 if [ -z "$(echo "$1" | awk -F '#' '{print $1}' | grep -Eo [^A-Za-z0-9+/=:_-]+)" ] ; then
 # 有些链接会多一层 base64 包裹，链接2次解码
 	if [ ! -z "$(echo "$1" | awk -F '#' '{print $2}')" ] ; then
-		echo "$(echo -n "$1" | awk -F '#' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"'#'"$(echo $1 | awk -F '#' '{print $2}')"
+		echo "$(echo -n "$1" | awk -F '#' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)"'#'"$(echo $1 | awk -F '#' '{print $2}')"
 	else
-		echo "$(echo -n "$1" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"
+		echo "$(echo -n "$1" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)"
 	fi
 else
 	echo "$1"
@@ -250,7 +250,7 @@ fi
 link="$(de_2_base64 "$(echo -n $link)")"
 # 详述 https://github.com/2dust/v2rayN/wiki/分享链接格式说明(ver-2)
 # 实在看不懂这说明，链接大概率不兼容
-#link="$(echo $link | jq -c .)"
+link="$(echo $link | jq -c .)"
 vless_link_remote_host="$(echo "$link" | jq -r .add | sed 's/[ \t]*//g')"
 [ "$vless_link_remote_host" == "null" ] && vless_link_remote_host=""
 link_server="$vless_link_remote_host"
@@ -361,7 +361,7 @@ if [ ! -z "$(echo -n "$link" | grep '#')" ] ; then
 trojan_link_name_url="$(echo -n $link | awk -F '#' '{print $2}')"
 trojan_link_name="$(echo $(printf $(echo -n "$trojan_link_name_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
 link=$(echo -n $link | awk -F '#' '{print $1}')
-link3=$(echo -n $link | awk -F '@' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')
+link3=$(echo -n $link | awk -F '@' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)
 link4=$(echo -n $link | awk -F '@' '{print $2}')
 link2="$link3""@""$link4"
 trojan_link_password=$(echo -n $link2 | grep -Eo '^.+@' | sed -n '1p' | grep -Eo '^.+[^@]' | sed -n '1p')
