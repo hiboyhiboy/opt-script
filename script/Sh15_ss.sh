@@ -1476,9 +1476,9 @@ fi
 if [ "$http_link_dd" == "1" ] ; then
 # 需要2次解码
 if [ "$(cat /tmp/link/ss/0_link.txt | grep "://" | wc -l)" != "0" ] ; then
-cat /tmp/link/ss/0_link.txt | awk -F '://' '{cmd=sprintf("echo -n "%s" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed "s/$/&====/g" | base64 -d", $2);  system(cmd); print "";}' > /tmp/link/ss/1_link.txt
+cat /tmp/link/ss/0_link.txt | awk -F '://' '{cmd=sprintf("echo -n \"%s\" | sed -e \"s/_/\\//g\" | sed -e \"s/-/\\+/g\" | sed \"s/$/&====/g\" | base64 -d", $2);  system(cmd); print "";}' > /tmp/link/ss/1_link.txt
 else
-cat /tmp/link/ss/0_link.txt | awk '{cmd=sprintf("echo -n "%s" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed "s/$/&====/g" | base64 -d", $1);  system(cmd); print "";}' > /tmp/link/ss/1_link.txt
+cat /tmp/link/ss/0_link.txt | awk '{cmd=sprintf("echo -n \"%s\" | sed -e \"s/_/\\//g\" | sed -e \"s/-/\\+/g\" | sed \"s/$/&====/g\" | base64 -d", $1);  system(cmd); print "";}' > /tmp/link/ss/1_link.txt
 fi
 else
 # 不需2次解码
