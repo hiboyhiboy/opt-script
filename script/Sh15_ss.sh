@@ -887,7 +887,7 @@ if [ "$1" = "x" ] ; then
 		if [ "$ss_matching_enable" == "0" ] ; then
 			[ -f $relock ] && rm -f $relock
 			logger -t "【SS_restart】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_ss_matching.txt"
-			ss_link_matching & 
+			eval "$scriptfilepath link_ss_matching &"
 			sleep 10
 		fi
 		logger -t "【ss】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -969,7 +969,7 @@ if [ "$ss_enable" = "1" ] ; then
 	[ $ss_server_port ] || logger -t "【SS】" "服务器端口:未填写"
 	[ $ss_method ] || logger -t "【SS】" "加密方式:未填写"
 	[ $ss_server ] && [ $ss_server_port ] && [ $ss_method ] \
-	 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; [ "$ss_matching_enable" == "0" ] ss_link_matching; sleep 20; exit 1; }
+	 ||  { logger -t "【SS】" "SS配置有错误，请到扩展功能检查SS配置页面"; stop_SS; [ "$ss_matching_enable" == "0" ] && eval "$scriptfilepath link_ss_matching &"; sleep 20; exit 1; }
 	if [ "$needed_restart" = "2" ] ; then
 		logger -t "【SS】" "检测:更换线路配置，进行快速切换服务器。"
 		swap_ss_redir
@@ -1025,9 +1025,9 @@ ss_mode_x=`nvram get ss_mode_x`
 ss_link_2=`nvram get ss_link_2`
 ss_link_1=`nvram get ss_link_1`
 ss_enable=`nvram get ss_enable`
+rebss=`nvram get ss_rebss_b`
 while [ "$ss_enable" = "1" ];
 do
-rebss=`nvram get ss_rebss_b`
 ss_rebss_n=`nvram get ss_rebss_n`
 ss_rebss_a=`nvram get ss_rebss_a`
 if [ "$ss_rebss_n" != 0 ] ; then
@@ -1173,11 +1173,12 @@ nvram set ss_rebss_b="$rebss"
 #404
 if [ "$ss_matching_enable" == "0" ] ; then
 	logger -t "【SS】" " SS 已启用自动故障转移，若检测 3 次断线则更换节点，当值为 $rebss"
-if [ "$rebss" == "3" ] ; then
+if [ "$rebss" -ge "3" ] ; then
+	nvram set ss_rebss_b=0
 	ss_internet="$(nvram get ss_internet)"
 	[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
 	logger -t "【SS】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_ss_matching.txt"
-	eval "$scriptfilepath ss_link_matching &"
+	eval "$scriptfilepath link_ss_matching &"
 	sleep 10
 	#跳出当前循环
 	continue

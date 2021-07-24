@@ -102,7 +102,7 @@ if [ "$1" = "x" ] ; then
 		if [ "$ss_matching_enable" == "0" ] ; then
 			[ -f $relock ] && rm -f $relock
 			logger -t "【v2ray_restart】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_v2_matching.txt"
-			v2ray_link_v2_matching
+			eval "$scriptfilepath v2ray_link_v2_matching &"
 			sleep 10
 		fi
 		logger -t "【v2ray】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -174,7 +174,7 @@ logger -t "【v2ray】" "守护进程启动"
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "$v2ray_path" /tmp/ps | grep -v grep |wc -l\` # 【v2ray】
+	NUM=\`grep "Sh18_v2ray.sh keep" /tmp/ps | grep -v grep |wc -l\` # 【v2ray】
 	if [ "\$NUM" -lt "1" ] || [ ! -s "$v2ray_path" ] ; then # 【v2ray】
 		logger -t "【v2ray】" "重新启动\$NUM" # 【v2ray】
 		nvram set v2ray_status=00 && eval "$scriptfilepath &" && sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check # 【v2ray】
@@ -186,6 +186,7 @@ sleep 20
 ss_link_2=`nvram get ss_link_2`
 ss_link_1=`nvram get ss_link_1`
 v2ray_enable=`nvram get v2ray_enable`
+rebss=`nvram get ss_rebss_b`
 while [ "$v2ray_enable" = "1" ]; do
 	NUM=`ps -w | grep "$v2ray_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$v2ray_path" ] ; then
@@ -200,7 +201,6 @@ while [ "$v2ray_enable" = "1" ]; do
 # 自动故障转移(透明代理时生效)
 
 
-rebss=`nvram get ss_rebss_b`
 ss_rebss_n=`nvram get ss_rebss_n`
 ss_rebss_a=`nvram get ss_rebss_a`
 if [ "$ss_rebss_n" != 0 ] ; then
@@ -295,7 +295,8 @@ logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"
 #404
 if [ "$ss_matching_enable" == "0" ] ; then
 	logger -t "【v2ray】" " v2ray 已启用自动故障转移(透明代理时生效)，若检测 3 次断线则更换节点，当值为 $rebss"
-if [ "$rebss" == "3" ] ; then
+if [ "$rebss" -ge "3" ] ; then
+	nvram set ss_rebss_b=0
 	ss_internet="$(nvram get ss_internet)"
 	[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
 	logger -t "【v2ray】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_v2_matching.txt"
@@ -342,8 +343,10 @@ fi
 if [ "$v2ray_http_enable" != "1" ] ; then
 if [ ! -f "/etc/storage/v2ray_config_script.sh" ] || [ ! -s "/etc/storage/v2ray_config_script.sh" ] ; then
 logger -t "【v2ray】" "错误！ v2ray 配置文件 内容为空"
+if [ "$ss_matching_enable" == "1" ] ; then
 logger -t "【v2ray】" "尝试使用上次配置生成"
 nvram set app_71="$(nvram get app_72)"
+fi
 v2ray_restart x
 fi
 if [ -s "/etc/storage/v2ray_config_script.sh" ] ; then
@@ -981,8 +984,6 @@ link_de_protocol "$link_tmp" "0vmess0vless0ss0"
 if [ "$link_protocol" != "vmess" ] && [ "$link_protocol" != "vless" ] && [ "$link_protocol" != "ss" ] ; then
 	return 1
 fi
-nvram set app_98="$link_name"
-nvram set app_72="$link_input"
 if [ "$link_protocol" == "vmess" ] || [ "$link_protocol" == "vless" ] ; then
 logger -t "【vmess】" "开始生成 $link_protocol 配置"
 json_mk_vmess_settings
@@ -1076,6 +1077,8 @@ echo $mk_vmess| jq --raw-output '.' > /tmp/vmess/mk_vmess.json
 if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
 	logger -t "【vmess】" "错误！生成配置为空，请看看哪里问题？"
 else
+	nvram set app_98="$link_name"
+	nvram set app_72="$link_input"
 	logger -t "【vmess】" "完成！生成配置，请刷新web页面查看！（应用新配置需按F5）"
 	cp -f /tmp/vmess/mk_vmess.json /etc/storage/v2ray_config_script.sh
 fi
