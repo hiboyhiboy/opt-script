@@ -1307,9 +1307,10 @@ fi
 
 if [[ "$(tcping -h 2>&1 | wc -l)" -gt 5 ]] ; then
 resolveip=`ping -4 -n -q -c1 -w1 -W1 $link_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
+[ -z "$resolveip" ] && resolveip=`ping -6 -n -q -c1 -w1 -W1 $link_server | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'`
 if [ ! -z "$resolveip" ] ; then
-ipset -! add proxyaddr $resolveip
-ipset -! add ad_spec_dst_sp $resolveip
+#ipset -! add proxyaddr $resolveip
+#ipset -! add ad_spec_dst_sp $resolveip
 tcping_text=`tcping -p $link_port -c 1 $resolveip`
 tcping_time=`echo $tcping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 [[ "$tcping_time" -gt 2 ]] || tcping_time="0"
@@ -1319,11 +1320,11 @@ fi
 [ "$tcping_time" == "0" ] && ping_time="0" ||  ping_time="$tcping_time"
 if [ "$ping_time" == "0" ] ; then
 if [ ! -z "$(cat /tmp/ping_server_error.txt | grep "error_""$link_server""_error")" ] ; then
-ping_text=""
+ping_time=""
 else
-ping_text=`ping -4 $link_server -w 3 -W 3 -q`
+ping_time=`ping -4 $link_server -w 3 -W 3 -q | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
+[ -z "$ping_time" ] && ping_time=`ping -6 $link_server -w 3 -W 3 -q | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 fi
-ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 fi
 if [ ! -z "$ping_time" ] ; then
 	echo "ping$ping_i：$ping_time ms ✔️ $link_server"

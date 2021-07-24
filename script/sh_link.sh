@@ -78,11 +78,11 @@ link="$(de_2_base64 "$(echo -n $link)")"
 # 链接2次解码 methodpassword 信息
 ss_link_methodpassword=$(echo -n $link | grep -Eo '^[^@]+' | sed -n '1p')
 [ -z "$(echo $ss_link_methodpassword | grep ":")" ] && ss_link_methodpassword="$(de_2_base64 "$(echo -n $ss_link_methodpassword)")"
-ss_link_usage=$(echo -n $link | grep -Eo '@[^:]+[:]+[0-9]+' | grep -Eo '[^@]+[:]+[0-9]+' | sed -n '1p')
-ss_link_server=$(echo -n "$ss_link_usage" | awk -F ':' '{print $1}')
+ss_link_usage=$(echo -n $link | grep -Eo '@.+[:]+[0-9]+' | grep -Eo '[^@]+[0-9]+' | sed -n '1p')
+ss_link_server=$(echo -n "$ss_link_usage" | grep -Eo ".+:" | grep -Eo '.+[^:]')
 [ -z "$ss_link_name" ] && ss_link_name="♯"$(echo -n "$ss_link_server")
 ss_link_name="〔$link_protocol〕$ss_link_name"
-ss_link_port=$(echo -n "$ss_link_usage" | awk -F ':' '{print $2}')
+ss_link_port=$(echo -n "$ss_link_usage" | grep -Eo '.+[:]+[0-9]+' | grep -Eo ":[0-9]+" | grep -Eo '[^:]+' | sed -n '$p')
 ss_link_password="$(echo -n "$ss_link_methodpassword" | awk -F ':' '{print $2}')"
 ss_link_method=$(echo -n "$ss_link_methodpassword" | awk -F ':' '{print $1}')
 ex_params="$(echo -n $link | grep -Eo 'plugin=.+' | sed -n '1p')"
@@ -118,8 +118,9 @@ link="$(de_2_base64 "$(echo -n $link)")"
 #8.8.8.8:443:auth_aes128_md5:chacha20:tls1.2_ticket_auth:bWJsYW5rMXBvcnQ/?obfsparam=b2ZmaWNlY2RuLm1pY3Jvc29mdC5jb20&protoparam=MTgwODM6aGFwcHkwMzAz&remarks=W-WNleerr-WPo10g5pyA5paw5Z-f5ZCNOiB3ZWJsYW5rLnh5eg&group=5aWH5bm75LmL5peFIFt3ZWJsYW5rLnh5el0&udpport=0&uot=0
 #服务器的描述信息
 ss_link_usage=$(echo -n $link | grep -Eo '^[^/?]+' | sed -n '1p')
-ss_link_server=`echo -n "$ss_link_usage" | awk -F ':' '{print $1}'`
-ss_link_port=`echo -n "$ss_link_usage" | awk -F ':' '{print $2}'`
+ss_link_server=`echo -n "$ss_link_usage" | grep -Eo '.+[:]+[0-9]+' | grep -Eo ".+:" | grep -Eo '.+[^:]'`
+ss_link_port=`echo -n "$ss_link_usage" | grep -Eo '.+[:]+[0-9]+' | grep -Eo ":[0-9]+" | grep -Eo '[^:]+' | sed -n '$p'`
+ss_link_usage=$(echo -n "$ss_link_usage" | grep -Eo ':'"$ss_link_port"':.+')
 ss_link_password="$(echo -n "$ss_link_usage" | awk -F ':' '{print $6}' | sed -e "s/_/\//g" | sed -e "s/\-/\+/g" | sed 's/$/&====/g' | base64 -d | sed -n '1p')"
 ss_link_method=`echo -n "$ss_link_usage" | awk -F ':' '{print $4}'`
 ss_link_obfs=`echo -n "$ss_link_usage" | awk -F ':' '{print $5}'` # -o
@@ -169,8 +170,8 @@ fi
 vless_link_uuid_url="$(echo -n $link | grep -Eo '^.+?@' | sed -n '1p' | grep -Eo '^.+[^@]' | sed -n '1p')"
 vless_link_uuid="$(echo $(printf $(echo -n "$vless_link_uuid_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
 vless_link_remote=$(echo -n $link | awk -F "$vless_link_uuid_url@" '{print $2}' | grep -Eo '.+?:[0-9]+?' | sed -n '1p')
-vless_link_remote_host=$(echo -n $vless_link_remote | awk -F ':' '{print $1}')
-vless_link_remote_port=$(echo -n $vless_link_remote | awk -F ':' '{print $2}')
+vless_link_remote_host=$(echo -n $vless_link_remote | grep -Eo ".+:" | grep -Eo '.+[^:]')
+vless_link_remote_port=$(echo -n $vless_link_remote | grep -Eo ":[0-9]+" | grep -Eo '[^:]+' | sed -n '$p')
 [ -z "$vless_link_name" ] && vless_link_name="♯"$(echo -n "$vless_link_remote_host")
 vless_link_name="〔$link_protocol〕$vless_link_name"
 link_name="$vless_link_name"
