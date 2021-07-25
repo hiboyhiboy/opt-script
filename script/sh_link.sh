@@ -198,11 +198,11 @@ vless_link_security="$(echo -n "$vless_link_specific" | grep -Eo "security=[^&]*
 
 vless_link_path_url="$(echo -n "$vless_link_specific" | grep -Eo "path=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 [ ! -z "$vless_link_path_url" ] && vless_link_path="$(printf $(echo -n $vless_link_path_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
-[ -z "$vless_link_path" ] && vless_link_path="/"
+#[ -z "$vless_link_path" ] && vless_link_path="/"
 
 vless_link_host_url="$(echo -n "$vless_link_specific" | grep -Eo "host=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 [ ! -z "$vless_link_host_url" ] && vless_link_host="$(printf $(echo -n $vless_link_host_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
-[ -z "$vless_link_host" ] && vless_link_host="$vless_link_remote_host"
+[ "$vless_link_type" == "http" ] && [ -z "$vless_link_host" ] && vless_link_host="$vless_link_remote_host"
 
 vless_link_headerType="$(echo -n "$vless_link_specific" | grep -Eo "header[Tt]ype=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 [ -z "$vless_link_headerType" ] && vless_link_headerType="none"
@@ -327,9 +327,9 @@ fi
 [ "$vless_link_sni" == "null" ] && vless_link_sni=""
 [ "$vless_link_serviceName" == "null" ] && vless_link_serviceName=""
 [ "$vless_link_host" == "null" ] && vless_link_host=""
-[ -z "$vless_link_host" ] && vless_link_host="$vless_link_remote_host"
+#[ -z "$vless_link_host" ] && vless_link_host="$vless_link_remote_host"
 [ "$vless_link_path" == "null" ] && vless_link_path=""
-[ -z "$vless_link_path" ] && vless_link_path="/"
+#[ -z "$vless_link_path" ] && vless_link_path="/"
 
 else
 # 使用 vless 分享链接规则

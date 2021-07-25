@@ -1173,7 +1173,7 @@ if [ "$vless_link_headerType" = "http" ] ; then
 # request: HTTPRequestObject https://www.v2fly.org/config/transport/tcp.html#httprequestobject
 # response: HTTPResponseObject
 # 旧方案写入 path 和 host
-if [ ! -z "$vless_link_path" ] ; then
+[ -z "$vless_link_path" ] && vless_link_path="/"
 vless_link_path=$(echo $vless_link_path | sed 's/,/ /g')
 link_path_i=0
 for link_path in $vless_link_path
@@ -1181,7 +1181,6 @@ do
 	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tcpSettings","header","request","path",'$link_path_i'];"'$link_path'")')
 	link_path_i=$(( link_path_i + 1 ))
 done
-fi
 if [ ! -z "$vless_link_host" ] ; then
 vless_link_host=$(echo $vless_link_host | sed 's/,/ /g')
 link_host_i=0
@@ -1202,8 +1201,8 @@ fi
 # kcp end
 # ws star
 if [ "$vless_link_type" = "ws" ] ; then
+[ -z "$vless_link_path" ] && vless_link_path="/"
 [ ! -z "$vless_link_path" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["wsSettings","path"];"'$vless_link_path'")')
-[ ! -z "$vless_link_host" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["wsSettings","headers","Host"];"'$vless_link_host'")')
 if [ ! -z "$vless_link_host" ] ; then
 vless_link_host=$(echo $vless_link_host | sed 's/,/ /g')
 link_host_i=0
@@ -1217,7 +1216,8 @@ fi
 # ws end
 # http h2 star
 if [ "$vless_link_type" = "http" ] || [ "$vless_link_type" = "h2" ] ; then
-[ ! -z "$vless_link_path" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["httpSettings","path"];"'$vless_link_path'")')
+[ -z "$vless_link_path" ] && vless_link_path="/"
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["httpSettings","path"];"'$vless_link_path'")')
 [ -z "$vless_link_host" ] && vless_link_host="$vless_link_remote_host"
 vless_link_host=$(echo $vless_link_host | sed 's/,/ /g')
 link_host_i=0
