@@ -1172,8 +1172,6 @@ fi
 if [ "$vless_link_headerType" = "http" ] ; then
 # request: HTTPRequestObject https://www.v2fly.org/config/transport/tcp.html#httprequestobject
 # response: HTTPResponseObject
-# 新规则方案未有定论，暂时不写入,请手动修改 
-if [ "$vless_link_v" == "2" ] ; then
 # 旧方案写入 path 和 host
 if [ ! -z "$vless_link_path" ] ; then
 vless_link_path=$(echo $vless_link_path | sed 's/,/ /g')
@@ -1195,7 +1193,6 @@ done
 fi
 fi
 fi
-fi
 # tcp end
 # kcp star
 if [ "$vless_link_type" = "kcp" ] ; then
@@ -1212,7 +1209,7 @@ vless_link_host=$(echo $vless_link_host | sed 's/,/ /g')
 link_host_i=0
 for link_host in $vless_link_host
 do
-	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["wsSettings","headers","Host",'$link_host_i'];"'$link_host'")')
+	[ "$link_host_i" == "0" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["wsSettings","headers","Host"];"'$link_host'")')
 	link_host_i=$(( link_host_i + 1 ))
 done
 fi
