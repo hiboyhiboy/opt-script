@@ -849,6 +849,8 @@ sync;echo 3 > /proc/sys/vm/drop_caches
 
 }
 
+# opkg update ; opkg upgrade ;
+
 libmd5_backup () {
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 if [ ! -z "$optPath" ] ; then

@@ -22,3 +22,4 @@ nvram set app19_ver_n=2020-02-03
 nvram set app20_ver_n=2021-02-21
 nvram set app21_ver_n=2021-02-21
 nvram set app22_ver_n=2020-08-26
+nvram set app23_ver_n=2021-07-28
