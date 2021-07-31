@@ -1,7 +1,7 @@
 #!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
-nps_version_2="v0.26.9"
+nps_version_2="v0.26.10"
 nps_enable=`nvram get app_60`
 [ -z $nps_enable ] && nps_enable=0 && nvram set app_60=0
 npsc_enable=`nvram get app_58`
@@ -225,9 +225,10 @@ if [ ! -z "$action_nps" ] ; then
 		rm -rf /opt/bin/nps/tmp
 		mkdir -p /opt/bin/nps/tmp
 		tar -xz -C /opt/bin/nps/tmp -f /opt/bin/nps/linux_mipsle_client.tar.gz
+		rm -rf /opt/bin/nps/linux_mipsle_client.tar.gz
 		[ -f /opt/bin/nps/tmp/npc ] && mv -f /opt/bin/nps/tmp/npc $SVC_PATH
 		[ -f /opt/bin/nps/tmp/nps/npc ] && mv -f /opt/bin/nps/tmp/nps/npc $SVC_PATH
-		rm -rf /opt/bin/nps/tmp /opt/bin/nps/linux_mipsle_client.tar.gz
+		rm -rf /opt/bin/nps/tmp
 	fi
 	[ "$action_nps" = "nps" ] && [ ! -d /opt/bin/nps/conf ] && rm -rf $SVC_PATH /opt/bin/nps/conf
 	if [ ! -s "$SVC_PATH" ] && [ "$action_nps" = "nps" ] ; then
@@ -236,13 +237,14 @@ if [ ! -z "$action_nps" ] ; then
 		rm -rf /opt/bin/nps/tmp
 		mkdir -p /opt/bin/nps/tmp
 		tar -xz -C /opt/bin/nps/tmp -f /opt/bin/nps/linux_mipsle_server.tar.gz
+		rm -rf /opt/bin/nps/linux_mipsle_server.tar.gz
 		[ -f /opt/bin/nps/tmp/nps ] && mv -f /opt/bin/nps/tmp/nps $SVC_PATH
 		[ -f /opt/bin/nps/tmp/nps/nps ] && mv -f /opt/bin/nps/tmp/nps/nps $SVC_PATH
 		[ -d /opt/bin/nps/tmp/conf ] && { cd /opt/bin/nps/tmp; tar -cz -f /opt/bin/nps/tmp/tmp.tar.gz ./conf ./web; }
 		[ -d /opt/bin/nps/tmp/nps/conf ] && { cd /opt/bin/nps/tmp/nps; tar -cz -f /opt/bin/nps/tmp/tmp.tar.gz ./conf ./web; }
 		tar -xz -C /opt/bin/nps -f /opt/bin/nps/tmp/tmp.tar.gz
 		rm -f /opt/bin/nps/conf/nps.conf
-		rm -rf /opt/bin/nps/tmp /opt/bin/nps/linux_mipsle_server.tar.gz
+		rm -rf /opt/bin/nps/tmp
 		if [ ! -d /etc/storage/nps/conf ] ; then
 			mkdir -p /etc/storage/nps/
 			cp -rf /opt/bin/nps/conf /etc/storage/nps/
@@ -253,7 +255,9 @@ if [ ! -z "$action_nps" ] ; then
 		ln -sf /etc/storage/nps/conf /opt/bin/nps/conf
 		[ ! -s /opt/bin/nps/conf ] && cp -f /etc/storage/nps/conf /opt/bin/nps/conf
 	fi
+	chmod 755 $SVC_PATH
 	[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
+	wgetcurl_file "$SVC_PATH" "$hiboyfile/$action_nps" "$hiboyfile2/$action_nps"
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【nps】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 		logger -t "【nps】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && nps_restart x
