@@ -883,13 +883,14 @@ if [ "$1" = "o" ] ; then
 	return 0
 fi
 if [ "$1" = "x" ] ; then
+	if [ "$ss_matching_enable" == "0" ] ; then
+		[ -f $relock ] && rm -f $relock
+		logger -t "【SS_restart】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_ss_matching.txt"
+		eval "$scriptfilepath link_ss_matching &"
+		sleep 10
+		exit 0
+	fi
 	if [ -f $relock ] ; then
-		if [ "$ss_matching_enable" == "0" ] ; then
-			[ -f $relock ] && rm -f $relock
-			logger -t "【SS_restart】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_ss_matching.txt"
-			eval "$scriptfilepath link_ss_matching &"
-			sleep 10
-		fi
 		logger -t "【ss】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
 		exit 0
 	fi
@@ -1243,6 +1244,7 @@ ping_ss_link () {
 	fi
 	nvram set app_77=""
 	ss_x_tmp=""
+	mkdir -p /etc/storage/link
 	mkdir -p /tmp/link/matching
 	rm -f /tmp/link/matching/link_ss_matching.txt
 	rm -f /tmp/link/matching/link_ss_matching_0.txt
@@ -1269,8 +1271,8 @@ ping_ss_link () {
 	sleep 1
 	ilox="$(ls -l /tmp/link/tmp_ss/ |wc -l)"
 	i_x_ping=`expr $i_x_ping + 1`
-	if [ "$i_x_ping" -gt 30 ] ; then
-	logger -t "【ping】" "刷新 ping 失败！超时 30 秒！ 请重新按【ping】按钮再次尝试。"
+	if [ "$i_x_ping" -gt 300 ] ; then
+	logger -t "【ping】" "刷新 ping 失败！超时 300 秒！ 请重新按【ping】按钮再次尝试。"
 	break
 	fi
 	done
@@ -1313,8 +1315,8 @@ if [ ! -z "$resolveip" ] ; then
 #ipset -! add ad_spec_dst_sp $resolveip
 tcping_text=`tcping -p $link_port -c 1 $resolveip`
 tcping_time=`echo $tcping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
-[[ "$tcping_time" -gt 2 ]] || tcping_time="0"
-[[ "$tcping_time" -lt 2 ]] && tcping_time="0"
+[[ "$tcping_time" -gt 10 ]] || tcping_time="0"
+[[ "$tcping_time" -lt 10 ]] && tcping_time="0"
 fi
 fi
 [ "$tcping_time" == "0" ] && ping_time="0" ||  ping_time="$tcping_time"
@@ -1528,6 +1530,7 @@ logger -t "【自动选用节点】" "重新生成自动选用节点列表： /t
 fi
 fi
 
+if [ -f /tmp/link/matching/link_ss_matching.txt ] && [ -s /tmp/link/matching/link_ss_matching.txt ] ; then
 # 选用节点
 if [ -z "$(cat /tmp/link/matching/link_ss_matching.txt | grep -v 已经自动选用节点)" ] ; then
 sed -e 's/已经自动选用节点//g' -i /tmp/link/matching/link_ss_matching.txt
@@ -1552,6 +1555,10 @@ fi
 fi
 i_matching=`expr $i_matching + 1`
 done < /tmp/link/matching/link_ss_matching.txt
+else
+# 重启ss
+eval "$scriptfilepath &"
+fi
 
 }
 
