@@ -1,5 +1,5 @@
 #!/bin/bash
-NEW_VER_version="v0.26.5"
+#NEW_VER_version="v0.26.5"
 # https://github.com/ehang-io/nps
 
 # If not specify, default meaning of return value:
@@ -290,11 +290,8 @@ getVersion(){
         fi
         VER="$(cat /tmp/nps_v.txt | grep version | awk -F ',' '{print $1}'  | awk -F ' ' '{print $NF}')"
         CUR_VER=v"$VER"
-        TAG_URL="https://github.com/ehang-io/nps/releases/latest"
-        NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep releases/tag | awk -F 'tag/' '{print $NF}' | awk -F '"' '{print $1}'`
-        if [[ $NEW_VER == "" ]];then
-            NEW_VER="$(wget --max-redirect=0 https://github.com/ehang-io/nps/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}')"
-        fi
+        TAG_URL="https://api.github.com/repos/ehang-io/nps/releases/latest "
+        NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
         if [[ $NEW_VER == "" ]];then
             NEW_VER="$NEW_VER_version"
         fi

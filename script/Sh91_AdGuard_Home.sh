@@ -182,11 +182,11 @@ else
 		logger -t "【AdGuardHome】" "找不到 $SVC_PATH ，安装 AdGuardHome 程序"
 		curltest=`which curl`
 		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://github.com/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
-			[ -z "$tag" ] && tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep '<a href="/AdguardTeam/AdGuardHome/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+			tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
+			[ -z "$tag" ] && tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
 		else
-			tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://github.com/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep releases/tag | awk -F 'tag/' '{print $NF}' | awk -F '"' '{print $1}' )"
-			[ -z "$tag" ] && tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://github.com/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep '<a href="/AdguardTeam/AdGuardHome/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+			tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
+			[ -z "$tag" ] && tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
 		fi
 		if [ ! -z "$tag" ] ; then
 			logger -t "【AdGuardHome】" "自动下载最新版本 $tag"

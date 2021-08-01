@@ -1328,6 +1328,7 @@ ping_time=`ping -4 $link_server -w 3 -W 3 -q | awk -F '/' '{print $4}'| awk -F '
 [ -z "$ping_time" ] && ping_time=`ping -6 $link_server -w 3 -W 3 -q | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
 fi
 fi
+ping_time="$(echo $ping_time | tr -d "\ ")"
 if [ ! -z "$ping_time" ] ; then
 	echo "ping$ping_i：$ping_time ms ✔️ $link_server"
 	[ "$tcping_time" == "0" ] && logger -t "【  ping$ping_i】" "$ping_time ms ✔️ $link_server $link_name"

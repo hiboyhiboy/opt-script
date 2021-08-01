@@ -184,11 +184,11 @@ if [ "$frp_version" == "9" ] ; then
 # 获取最新版本
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://github.com/fatedier/frp/releases/latest  2>&1 | grep releases/tag | awk -F '/' '{print $NF}' | awk -F ' ' '{print $1}' )"
-	[ -z "$frp_tag" ] && frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://github.com/fatedier/frp/releases/latest  2>&1 | grep '/frp/tree/'  |head -n1 | awk -F '/' '{print $NF}' | awk -F '"' '{print $1}' )"
+	frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://api.github.com/repos/fatedier/frp/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
+	[ -z "$frp_tag" ] && frp_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://api.github.com/repos/fatedier/frp/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
 else
-	frp_tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://github.com/fatedier/frp/releases/latest  2>&1 | grep releases/tag | awk -F 'tag/' '{print $NF}' | awk -F '"' '{print $1}' )"
-	[ -z "$frp_tag" ] && frp_tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://github.com/fatedier/frp/releases/latest  2>&1 | grep '/frp/tree/'  |head -n1 | awk -F 'tree/' '{print $NF}' | awk -F '"' '{print $1}' )"
+	frp_tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://api.github.com/repos/fatedier/frp/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
+	[ -z "$frp_tag" ] && frp_tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://api.github.com/repos/fatedier/frp/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
 fi
 [ ! -z "$frp_tag" ] && logger -t "【frp】" "最新版本 $frp_tag"
 if [ -z "$frp_tag" ] ; then

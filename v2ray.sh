@@ -2,7 +2,7 @@
 # https://github.com/v2ray/v2ray-core/releases
 # https://github.com/v2fly/v2ray-core/releases
 export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-version=v4.34.0
+#version=v4.34.0
 
 [ ! -z "$( alias | grep 'alias cp=')" ] &&  unalias cp
 [ ! -z "$( alias | grep 'alias mv=')" ] &&  unalias mv
@@ -73,7 +73,7 @@ if [ ! -s /root/go.sh ]; then
 fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
-/root/go.sh --version $version
+/root/go.sh # --version $version
 rm -f /root/v2ray_server_json
 ln -sf /etc/v2ray /root/v2ray_server_json
 echo "安装完成"
@@ -116,7 +116,7 @@ if [ ! -s /root/go.sh ]; then
 fi
 chmod +x "/root/go.sh"
 echo "V2Ray 安装 $version"
-/root/go.sh --version $version
+/root/go.sh # --version $version
 echo "安装完成"
 ntpdate us.pool.ntp.org &
 if [ -f "/etc/v2ray/config.back0" ]; then

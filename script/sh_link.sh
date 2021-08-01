@@ -251,6 +251,24 @@ fi
 link="$(de_2_base64 "$(echo -n $link)")"
 # 详述 https://github.com/2dust/v2rayN/wiki/分享链接格式说明(ver-2)
 # 实在看不懂这说明，链接大概率不兼容
+if [ "$link_read" == "ping" ] ; then
+# ping 改用 grep 进行快速解码
+link="$(echo $link | tr -d "\ ")"
+vless_link_remote_host="$(echo "$link" | grep -Eo "\"add\":[^,]+" | tr -d "\ " | tr -d "\"" | sed -e "s@^add:@@g")"
+link_server="$vless_link_remote_host"
+if [ ! -z "$vless_link_remote_host" ] ; then
+vless_link_name="$(echo "$link" | grep -Eo "\"remark\":[^,]+" | tr -d "\ " | tr -d "\"" | sed -e "s@^remark:@@g")"
+[ -z "$vless_link_name" ] && vless_link_name="$(echo "$link" | grep -Eo "\"ps\":[^,]+" | tr -d "\ " | tr -d "\"" | sed -e "s@^ps:@@g")"
+[ -z "$vless_link_name" ] && vless_link_name="♯""$vless_link_remote_host"
+vless_link_remote_port="$(echo "$link" | grep -Eo "\"port\":[^,]+" | tr -d "\ " | tr -d "\"" | sed -e "s@^port:@@g")"
+link_port="$vless_link_remote_port"
+link_read="" && return
+else
+# 使用 vless 分享链接规则
+de_vless_link "$link_tmp"
+return
+fi
+fi
 link="$(echo $link | jq -c .)"
 vless_link_remote_host="$(echo "$link" | jq -r .add | sed 's/[ \t]*//g')"
 [ "$vless_link_remote_host" == "null" ] && vless_link_remote_host=""
