@@ -1887,7 +1887,8 @@ else
 mv -f /tmp/link/vmess/0_link.txt /tmp/link/vmess/1_link.txt
 fi
 touch /etc/storage/app_25.sh
-sed -Ei '/^🔗/d' /etc/storage/app_25.sh
+[ "$down_i_link" == "1" ] && sed -Ei '/^🔗/d' /etc/storage/app_25.sh
+down_i_link="2"
 sed -Ei '/^$/d' /tmp/link/vmess/1_link.txt
 sed -Ei 's@^@'🔗'@g' /tmp/link/vmess/1_link.txt
 cat /tmp/link/vmess/1_link.txt >> /etc/storage/app_25.sh

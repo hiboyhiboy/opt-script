@@ -1489,7 +1489,8 @@ else
 mv -f /tmp/link/ss/0_link.txt /tmp/link/ss/1_link.txt
 fi
 touch /etc/storage/app_24.sh
-sed -Ei '/^🔗/d' /etc/storage/app_24.sh
+[ "$down_i_link" == "1" ] && sed -Ei '/^🔗/d' /etc/storage/app_24.sh
+down_i_link="2"
 sed -Ei '/^$/d' /tmp/link/ss/1_link.txt
 sed -Ei 's@^@'🔗'@g' /tmp/link/ss/1_link.txt
 cat /tmp/link/ss/1_link.txt >> /etc/storage/app_24.sh

@@ -191,9 +191,15 @@ else
 		if [ ! -z "$tag" ] ; then
 			logger -t "【AdGuardHome】" "自动下载最新版本 $tag"
 			wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "https://github.com/AdguardTeam/AdGuardHome/releases/download/$tag/AdGuardHome_linux_mipsle_softfloat.tar.gz"
-			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt ; cd /opt/AdGuardHome
-			rm -f /opt/AdGuardHome/AdGuardHome.tar.gz /opt/AdGuardHome/LICENSE.txt /opt/AdGuardHome/README.md
+			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt
 		fi
+		if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
+			static_adguard="https://static.adguard.com/adguardhome/release/AdGuardHome_linux_mipsle_softfloat.tar.gz"
+			logger -t "【AdGuardHome】" "开始下载 $static_adguard"
+			wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "$static_adguard"
+			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt ; cd /opt/AdGuardHome
+		fi
+		 cd /opt/AdGuardHome ; rm -f ./AdGuardHome.tar.gz ./LICENSE.txt./README.md ./CHANGELOG.md ./AdGuardHome.sig
 		if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
 			logger -t "【AdGuardHome】" "最新版本获取失败！！！"
 			logger -t "【AdGuardHome】" "开始下载 $hiboyfile2/AdGuardHome"
@@ -239,6 +245,7 @@ else
 		restart_dhcpd
 	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
+	cd /opt/AdGuardHome
 	eval "/opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
 	sleep 3
 	[ ! -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动成功" && AdGuardHome_restart o
