@@ -3,9 +3,9 @@
 source /etc/storage/script/init.sh
 frp_enable=`nvram get frp_enable`
 [ -z $frp_enable ] && frp_enable=0 && nvram set frp_enable=0
-frp_version_2="0.37.0"
-frp_version_0="0.24.1"
-frp_version_1="0.16.1"
+frp_version_2="不变动版本"
+frp_version_0="不变动版本"
+frp_version_1="不变动版本"
 frp_version_3="使用最新版"
 frp_version_4="使用最新版"
 frp_version_5="使用最新版"
@@ -165,18 +165,17 @@ kill_ps "$scriptname"
 frp_start () {
 check_webui_yes
 action_for=""
-frp_ver_wget=""
-[ "$frp_version" = "2" ] && frp_ver_wget="0.25.0" && frp_version_txt=$frp_version_2
-[ "$frp_version" = "0" ] && frp_ver_wget="0.24.1" && frp_version_txt=$frp_version_0
-[ "$frp_version" = "1" ] && frp_ver_wget="0.16.1" && frp_version_txt=$frp_version_1
-[ "$frp_version" = "3" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
-[ "$frp_version" = "4" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
-[ "$frp_version" = "5" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
-[ "$frp_version" = "6" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
-[ "$frp_version" = "7" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
-[ "$frp_version" = "8" ] && frp_ver_wget="" && nvram set frp_version=9 && frp_version=9
-[ "$frp_version" = "9" ] && frp_ver_wget=""
-[ "$frp_version" = "10" ] && frp_ver_wget=""
+[ "$frp_version" = "2" ] && nvram set frp_version=10 && frp_version=10 # 不变动版本
+[ "$frp_version" = "0" ] && nvram set frp_version=10 && frp_version=10 # 不变动版本
+[ "$frp_version" = "1" ] && nvram set frp_version=10 && frp_version=10 # 不变动版本
+[ "$frp_version" = "3" ] && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "4" ] && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "5" ] && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "6" ] && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "7" ] && nvram set frp_version=9 && frp_version=9
+[ "$frp_version" = "8" ] && nvram set frp_version=9 && frp_version=9
+# [ "$frp_version" = "9" ] # 使用最新版
+# [ "$frp_version" = "10" ] # 不变动版本
 [ "$frpc_enable" = "1" ] && action_for="frpc"
 [ "$frps_enable" = "1" ] && action_for=$action_for" frps"
 del_tmp=0
@@ -198,7 +197,6 @@ frp_tag="`/opt/bin/frpc --version`"
 if [ -z "$frp_tag" ] ; then
 frp_tag="$frp_version_2"
 frp_version=10
-frp_ver_wget=""
 fi
 logger -t "【frp】" "使用版本：$frp_tag"
 fi
@@ -236,33 +234,6 @@ if [ "$frp_ver" != "$frp_tag" ] ; then
 fi
 done
 fi
-if [ "$frp_version" != "10" ] && [ "$frp_version" != "9" ] ; then
-logger -t "【frp】" "$frp_version_txt 版本对比"
-for action_frp in $action_for
-do
-if [ -s "/opt/bin/$action_frp" ] ; then
-	frp_ver="`/opt/bin/$action_frp --version`"
-	if [ "$frp_ver" != "$frp_version_txt" ] ; then
-		logger -t "【frp】" "$action_frp 当前版本 $frp_ver ,需要安装 $frp_version_txt ,自动重新下载"
-		[ -s "/opt/bin/$action_frp" ] && rm -f /opt/bin/$action_frp
-		del_tmp=1
-	fi
-fi
-done
-if [ "$del_tmp" = "1" ] ; then
-	rm -rf /etc/storage/script/Sh32_frp.sh
-	if [ ! -f "/etc/storage/script/Sh32_frp.sh" ] || [ ! -s "/etc/storage/script/Sh32_frp.sh" ] ; then
-		wgetcurl.sh /tmp/Sh32_frp.sh "$hiboyscript/script/Sh32_frp.sh" "$hiboyscript2/script/Sh32_frp.sh"
-	fi
-	[ -z "$(cat /tmp/Sh32_frp.sh | grep "frp_enable")" ] && rm -f /tmp/Sh32_frp.sh
-	if [ -f "/tmp/Sh32_frp.sh" ] && [ -s "/tmp/Sh32_frp.sh" ] && [ ! -z "$(cat /tmp/Sh32_frp.sh | grep "frp_enable")" ] ; then
-		cp -f /tmp/Sh32_frp.sh /etc/storage/script/Sh32_frp.sh
-		rm -f /tmp/Sh32_frp.sh
-	fi
-	frp_restart o
-	/etc/storage/script/Sh32_frp.sh update_app
-fi
-fi
 for action_frp in $action_for
 do
 	SVC_PATH="/opt/bin/$action_frp"
@@ -275,7 +246,7 @@ do
 	fi
 	for h_i in $(seq 1 2) ; do
 	[[ "$($action_frp -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/$action_frp
-	wgetcurl_file "$SVC_PATH" "$hiboyfile/$action_frp$frp_ver_wget" "$hiboyfile2/$action_frp$frp_ver_wget"
+	wgetcurl_file "$SVC_PATH" "$hiboyfile/$action_frp" "$hiboyfile2/$action_frp"
 	done
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【frp】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
