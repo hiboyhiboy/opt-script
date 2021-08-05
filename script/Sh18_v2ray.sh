@@ -188,6 +188,7 @@ ss_link_2=`nvram get ss_link_2`
 ss_link_1=`nvram get ss_link_1`
 v2ray_enable=`nvram get v2ray_enable`
 rebss=`nvram get ss_rebss_b`
+[ -z "$rebss" ] &&  rebss=0 && nvram set ss_rebss_b=0
 while [ "$v2ray_enable" = "1" ]; do
 	NUM=`ps -w | grep "$v2ray_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$v2ray_path" ] ; then
@@ -287,6 +288,7 @@ fi
 #404
 ss_internet="$(nvram get ss_internet)"
 [ "$ss_internet" != "0" ] && nvram set ss_internet="0"
+[ -z "$rebss" ] && rebss=0
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
 logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"

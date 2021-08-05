@@ -821,7 +821,7 @@ if [ "$check2" != "200" ] ; then
 	logger -t "【SS】" "错误！【$ss_link_2】连接有问题！！！"
 	logger -t "【SS】" "网络连接有问题, 请更新 opt 文件夹、检查 U盘 文件和 SS 设置"
 	logger -t "【SS】" "如果是本地组网可忽略此错误！！"
-	logger -t "【SS】" "否则需启用【首次时连接检测】、【运行时持续检测】才能自动故障转移"
+	logger -t "【SS】" "否则需启用【检查 SS 服务器状态：运行时持续检测】才能自动故障转移"
 else
 	nvram set ss_rebss_b=0
 fi
@@ -1027,6 +1027,7 @@ ss_link_2=`nvram get ss_link_2`
 ss_link_1=`nvram get ss_link_1`
 ss_enable=`nvram get ss_enable`
 rebss=`nvram get ss_rebss_b`
+[ -z "$rebss" ] && rebss=0 && nvram set ss_rebss_b=0
 while [ "$ss_enable" = "1" ];
 do
 ss_rebss_n=`nvram get ss_rebss_n`
@@ -1166,6 +1167,7 @@ fi
 ss_internet="$(nvram get ss_internet)"
 [ "$ss_internet" != "0" ] && nvram set ss_internet="0"
 logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
+[ -z "$rebss" ] && rebss=0
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
 #restart_dhcpd
