@@ -302,8 +302,9 @@ obfs_json="$(nvram get ssr_type_obfs)"
 obfs_param_json="$(nvram get ssr_type_obfs_custom)"
 plugin_json="$(nvram get ss_plugin_name)"
 obfs_plugin_json="$(nvram get ss_plugin_config)"
+tcp_and_udp="tcp_only"
+[ "$ss_udp_enable" == 1 ] && tcp_and_udp="tcp_and_udp"
 fi
-
 cat > "$config_file" <<-SSJSON
 {
 "server": "$server_json",
@@ -319,11 +320,13 @@ cat > "$config_file" <<-SSJSON
 "obfs_param": "$obfs_param_json",
 "plugin": "$plugin_json",
 "plugin_opts": "$obfs_plugin_json",
-"reuse_port": true
+"reuse_port": true,
+"mode": "$tcp_and_udp"
 }
 
 SSJSON
 
+[ "$ss_type" == 1 ] && sed -Ei '/"plugin":|"plugin_opts":|"reuse_port":|^$/d' "$config_file"
 }
 
 usage_switch () {
@@ -486,15 +489,15 @@ for ss_1i in $(seq 1 $threads)
 do
 logger -t "【ss-redir】" "启动多线程均衡负载，启动 $ss_1i 线程"
 cmd_name="SS_""$ss_1i""_redir"
-#eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
-su_cmd2="ss-redir -c /tmp/ss-redir_1.json $options1"
+#eval "ss-redir -c /tmp/ss-redir_1.json $ss_usage $cmd_log" &
+su_cmd2="ss-redir -c /tmp/ss-redir_1.json $ss_usage"
 eval "$su_cmd" '"cmd_name='"$cmd_name"' && '"$su_cmd2"' $cmd_log"' &
 usleep 300000
 done
 else
 cmd_name="SS_1_redir"
-#eval "ss-redir -c /tmp/ss-redir_1.json $options1 $cmd_log" &
-su_cmd2="ss-redir -c /tmp/ss-redir_1.json $options1"
+#eval "ss-redir -c /tmp/ss-redir_1.json $ss_usage $cmd_log" &
+su_cmd2="ss-redir -c /tmp/ss-redir_1.json $ss_usage"
 eval "$su_cmd" '"cmd_name='"$cmd_name"' && '"$su_cmd2"' $cmd_log"' &
 fi
 if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
@@ -508,15 +511,15 @@ if [ "$ss_mode_x" = "3" ] || [ "$ss_run_ss_local" = "1" ] ; then
 	do
 	logger -t "【ss-local】" "启动多线程均衡负载，启动 $ss_1i 线程"
 	cmd_name="SS_""$ss_1i""_local"
-	#eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
-	su_cmd2="ss-local -c /tmp/ss-local_1.json $options1"
+	#eval "ss-local -c /tmp/ss-local_1.json $ss_usage $cmd_log" &
+	su_cmd2="ss-local -c /tmp/ss-local_1.json $ss_usage"
 	eval "$su_cmd" '"cmd_name='"$cmd_name"' && '"$su_cmd2"' $cmd_log"' &
 	usleep 300000
 	done
 	else
 	cmd_name="SS_1_local"
-	#eval "ss-local -c /tmp/ss-local_1.json $options1 $cmd_log" &
-	su_cmd2="ss-local -c /tmp/ss-local_1.json $options1"
+	#eval "ss-local -c /tmp/ss-local_1.json $ss_usage $cmd_log" &
+	su_cmd2="ss-local -c /tmp/ss-local_1.json $ss_usage"
 	eval "$su_cmd" '"cmd_name='"$cmd_name"' && '"$su_cmd2"' $cmd_log"' &
 	fi
 fi
