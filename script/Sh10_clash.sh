@@ -280,6 +280,7 @@ if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
 	su_cmd="su ‍✈️ -c "
 	gid_owner="1321"
 fi
+nvram set gid_owner="$gid_owner"
 if [ "$clash_follow" = "1" ] ; then
 if [ "$ss_udp_enable" = "1" ] || [ "$app_114" = "0" ] ; then
 	[ "$su_x" != "1" ] && logger -t "【clash】" "缺少 su 命令"
@@ -374,6 +375,7 @@ nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DN
 nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
 nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 sstp_set uid_owner='0'          # 非 0 时进行用户ID匹配跳过代理本机流量
+gid_owner="$(nvram get gid_owner)"
 sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
@@ -737,6 +739,7 @@ wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://cdn.jsdelivr.net/g
 fi
 reload_api
 }
+
 update_yml () {
 secret="$(yq r /etc/storage/app_20.sh secret)"
 rm_temp
@@ -850,10 +853,10 @@ cat /tmp/clash/dns.yml >> $config_yml
 #yq m -x -i $config_yml /tmp/clash/dns.yml
 #rm_temp
 #merge_dns_ip
+logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
 update_2_yml
 fi
 fi
-logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
 }
 
 update_2_yml () {
@@ -886,6 +889,7 @@ yq w -i $config_2_yml mixed-port 7893
 rm_temp
 yq w -i $config_2_yml external-controller "0.0.0.0:9091"
 
+logger -t "【clash】" "初始化 clash 双开 配置完成！实际运行配置：/opt/app/clash/config2/config.yaml"
 
 }
 

@@ -200,6 +200,7 @@ if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
 	su_cmd="su ‍✈️ -c "
 	gid_owner="1321"
 fi
+nvram set gid_owner="$gid_owner"
 if [ "$app_114" = "0" ] ; then
 	[ "$su_x" != "1" ] && logger -t "【$tran_c_socks】" "缺少 su 命令"
 	[ "$NUM" -ge "3" ] || logger -t "【$tran_c_socks】" "缺少 iptables -m owner 模块"
@@ -266,6 +267,7 @@ sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"�
 nvram set app_112="0"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
 nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
+gid_owner="$(nvram get gid_owner)"
 sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"

@@ -135,7 +135,8 @@ if [ "$cmd_log_enable" = "1" ] || [ "$ss_renum" -gt "0" ] ; then
 fi
 fi
 
-gid_owner="0"
+gid_owner="$(nvram get gid_owner)"
+gid_owner=${gid_owner:-"0"}
 ss_link_2=`nvram get ss_link_2`
 [ -z $ss_link_2 ] && ss_link_2="www.google.com.hk" && nvram set ss_link_2="www.google.com.hk"
 ss_link_1=`nvram get ss_link_1`
@@ -183,6 +184,7 @@ nvram set app_112="0"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy)
 nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
 sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
+gid_owner="$(nvram get gid_owner)"
 sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
@@ -483,7 +485,7 @@ if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
 	su_cmd="su ‍✈️ -c "
 	gid_owner="1321"
 fi
-
+nvram set gid_owner="$gid_owner"
 if [ "$ss_threads" != 0 ] ; then
 for ss_1i in $(seq 1 $threads)
 do

@@ -478,6 +478,7 @@ if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
 	su_cmd="su ‍✈️ -c "
 	gid_owner="1321"
 fi
+nvram set gid_owner="$gid_owner"
 if [ "$v2ray_follow" = "1" ] ; then
 if [ "$ss_udp_enable" = "1" ] || [ "$app_114" = "0" ] ; then
 	[ "$su_x" != "1" ] && logger -t "【v2ray】" "缺少 su 命令"
@@ -622,6 +623,7 @@ nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DN
 nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
 nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 sstp_set uid_owner='0'          # 非 0 时进行用户ID匹配跳过代理本机流量
+gid_owner="$(nvram get gid_owner)"
 sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
 ## proxy
 sstp_set proxy_all_svraddr="/opt/app/ss_tproxy/conf/proxy_all_svraddr.conf"
