@@ -163,22 +163,6 @@ translate_start () {
 
 check_webui_yes
 dir_name="/opt/app/translate/"
-base_name="translate_app_EN.txt"
-if [ ! -s "$dir_name$base_name" ] ; then
-	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
-	wgetcurl.sh "$dir_name$base_name" "$hiboyfile/$base_name" "$hiboyfile2/$base_name"
-fi
-base_name="translate_map_EN.txt"
-if [ ! -s "$dir_name$base_name" ] ; then
-	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
-	wgetcurl.sh "$dir_name$base_name" "$hiboyfile/$base_name" "$hiboyfile2/$base_name"
-fi
-base_name="translate_www_EN.txt"
-if [ ! -s "$dir_name$base_name" ] ; then
-	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
-	wgetcurl.sh "$dir_name$base_name" "$hiboyfile/$base_name" "$hiboyfile2/$base_name"
-fi
-
 initopt
 #translate_get_status
 eval "$scriptfilepath keep &"
@@ -197,58 +181,6 @@ fi
 
 www_umount () {
 
-umount /www/help.js
-umount /www/as2.asp
-umount /www/Advanced_Tweaks_Content.asp
-umount /www/Advanced_System_Content.asp
-umount /www/Advanced_Extensions_wifidog.asp
-umount /www/Advanced_Extensions_v2ray.asp
-umount /www/Advanced_Extensions_softether.asp
-umount /www/Advanced_Extensions_shellinabox.asp
-umount /www/Advanced_Extensions_script.asp
-umount /www/Advanced_Extensions_qcloud.asp
-umount /www/Advanced_Extensions_phddns.asp
-umount /www/Advanced_Extensions_ngrok.asp
-umount /www/Advanced_Extensions_mentohust.asp
-umount /www/Advanced_Extensions_lnmp.asp
-umount /www/Advanced_Extensions_koolproxy.asp
-umount /www/Advanced_Extensions_frp.asp
-umount /www/Advanced_Extensions_display.asp
-umount /www/Advanced_Extensions_cloudflare.asp
-umount /www/Advanced_Extensions_aliddns.asp
-umount /www/Advanced_Extensions_adm.asp
-umount /www/Advanced_Extensions_adbyby.asp
-umount /www/Advanced_Extensions_ServerChan.asp
-umount /www/Advanced_Extensions_SS_list.asp
-umount /www/Advanced_Extensions_SS_Server.asp
-umount /www/Advanced_Extensions_SS_Kcptun.asp
-umount /www/Advanced_Extensions_SSR_Server.asp
-umount /www/Advanced_Extensions_SS.asp
-umount /www/Advanced_Extensions_MEOW.asp
-umount /www/Advanced_Extensions_DNSPod.asp
-umount /www/Advanced_Extensions_CloudXNS.asp
-umount /www/Advanced_Extensions_COW.asp
-
-umount /www/device-map/ssinfo.asp
-umount /www/device-map/ss.asp
-umount /www/device-map/sata.asp
-umount /www/device-map/printer.asp
-umount /www/device-map/hub.asp
-umount /www/device-map/disk.asp
-
-umount /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp
-umount /opt/app/verysync/Advanced_Extensions_verysync.asp
-umount /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
-umount /opt/app/transocks/Advanced_Extensions_transocks.asp
-umount /opt/app/speedup/Advanced_Extensions_speedup.asp
-umount /opt/app/guestkit/Advanced_Extensions_guestkit.asp
-umount /opt/app/goflyway/Advanced_Extensions_goflyway.asp
-umount /opt/app/filemanager/Advanced_Extensions_filemanager.asp
-umount /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
-umount /opt/app/chinadns/Advanced_Extensions_chinadns.asp
-umount /opt/app/translate/Advanced_Extensions_translate.asp
-umount /opt/app/tgbot/Advanced_Extensions_tgbot.asp
-
 umount /www/EN.dict
 
 }
@@ -256,115 +188,12 @@ umount /www/EN.dict
 www_cp () {
 
 rm -rf /opt/app/translate/www/device-map/*
-cp -f /www/device-map/ssinfo.asp /opt/app/translate/www/device-map/ssinfo.asp
-cp -f /www/device-map/ss.asp /opt/app/translate/www/device-map/ss.asp
-cp -f /www/device-map/sata.asp /opt/app/translate/www/device-map/sata.asp
-cp -f /www/device-map/printer.asp /opt/app/translate/www/device-map/printer.asp
-cp -f /www/device-map/hub.asp /opt/app/translate/www/device-map/hub.asp
-cp -f /www/device-map/disk.asp /opt/app/translate/www/device-map/disk.asp
-
 rm -rf /opt/app/translate/www/*
-cp -f /www/help.js /opt/app/translate/www/help.js
-cp -f /www/as2.asp /opt/app/translate/www/as2.asp
-cp -f /www/Advanced_Tweaks_Content.asp /opt/app/translate/www/Advanced_Tweaks_Content.asp
-cp -f /www/Advanced_System_Content.asp /opt/app/translate/www/Advanced_System_Content.asp
-cp -f /www/Advanced_Extensions_wifidog.asp /opt/app/translate/www/Advanced_Extensions_wifidog.asp
-cp -f /www/Advanced_Extensions_v2ray.asp /opt/app/translate/www/Advanced_Extensions_v2ray.asp
-cp -f /www/Advanced_Extensions_softether.asp /opt/app/translate/www/Advanced_Extensions_softether.asp
-cp -f /www/Advanced_Extensions_shellinabox.asp /opt/app/translate/www/Advanced_Extensions_shellinabox.asp
-cp -f /www/Advanced_Extensions_script.asp /opt/app/translate/www/Advanced_Extensions_script.asp
-cp -f /www/Advanced_Extensions_qcloud.asp /opt/app/translate/www/Advanced_Extensions_qcloud.asp
-cp -f /www/Advanced_Extensions_phddns.asp /opt/app/translate/www/Advanced_Extensions_phddns.asp
-cp -f /www/Advanced_Extensions_ngrok.asp /opt/app/translate/www/Advanced_Extensions_ngrok.asp
-cp -f /www/Advanced_Extensions_mentohust.asp /opt/app/translate/www/Advanced_Extensions_mentohust.asp
-cp -f /www/Advanced_Extensions_lnmp.asp /opt/app/translate/www/Advanced_Extensions_lnmp.asp
-cp -f /www/Advanced_Extensions_koolproxy.asp /opt/app/translate/www/Advanced_Extensions_koolproxy.asp
-cp -f /www/Advanced_Extensions_frp.asp /opt/app/translate/www/Advanced_Extensions_frp.asp
-cp -f /www/Advanced_Extensions_display.asp /opt/app/translate/www/Advanced_Extensions_display.asp
-cp -f /www/Advanced_Extensions_cloudflare.asp /opt/app/translate/www/Advanced_Extensions_cloudflare.asp
-cp -f /www/Advanced_Extensions_aliddns.asp /opt/app/translate/www/Advanced_Extensions_aliddns.asp
-cp -f /www/Advanced_Extensions_adm.asp /opt/app/translate/www/Advanced_Extensions_adm.asp
-cp -f /www/Advanced_Extensions_adbyby.asp /opt/app/translate/www/Advanced_Extensions_adbyby.asp
-cp -f /www/Advanced_Extensions_ServerChan.asp /opt/app/translate/www/Advanced_Extensions_ServerChan.asp
-cp -f /www/Advanced_Extensions_SS_list.asp /opt/app/translate/www/Advanced_Extensions_SS_list.asp
-cp -f /www/Advanced_Extensions_SS_Server.asp /opt/app/translate/www/Advanced_Extensions_SS_Server.asp
-cp -f /www/Advanced_Extensions_SS_Kcptun.asp /opt/app/translate/www/Advanced_Extensions_SS_Kcptun.asp
-cp -f /www/Advanced_Extensions_SSR_Server.asp /opt/app/translate/www/Advanced_Extensions_SSR_Server.asp
-cp -f /www/Advanced_Extensions_SS.asp /opt/app/translate/www/Advanced_Extensions_SS.asp
-cp -f /www/Advanced_Extensions_MEOW.asp /opt/app/translate/www/Advanced_Extensions_MEOW.asp
-cp -f /www/Advanced_Extensions_DNSPod.asp /opt/app/translate/www/Advanced_Extensions_DNSPod.asp
-cp -f /www/Advanced_Extensions_CloudXNS.asp /opt/app/translate/www/Advanced_Extensions_CloudXNS.asp
-cp -f /www/Advanced_Extensions_COW.asp /opt/app/translate/www/Advanced_Extensions_COW.asp
 
 rm -rf /opt/app/translate/app/*
-cp -f /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp /opt/app/translate/app/Advanced_Extensions_virtualhere.asp
-cp -f /opt/app/verysync/Advanced_Extensions_verysync.asp /opt/app/translate/app/Advanced_Extensions_verysync.asp
-cp -f /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp /opt/app/translate/app/Advanced_Extensions_upd2pro.asp
-cp -f /opt/app/transocks/Advanced_Extensions_transocks.asp /opt/app/translate/app/Advanced_Extensions_transocks.asp
-cp -f /opt/app/speedup/Advanced_Extensions_speedup.asp /opt/app/translate/app/Advanced_Extensions_speedup.asp
-cp -f /opt/app/guestkit/Advanced_Extensions_guestkit.asp /opt/app/translate/app/Advanced_Extensions_guestkit.asp
-cp -f /opt/app/goflyway/Advanced_Extensions_goflyway.asp /opt/app/translate/app/Advanced_Extensions_goflyway.asp
-cp -f /opt/app/filemanager/Advanced_Extensions_filemanager.asp /opt/app/translate/app/Advanced_Extensions_filemanager.asp
-cp -f /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp /opt/app/translate/app/Advanced_Extensions_fakeincn.asp
-cp -f /opt/app/chinadns/Advanced_Extensions_chinadns.asp /opt/app/translate/app/Advanced_Extensions_chinadns.asp
-cp -f /opt/app/translate/Advanced_Extensions_translate.asp /opt/app/translate/app/Advanced_Extensions_translate.asp
-cp -f /opt/app/tgbot/Advanced_Extensions_tgbot.asp /opt/app/translate/app/Advanced_Extensions_tgbot.asp
-
 }
 
 www_mount () {
-
-mount --bind /opt/app/translate/www/help.js /www/help.js
-mount --bind /opt/app/translate/www/as2.asp /www/as2.asp
-mount --bind /opt/app/translate/www/Advanced_Tweaks_Content.asp /www/Advanced_Tweaks_Content.asp
-mount --bind /opt/app/translate/www/Advanced_System_Content.asp /www/Advanced_System_Content.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_wifidog.asp /www/Advanced_Extensions_wifidog.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_v2ray.asp /www/Advanced_Extensions_v2ray.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_softether.asp /www/Advanced_Extensions_softether.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_shellinabox.asp /www/Advanced_Extensions_shellinabox.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_script.asp /www/Advanced_Extensions_script.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_qcloud.asp /www/Advanced_Extensions_qcloud.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_phddns.asp /www/Advanced_Extensions_phddns.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_ngrok.asp /www/Advanced_Extensions_ngrok.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_mentohust.asp /www/Advanced_Extensions_mentohust.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_lnmp.asp /www/Advanced_Extensions_lnmp.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_koolproxy.asp /www/Advanced_Extensions_koolproxy.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_frp.asp /www/Advanced_Extensions_frp.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_display.asp /www/Advanced_Extensions_display.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_cloudflare.asp /www/Advanced_Extensions_cloudflare.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_aliddns.asp /www/Advanced_Extensions_aliddns.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_adm.asp /www/Advanced_Extensions_adm.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_adbyby.asp /www/Advanced_Extensions_adbyby.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_ServerChan.asp /www/Advanced_Extensions_ServerChan.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_SS_list.asp /www/Advanced_Extensions_SS_list.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_SS_Server.asp /www/Advanced_Extensions_SS_Server.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_SS_Kcptun.asp /www/Advanced_Extensions_SS_Kcptun.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_SSR_Server.asp /www/Advanced_Extensions_SSR_Server.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_SS.asp /www/Advanced_Extensions_SS.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_MEOW.asp /www/Advanced_Extensions_MEOW.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_DNSPod.asp /www/Advanced_Extensions_DNSPod.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_CloudXNS.asp /www/Advanced_Extensions_CloudXNS.asp
-mount --bind /opt/app/translate/www/Advanced_Extensions_COW.asp /www/Advanced_Extensions_COW.asp
-
-mount --bind /opt/app/translate/www/device-map/ssinfo.asp /www/device-map/ssinfo.asp
-mount --bind /opt/app/translate/www/device-map/ss.asp /www/device-map/ss.asp
-mount --bind /opt/app/translate/www/device-map/sata.asp /www/device-map/sata.asp
-mount --bind /opt/app/translate/www/device-map/printer.asp /www/device-map/printer.asp
-mount --bind /opt/app/translate/www/device-map/hub.asp /www/device-map/hub.asp
-mount --bind /opt/app/translate/www/device-map/disk.asp /www/device-map/disk.asp
-
-mount --bind /opt/app/translate/app/Advanced_Extensions_virtualhere.asp /opt/app/virtualhere/Advanced_Extensions_virtualhere.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_verysync.asp /opt/app/verysync/Advanced_Extensions_verysync.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_upd2pro.asp /opt/app/upd2pro/Advanced_Extensions_upd2pro.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_transocks.asp /opt/app/transocks/Advanced_Extensions_transocks.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_speedup.asp /opt/app/speedup/Advanced_Extensions_speedup.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_guestkit.asp /opt/app/guestkit/Advanced_Extensions_guestkit.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_goflyway.asp /opt/app/goflyway/Advanced_Extensions_goflyway.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_filemanager.asp /opt/app/filemanager/Advanced_Extensions_filemanager.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_fakeincn.asp /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_chinadns.asp /opt/app/chinadns/Advanced_Extensions_chinadns.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_translate.asp /opt/app/translate/Advanced_Extensions_translate.asp
-mount --bind /opt/app/translate/app/Advanced_Extensions_tgbot.asp /opt/app/tgbot/Advanced_Extensions_tgbot.asp
 
 mount --bind /opt/app/translate/$1.dict /www/EN.dict
 
@@ -382,33 +211,8 @@ killall -9 httpd
 
 www_translate_txt () {
 
-translate_www="translate_www_$1.txt"
-translate_map="translate_map_$1.txt"
-translate_app="translate_app_$1.txt"
-if [ ! -s "/opt/app/translate/translate_www_$1.txt" ] ; then
-translate_www="translate_www_EN.txt"
-translate_map="translate_map_EN.txt"
-translate_app="translate_app_EN.txt"
-logger -t "【translate】" "找不到 translate_www_$1.txt ，使用 translate_www_EN.txt 代替"
-fi
-echo -n "sed" > /opt/app/translate/translate4.txt
-cat /opt/app/translate/$translate_www | awk -F '丨' '{printf (" -e '"'"'s@%s@%s@g'"'"'", $3, $4)}' >> /opt/app/translate/translate4.txt
-echo -n " -i /opt/app/translate/www/* ; " >> /opt/app/translate/translate4.txt
-. /opt/app/translate/translate4.txt
+echo "$1"
 
-echo -n "sed" > /opt/app/translate/translate4.txt
-cat /opt/app/translate/$translate_map | awk -F '丨' '{printf (" -e '"'"'s@%s@%s@g'"'"'", $3, $4)}' >> /opt/app/translate/translate4.txt
-echo -n " -i /opt/app/translate/www/device-map/* ; " >> /opt/app/translate/translate4.txt
-
-. /opt/app/translate/translate4.txt
-
-echo -n "sed" > /opt/app/translate/translate4.txt
-cat /opt/app/translate/$translate_app | awk -F '丨' '{printf (" -e '"'"'s@%s@%s@g'"'"'", $3, $4)}' >> /opt/app/translate/translate4.txt
-echo -n " -i /opt/app/translate/app/* ; " >> /opt/app/translate/translate4.txt
-
-. /opt/app/translate/translate4.txt
-
-rm -f /opt/app/translate/translate4.txt
 }
 
 www_translate_EN () {
@@ -619,21 +423,6 @@ www_translate_FT () {
 
 www_umount
 www_cp
-base_name="translate_app_FT.txt"
-if [ ! -s "$dir_name$base_name" ] ; then
-	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
-	wgetcurl.sh "$dir_name$base_name" "$hiboyfile/$base_name" "$hiboyfile2/$base_name"
-fi
-base_name="translate_map_FT.txt"
-if [ ! -s "$dir_name$base_name" ] ; then
-	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
-	wgetcurl.sh "$dir_name$base_name" "$hiboyfile/$base_name" "$hiboyfile2/$base_name"
-fi
-base_name="translate_www_FT.txt"
-if [ ! -s "$dir_name$base_name" ] ; then
-	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
-	wgetcurl.sh "$dir_name$base_name" "$hiboyfile/$base_name" "$hiboyfile2/$base_name"
-fi
 www_translate_txt FT
 base_name="FT.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
