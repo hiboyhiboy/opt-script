@@ -162,7 +162,6 @@ kill_ps "$scriptname"
 translate_start () {
 
 check_webui_yes
-dir_name="/opt/app/translate/"
 initopt
 #translate_get_status
 eval "$scriptfilepath keep &"
@@ -181,16 +180,10 @@ fi
 
 www_umount () {
 
+rm -rf /opt/app/translate/www
+rm -rf /opt/app/translate/app
 umount /www/EN.dict
 
-}
-
-www_cp () {
-
-rm -rf /opt/app/translate/www/device-map/*
-rm -rf /opt/app/translate/www/*
-
-rm -rf /opt/app/translate/app/*
 }
 
 www_mount () {
@@ -209,17 +202,9 @@ killall -9 httpd
 
 }
 
-www_translate_txt () {
-
-echo "$1"
-
-}
-
 www_translate_EN () {
 
 www_umount
-www_cp
-www_translate_txt EN
 base_name="EN.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -233,17 +218,12 @@ www_rehttpd
 www_translate_CN () {
 
 www_umount
-rm -rf /opt/app/translate/app/*
-rm -rf /opt/app/translate/www/device-map/*
-rm -rf /opt/app/translate/www/*
 www_rehttpd
 }
 
 www_translate_UK () {
 
 www_umount
-www_cp
-www_translate_txt UK
 base_name="UK.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -257,8 +237,6 @@ www_rehttpd
 www_translate_ES () {
 
 www_umount
-www_cp
-www_translate_txt ES
 base_name="ES.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -272,8 +250,6 @@ www_rehttpd
 www_translate_BR () {
 
 www_umount
-www_cp
-www_translate_txt BR
 base_name="BR.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -287,8 +263,6 @@ www_rehttpd
 www_translate_SV () {
 
 www_umount
-www_cp
-www_translate_txt SV
 base_name="SV.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -302,8 +276,6 @@ www_rehttpd
 www_translate_DA () {
 
 www_umount
-www_cp
-www_translate_txt DA
 base_name="DA.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -317,8 +289,6 @@ www_rehttpd
 www_translate_FI () {
 
 www_umount
-www_cp
-www_translate_txt FI
 base_name="FI.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -332,8 +302,6 @@ www_rehttpd
 www_translate_NO () {
 
 www_umount
-www_cp
-www_translate_txt NO
 base_name="NO.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -347,8 +315,6 @@ www_rehttpd
 www_translate_FR () {
 
 www_umount
-www_cp
-www_translate_txt FR
 base_name="FR.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -362,8 +328,6 @@ www_rehttpd
 www_translate_DE () {
 
 www_umount
-www_cp
-www_translate_txt DE
 base_name="DE.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -377,8 +341,6 @@ www_rehttpd
 www_translate_RU () {
 
 www_umount
-www_cp
-www_translate_txt RU
 base_name="RU.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -392,8 +354,6 @@ www_rehttpd
 www_translate_PL () {
 
 www_umount
-www_cp
-www_translate_txt PL
 base_name="PL.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -407,8 +367,6 @@ www_rehttpd
 www_translate_CZ () {
 
 www_umount
-www_cp
-www_translate_txt CZ
 base_name="CZ.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -422,8 +380,6 @@ www_rehttpd
 www_translate_FT () {
 
 www_umount
-www_cp
-www_translate_txt FT
 base_name="FT.dict"
 if [ ! -s "$dir_name$base_name" ] ; then
 	logger -t "【translate】" "找不到 $dir_name$base_name ，开始下载"
@@ -435,9 +391,7 @@ www_rehttpd
 }
 initconfig () {
 
-mkdir -p /opt/app/translate/www/
-mkdir -p /opt/app/translate/www/device-map/
-mkdir -p /opt/app/translate/app/
+mkdir -p /opt/app/translate/
 chmod 777 -R "/opt/app/translate/"
 }
 

@@ -551,7 +551,7 @@ kill_ps "ss-local_"
 
 swap_ss_redir () {
 
-kill_ps "$scriptname keep"
+kill_ps "$scriptname sskeep"
 kill_ps "$scriptname"
 # 重载 ipset 规则
 Sh99_ss_tproxy.sh auser_check "Sh15_ss.sh"
@@ -810,7 +810,7 @@ echo "Debug: $DNS_Server"
 		ss_get_status "c1"
 		nvram set button_script_2_s="SS"
 		nvram set ss_internet="1"
-		eval "$scriptfilepath keep &"
+		eval "$scriptfilepath sskeep &"
 		exit 0
 	fi
 	start_ss_redir
@@ -847,13 +847,13 @@ if [ "$ss_dnsproxy_x" = "2" ] ; then
 fi
 
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-eval "$scriptfilepath keep &"
+eval "$scriptfilepath sskeep &"
 exit 0
 }
 
 stop_SS () {
 sed -Ei '/【SS】|^$/d' /tmp/script/_opt_script_check
-kill_ps "$scriptname keep"
+kill_ps "$scriptname sskeep"
 kill_ps "sh_ezscript.sh"
 kill_ps "Sh15_ss.sh"
 clean_ss_rules
@@ -980,7 +980,7 @@ if [ "$ss_enable" = "1" ] ; then
 		logger -t "【SS】" "检测:更换线路配置，进行快速切换服务器。"
 		swap_ss_redir
 		logger -t "【SS】" "切换服务器完成。"
-		eval "$scriptfilepath keep &"
+		eval "$scriptfilepath sskeep &"
 		exit 0
 	fi
 	if [ "$needed_restart" = "1" ] ; then
@@ -1017,7 +1017,11 @@ logger -t "【SS】" "守护进程启动"
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【SS】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "Sh15_ss.sh keep" /tmp/ps | grep -v grep |wc -l\` # 【SS】
+	NUM=\`grep "Sh15_ss.sh sskeep" /tmp/ps | grep -v grep |wc -l\` # 【SS】
+	if [ "\$NUM" -lt "1" ] ; then # 【SS】
+	ps -w > /tmp/ps # 【SS】
+	NUM=\`grep "sskeep" /tmp/ps | grep -v grep |wc -l\` # 【SS】
+	fi # 【SS】
 	if [ "\$NUM" -lt "1" ] ; then # 【SS】
 		logger -t "【SS】" "重新启动\$NUM" # 【SS】
 		nvram set ss_status=00 && eval "$scriptfilepath &" && sed -Ei '/【SS】|^$/d' /tmp/script/_opt_script_check # 【SS】
@@ -1722,6 +1726,11 @@ start)
 	check_setting
 	;;
 keep)
+	#check_setting
+	check_webui_yes
+	SS_keep
+	;;
+sskeep)
 	#check_setting
 	check_webui_yes
 	SS_keep

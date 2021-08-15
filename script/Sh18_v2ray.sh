@@ -175,7 +175,11 @@ logger -t "【v2ray】" "守护进程启动"
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "Sh18_v2ray.sh keep" /tmp/ps | grep -v grep |wc -l\` # 【v2ray】
+	NUM=\`grep "Sh18_v2ray.sh v2raykeep" /tmp/ps | grep -v grep |wc -l\` # 【v2ray】
+	if [ "\$NUM" -lt "1" ] ; then # 【v2ray】
+	ps -w > /tmp/ps # 【v2ray】
+	NUM=\`grep "v2raykeep" /tmp/ps | grep -v grep |wc -l\` # 【v2ray】
+	fi # 【v2ray】
 	if [ "\$NUM" -lt "1" ] || [ ! -s "$v2ray_path" ] ; then # 【v2ray】
 		logger -t "【v2ray】" "重新启动\$NUM" # 【v2ray】
 		nvram set v2ray_status=00 && eval "$scriptfilepath &" && sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check # 【v2ray】
@@ -319,7 +323,7 @@ done
 
 v2ray_close () {
 nvram set ss_internet="0"
-kill_ps "$scriptname keep"
+kill_ps "$scriptname v2raykeep"
 kill_ps "$scriptname"
 kill_ps "Sh18_v2ray.sh"
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
@@ -591,7 +595,7 @@ fi
 nvram set ss_internet="1"
 
 v2ray_get_status
-eval "$scriptfilepath keep &"
+eval "$scriptfilepath v2raykeep &"
 exit 0
 }
 
@@ -2015,6 +2019,10 @@ stop)
 	v2ray_close
 	;;
 keep)
+	#v2ray_check
+	v2ray_keep
+	;;
+v2raykeep)
 	#v2ray_check
 	v2ray_keep
 	;;

@@ -686,9 +686,11 @@ update_gfwlist_file() {
 	if [ ! -z "$ss_sub5" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 GFW 自定义域名 列表...."
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub5 $ss_sub5 Y
-		if [ -s $tmp_down_file ] ; then
+		if [ -s $tmp_down_file ] && [ ! -z "$(cat $tmp_down_file | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' | sort -u | grep -v "^$" >> $tmp_gfwlist
+		else
+		logger -t "【update_chnroute】" "错误！！！获取 GFW 自定义域名 列表 下载失败"
 		fi
 		rm -f $tmp_down_file
 	fi
@@ -738,9 +740,11 @@ update_gfwlist_file() {
 	if [ ! -z "$ss_sub6" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 GFW IP 列表...."
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub6 $ss_sub6 Y
-		if [ -s $tmp_down_file ] ; then
+		if [ -s $tmp_down_file ] && [ ! -z "$(cat $tmp_down_file | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
+		else
+		logger -t "【update_chnroute】" "错误！！！获取 GFW IP 列表 下载失败"
 		fi
 		rm -f $tmp_down_file
 	fi
@@ -1035,9 +1039,11 @@ update_chnroute_file() {
 	if [ ! -z "$ss_sub7" ] ; then
 		logger -t "【update_chnroute】" "正在获取 ① 大陆白名单 IP 下载地址...."
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub7 $ss_sub7 Y
-		if [ -s $tmp_down_file ] ; then
+		if [ -s $tmp_down_file ] && [ ! -z "$(cat $tmp_down_file | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+		else
+		logger -t "【update_chnroute】" "错误！！！获取 ① 大陆白名单 IP 下载失败"
 		fi
 		rm -f $tmp_down_file
 	fi
@@ -1045,9 +1051,11 @@ update_chnroute_file() {
 	if [ ! -z "$ss_sub8" ] ; then
 		logger -t "【update_chnroute】" "正在获取 ② 大陆白名单 IP 下载地址...."
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub8 $ss_sub8 Y
-		if [ -s $tmp_down_file ] ; then
+		if [ -s $tmp_down_file ] && [ ! -z "$(cat $tmp_down_file | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+		else
+		logger -t "【update_chnroute】" "错误！！！获取 ② 大陆白名单 IP 下载失败"
 		fi
 		rm -f $tmp_down_file
 	fi
