@@ -481,6 +481,7 @@ fi
 
 wget_yml () {
 [ "$(nvram get app_86)" = "wget_yml" ] && nvram set app_86=0
+clash_wget_yml="$(echo $clash_wget_yml)"
 [ -z "$clash_wget_yml" ] && logger -t "【clash】" "找不到 【订阅链接】，需要手动填写" && return
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	yq_check
@@ -492,17 +493,30 @@ fi
 mkdir -p /tmp/clash
 logger -t "【clash】" "服务器订阅：开始更新"
 yml_tmp="/tmp/clash/app_20.sh"
+rm -f $yml_tmp
+if [ ! -z "$(echo "$clash_wget_yml" | grep '^/')" ] ; then
+[ -f "$clash_wget_yml" ] && cp -f "$clash_wget_yml" "$yml_tmp"
+[ ! -f "$clash_wget_yml" ] && logger -t "【clash】" "错误！！ $clash_wget_yml 文件不存在！"
+else
+if [ -z  "$(echo "$clash_wget_yml" | grep 'http:\/\/')""$(echo "$clash_wget_yml" | grep 'https:\/\/')" ]  ; then
+	logger -t "【clash】" "$clash_wget_yml"
+	logger -t "【clash】" "错误！！clash 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
+	return
+fi
 wgetcurl.sh $yml_tmp "$clash_wget_yml" "$clash_wget_yml" N
 if [ ! -s $yml_tmp ] ; then
 	rm -f $yml_tmp
-	curl -L --user-agent "$user_agent" -o $yml_tmp "$ssr_link_i"
+	curl -L --user-agent "$user_agent" -o $yml_tmp "$clash_wget_yml"
 fi
 if [ ! -s $yml_tmp ] ; then
 	rm -f $yml_tmp
-	wget -T 5 -t 3 --user-agent "$user_agent" -O $yml_tmp "$ssr_link_i"
+	wget -T 5 -t 3 --user-agent "$user_agent" -O $yml_tmp "$clash_wget_yml"
+fi
 fi
 if [ ! -s $yml_tmp ] ; then
-	logger -t "【clash】" "错误！！clash 服务器订阅文件下载失败！请检查下载地址"
+	rm -f $yml_tmp
+	logger -t "【clash】" "错误！！clash 服务器订阅文件获取失败！请检查地址"
+	return
 else
 	cp -f $yml_tmp $app_20
 	#yq w -i $app_20 allow-lan true

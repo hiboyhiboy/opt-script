@@ -926,11 +926,11 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	return 1
 fi
 fi
-logger -t "【vmess】" "开始生成 ss_tproxy 配置"
+logger -t "【v2ray】" "开始生成 ss_tproxy 配置"
 mk_ss_tproxy=$(json_int_ss_tproxy)
 mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["inbounds",0,"listen"];"0.0.0.0")')
 mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"127.0.0.1")')
-logger -t "【vmess】" "提取 outbounds 生成 ss_tproxy 配置"
+logger -t "【v2ray】" "提取 outbounds 生成 ss_tproxy 配置"
 mk_config="$(cat /etc/storage/v2ray_config_script.sh | jq --raw-output '.')"
 #mk_config_0=$(echo $mk_config| jq --raw-output 'getpath(["outbounds",0])')
 if [ ! -z "$(echo $mk_config | grep '"protocol": "vmess"')" ] ; then
@@ -958,16 +958,16 @@ if [ -z "$mk_config_0" ] && [ ! -z "$(echo $mk_config | grep '"protocol": "freed
 mk_config_0=$(echo $mk_config| jq --raw-output '.outbounds[] | select(.protocol == "freedom")')
 fi
 if [ -z "$mk_config_0" ] ; then
-logger -t "【vmess】" "错误 outbounds 提出失败，请填写配正确的出站协议！vmess、vless、shadowsocks、trojan、socks、http、mtproto、freedom"
+logger -t "【v2ray】" "错误 outbounds 提出失败，请填写配正确的出站协议！vmess、vless、shadowsocks、trojan、socks、http、mtproto、freedom"
 return
 fi
 mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["outbounds",0];'"$mk_config_0"')')
 mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["outbounds",0,"tag"];"outbound_1")')
 echo $mk_ss_tproxy | jq --raw-output '.' > /tmp/vmess/mk_vmess.json
 if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
-	logger -t "【vmess】" "错误！生成透明代理路由规则使用 ss_tproxy 方式的 V2Ray 配置为空，请看看哪里问题？"
+	logger -t "【v2ray】" "错误！生成透明代理路由规则使用 ss_tproxy 方式的 V2Ray 配置为空，请看看哪里问题？"
 else
-	logger -t "【vmess】" "完成！生成透明代理路由规则使用 ss_tproxy 方式的 V2Ray 配置，"
+	logger -t "【v2ray】" "完成！生成透明代理路由规则使用 ss_tproxy 方式的 V2Ray 配置，"
 fi
 
 }
@@ -994,7 +994,7 @@ if [ "$link_protocol" != "vmess" ] && [ "$link_protocol" != "vless" ] && [ "$lin
 	return 1
 fi
 if [ "$link_protocol" == "vmess" ] || [ "$link_protocol" == "vless" ] ; then
-logger -t "【vmess】" "开始生成 $link_protocol 配置"
+logger -t "【v2ray】" "开始生成 $link_protocol 配置"
 json_mk_vmess_settings
 mk_vmess=$(json_int)
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"settings"];'"$vmess_settings"')')
@@ -1003,20 +1003,20 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"protocol"];"
 fi
 if [ "$link_protocol" == "ss" ] ; then
 if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] || [ "$ss_link_method" == "chacha20" ] || [ "$ss_link_method" == "chacha20-ietf" ] || [ "$ss_link_method" == "aes-256-gcm" ] || [ "$ss_link_method" == "aead_aes_256_gcm" ] || [ "$ss_link_method" == "aes-128-gcm" ] || [ "$ss_link_method" == "aead_aes_128_gcm" ] || [ "$ss_link_method" == "chacha20-poly1305" ] || [ "$ss_link_method" == "aead_chacha20_poly1305" ] || [ "$ss_link_method" == "chacha20-ietf-poly1305" ] || [ "$ss_link_method" == "none" ] || [ "$ss_link_method" == "plain" ] ; then
-logger -t "【vmess】" "开始生成 ss 配置，加密方式： $ss_link_method"
+logger -t "【v2ray】" "开始生成 ss 配置，加密方式： $ss_link_method"
 else
-logger -t "【vmess】" "ss配置加密方式不兼容V2Ray"
-logger -t "【vmess】" "V2Ray兼容加密方式列表"
-logger -t "【vmess】" "aes-256-cfb"
-logger -t "【vmess】" "aes-128-cfb"
-logger -t "【vmess】" "chacha20"
-logger -t "【vmess】" "chacha20-ietf"
-logger -t "【vmess】" "aes-256-gcm,aead_aes_256_gcm"
-logger -t "【vmess】" "aes-128-gcm,aead_aes_128_gcm"
-logger -t "【vmess】" "chacha20-poly1305,aead_chacha20_poly1305 或 chacha20-ietf-poly1305"
-#logger -t "【vmess】" "停止生成ss配置"
+logger -t "【v2ray】" "ss配置加密方式不兼容V2Ray"
+logger -t "【v2ray】" "V2Ray兼容加密方式列表"
+logger -t "【v2ray】" "aes-256-cfb"
+logger -t "【v2ray】" "aes-128-cfb"
+logger -t "【v2ray】" "chacha20"
+logger -t "【v2ray】" "chacha20-ietf"
+logger -t "【v2ray】" "aes-256-gcm,aead_aes_256_gcm"
+logger -t "【v2ray】" "aes-128-gcm,aead_aes_128_gcm"
+logger -t "【v2ray】" "chacha20-poly1305,aead_chacha20_poly1305 或 chacha20-ietf-poly1305"
+#logger -t "【v2ray】" "停止生成ss配置"
 #return
-logger -t "【vmess】" "可以尝试更换 V2Ray 主程序配置兼容加密方式： $ss_link_method"
+logger -t "【v2ray】" "可以尝试更换 V2Ray 主程序配置兼容加密方式： $ss_link_method"
 fi
 json_mk_ss_settings
 mk_vmess=$(json_int)
@@ -1029,7 +1029,7 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"settings","ip
 #[ ! -z "$ss_s1_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",0];"'$ss_s1_ip'")')
 mk_mode_x="`nvram get app_69`"
 if [ "$mk_mode_x" = "0" ] ; then
-logger -t "【vmess】" "方案一chnroutes，国外IP走代理"
+logger -t "【v2ray】" "方案一chnroutes，国外IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",2];"geosite:google")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",3];"geosite:facebook")')
@@ -1037,7 +1037,7 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
 fi
 if [ "$mk_mode_x" = "1" ] ; then
-logger -t "【vmess】" "方案二gfwlist（推荐），只有被墙的站点IP走代理"
+logger -t "【v2ray】" "方案二gfwlist（推荐），只有被墙的站点IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"AsIs")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",2];"geosite:google")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",3];"geosite:facebook")')
@@ -1051,7 +1051,7 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0];'"$mk_vmess_
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",1];'"$mk_vmess_0"')')
 fi
 if [ "$mk_mode_x" = "3" ] ; then
-logger -t "【vmess】" "方案四回国模式，国内IP走代理"
+logger -t "【v2ray】" "方案四回国模式，国内IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",8,"outboundTag"];"outbound_1")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",11]])')
@@ -1063,7 +1063,7 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0];'"$mk_vmess_
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",1];'"$mk_vmess_0"')')
 fi
 if [ "$mk_mode_x" = "2" ] ; then
-logger -t "【vmess】" "方案三全局代理，全部IP走代理"
+logger -t "【v2ray】" "方案三全局代理，全部IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",11]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
@@ -1084,11 +1084,11 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["dns","servers",4]])')
 fi
 echo $mk_vmess| jq --raw-output '.' > /tmp/vmess/mk_vmess.json
 if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
-	logger -t "【vmess】" "错误！生成配置为空，请看看哪里问题？"
+	logger -t "【v2ray】" "错误！生成配置为空，请看看哪里问题？"
 else
 	nvram set app_98="$link_name"
 	nvram set app_72="$link_input"
-	logger -t "【vmess】" "完成！生成配置，请刷新web页面查看！（应用新配置需按F5）"
+	logger -t "【v2ray】" "完成！生成配置，请刷新web页面查看！（应用新配置需按F5）"
 	cp -f /tmp/vmess/mk_vmess.json /etc/storage/v2ray_config_script.sh
 fi
 
@@ -1766,7 +1766,7 @@ if [ "$vmess_x_tmp" = "del_link" ] ; then
 	rm -f /www/link/ss.js
 	sed -Ei '/🔗|dellink_ss|^$/d' /etc/storage/app_25.sh
 	vmess_x_tmp=""
-	logger -t "【vmess】" "完成清空上次订阅节点配置 请按【F5】刷新 web 查看"
+	logger -t "【v2ray】" "完成清空上次订阅节点配置 请按【F5】刷新 web 查看"
 	return
 fi
 if [ "$vmess_x_tmp" = "v2ray_link_v2_matching" ] ; then
@@ -1790,12 +1790,12 @@ if [ "$A_restart" != "$B_restart" ] ; then
 nvram set vmess_link_status=$B_restart
 	if [ -z "$vmess_link" ] ; then
 		cru.sh d vmess_link_update
-		logger -t "【vmess】" "停止 vmess 服务器订阅"
+		logger -t "【v2ray】" "停止 vmess 服务器订阅"
 		return
 	else
 		if [ "$vmess_link_up" != 1 ] ; then
 			cru.sh a vmess_link_update "18 */6 * * * $scriptfilepath up_link &" &
-			logger -t "【vmess】" "启动 vmess 服务器订阅，添加计划任务 (Crontab)，每6小时更新"
+			logger -t "【v2ray】" "启动 vmess 服务器订阅，添加计划任务 (Crontab)，每6小时更新"
 		else
 			cru.sh d vmess_link_update
 		fi
@@ -1809,7 +1809,7 @@ if [ "$vmess_x_tmp" != "up_link" ] ; then
 	return
 fi
 
-logger -t "【vmess】" "服务器订阅：开始更新"
+logger -t "【v2ray】" "服务器订阅：开始更新"
 
 vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
 rm -f /www/link/vmess.js
@@ -1826,7 +1826,7 @@ else
 	down_link "$vmess_link"
 	rm -rf /tmp/link/vmess/*
 fi
-logger -t "【vmess】" "服务器订阅：更新完成"
+logger -t "【v2ray】" "服务器订阅：更新完成"
 if [ "$vmess_link_ping" != 1 ] ; then
 	nvram set app_83="ping_link"
 	ping_vmess_link
@@ -1836,20 +1836,25 @@ if [ "$vmess_link_ping" != 1 ] ; then
 		v2ray_link_v2_matching
 	fi
 else
-	echo "【vmess】：停止ping订阅节点"
+	echo "【v2ray】：停止ping订阅节点"
 fi
 
 }
 
 down_link () {
 http_link="$(echo $1)"
+mkdir -p /tmp/link/vmess/
+rm -f /tmp/link/vmess/0_link.txt
+if [ ! -z "$(echo "$http_link" | grep '^/')" ] ; then
+[ -f "$http_link" ] && cp -f "$http_link" /tmp/link/vmess/0_link.txt
+[ ! -f "$http_link" ] && logger -t "【v2ray】" "错误！！ $http_link 文件不存在！"
+else
 if [ -z  "$(echo "$http_link" | grep 'http:\/\/')""$(echo "$http_link" | grep 'https:\/\/')" ]  ; then
-	logger -t "【SS】" "$http_link"
-	logger -t "【SS】" "错误！！vmess 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
+	logger -t "【v2ray】" "$http_link"
+	logger -t "【v2ray】" "错误！！vmess 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
 	return
 fi
-mkdir -p /tmp/link/vmess/
-#logger -t "【vmess】" "订阅文件下载: $http_link"
+#logger -t "【v2ray】" "订阅文件下载: $http_link"
 rm -f /tmp/link/vmess/0_link.txt
 wgetcurl.sh /tmp/link/vmess/0_link.txt "$http_link" "$http_link" N
 if [ ! -s /tmp/link/vmess/0_link.txt ] ; then
@@ -1860,9 +1865,11 @@ if [ ! -s /tmp/link/vmess/0_link.txt ] ; then
 	rm -f /tmp/link/vmess/0_link.txt
 	wget -T 5 -t 3 --user-agent "$user_agent" -O /tmp/link/vmess/0_link.txt "$http_link"
 fi
+fi
 if [ ! -s /tmp/link/vmess/0_link.txt ] ; then
-	logger -t "【vmess】" "$http_link"
-	logger -t "【vmess】" "错误！！vmess 服务器订阅文件下载失败！请检查下载地址"
+	rm -f /tmp/link/vmess/0_link.txt
+	logger -t "【v2ray】" "$http_link"
+	logger -t "【v2ray】" "错误！！vmess 服务器订阅文件获取失败！请检查地址"
 	return
 fi
 dos2unix /tmp/link/vmess/0_link.txt
@@ -1991,14 +1998,14 @@ fi
 if [ "$link_get" == "1" ] && [ -z "$(echo $v2ray_v_tmp | grep V2Ray)" ] ; then
 nvram set app_74="0"
 rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
-logger -t "【vmess】" "自动下载 V2ray-core 主程序"
+logger -t "【v2ray】" "自动下载 V2ray-core 主程序"
 wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray" "$hiboyfile2/v2ray-v2ray"
 v2ray_v_tmp=`v2ray -version`
 fi
 if [ "$link_get" == "2" ] && [ -z "$(echo $v2ray_v_tmp | grep Xray)" ] ; then
 nvram set app_74="0"
 rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
-logger -t "【vmess】" "自动下载 Xray-core 主程序"
+logger -t "【v2ray】" "自动下载 Xray-core 主程序"
 wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
 v2ray_v_tmp=`v2ray -version`
 fi

@@ -1448,14 +1448,18 @@ fi
 
 down_link () {
 http_link="$(echo $1)"
+mkdir -p /tmp/link/ss/
+rm -f /tmp/link/ss/0_link.txt
+if [ ! -z "$(echo "$http_link" | grep '^/')" ] ; then
+[ -f "$http_link" ] && cp -f "$http_link" /tmp/link/ss/0_link.txt
+[ ! -f "$http_link" ] && logger -t "【SS】" "错误！！ $http_link 文件不存在！"
+else
 if [ -z  "$(echo "$http_link" | grep 'http:\/\/')""$(echo "$http_link" | grep 'https:\/\/')" ]  ; then
 	logger -t "【SS】" "$http_link"
 	logger -t "【SS】" "错误！！ss 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
 	return
 fi
-mkdir -p /tmp/link/ss/
 #logger -t "【ss】" "订阅文件下载: $http_link"
-rm -f /tmp/link/ss/0_link.txt
 wgetcurl.sh /tmp/link/ss/0_link.txt "$http_link" "$http_link" N
 if [ ! -s /tmp/link/ss/0_link.txt ] ; then
 	rm -f /tmp/link/ss/0_link.txt
@@ -1465,9 +1469,11 @@ if [ ! -s /tmp/link/ss/0_link.txt ] ; then
 	rm -f /tmp/link/ss/0_link.txt
 	wget -T 5 -t 3 --user-agent "$user_agent" -O /tmp/link/ss/0_link.txt "$http_link"
 fi
+fi
 if [ ! -s /tmp/link/ss/0_link.txt ] ; then
+	rm -f /tmp/link/ss/0_link.txt
 	logger -t "【ss】" "$http_link"
-	logger -t "【ss】" "错误！！ss 服务器订阅文件下载失败！请检查下载地址"
+	logger -t "【ss】" "错误！！ss 服务器订阅文件获取失败！请检查地址"
 	return
 fi
 dos2unix /tmp/link/ss/0_link.txt
