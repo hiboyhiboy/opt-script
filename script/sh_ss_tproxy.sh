@@ -200,7 +200,7 @@ is_nonstd_dnsport() {
 }
 
 is_empty_iptschain() {
-	local ipts="$1" table="$2" chain="$3"
+	ipts="$1" ; table="$2" ; chain="$3"
 	[ $($ipts -t $table -nvL $chain --line-numbers | grep -Ec '^[0-9]') -eq 0 ]
 }
 
@@ -225,11 +225,11 @@ is_md5_not() {
 }
 
 set_sysctl_option() {
-	local option_name="$1" option_value="$2"
+	option_name="$1" ; option_value="$2"
 	if command_is_exists "sysctl"; then
 		sysctl -w "$option_name=$option_value" >/dev/null
 	else
-		local option_path="/proc/sys/${option_name//.//}"
+		option_path="/proc/sys/${option_name//.//}"
 		echo "$option_value" >$option_path
 	fi
 }
@@ -239,8 +239,8 @@ resolve_hostname_by_hosts() {
 }
 
 resolve_hostname_by_dig() {
-	local addr_family="$1" hostname="$2"
-	local ipaddr=$(resolve_hostname_by_hosts "$hostname")
+	addr_family="$1" ; hostname="$2"
+	ipaddr=$(resolve_hostname_by_hosts "$hostname")
 	if [ "$ipaddr" ]; then
 		if [ "$addr_family" = '-4' ] && is_ipv4_address "$ipaddr"; then
 			echo "$ipaddr"
@@ -251,25 +251,25 @@ resolve_hostname_by_dig() {
 			return
 		fi
 	fi
-	[ "$addr_family" = '-4' ] && local dns_qtype='A' || local dns_qtype='AAAA'
+	[ "$addr_family" = '-4' ] && dns_qtype='A' || dns_qtype='AAAA'
 	dig +short "$dns_qtype" "$hostname" | grep -Ev '^;|\.$' | head -n1
 }
 
 resolve_hostname_by_getent() {
-	local addr_family="$1" hostname="$2"
-	[ "$addr_family" = '-4' ] && local db_name='ahostsv4' || local db_name='ahostsv6'
+	addr_family="$1" ; hostname="$2"
+	[ "$addr_family" = '-4' ] && db_name='ahostsv4' || db_name='ahostsv6'
 	getent "$db_name" "$hostname" | head -n1 | awk '{print $1}'
 }
 
 resolve_hostname_by_ping() {
-	local addr_family="$1" hostname="$2"
-	[ "$addr_family" = '-4' ] && local ping_cmd="$ping4" || local ping_cmd="$ping6"
+	addr_family="$1" ; hostname="$2"
+	[ "$addr_family" = '-4' ] && ping_cmd="$ping4" || ping_cmd="$ping6"
 	$ping_cmd -nq -c1 -w1 -W1 "$hostname" | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}'
 }
 
 resolve_hostname4() {
-	local ipaddr=""
-	local i_timeout=1
+	ipaddr=""
+	i_timeout=1
 	while [ -z "$ipaddr" ]; do
 		ipaddr=$($resolver_func -4 "$1")
 		[ -z "$ipaddr" ] && usleep 300000
@@ -282,8 +282,8 @@ resolve_hostname4() {
 }
 
 resolve_hostname6() {
-	local ipaddr=""
-	local i_timeout=1
+	ipaddr=""
+	i_timeout=1
 	while [ -z "$ipaddr" ]; do
 		ipaddr=$($resolver_func -6 "$1")
 		[ -z "$ipaddr" ] && usleep 300000
@@ -305,13 +305,13 @@ resolve_svraddr() {
 		[ ! -z "$(cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | grep "$svraddr")" ] && continue
 		if is_true "$ipv4"; then
 			is_ipv6_address "$svraddr" && continue
-			is_ipv4_address "$svraddr" && local svrip_all="$svraddr" || local svrip_all=$(resolve_hostname4 "$svraddr")
+			is_ipv4_address "$svraddr" && svrip_all="$svraddr" || svrip_all=$(resolve_hostname4 "$svraddr")
 			is_ipv4_address "$svrip_all" && [ -z "$(grep $svrip_all $proxy_svraddr4)" ] && echo "$svrip_all" >> $proxy_svraddr4
 		fi
 		
 		if is_true "$ipv6"; then
 			is_ipv4_address "$svraddr" && continue
-			is_ipv6_address "$svraddr" && local svrip_all="$svraddr" || local svrip_all=$(resolve_hostname6 "$svraddr")
+			is_ipv6_address "$svraddr" && svrip_all="$svraddr" || svrip_all=$(resolve_hostname6 "$svraddr")
 			is_ipv6_address "$svrip_all" && [ -z "$(grep $svrip_all $proxy_svraddr6)" ] && echo "$svrip_all" >> $proxy_svraddr6
 		fi
 	done < $proxy_all_svraddr
@@ -321,7 +321,7 @@ resolve_svraddr() {
 		while read svraddr; do
 			[ -z "$svraddr" ] && continue
 			is_ipv6_address "$svraddr" && continue
-			is_ipv4_address "$svraddr" && local svripv4="$svraddr" || local svripv4=$(resolve_hostname4 "$svraddr")
+			is_ipv4_address "$svraddr" && svripv4="$svraddr" || svripv4=$(resolve_hostname4 "$svraddr")
 			proxy_svripv4="$proxy_svripv4
 $svripv4"
 		done < $proxy_svraddr4
@@ -332,7 +332,7 @@ $svripv4"
 		while read svraddr; do
 			[ -z "$svraddr" ] && continue
 			is_ipv4_address "$svraddr" && continue
-			is_ipv6_address "$svraddr" && local svripv6="$svraddr" || local svripv6=$(resolve_hostname6 "$svraddr")
+			is_ipv6_address "$svraddr" && svripv6="$svraddr" || svripv6=$(resolve_hostname6 "$svraddr")
 			proxy_svripv6="$proxy_svripv6
 $svripv6"
 		done < $proxy_svraddr6
@@ -393,7 +393,7 @@ create sstp_mac_chn hash:mac hashsize 64" | while read sstp_name; do ipset -! $s
 
 waiting_network() {
 	[ -z "$1" ] && return
-	is_ipv4_address "$1" && local ping_cmd="$ping4" || local ping_cmd="$ping6"
+	is_ipv4_address "$1" && ping_cmd="$ping4" || ping_cmd="$ping6"
 	until $ping_cmd -nq -c1 -W1 "$1" >/dev/null; do
 		echo "waiting for network available..."
 		sleep 1
@@ -647,8 +647,8 @@ update_gfwlist_file() {
 	ss_3p_gfwlist=`nvram get ss_3p_gfwlist`
 	if [ "$ss_3p_gfwlist" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取官方 gfwlist...."
-		local url='https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
-		local raw_url='https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt'
+		url='https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
+		raw_url='https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt'
 		wgetcurl_checkmd5 $tmp_base64_gfwlist  "$url" "$raw_url" N 5
 		if [ -s $tmp_base64_gfwlist ] && [ -z "$(cat $tmp_base64_gfwlist | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		sed -e  ':a;N;$!ba;s/\n//g' -i $tmp_base64_gfwlist
@@ -674,7 +674,7 @@ update_gfwlist_file() {
 	ss_3p_kool=`nvram get ss_3p_kool`
 	if [ "$ss_3p_kool" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 koolshare 列表...."
-		local url='https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf'
+		url='https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf'
 		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
@@ -704,7 +704,7 @@ update_gfwlist_file() {
 	ss_sub1=`nvram get ss_sub1`
 	if [ "$ss_sub1" = "1" ] ; then
 		logger -t "【update_gfwlist】" "处理订阅列表1....海外加速"
-		local url='/list.txt'
+		url='/list.txt'
 		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
 		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
@@ -716,7 +716,7 @@ update_gfwlist_file() {
 	if [ "$ss_sub2" = "1" ] ; then
 		#处理只做dns解释的域名
 		logger -t "【update_gfwlist】" "处理订阅列表2....处理只做dns解释的域名"
-		local url='/dnsonly.txt'
+		url='/dnsonly.txt'
 		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
 		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
@@ -728,7 +728,7 @@ update_gfwlist_file() {
 	if [ "$ss_sub3" = "1" ] ; then
 		#处理需要排除的域名解释
 		logger -t "【update_gfwlist】" "处理订阅列表3....处理需要排除的域名解释"
-		local url='/passby.txt'
+		url='/passby.txt'
 		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
 		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
@@ -875,7 +875,6 @@ update_gfwlist_ipset() {
 	echo "" > /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 	if [ -s $file_gfwlist_txt ] ; then
 		# 开始构造dnsmasq.conf
-		local gfwlist_ipset_setname
 		if is_true "$ipv4" && is_true "$ipv6"; then
 			gfwlist_ipset_setname="gfwlist,gfwlist6"
 			ipset -! create gfwlist hash:net family inet
@@ -916,8 +915,8 @@ update_chnlist_file() {
 	mkdir -p /opt/app/ss_tproxy/rule
 	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnlist_tmp.txt"
 	rm -f $tmp_down_file
-	local url='https://cdn.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
-	local raw_url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
+	url='https://cdn.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
+	raw_url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
 	wgetcurl_checkmd5 $tmp_down_file "$url" "$raw_url" N 5
 	sed -e "s@server=/@@g" -i  $tmp_down_file
 	sed -e 's@/.*@@g' -i  $tmp_down_file
@@ -942,7 +941,6 @@ update_chnlist_ipset() {
 		echo "" > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		if [ -s /opt/app/ss_tproxy/rule/chnlist.txt ] ; then
 		# 开始构造dnsmasq.conf
-		local gfwlist_ipset_setname
 		if is_true "$ipv4" && is_true "$ipv6"; then
 			gfwlist_ipset_setname="gfwlist,gfwlist6"
 			ipset -! create gfwlist hash:net family inet
@@ -1022,7 +1020,7 @@ update_chnroute_file() {
 	rm -f $tmp_chnroute $tmp_down_file
 	if [ "$1" != "ipv6" ]; then
 	logger -t "【update_chnroute】" "开始下载更新 chnroute 文件...."
-	local url='https://cdn.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
+	url='https://cdn.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
 	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 	if [ -s $tmp_down_file ] ; then
 	echo ""  >> $tmp_down_file
@@ -1078,7 +1076,7 @@ update_chnroute_file() {
 		rm -f $tmp_chnroute $tmp_down_file
 		logger -t "【update_chnroute】" "开始下载更新 chnroute6 文件...."
 		# wget --user-agent "$user_agent" -O- 'https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest' | grep CN | grep ipv6 | awk -F'|' '{printf("%s/%d\n", $4, $5)}' > $tmp_down_file
-		local url="$hiboyfile/chnroute6.txt"
+		url="$hiboyfile/chnroute6.txt"
 		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 		# 添加自定义白名单
 		cat $file_wanlist_ext | grep -E "^~b" | cut -c4- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
@@ -1547,7 +1545,7 @@ modify_resolvconf() {
 	return
 	if is_false "$opts_overwrite_resolv"; then
 		while umount /etc/resolv.conf &>/dev/null; do true; done
-		local temp_resolv_conf="/opt/app/ss_tproxy/resolv.conf"
+		temp_resolv_conf="/opt/app/ss_tproxy/resolv.conf"
 		touch $temp_resolv_conf
 		chmod 0644 $temp_resolv_conf
 		umount /etc/resolv.conf
@@ -1693,7 +1691,6 @@ show_iptables() {
 check_dnsredir() {
 	is_false "$ipts_reddns_onstop" && return
 
-	local direct_dns_ip
 	is_ipv4_ipts $1 && direct_dns_ip="$dns_direct" || direct_dns_ip="$dns_direct6"
 	[ ! -z "$ipts_reddns_ip" ] && is_ipv4_ipts $1 && direct_dns_ip="$ipts_reddns_ip"
 
@@ -1706,7 +1703,6 @@ check_dnsredir() {
 check_startdnsredir() {
 	is_false "$ipts_reddns_onstart" && return
 
-	local direct_dns_ip
 	is_ipv4_ipts $1 && direct_dns_ip="${dns4_fw_type%%#*}" || direct_dns_ip="${dns6_fw_type%%#*}"
 	[ ! -z "$ipts_reddns_ip" ] && is_ipv4_ipts $1 && direct_dns_ip="$ipts_reddns_ip"
 
@@ -1715,7 +1711,7 @@ check_startdnsredir() {
 }
 
 check_snatrule() {
-	local set_snat_rule='false'
+	set_snat_rule='false'
 	{ is_ipv4_ipts $1 && is_true "$ipts_set_snat";  } && set_snat_rule='true'
 	{ is_ipv6_ipts $1 && is_true "$ipts_set_snat6"; } && set_snat_rule='true'
 	is_false "$set_snat_rule" && return
@@ -1790,7 +1786,6 @@ start_iptables_pre_rules() {
 	$1 -t nat    -N SSTP_POSTROUTING
 
 	if is_need_iproute; then
-		local iproute2_family
 		is_ipv4_ipts $1 && iproute2_family="-4" || iproute2_family="-6"
 		ip $iproute2_family route add local default dev $ipts_if_lo table $ipts_rt_tab
 		ip $iproute2_family rule  add fwmark $ipts_rt_mark          table $ipts_rt_tab
@@ -1806,35 +1801,25 @@ start_iptables_post_rules() {
 }
 
 start_iptables_tproxy_mode() {
-	local loopback_addr
 	is_ipv4_ipts $1 && loopback_addr="127.0.0.1" || loopback_addr="::1"
 
-	local lan_ipaddr
 	is_ipv4_ipts $1 && lan_ipaddr="$lan_ipv4_ipaddr" || lan_ipaddr="$lan_ipv6_ipaddr"
 
-	local gfwlist_setname
 	is_ipv4_ipts $1 && gfwlist_setname="gfwlist" || gfwlist_setname="gfwlist6"
 
-	local gfwlist_setfamily
 	is_ipv4_ipts $1 && gfwlist_setfamily="inet" || gfwlist_setfamily="inet6"
 
-	local grep_pattern
 	is_ipv4_ipts $1 && grep_pattern="^-" || grep_pattern="^~"
 
-	local proxyaddr_setname
 	is_ipv4_ipts $1 && proxyaddr_setname="proxyaddr" || proxyaddr_setname="proxyaddr6"
 
-	local direct_dns_ip
 	is_ipv4_ipts $1 && direct_dns_ip="$dns_direct" || direct_dns_ip="$dns_direct6"
 
-	local remote_dns_ip remote_dns_port
 	is_ipv4_ipts $1 && remote_dns_ip="${dns_remote%%#*}" || remote_dns_ip="${dns_remote6%%#*}"
 	is_ipv4_ipts $1 && remote_dns_port="${dns_remote##*#}" || remote_dns_port="${dns_remote6##*#}"
 
-	local chnroute_setname
 	is_ipv4_ipts $1 && chnroute_setname="chnroute" || chnroute_setname="chnroute6"
 
-	local privaddr_setname
 	is_ipv4_ipts $1 && privaddr_setname="privaddr" || privaddr_setname="privaddr6"
 
 	ipset -! -N $privaddr_setname hash:net hashsize 64 family $gfwlist_setfamily
@@ -1843,19 +1828,14 @@ start_iptables_tproxy_mode() {
 	cat $file_gfwlist_ext | grep -E "$grep_pattern" | cut -c2- | while read ip_addr; do echo "-A $gfwlist_setname $ip_addr"; done | ipset -! restore &>/dev/null
 
 	# src 规则
-	local sstp_src_ac_setname
 	is_ipv4_ipts $1 && sstp_src_ac_setname="sstp_src_ac" || sstp_src_ac_setname="sstp_src_ac6"
 
-	local sstp_src_bp_setname
 	is_ipv4_ipts $1 && sstp_src_bp_setname="sstp_src_bp" || sstp_src_bp_setname="sstp_src_bp6"
 
-	local sstp_src_fw_setname
 	is_ipv4_ipts $1 && sstp_src_fw_setname="sstp_src_fw" || sstp_src_fw_setname="sstp_src_fw6"
 
-	local sstp_src_gfw_setname
 	is_ipv4_ipts $1 && sstp_src_gfw_setname="sstp_src_gfw" || sstp_src_gfw_setname="sstp_src_gfw6"
 
-	local sstp_src_chn_setname
 	is_ipv4_ipts $1 && sstp_src_chn_setname="sstp_src_chn" || sstp_src_chn_setname="sstp_src_chn6"
 
 	
@@ -1871,13 +1851,10 @@ start_iptables_tproxy_mode() {
 	ipset -! -N $sstp_src_gfw_setname hash:net hashsize 64 family $gfwlist_setfamily &>/dev/null
 
 	# dst 规则
-	local sstp_dst_bp_setname
 	is_ipv4_ipts $1 && sstp_dst_bp_setname="sstp_dst_bp" || sstp_dst_bp_setname="sstp_dst_bp6"
 
-	local sstp_dst_fw_setname
 	is_ipv4_ipts $1 && sstp_dst_fw_setname="sstp_dst_fw" || sstp_dst_fw_setname="sstp_dst_fw6"
 
-	local sstp_dst_dns_fw_setname
 	is_ipv4_ipts $1 && sstp_dst_dns_fw_setname="sstp_dst_dns_fw" || sstp_dst_dns_fw_setname="sstp_dst_dns_fw6"
 
 	#ipset -X $sstp_dst_bp_setname &>/dev/null
@@ -1992,35 +1969,25 @@ start_iptables_tproxy_mode() {
 }
 
 start_iptables_redirect_mode() {
-	local loopback_addr
 	is_ipv4_ipts $1 && loopback_addr="127.0.0.1" || loopback_addr="::1"
 	
-	local lan_ipaddr
 	is_ipv4_ipts $1 && lan_ipaddr="$lan_ipv4_ipaddr" || lan_ipaddr="$lan_ipv6_ipaddr"
 	
-	local gfwlist_setname
 	is_ipv4_ipts $1 && gfwlist_setname="gfwlist" || gfwlist_setname="gfwlist6"
 
-	local gfwlist_setfamily
 	is_ipv4_ipts $1 && gfwlist_setfamily="inet" || gfwlist_setfamily="inet6"
 
-	local grep_pattern
 	is_ipv4_ipts $1 && grep_pattern="^-" || grep_pattern="^~"
 
-	local proxyaddr_setname
 	is_ipv4_ipts $1 && proxyaddr_setname="proxyaddr" || proxyaddr_setname="proxyaddr6"
 
-	local direct_dns_ip
 	is_ipv4_ipts $1 && direct_dns_ip="$dns_direct" || direct_dns_ip="$dns_direct6"
 
-	local remote_dns_ip remote_dns_port
 	is_ipv4_ipts $1 && remote_dns_ip="${dns_remote%%#*}" || remote_dns_ip="${dns_remote6%%#*}"
 	is_ipv4_ipts $1 && remote_dns_port="${dns_remote##*#}" || remote_dns_port="${dns_remote6##*#}"
 
-	local chnroute_setname
 	is_ipv4_ipts $1 && chnroute_setname="chnroute" || chnroute_setname="chnroute6"
 
-	local privaddr_setname
 	is_ipv4_ipts $1 && privaddr_setname="privaddr" || privaddr_setname="privaddr6"
 
 	ipset -! -N $privaddr_setname hash:net hashsize 64 family $gfwlist_setfamily
@@ -2029,19 +1996,14 @@ start_iptables_redirect_mode() {
 	cat $file_gfwlist_ext | grep -E "$grep_pattern" | cut -c2- | while read ip_addr; do echo "-A $gfwlist_setname $ip_addr"; done | ipset -! restore &>/dev/null
 
 	# src 规则
-	local sstp_src_ac_setname
 	is_ipv4_ipts $1 && sstp_src_ac_setname="sstp_src_ac" || sstp_src_ac_setname="sstp_src_ac6"
 
-	local sstp_src_bp_setname
 	is_ipv4_ipts $1 && sstp_src_bp_setname="sstp_src_bp" || sstp_src_bp_setname="sstp_src_bp6"
 
-	local sstp_src_fw_setname
 	is_ipv4_ipts $1 && sstp_src_fw_setname="sstp_src_fw" || sstp_src_fw_setname="sstp_src_fw6"
 
-	local sstp_src_gfw_setname
 	is_ipv4_ipts $1 && sstp_src_gfw_setname="sstp_src_gfw" || sstp_src_gfw_setname="sstp_src_gfw6"
 
-	local sstp_src_chn_setname
 	is_ipv4_ipts $1 && sstp_src_chn_setname="sstp_src_chn" || sstp_src_chn_setname="sstp_src_chn6"
 
 	
@@ -2057,13 +2019,10 @@ start_iptables_redirect_mode() {
 	ipset -! -N $sstp_src_gfw_setname hash:net hashsize 64 family $gfwlist_setfamily &>/dev/null
 
 	# dst 规则
-	local sstp_dst_bp_setname
 	is_ipv4_ipts $1 && sstp_dst_bp_setname="sstp_dst_bp" || sstp_dst_bp_setname="sstp_dst_bp6"
 
-	local sstp_dst_fw_setname
 	is_ipv4_ipts $1 && sstp_dst_fw_setname="sstp_dst_fw" || sstp_dst_fw_setname="sstp_dst_fw6"
 
-	local sstp_dst_dns_fw_setname
 	is_ipv4_ipts $1 && sstp_dst_dns_fw_setname="sstp_dst_dns_fw" || sstp_dst_dns_fw_setname="sstp_dst_dns_fw6"
 
 	#ipset -X $sstp_dst_bp_setname &>/dev/null
@@ -2432,8 +2391,8 @@ EOF
 }
 
 main() {
-	local arguments=""
-	local optentries=""
+	arguments=""
+	optentries=""
 
 	for arg in "$@"; do
 		if [ "$arg" = '-x' ]; then

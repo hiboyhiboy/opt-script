@@ -183,9 +183,8 @@ OSC
 fi
 clash_enable=`nvram get app_88`
 while [ "$clash_enable" = "1" ]; do
-	clash_follow=`nvram get clash_follow`
+	clash_follow=`nvram get app_92`
 	if [ "$clash_follow" = "1" ] ; then
-		echo clash_follow
 		ss_internet="$(nvram get ss_internet)"
 		[ "$ss_internet" != "1" ] && nvram set ss_internet="1"
 	fi
@@ -243,7 +242,7 @@ fi
 Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 size_tmpfs=`nvram get size_tmpfs`
 if [ "$size_tmpfs" = "0" ] && [[ "$Available_A" -lt 15 ]] ; then
-mount -o remount,size=50% tmpfs /tmp
+mount -o remount,size=60% tmpfs /tmp
 Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
 fi
@@ -388,7 +387,6 @@ sstp_set proxy_stopcmd='date'
 DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 sstp_set dns_direct="$DNS_china"
-#sstp_set dns_direct='223.5.5.5'
 sstp_set dns_direct6='240C::6666'
 sstp_set dns_remote='8.8.8.8#53'
 sstp_set dns_remote6='2001:4860:4860::8888#53'
@@ -630,6 +628,8 @@ dns:
 
   fallback:
     # 与 nameserver 内的服务器列表同时发起请求，当规则符合 GEOIP 在 CN 以外时，fallback 列表内的域名服务器生效。
+    - https://dns.google/dns-query
+    - https://1.1.1.1/dns-query
     - tcp://8.8.8.8:53
     - tcp://8.8.4.4:53
     - tcp://208.67.222.222:443
@@ -639,7 +639,6 @@ dns:
     # - tls://dns.google
     # - https://dns.rubyfish.cn/dns-query
     # - https://cloudflare-dns.com/dns-query
-    # - https://dns.google/dns-query
 
   fallback-filter:
     geoip: true
@@ -724,7 +723,7 @@ if [ "$1" = "update_asp" ] ; then
 	rm -rf /opt/app/clash/Advanced_Extensions_clash.asp
 fi
 if [ "$1" = "del" ] ; then
-	rm -rf /opt/app/clash/Advanced_Extensions_clash.asp /opt/bin/clash /opt/app/clash/config/Country.mmdb /opt/app/clash/config/Country_mmdb /opt/app/clash/clash_webs
+	rm -rf /opt/app/clash/Advanced_Extensions_clash.asp /opt/bin/clash /opt/opt_backup/bin/clash /opt/app/clash/config/Country.mmdb /opt/app/clash/config/Country_mmdb /opt/app/clash/clash_webs
 fi
 
 initconfig
@@ -776,6 +775,19 @@ config_dns_yml="/tmp/clash/dns.yml"
 rm_temp
 cp -f /etc/storage/app_21.sh $config_dns_yml
 sed -Ei '/^$/d' $config_dns_yml
+echo '- command: delete
+  path: dns.fallback(.==https://dns.google/dns-query)
+- command: delete
+  path: dns.fallback(.==https://1.1.1.1/dns-query)
+- command: update 
+  path: dns.fallback[+]
+  value: https://dns.google/dns-query
+- command: update 
+  path: dns.fallback[+]
+  value: https://1.1.1.1/dns-query
+' | yq w -i -s - $config_dns_yml
+config_dns_yml_txt=`yq r $config_dns_yml --stripComments`
+echo "$config_dns_yml_txt"  >  $config_dns_yml
 yq w -i $config_dns_yml dns.ipv6 true
 rm_temp
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] || [ "$clash_follow" == 0 ] ; then

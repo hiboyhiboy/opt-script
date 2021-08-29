@@ -136,7 +136,7 @@ fi
 }
 
 arDdnsInfo() {
-	local domainID recordID recordIP
+	#local domainID recordID recordIP
 	if [ "$IPv6" = "1" ]; then
 		domain_type="AAAA"
 		post_type="Record.Modify"

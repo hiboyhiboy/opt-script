@@ -404,7 +404,7 @@ if [ "$1" = "update_asp" ] ; then
 fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/translate/Advanced_Extensions_translate.asp
-	[ -f /opt/bin/translate ] && rm -f /opt/bin/translate
+	[ -f /opt/bin/translate ] && rm -f /opt/bin/translate /opt/opt_backup/bin/translate
 fi
 
 initconfig

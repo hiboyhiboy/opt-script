@@ -387,7 +387,7 @@ if [ "$1" = "update_asp" ] ; then
 fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/gocryptfs/Advanced_Extensions_gocryptfs.asp
-	rm -rf /opt/bin/gocryptfs
+	rm -rf /opt/bin/gocryptfs /opt/opt_backup/bin/gocryptfs
 fi
 
 initconfig

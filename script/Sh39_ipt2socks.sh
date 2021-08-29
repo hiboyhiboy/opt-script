@@ -257,7 +257,7 @@ sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
 DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
-[ -z "$DNS_china" ] && DNS_china="119.29.29.29"
+[ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
 sstp_set dns_remote='8.8.8.8#53'

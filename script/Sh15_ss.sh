@@ -197,7 +197,6 @@ sstp_set proxy_stopcmd='date'
 DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 [ "$ss_tochina_enable" == "0" ] && sstp_set dns_direct="$DNS_china"
-#[ "$ss_tochina_enable" == "0" ] && sstp_set dns_direct='223.5.5.5'
 [ "$ss_tochina_enable" == "0" ] && sstp_set dns_direct6='240C::6666'
 [ "$ss_tochina_enable" == "0" ] && sstp_set dns_remote='8.8.8.8#53'
 [ "$ss_tochina_enable" == "0" ] && sstp_set dns_remote6='2001:4860:4860::8888#53'
