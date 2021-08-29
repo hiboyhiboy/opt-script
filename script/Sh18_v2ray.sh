@@ -989,8 +989,8 @@ fi
 fi
 
 # 解码获取信息
-link_de_protocol "$link_tmp" "0vmess0vless0ss0"
-if [ "$link_protocol" != "vmess" ] && [ "$link_protocol" != "vless" ] && [ "$link_protocol" != "ss" ] ; then
+link_de_protocol "$link_tmp" "0vmess0vless0ss0trojan0"
+if [ "$link_protocol" != "vmess" ] && [ "$link_protocol" != "vless" ] && [ "$link_protocol" != "ss" ] && [ "$link_protocol" != "trojan" ] ; then
 	return 1
 fi
 if [ "$link_protocol" == "vmess" ] || [ "$link_protocol" == "vless" ] ; then
@@ -1023,6 +1023,14 @@ mk_vmess=$(json_int)
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"settings"];'"$vmess_settings"')')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"streamSettings"];'"$vmess_streamSettings"')')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"protocol"];"shadowsocks")')
+fi
+if [ "$link_protocol" == "trojan" ] ; then
+logger -t "【v2ray】" "开始生成 $link_protocol 配置"
+json_mk_trojan_settings
+mk_vmess=$(json_int)
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"settings"];'"$vmess_settings"')')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"streamSettings"];'"$vmess_streamSettings"')')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"protocol"];"trojan")')
 fi
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"listen"];"0.0.0.0")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"127.0.0.1")')
@@ -1348,7 +1356,6 @@ mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"address"];"'$
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"port"];'$ss_link_port')')
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"password"];"'$ss_link_password'")')
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"method"];"'$ss_link_method'")')
-#[ "$ss_link_ota" != "0" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"ota"];"true")')
 vmess_settings=$mk_vmess
 vmess_streamSettings=$(json_int_ss_streamSettings)
 }
@@ -1360,14 +1367,60 @@ echo '{
       "address": "127.0.0.1",
       "port": 1234,
       "method": "chacha20-poly1305",
-      "password": "test",
-      "ota": false
+      "password": "test"
     }
   ]
-}'
 }
+'
+}
+
 json_int_ss_streamSettings () {
 echo '{
+  "sockopt": {
+    "mark": 255
+  }
+}
+'
+}
+
+json_mk_trojan_settings () {
+
+mk_vmess=$(json_int_trojan_settings)
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"address"];"'$trojan_link_server'")')
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"port"];'$trojan_link_port')')
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["servers",0,"password"];"'$trojan_link_password'")')
+vmess_settings=$mk_vmess
+mk_vmess=$(json_int_trojan_streamSettings)
+[ -z "$vless_link_allowInsecure" ] && vless_link_allowInsecure=`nvram get app_73`
+[ "$vless_link_allowInsecure" == "1" ] && vless_link_allowInsecure="true"
+if [ "$vless_link_allowInsecure" == "true" ] || [ "$vless_link_allowInsecure" == "false" ] ; then
+	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","allowInsecure"];'$vless_link_allowInsecure')')
+else
+	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","allowInsecure"];false)')
+fi
+vmess_streamSettings=$mk_vmess
+}
+
+json_int_trojan_settings () {
+echo '{
+  "servers": [
+    {
+      "address": "127.0.0.1",
+      "port": 1234,
+      "password": "test"
+    }
+  ]
+}
+'
+}
+
+json_int_trojan_streamSettings () {
+echo '{
+  "network": "tcp",
+  "security": "tls",
+  "tlsSettings": {
+    "allowInsecure": true
+  },
   "sockopt": {
     "mark": 255
   }
@@ -1692,9 +1745,9 @@ cp -f /tmp/link/ping_vmess.txt /www/link/ping_vmess.js
 x_ping_x () {
 # 解码获取信息
 link_read="ping"
-link_de_protocol "$line" "0vmess0vless0ss0"
+link_de_protocol "$line" "0vmess0vless0ss0trojan0"
 ping_re="$(echo /tmp/link/tmp_vmess/$1)"
-if [ "$link_protocol" != "vmess" ] && [ "$link_protocol" != "vless" ] && [ "$link_protocol" != "ss" ] ; then
+if [ "$link_protocol" != "vmess" ] && [ "$link_protocol" != "vless" ] && [ "$link_protocol" != "ss" ] && [ "$link_protocol" != "trojan" ] ; then
 # 返回空数据
 touch $ping_re
 return
@@ -1743,7 +1796,7 @@ fi
 touch $ping_re
 # 排序节点
 
-if [ "$link_protocol" == "vmess" ] || [ "$link_protocol" == "vless" ] || [ "$link_protocol" == "ss" ] ; then
+if [ "$link_protocol" == "vmess" ] || [ "$link_protocol" == "vless" ] || [ "$link_protocol" == "ss" ] || [ "$link_protocol" == "trojan" ] ; then
 [ -z "$ping_time" ] && ping_time=9999
 [ "$ping_time" -gt 9999 ] && ping_time=9999
 get_ping="00000""$ping_time"

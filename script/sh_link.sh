@@ -29,7 +29,7 @@ add_0
 [ ! -z "$(echo -n $link_tmp | grep -Eo "ssr://")" ] && link_protocol="ssr"
 [ ! -z "$(echo -n $link_tmp | grep -Eo "[Vv]less://")" ] && link_protocol="vless"
 [ ! -z "$(echo -n $link_tmp | grep -Eo "[Vv]mess://")" ] && link_protocol="vmess"
-# [ ! -z "$(echo -n $link_tmp | grep -Eo "trojan://")" ] && link_protocol="trojan"
+[ ! -z "$(echo -n $link_tmp | grep -Eo "trojan://")" ] && link_protocol="trojan"
 # [ ! -z "$(echo -n $link_tmp | grep -Eo "trojan-go://")" ] && link_protocol="trojan"
 # 非指定链接返回空值
 link_de_m "$2"
@@ -39,7 +39,7 @@ if [ ! -z "$link_tmp" ] ; then
 [ "$link_protocol" == "ssr" ] && de_ssr_link
 [ "$link_protocol" == "vless" ] && de_vless_link
 [ "$link_protocol" == "vmess" ] && de_vmess_link
-[ "$link_protocol" == "ss" ] && de_trojan_link
+[ "$link_protocol" == "trojan" ] && de_trojan_link
 fi
 link_tmp=""
 }
@@ -380,15 +380,13 @@ if [ ! -z "$(echo -n "$link" | grep '#')" ] ; then
 trojan_link_name_url="$(echo -n $link | awk -F '#' '{print $2}')"
 trojan_link_name="$(echo $(printf $(echo -n "$trojan_link_name_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
 link=$(echo -n $link | awk -F '#' '{print $1}')
-link3=$(echo -n $link | awk -F '@' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)
-link4=$(echo -n $link | awk -F '@' '{print $2}')
-link2="$link3""@""$link4"
-trojan_link_password=$(echo -n $link2 | grep -Eo '^.+@' | sed -n '1p' | grep -Eo '^.+[^@]' | sed -n '1p')
-trojan_link_usage=$(echo -n $link2 | awk -F "$trojan_link_password@" '{print $2}' | grep -Eo '.+?:[0-9]+?' | sed -n '1p')
-trojan_link_server=$(echo -n "$trojan_link_usage" | awk -F ':' '{print $1}')
+trojan_link_password_url=$(echo -n $link | grep -Eo '^[^@]+' | sed -n '1p')
+trojan_link_password="$(echo $(printf $(echo -n "$trojan_link_password_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
+trojan_link_usage=$(echo -n $link | grep -Eo '@.+[:]+[0-9]+' | grep -Eo '[^@]+[0-9]+' | sed -n '1p')
+trojan_link_server=$(echo -n "$trojan_link_usage" | grep -Eo ".+:" | grep -Eo '.+[^:]')
 [ -z "$trojan_link_name" ] && trojan_link_name="♯"$(echo -n "$trojan_link_server")
 trojan_link_name="〔$link_protocol〕$trojan_link_name"
-trojan_link_port=$(echo -n "$trojan_link_usage" | awk -F ':' '{print $2}')
+trojan_link_port=$(echo -n "$trojan_link_usage" | grep -Eo '.+[:]+[0-9]+' | grep -Eo ":[0-9]+" | grep -Eo '[^:]+' | sed -n '$p')
 link_name="$trojan_link_name"
 link_server="$trojan_link_server"
 link_port="$trojan_link_port"
