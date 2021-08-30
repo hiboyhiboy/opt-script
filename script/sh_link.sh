@@ -383,10 +383,17 @@ link=$(echo -n $link | awk -F '#' '{print $1}')
 trojan_link_password_url=$(echo -n $link | grep -Eo '^[^@]+' | sed -n '1p')
 trojan_link_password="$(echo $(printf $(echo -n "$trojan_link_password_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
 trojan_link_usage=$(echo -n $link | grep -Eo '@.+[:]+[0-9]+' | grep -Eo '[^@]+[0-9]+' | sed -n '1p')
-trojan_link_server=$(echo -n "$trojan_link_usage" | grep -Eo ".+:" | grep -Eo '.+[^:]')
+if [ ! -z "$trojan_link_usage" ] ; then
+	# 含有 :433 端口的情况
+	trojan_link_server=$(echo -n "$trojan_link_usage" | grep -Eo ".+:" | grep -Eo '.+[^:]')
+	trojan_link_port=$(echo -n "$trojan_link_usage" | grep -Eo '.+[:]+[0-9]+' | grep -Eo ":[0-9]+" | grep -Eo '[^:]+' | sed -n '$p')
+else
+	# 缺少 :433 端口情况
+	trojan_link_server=$(echo -n $link | grep -Eo '@[^#\?]+' | grep -Eo '[^@]+' | sed -n '1p')
+	trojan_link_port="443"
+fi
 [ -z "$trojan_link_name" ] && trojan_link_name="♯"$(echo -n "$trojan_link_server")
 trojan_link_name="〔$link_protocol〕$trojan_link_name"
-trojan_link_port=$(echo -n "$trojan_link_usage" | grep -Eo '.+[:]+[0-9]+' | grep -Eo ":[0-9]+" | grep -Eo '[^:]+' | sed -n '$p')
 link_name="$trojan_link_name"
 link_server="$trojan_link_server"
 link_port="$trojan_link_port"

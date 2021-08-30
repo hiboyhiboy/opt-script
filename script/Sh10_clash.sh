@@ -775,6 +775,10 @@ config_dns_yml="/tmp/clash/dns.yml"
 rm_temp
 cp -f /etc/storage/app_21.sh $config_dns_yml
 sed -Ei '/^$/d' $config_dns_yml
+# 更新 yq
+[ -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && rm -rf /opt/bin/yq /opt/opt_backup/bin/yq
+wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
+if [ ! -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] ; then
 echo '- command: delete
   path: dns.fallback(.==https://dns.google/dns-query)
 - command: delete
@@ -788,6 +792,11 @@ echo '- command: delete
 ' | yq w -i -s - $config_dns_yml
 config_dns_yml_txt=`yq r $config_dns_yml --stripComments`
 echo "$config_dns_yml_txt"  >  $config_dns_yml
+sed -Ei '/^$/d' $config_dns_yml
+if [ ! -s $config_dns_yml ] ; then
+cp -f /etc/storage/app_21.sh $config_dns_yml
+fi
+fi
 yq w -i $config_dns_yml dns.ipv6 true
 rm_temp
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] || [ "$clash_follow" == 0 ] ; then
@@ -817,9 +826,6 @@ rm -f /opt/app/clash/config/config.yml
 ln -sf $config_yml /opt/app/clash/config/config.yml
 if [ "$clash_input" == "1" ] ; then
 logger -t "【clash】" "配置 clash 添加本地代理节点"
-# 更新 yq
-[ -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && rm -rf /opt/bin/yq /opt/opt_backup/bin/yq
-wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
 [ ! -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && source /etc/storage/app_33.sh
 if [ ! -s $config_yml ] ; then
 logger -t "【clash】" "yq 添加本地代理节点 配置错误！请检查配置！"
