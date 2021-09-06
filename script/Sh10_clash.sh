@@ -795,10 +795,10 @@ echo "$config_dns_yml_txt"  >  $config_dns_yml
 sed -Ei '/^$/d' $config_dns_yml
 if [ ! -s $config_dns_yml ] ; then
 cp -f /etc/storage/app_21.sh $config_dns_yml
+sed -Ei '/^$/d' $config_dns_yml
 fi
 fi
-yq w -i $config_dns_yml dns.ipv6 true
-rm_temp
+#yq w -i $config_dns_yml dns.ipv6 true
 if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] || [ "$clash_follow" == 0 ] ; then
 logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8054 自动开启第三方 DNS 程序"
 yq w -i $config_dns_yml dns.listen 0.0.0.0:8054
