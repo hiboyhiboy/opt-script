@@ -539,7 +539,7 @@ else
 	su_cmd2="$v2ray_path -config /tmp/vmess/mk_vmess.json -format json"
 fi
 cd "$(dirname "$v2ray_path")"
-eval "$su_cmd" '"cmd_name=v2ray && '"$su_cmd2"' $cmd_log"' &
+eval "$su_cmd" '"V2RAY_CONF_GEOLOADER=memconservative;cmd_name=v2ray;'"$su_cmd2"' $cmd_log"' &
 #eval "$su_cmd2 $cmd_log" &
 sleep 4
 #restart_dhcpd
