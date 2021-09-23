@@ -157,14 +157,27 @@ kill_ps "$scriptname"
 shellinabox_start () {
 check_webui_yes
 if [ "$shellinabox_enable" = "2" ] ; then
+cmd_name="ttyd"
+SVC_PATH="$(which ttyd)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/ttyd"
+if [ ! -s "$SVC_PATH" ] ; then
+	logger -t "【ttyd】" "找不到 $SVC_PATH，安装 opt 程序"
+	/etc/storage/script/Sh01_mountopt.sh start
+fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/ttyd" "$hiboyfile2/ttyd"
+chmod 777 "$SVC_PATH"
+[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf "$SVC_PATH"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="$(which ttyd)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/ttyd"
 hash ttyd 2>/dev/null || { logger -t "$shell_log" "找不到 ttyd，尝试启动shellinaboxd"; nvram set shellinabox_enable=1; shellinabox_restart ; }
-eval "ttyd --port $shellinabox_port $shellinabox_options_ttyd $cmd_log" &
+eval "$SVC_PATH --port $shellinabox_port $shellinabox_options_ttyd $cmd_log" &
 sleep 5
 [ ! -z "`pidof ttyd`" ] && logger -t "$shell_log" "启动成功" && shellinabox_restart o
 [ -z "`pidof ttyd`" ] && logger -t "$shell_log" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && shellinabox_restart x
 
 fi
 if [ "$shellinabox_enable" = "1" ] ; then
+cmd_name="shellinabox"
 SVC_PATH="/opt/sbin/shellinaboxd"
 chmod 777 "$SVC_PATH"
 if [ ! -s "$SVC_PATH" ] ; then
@@ -204,6 +217,14 @@ fi
 
 }
 
+update_app () {
+SVC_PATH="/opt/bin/ttyd"
+rm -rf "$SVC_PATH" /opt/opt_backup/bin/ttyd
+/etc/storage/script/Sh01_mountopt.sh start
+wgetcurl_file "$SVC_PATH" "$hiboyfile/ttyd" "$hiboyfile2/ttyd"
+chmod 777 "$SVC_PATH"
+}
+
 shellinabox_port_dpt () {
 
 if [ "$shellinabox_wan" = "1" ] ; then
@@ -226,6 +247,9 @@ check)
 	;;
 stop)
 	shellinabox_close
+	;;
+update_app)
+	update_app
 	;;
 keep)
 	#shellinabox_check

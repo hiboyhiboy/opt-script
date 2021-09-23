@@ -1002,18 +1002,15 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"streamSettin
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"protocol"];"'"$link_protocol"'")')
 fi
 if [ "$link_protocol" == "ss" ] ; then
-if [ "$ss_link_method" == "aes-256-cfb" ] || [ "$ss_link_method" == "aes-128-cfb" ] || [ "$ss_link_method" == "chacha20" ] || [ "$ss_link_method" == "chacha20-ietf" ] || [ "$ss_link_method" == "aes-256-gcm" ] || [ "$ss_link_method" == "aead_aes_256_gcm" ] || [ "$ss_link_method" == "aes-128-gcm" ] || [ "$ss_link_method" == "aead_aes_128_gcm" ] || [ "$ss_link_method" == "chacha20-poly1305" ] || [ "$ss_link_method" == "aead_chacha20_poly1305" ] || [ "$ss_link_method" == "chacha20-ietf-poly1305" ] || [ "$ss_link_method" == "none" ] || [ "$ss_link_method" == "plain" ] ; then
+if [ "$ss_link_method" == "aes-256-gcm" ] || [ "$ss_link_method" == "aead_aes_256_gcm" ] || [ "$ss_link_method" == "aes-128-gcm" ] || [ "$ss_link_method" == "aead_aes_128_gcm" ] || [ "$ss_link_method" == "chacha20-poly1305" ] || [ "$ss_link_method" == "aead_chacha20_poly1305" ] || [ "$ss_link_method" == "chacha20-ietf-poly1305" ] || [ "$ss_link_method" == "none" ] || [ "$ss_link_method" == "plain" ] ; then
 logger -t "【v2ray】" "开始生成 ss 配置，加密方式： $ss_link_method"
 else
 logger -t "【v2ray】" "ss配置加密方式不兼容V2Ray"
 logger -t "【v2ray】" "V2Ray兼容加密方式列表"
-logger -t "【v2ray】" "aes-256-cfb"
-logger -t "【v2ray】" "aes-128-cfb"
-logger -t "【v2ray】" "chacha20"
-logger -t "【v2ray】" "chacha20-ietf"
 logger -t "【v2ray】" "aes-256-gcm,aead_aes_256_gcm"
 logger -t "【v2ray】" "aes-128-gcm,aead_aes_128_gcm"
 logger -t "【v2ray】" "chacha20-poly1305,aead_chacha20_poly1305 或 chacha20-ietf-poly1305"
+logger -t "【v2ray】" "none 或 plain"
 #logger -t "【v2ray】" "停止生成ss配置"
 #return
 logger -t "【v2ray】" "可以尝试更换 V2Ray 主程序配置兼容加密方式： $ss_link_method"
@@ -1258,11 +1255,11 @@ fi
 # quic end
 # grpc star
 if [ "$vless_link_type" = "grpc" ] ; then
-[ ! -z "$vless_link_serviceName" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["quicSettings","serviceName"];"'$vless_link_serviceName'")')
+[ ! -z "$vless_link_serviceName" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["grpcSettings","serviceName"];"'$vless_link_serviceName'")')
 if [ "$vless_link_mode" == "mutil" ] ; then
-	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["quicSettings","multiMode"];"true")')
+	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["grpcSettings","multiMode"];"true")')
 else
-	mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["quicSettings","multiMode"]])')
+	mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["grpcSettings","multiMode"]])')
 fi
 fi
 # grpc end
