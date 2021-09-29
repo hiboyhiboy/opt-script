@@ -27,7 +27,7 @@ app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
 server_addresses=$(cat /etc/storage/v2ray_config_script.sh | tr -d ' ' | grep -Eo '"address":.+' | grep -v 8.8.8.8 | grep -v google.com | grep -v 114.114.114.114 | grep -v 119.29.29.29 | grep -v 223.5.5.5 | sed -n '1p' | cut -d':' -f2 | cut -d'"' -f2)
 if [ "$v2ray_enable" != "0" ] ; then
-link_get="$(nvram get app_74)"
+app_74="$(nvram get app_74)"
 app_98="$(nvram get app_98)"
 app_95="$(nvram get app_95)"
 [ -z "$app_95" ] && app_95="." && nvram set app_95="."
@@ -135,7 +135,7 @@ exit 0
 v2ray_get_status () {
 
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$app_74$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -440,11 +440,16 @@ mount -o remount,size=60% tmpfs /tmp
 Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
 fi
-
+v2ray_get_releases
 for h_i in $(seq 1 2) ; do
 [[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
-[ "$link_get" == "1" ] && wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray" "$hiboyfile2/v2ray-v2ray"
-[ "$link_get" != "1" ] && wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+if [ "$app_74" == "1" ] || [ "$app_74" == "3" ] ; then
+	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 V2ray-core 主程序" && [ "$app_74" != "3" ] && nvram set app_74="3" && app_74="3"
+	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray" "$hiboyfile2/v2ray-v2ray"
+else
+	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 Xray-core 主程序" && [ "$app_74" != "4" ] && nvram set app_74="4" && app_74="4"
+	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+fi
 done
 if [ -s "$v2ray_path" ] ; then
 	logger -t "【v2ray】" "找到 $v2ray_path"
@@ -499,7 +504,6 @@ fi
 [ "$app_114" = "0" ] && logger -t "【v2ray】" "启动路由自身流量走透明代理"
 [ "$app_114" = "1" ] && logger -t "【v2ray】" "停止路由自身流量走透明代理"
 fi
-v2ray_get_releases
 if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
 	[ "$v2ray_http_format" = "1" ] && su_cmd2="$v2ray_path -format json -config $v2ray_http_config"
 	[ "$v2ray_http_format" = "2" ] && su_cmd2="$v2ray_path -format pb  -config $v2ray_http_config"
@@ -538,6 +542,9 @@ else
 	chmod 777 /opt/bin
 	su_cmd2="$v2ray_path -config /tmp/vmess/mk_vmess.json -format json"
 fi
+v2ray_v_tmp=`v2ray -version`
+v2ray_v=`echo "$v2ray_v_tmp" | grep -Eo "^[^(]+" | sed -n '1p'`
+nvram set v2ray_v="$v2ray_v"
 cd "$(dirname "$v2ray_path")"
 eval "$su_cmd" '"V2RAY_CONF_GEOLOADER=memconservative;cmd_name=v2ray;'"$su_cmd2"' $cmd_log"' &
 #eval "$su_cmd2 $cmd_log" &
@@ -2041,26 +2048,24 @@ sed -Ei '/dellink_ss|^$/d' /etc/storage/app_25.sh
 }
 
 v2ray_get_releases(){
-v2ray_v_tmp=`v2ray -version`
-if [ "$link_get" == "0" ] ; then
-echo "主程序不检测版本"
+link_get=""
+if [ "$app_74" == "0" ] ; then
+echo "不检测主程序版本"
 fi
-if [ "$link_get" == "1" ] && [ -z "$(echo $v2ray_v_tmp | grep V2Ray)" ] ; then
-nvram set app_74="0"
-rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
+if [ "$app_74" == "1" ]; then
+nvram set app_74="3" ; app_74="3"
+link_get="v2ray-v2ray"
 logger -t "【v2ray】" "自动下载 V2ray-core 主程序"
-wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray" "$hiboyfile2/v2ray-v2ray"
-v2ray_v_tmp=`v2ray -version`
 fi
-if [ "$link_get" == "2" ] && [ -z "$(echo $v2ray_v_tmp | grep Xray)" ] ; then
-nvram set app_74="0"
-rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
+if [ "$app_74" == "2" ]; then
+nvram set app_74="4" ; app_74="4"
+link_get="v2ray"
 logger -t "【v2ray】" "自动下载 Xray-core 主程序"
-wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
-v2ray_v_tmp=`v2ray -version`
 fi
-v2ray_v=`echo "$v2ray_v_tmp" | grep -Eo "^[^(]+" | sed -n '1p'`
-nvram set v2ray_v="$v2ray_v"
+if [ ! -z "$link_get" ] ; then
+rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
+wgetcurl_file "$v2ray_path" "$hiboyfile/""link_get" "$hiboyfile2/""link_get"
+fi
 
 }
 

@@ -315,29 +315,6 @@ resolve_svraddr() {
 			is_ipv6_address "$svrip_all" && [ -z "$(grep $svrip_all $proxy_svraddr6)" ] && echo "$svrip_all" >> $proxy_svraddr6
 		fi
 	done < $proxy_all_svraddr
-	
-	if is_true "$ipv4"; then
-		proxy_svripv4=""
-		while read svraddr; do
-			[ -z "$svraddr" ] && continue
-			is_ipv6_address "$svraddr" && continue
-			is_ipv4_address "$svraddr" && svripv4="$svraddr" || svripv4=$(resolve_hostname4 "$svraddr")
-			proxy_svripv4="$proxy_svripv4
-$svripv4"
-		done < $proxy_svraddr4
-	fi
-
-	if is_true "$ipv6"; then
-		proxy_svripv6=""
-		while read svraddr; do
-			[ -z "$svraddr" ] && continue
-			is_ipv4_address "$svraddr" && continue
-			is_ipv6_address "$svraddr" && svripv6="$svraddr" || svripv6=$(resolve_hostname6 "$svraddr")
-			proxy_svripv6="$proxy_svripv6
-$svripv6"
-		done < $proxy_svraddr6
-	fi
-	
 	fi
 
 #ipset destroy $setname &>/dev/null
@@ -379,7 +356,9 @@ create sstp_mac_chn hash:mac hashsize 64" | while read sstp_name; do ipset -! $s
 
 	ipset flush proxyaddr &>/dev/null
 	ipset flush proxyaddr6 &>/dev/null
+	proxy_svripv4="$(cat $proxy_svraddr4)"
 	[ ! -z "$proxy_svripv4" ] && { for svr_ip in $proxy_svripv4; do echo "-A proxyaddr $svr_ip"; done | ipset -! restore &>/dev/null ; }
+	proxy_svripv6="$(cat $proxy_svraddr6)"
 	[ ! -z "$proxy_svripv6" ] && { for svr_ip in $proxy_svripv6; do echo "-A proxyaddr6 $svr_ip"; done | ipset -! restore &>/dev/null ; }
 	ipset flush privaddr &>/dev/null
 	ipset flush privaddr6 &>/dev/null
