@@ -109,14 +109,18 @@ ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 [ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_ng_enable=`nvram get app_102`
+[ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
-if [ "$chinadns_enable" != "0" ] ; then
-	if [ "$chinadns_port" = "8053" ] ; then
-	ss_dnsproxy_x=2
-	else
-	[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0
-	fi
+if [ "$chinadns_port" != "8053" ] ; then
+chinadns_enable=0
+chinadns_ng_enable=0
+fi
+if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
+ss_dnsproxy_x=2 ; nvram set ss_dnsproxy_x=2
+else
+[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 fi
 
 ss_rebss_n=`nvram get ss_rebss_n`
@@ -181,7 +185,7 @@ sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
 [ "$ss_udp_enable" != 1 ] && sstp_set tcponly='true' # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
 nvram set app_112="0"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
-nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
+#nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 nvram set app_114="0" # 0:代理本机流量; 1:跳过代理本机流量
 sstp_set uid_owner='0' # 非 0 时进行用户ID匹配跳过代理本机流量
 gid_owner="$(nvram get gid_owner)"
@@ -925,7 +929,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$chinadns_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$chinadns_enable$chinadns_ng_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

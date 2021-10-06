@@ -30,14 +30,18 @@ ss_sub7=`nvram get ss_sub7`
 ss_sub8=`nvram get ss_sub8`
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_ng_enable=`nvram get app_102`
+[ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
-if [ "$chinadns_enable" != "0" ] ; then
-	if [ "$chinadns_port" = "8053" ] ; then
-	ss_dnsproxy_x=2
-	else
-	echo "$ss_dnsproxy_x"
-	fi
+if [ "$chinadns_port" != "8053" ] ; then
+chinadns_enable=0
+chinadns_ng_enable=0
+fi
+if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
+	ss_dnsproxy_x=2 ; nvram set ss_dnsproxy_x=2
+else
+	[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 fi
 koolproxy_enable=`nvram get koolproxy_enable`
 
@@ -119,8 +123,8 @@ exit 0
 ss_tproxy_get_status () {
 
 A_restart=`nvram get ss_tproxy_status`
-B_restart="$ss_tproxy_enable$ss_tproxy_mode_x$ss_pdnsd_all$ss_dnsproxy_x$ss_udp_enable$chinadns_enable$(cat /etc/storage/app_27.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
-C_restart="$ss_udp_enable$dns_start_dnsproxy$ss_pdnsd_cn_all$output_return$ss_pdnsd_all$ss_dnsproxy_x$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$chinadns_enable$chinadns_port$koolproxy_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$ss_tproxy_enable$ss_tproxy_mode_x$ss_pdnsd_all$ss_dnsproxy_x$ss_udp_enable$chinadns_enable$chinadns_ng_enable$(cat /etc/storage/app_27.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
+C_restart="$ss_udp_enable$dns_start_dnsproxy$ss_pdnsd_cn_all$output_return$ss_pdnsd_all$ss_dnsproxy_x$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$chinadns_enable$chinadns_ng_enable$chinadns_port$koolproxy_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
@@ -170,7 +174,7 @@ if [ "$ss_tproxy_enable" = "1" ] ; then
 				ss_tproxy start_dnsserver_confset
 			fi
 		fi
-		if [ "$mode" == "global" ] || [ "$ss_pdnsd_all" == "1" ] ; then
+		if [ "$ss_pdnsd_all" == "1" ] ; then
 			port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 			if [ "$port" = 0 ] ; then
 				sleep 10
@@ -207,6 +211,7 @@ OSC
 fi
 
 while true; do
+	ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
 	if [ "$dns_start_dnsproxy" != "1" ] && [ "$ss_dnsproxy_x" != "2" ] && [ "$mode" != "chnlist" ] ; then
 		[ -z "`pidof dnsproxy`" ] && [ -z "`pidof pdnsd`" ] && logger -t "【ss_tproxy】" "检测1:找不到 dnsproxy , 重新添加" && ss_tproxy_restart
 	fi
@@ -228,7 +233,7 @@ while true; do
 			ss_tproxy start_dnsserver_confset
 		fi
 	fi
-	if [ "$mode" == "global" ] || [ "$ss_pdnsd_all" == "1" ] ; then
+	if [ "$ss_pdnsd_all" == "1" ] ; then
 		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 		if [ "$port" = 0 ] ; then
 			sleep 10
@@ -272,7 +277,7 @@ ss_tproxy_rules_update () {
 [ "$ss_tproxy_update" == "0" ] && return
 nvram set app_111=0 ; nvram commit ;
 for h_i in $(seq 1 2) ; do
-[[ "$(/etc/storage/script/sh_ss_tproxy.sh h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
+[ -z "$(grep "main " /etc/storage/script/sh_ss_tproxy.sh)" ] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
 done
 rm -f /opt/app/ss_tproxy/tmp/*.md5
@@ -334,7 +339,7 @@ ss_tproxy_start () {
 ipt_m_check
 check_webui_yes
 for h_i in $(seq 1 2) ; do
-[[ "$(/etc/storage/script/sh_ss_tproxy.sh h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
+[ -z "$(grep "main " /etc/storage/script/sh_ss_tproxy.sh)" ] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
 done
 rm -f /opt/app/ss_tproxy/ss_tproxy.conf
@@ -462,6 +467,7 @@ selfonly='false' # true:仅代理本机流量; false:代理本机及"内网"流�
 
 ## ss_tproxy 配置文件的配置参数覆盖 web 的配置参数
 ext_dns_start_dnsproxy='' #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
+ext_ss_dnsproxy_x=''      #DNS程序选择，0:dnsproxy ; 1:pdnsd ; 2:dnsmasq
 ext_ss_pdnsd_all=''       # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
 ext_ss_pdnsd_cn_all=''    #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 ## iptables -t nat -I SSTP_OUTPUT -j RETURN
@@ -595,7 +601,7 @@ initconfig
 
 ss_tproxy_run () {
 for h_i in $(seq 1 2) ; do
-[[ "$(/etc/storage/script/sh_ss_tproxy.sh h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
+[ -z "$(grep "main " /etc/storage/script/sh_ss_tproxy.sh)" ] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
 done
 sh_ss_tproxy.sh "$@"
@@ -612,7 +618,7 @@ if [ "$1" = "del" ] ; then
 	[ -f /etc/storage/script/sh_ss_tproxy.sh ] && rm -f /etc/storage/script/sh_ss_tproxy.sh
 fi
 for h_i in $(seq 1 2) ; do
-[[ "$(/etc/storage/script/sh_ss_tproxy.sh h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
+[ -z "$(grep "main " /etc/storage/script/sh_ss_tproxy.sh)" ] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
 wgetcurl_file /etc/storage/script/sh_ss_tproxy.sh "$hiboyscript/script/sh_ss_tproxy.sh" "$hiboyscript2/script/sh_ss_tproxy.sh"
 done
 initconfig

@@ -23,8 +23,14 @@ fi
 
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_ng_enable=`nvram get app_102`
+[ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
+if [ "$chinadns_port" != "8053" ] ; then
+chinadns_enable=0
+chinadns_ng_enable=0
+fi
 
 hysteria_renum=`nvram get hysteria_renum`
 cmd_log_enable=`nvram get cmd_log_enable`
@@ -81,7 +87,7 @@ exit 0
 hysteria_get_status () {
 
 A_restart=`nvram get hysteria_status`
-B_restart="$hysteria_enable$chinadns_enable$hysteria_follow$transocks_mode_x$ss_udp_enable$app_114"
+B_restart="$hysteria_enable$chinadns_enable$chinadns_ng_enable$hysteria_follow$transocks_mode_x$ss_udp_enable$app_114"
 B_restart="$B_restart""$(cat /etc/storage/app_34.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
@@ -228,7 +234,7 @@ if [ "$app_114" = 0 ] ; then
 logger -t "【hysteria】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
 fi
 logger -t "【hysteria】" "完成 透明代理 转发规则设置"
-if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
+if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
 logger -t "【hysteria】" "已经启动 chinadns 防止域名污染"
 fi
 restart_dhcpd
@@ -267,8 +273,8 @@ sstp_set tproxy='true' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
 sstp_set tcponly="$tcponly" # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
 nvram set app_112="0"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
-nvram set ss_pdnsd_all="0" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
-nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
+#nvram set ss_pdnsd_all="0" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
+#nvram set app_113="0"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 sstp_set uid_owner='0'     # 非 0 时进行用户ID匹配跳过代理本机流量
 gid_owner="$(nvram get gid_owner)"
 sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量

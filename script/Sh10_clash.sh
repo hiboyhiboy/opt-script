@@ -48,9 +48,16 @@ clash_mixed="$(nvram get app_101)"
 [ -z $clash_mixed ] && clash_mixed=0 && nvram set clash_mixed=0
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_ng_enable=`nvram get app_102`
+[ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
-
+if [ "$chinadns_port" != "8053" ] ; then
+chinadns_enable=0
+chinadns_ng_enable=0
+fi
+ss_ip46=`nvram get ss_ip46`
+[ -z $ss_ip46 ] && ss_ip46=0 && nvram set ss_ip46=0
 clash_renum=`nvram get clash_renum`
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="clash"
@@ -106,7 +113,7 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114$app_78$app_79"
+B_restart="$clash_enable$chinadns_enable$chinadns_ng_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114$app_78$app_79$ss_ip46"
 B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")""$(cat /etc/storage/app_33.sh | grep -v '^#' | grep -v "^$")"
 [ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
@@ -347,7 +354,7 @@ if [ "$app_114" = 0 ] ; then
 logger -t "【clash】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
 fi
 logger -t "【clash】" "完成 透明代理 转发规则设置"
-if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
+if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
 logger -t "【clash】" "已经启动 chinadns 防止域名污染"
 else
 logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
@@ -383,15 +390,17 @@ ss_tproxy_mode_x=`nvram get app_110`
 [ "$clash_mode_x" = "2" ] && sstp_set mode='chnroute'
 [ "$clash_mode_x" = "0" ] && sstp_set mode='global'
 [ "$clash_mode_x" = "3" ] && sstp_set mode='chnlist'
-sstp_set ipv4='true' ; sstp_set ipv6='false' ;
+[ "$ss_ip46" = "0" ] && { sstp_set ipv4='true' ; sstp_set ipv6='false' ; }
+[ "$ss_ip46" = "1" ] && { sstp_set ipv4='false' ; sstp_set ipv6='true' ; }
+[ "$ss_ip46" = "2" ] && { sstp_set ipv4='true' ; sstp_set ipv6='true' ; }
  # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
  # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
 sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
 sstp_set tcponly="$tcponly" # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
 nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
-nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
-nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
+#nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
+#nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 sstp_set uid_owner='0'          # 非 0 时进行用户ID匹配跳过代理本机流量
 gid_owner="$(nvram get gid_owner)"
 sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
@@ -625,8 +634,10 @@ if [ ! -f "$app_21" ] || [ ! -s "$app_21" ] ; then
 	cat > "$app_21" <<-\EEE
 dns:
   enable: true
-  ipv6: true
+  ipv6: false
   listen: 0.0.0.0:8053
+  default-nameserver :
+    - 8.8.8.8
   enhanced-mode: redir-host
   # enhanced-mode: redir-host # 或 fake-ip
   # # fake-ip-range: 198.18.0.1/16 # 如果你不知道这个参数的作用，请勿修改
@@ -661,6 +672,7 @@ dns:
 
   fallback-filter:
     geoip: true
+    geoip-code: CN
     ipcidr:
       - 240.0.0.0/4
     domain:
@@ -817,8 +829,12 @@ cp -f /etc/storage/app_21.sh $config_dns_yml
 sed -Ei '/^$/d' $config_dns_yml
 fi
 fi
-#yq w -i $config_dns_yml dns.ipv6 true
-if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] || [ "$clash_follow" == 0 ] ; then
+if [ "$ss_ip46" = "0" ] ; then
+yq w -i $config_dns_yml dns.ipv6 false
+else
+yq w -i $config_dns_yml dns.ipv6 true
+fi
+if [ "$chinadns_enable" != "0" ] || [ "$clash_follow" == 0 ] ; then
 logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8054 自动开启第三方 DNS 程序"
 yq w -i $config_dns_yml dns.listen 0.0.0.0:8054
 rm_temp

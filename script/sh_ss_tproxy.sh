@@ -485,7 +485,7 @@ load_config() {
 	
 	ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
 	[ -z $ss_dnsproxy_x ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
-	[ ! -z "$ext_ss_dnsproxy_x" ] && ss_pdnsd_cn_all="$ext_ss_dnsproxy_x"
+	[ ! -z "$ext_ss_dnsproxy_x" ] && ss_dnsproxy_x="$ext_ss_dnsproxy_x"
 	
 	ss_pdnsd_all=`nvram get ss_pdnsd_all`
 	[ -z $ss_pdnsd_all ] && ss_pdnsd_all=0 && nvram set ss_pdnsd_all=0
@@ -638,12 +638,21 @@ update_gfwlist_file() {
 		[ -z "$(cat $tmp_down_file | grep google )" ] && { rm -f $tmp_down_file ; logger -t "【update_gfwlist】" "错误！！！找不到 google ，base64 解码官方 gfwlist 数据不完整" ; }
 		[ -z "$(cat $tmp_down_file | grep '\-\-\-EOF\-\-\-' )" ] && { rm -f $tmp_down_file ; logger -t "【update_gfwlist】" "错误！！！ 找不到 EOF ， base64 解码官方 gfwlist 数据不完整" ; }
 		if [ -s $tmp_down_file ] ; then
+		# blacklist
 		cat $tmp_down_file | sort -u |
 			sed '/^$\|@@/d'|
 			sed 's#!.\+##; s#|##g; s#@##g; s#http:\/\/##; s#https:\/\/##;' | 
-			sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /jlike\.com/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d;' |
+			sed '/\*/d; /apple\.com/d; /sina\.cn/d; /sina\.com\.cn/d; /baidu\.com/d; /byr\.cn/d; /weibo\.com/d; /zhongsou\.com/d; /youdao\.com/d; /sogou\.com/d; /so\.com/d; /soso\.com/d; /aliyun\.com/d; /taobao\.com/d; /jd\.com/d; /qq\.com/d; /iqiyi\.com/d;' |
 			sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
 			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##' | sed 's/^[[:space:]]*//g; /^$/d; /#/d; s/comUSA/com/g;' | sort -u >> $tmp_gfwlist
+		# whitelist
+		cat $tmp_down_file | sort -u |
+			sed '/^$/d'| grep '^@@.\+$' |
+			sed 's#@##g; s#|##g; s#http:\/\/##; s#https:\/\/##;' |
+			sed '/^[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+$/d' |
+			grep '^[0-9a-zA-Z\.-]\+$' | grep '\.' | sed 's#^\.\+##' | sed 's/^[[:space:]]*//g; /^$/d; /#/d; s/comUSA/com/g;' | sort -u | sed '/^$/d' >> /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
+			printf "sina.cn\nsina.com.cn\nbaidu.com\nbyr.cn\n\nweibo.com\nzhongsou.com\nyoudao.com\nsogou.com\nso.com\nsoso.com\naliyun.com\ntaobao.com\njd.com\nqq.com\niqiyi.com\ngoogle.cn\n" >> /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
+			sed -e '/^$/d' -i /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
 		fi
 		else
 		logger -t "【update_gfwlist】" "错误！！！获取官方 gfwlist 下载失败"
@@ -711,7 +720,7 @@ update_gfwlist_file() {
 		wgetcurl_checkmd5 $tmp_down_file "$hiboyfile$url" "$hiboyfile2$url" N 5
 		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
-		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' > /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
+		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> /opt/app/ss_tproxy/rule/gfwlist_dns_b.txt
 		fi
 		rm -f $tmp_down_file
 	fi
@@ -745,6 +754,7 @@ update_gfwlist_file() {
 	cat $file_wanlist_ext | grep -E "^@b" | cut -c4- | while read domain_addr; do sed -Ei "/$domain_addr/d" $tmp_gfwlist; done 
 	cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u >> $tmp_gfwlist
 	cat $tmp_gfwlist |grep -v '^#' | sort -u | grep -v "^$" > $file_gfwlist_txt
+	sed -e '/^$/d' -i $file_gfwlist_txt
 	logger -t "【update_gfwlist】" "完成下载 gfwlist 文件"
 	rm -f $tmp_gfwlist
 	rm -f /etc/storage/basedomain.txt
@@ -847,6 +857,7 @@ update_gfwlist_ipset() {
 		[ -s /etc/storage/basedomain.txt ] && cat /etc/storage/basedomain.txt | sort -u >> $file_gfwlist_txt
 		gfwlist_txt_append_domain_names >> $file_gfwlist_txt
 	fi
+	sed -e '/^$/d' -i $file_gfwlist_txt
 	if ! is_chnlist_mode; then
 	update_md5_check update_gfwlist_txt $file_gfwlist_txt
 	logger -t "【update_gfwlist】" "开始加载 gfwlist 规则...."
@@ -869,9 +880,13 @@ update_gfwlist_ipset() {
 			ipset -! create gfwlist6 hash:net family inet6
 			ipset flush gfwlist6 &>/dev/null
 		fi
-		is_true "$ipv4" && awk '{printf("server=/%s/127.0.0.1#8053\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-		is_true "$ipv6" && awk '{printf("server=/%s/'"$dns_remote6"'\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-		awk '{printf("ipset=/%s/'"$gfwlist_ipset_setname"'\n", $1 )}' $file_gfwlist_txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		gfwlist_conf=""
+		export file_number=`wc -l $file_gfwlist_txt | awk -F'\ ' '{print $1}'`
+		is_true "$ipv4" && logger -t "【update_gfwlist】" "已经加载 gfwlist dns ipv4 规则 0%" && gfwlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("server=/%s/127.0.0.1#8053\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 gfwlist dns ipv4 规则.+/已经加载 gfwlist dns ipv4 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' $file_gfwlist_txt)" && echo "$gfwlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		gfwlist_conf=""
+		is_true "$ipv6" && logger -t "【update_gfwlist】" "已经加载 gfwlist dns ipv6 规则 0%" && gfwlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_remote6"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 gfwlist dns ipv6 规则.+/已经加载 gfwlist dns ipv6 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' $file_gfwlist_txt)" && echo "$gfwlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		gfwlist_conf=""
+		logger -t "【update_gfwlist】" "已经加载 gfwlist ipset 规则 0%" && gfwlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("ipset=/%s/'"$gfwlist_ipset_setname"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 gfwlist ipset 规则.+/已经加载 gfwlist ipset 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' $file_gfwlist_txt)" && echo "$gfwlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		nvram set gfwlist_list="gfwlist规则`cat /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf | wc -l` 行 Update:$(date "+%m-%d %H:%M")"
 		logger -t "【update_gfwlist】" "配置更新，完成加载 gfwlist 规则...."
 	else
@@ -905,12 +920,14 @@ update_chnlist_file() {
 	#删除忽略的域名
 	cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | while read domain_addr; do sed -Ei "/$domain_addr/d" $tmp_down_file; done 
 	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/ss_tproxy/rule/chnlist.txt
+	sed -e '/^$/d' -i /opt/app/ss_tproxy/rule/chnlist.txt
 	logger -t "【update_chnlist】" "完成下载 chnlist 文件"
 	rm -f $tmp_down_file
 }
 
 update_chnlist_ipset() {
 	mkdir -p /opt/app/ss_tproxy/dnsmasq.d
+	sed -e '/^$/d' -i /opt/app/ss_tproxy/rule/chnlist.txt
 	if is_chnlist_mode; then
 		[ ! -s /opt/app/ss_tproxy/rule/chnlist.txt ] && update_chnlist_file
 		logger -t "【update_chnlist】" "开始加载 chnlist 规则（回国模式）...."
@@ -936,9 +953,14 @@ update_chnlist_ipset() {
 			ipset flush gfwlist6 &>/dev/null
 		fi
 		# 回国模式直接使用远端DNS走代理，停止使用 dnsproxy
-		is_true "$ipv4" && awk '{printf("server=/%s/'"$dns_remote"'\n", $1 )}' /opt/app/ss_tproxy/rule/chnlist.txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-		is_true "$ipv6" && awk '{printf("server=/%s/'"$dns_remote6"'\n", $1 )}' /opt/app/ss_tproxy/rule/chnlist.txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
-		awk '{printf("ipset=/%s/'"$gfwlist_ipset_setname"'\n", $1 )}' /opt/app/ss_tproxy/rule/chnlist.txt >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		chnlist_conf=""
+		export file_number=`wc -l /opt/app/ss_tproxy/rule/chnlist.txt | awk -F'\ ' '{print $1}'`
+		is_true "$ipv4" && logger -t "【update_chnlist】" "已经加载 chnlist dns ipv4 规则 0%" && chnlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_remote"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist dns ipv4 规则.+/已经加载 chnlist dns ipv4 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' /opt/app/ss_tproxy/rule/chnlist.txt)" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		chnlist_conf=""
+		is_true "$ipv6" && logger -t "【update_chnlist】" "已经加载 chnlist dns ipv6 规则 0%" && chnlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_remote6"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist dns ipv6 规则.+/已经加载 chnlist dns ipv6 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' /opt/app/ss_tproxy/rule/chnlist.txt)" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		chnlist_conf=""
+		logger -t "【update_chnlist】" "已经加载 chnlist ipset 规则 0%" && chnlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("ipset=/%s/'"$gfwlist_ipset_setname"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist ipset 规则.+/已经加载 chnlist ipset 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' /opt/app/ss_tproxy/rule/chnlist.txt)" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		sed -e '/^$/d' -i /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		logger -t "【update_chnlist】" "配置更新，完成加载 chnlist 规则...."
 		else
 		logger -t "【update_chnlist】" "更新错误！！！ /opt/app/ss_tproxy/rule/chnlist.txt 规则为空...."
@@ -948,29 +970,31 @@ update_chnlist_ipset() {
 			logger -t "【update_chnlist】" "配置匹配，完成加载 chnlist 规则...."
 		fi
 	else
-		if [ "$ss_pdnsd_all" = "1" ] || is_global_mode ; then
 		if [ "$ss_pdnsd_cn_all" != "1" ] ; then
 		[ ! -s /opt/app/ss_tproxy/rule/chnlist.txt ] && update_chnlist_file
 		update_md5_check update_chnlist2_txt /opt/app/ss_tproxy/rule/chnlist.txt
 		if is_md5_not ; then
 		echo "" > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		if [ -s /opt/app/ss_tproxy/rule/chnlist.txt ] ; then
-		logger -t "【update_chnlist】" "开始加载 chnlist 规则...."
 		logger -t "【update_chnlist】" "加速国内 dns 访问"
+		logger -t "【update_chnlist】" "开始加载 chnlist 规则...."
 		wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
 		[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="$dns_direct"
-		is_true "$ipv4" && cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$DNS_china"'\n", $1)}' > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
-		is_true "$ipv6" && cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk '{printf("server=/%s/'"$dns_direct6"'\n", $1)}' > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
+		chnlist_conf=""
+		export file_number=`cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' |sed 's/^[[:space:]]*//g; /^$/d; /#/d' |wc -l|awk -F'\ ' '{print $1}'`
+		is_true "$ipv4" && logger -t "【update_chnlist】" "已经加载 chnlist ipv4 规则 0%" && chnlist_conf="$(cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$DNS_china"'\n", $1)}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist ipv4 规则.+/已经加载 chnlist ipv4 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}')" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
+		chnlist_conf=""
+		is_true "$ipv6" && logger -t "【update_chnlist】" "已经加载 chnlist ipv6 规则 0%" && chnlist_conf="$(cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_direct6"'\n", $1)}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist ipv6 规则.+/已经加载 chnlist ipv6 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}')" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		logger -t "【update_chnlist】" "配置更新，完成加载 chnlist 规则...."
+		sed -e '/^$/d' -i /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		else
 		logger -t "【update_chnlist】" "更新错误！！！ /opt/app/ss_tproxy/rule/chnlist.txt 规则为空...."
 		fi
 		else
 		[ ! -s /opt/app/ss_tproxy/rule/chnlist.txt ] && logger -t "【update_chnlist】" "匹配错误！！！ /opt/app/ss_tproxy/rule/chnlist.txt 规则为空...."
 		logger -t "【update_chnlist】" "配置匹配，完成加载 chnlist 规则...."
-		fi
 		fi
 		else
 		echo "" > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
@@ -1366,14 +1390,18 @@ fi
 [ "$dns_start_dnsproxy" = "1" ] && return
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_ng_enable=`nvram get app_102`
+[ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
-if [ "$chinadns_enable" != "0" ] ; then
-	if [ "$chinadns_port" = "8053" ] ; then
-	ss_dnsproxy_x=2
-	else
-	[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0
-	fi
+if [ "$chinadns_port" != "8053" ] ; then
+chinadns_enable=0
+chinadns_ng_enable=0
+fi
+if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
+	ss_dnsproxy_x=2 ; nvram set ss_dnsproxy_x=2
+else
+	[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 fi
 
 if [ "$ss_dnsproxy_x" = "0" ] ; then
@@ -1391,7 +1419,7 @@ if [ "$ss_dnsproxy_x" = "0" ] ; then
 	fi
 	[ ! -z "`pidof dnsproxy`" ] && return
 	logger -t "【sh_ss_tproxy.sh】" "错误 dnsproxy 没启动！"
-	ss_dnsproxy_x=1
+	ss_dnsproxy_x=1 ; nvram set ss_dnsproxy_x=1
 fi
 if [ "$ss_dnsproxy_x" = "1" ] ; then
 for h_i in $(seq 1 2) ; do
@@ -1450,17 +1478,29 @@ fi
 pdnsd -c $pdnsd_conf -p /var/run/pdnsd.pid &
 [ ! -z "`pidof pdnsd`" ] && return
 logger -t "【sh_ss_tproxy.sh】" "错误 pdnsd 没启动！"
-ss_dnsproxy_x=2
+ss_dnsproxy_x=2 ; nvram set ss_dnsproxy_x=2
 fi
 if [ "$ss_dnsproxy_x" = "2" ] && [ -s /etc/storage/script/Sh19_chinadns.sh ] ; then
+if [ "$chinadns_port" = "8053" ] ; then
+	/etc/storage/script/Sh09_chinadns_ng.sh stop
+	sleep 1
 	/etc/storage/script/Sh19_chinadns.sh stop
 	sleep 1
-	logger -t "【sh_ss_tproxy.sh】" "使用 dnsmasq ，自动开启 ChinaDNS 防止域名污染"
-	nvram set app_1=1
+	logger -t "【sh_ss_tproxy.sh】" "使用 dnsmasq ，第三方 DNS 程序防止域名污染"
+	if [ "$chinadns_enable" == "0" ] && [ "$chinadns_ng_enable" == "0" ] ; then
+	logger -t "【sh_ss_tproxy.sh】" "自动开启 ChinaDNS-NG 防止域名污染"
+	nvram set app_102=1
+	fi
 	nvram set chinadns_status=""
 	nvram set chinadns_ng_status=""
+	/etc/storage/script/Sh09_chinadns_ng.sh
+	sleep 1
 	/etc/storage/script/Sh19_chinadns.sh
 	sleep 5
+else
+	logger -t "【sh_ss_tproxy.sh】" "错误！！！ 第三方 DNS 程序 8053 端口没启动！"
+	ss_dnsproxy_x=0 ; nvram set ss_dnsproxy_x=0
+fi
 fi
 
 }
@@ -1469,18 +1509,20 @@ start_dnsserver_confset() {
 sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 echo "#ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
-if [ "$ss_pdnsd_all" = "1" ] || is_global_mode ; then
+if [ "$ss_pdnsd_all" = "1" ] ; then
 	cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
 no-resolv #ss_tproxy
 server=127.0.0.1#8053 #ss_tproxy
+EOF
+fi
+cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-\EOF
 dns-forward-max=1000 #ss_tproxy
 min-cache-ttl=1800 #ss_tproxy
 EOF
-fi
 if is_chnlist_mode; then
 	# 回国模式直接使用远端DNS走代理，停止使用 dnsproxy
 	sed -Ei "/server=127.0.0.1#8053/d" /etc/storage/dnsmasq/dnsmasq.conf
-	echo "#server=127.0.0.1#8053 #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
+#	echo "#server=127.0.0.1#8053 #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 	echo "server=${dns_remote:=8.8.8.8#53} #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 fi
 is_true "$ipv6" && echo "server=${dns_remote6:=2001:4860:4860::8888#53} #ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf

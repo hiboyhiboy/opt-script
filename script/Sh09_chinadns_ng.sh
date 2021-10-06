@@ -11,10 +11,17 @@ smartdns_enable="`nvram get app_106`"
 #if [ "$chinadns_ng_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep chinadns_ng | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 #fi
-if [ "$chinadns_ng_enable" == "1" ] || [ "$smartdns_enable" == "1" ] ; then
-[ "$chinadns_enable" == "0" ] && logger -t "【chinadns_ng】" "注意！！！需要关闭 smartdns、ChinaDNS-NG 后才能关闭 ChinaDNS"
-[ "$chinadns_enable" == "0" ] && { chinadns_enable="1" ; nvram set app_1="1" ; }
-[ "$chinadns_ng_enable" == "0" ] && { chinadns_ng_enable="1" ; nvram set app_102="1" ; }
+if [ "$chinadns_ng_enable" == "0" ] && [ "$smartdns_enable" == "1" ] ; then
+logger -t "【chinadns_ng】" "由于开启 smartdns 时需要 ChinaDNS-NG ，自动开启 ChinaDNS-NG！！！"
+chinadns_ng_enable="1"
+nvram set app_102="1"
+fi
+if [ "$chinadns_ng_enable" == "1" ] && [ "$chinadns_enable" == "1" ] ; then
+if [ "$chinadns_enable" == "1" ] ; then
+logger -t "【chinadns_ng】" "由于已经开启 ChinaDNS-NG、smartdns ，自动关闭 ChinaDNS！！！"
+chinadns_enable="0"
+nvram set app_1="0"
+fi
 fi
 
 chinadns_ng_usage=`nvram get app_103`
@@ -96,7 +103,6 @@ chinadns_ng_check () {
 
 chinadns_ng_get_status
 if [ "$chinadns_ng_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "停止 chinadns" && [ "$chinadns_enable" != "0" ] && chinadns_enable=0 && nvram set app_1=0
 	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "停止 chinadns_ng" && chinadns_ng_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi

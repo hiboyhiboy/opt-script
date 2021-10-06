@@ -50,8 +50,14 @@ app_114=`nvram get app_114` #0:代理本机流量; 1:跳过代理本机流量
 
 chinadns_enable=`nvram get app_1`
 [ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
+chinadns_ng_enable=`nvram get app_102`
+[ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
+if [ "$chinadns_port" != "8053" ] ; then
+chinadns_enable=0
+chinadns_ng_enable=0
+fi
 # v2ray_port=`nvram get v2ray_port`
 # [ -z $v2ray_port ] && v2ray_port=1088 && nvram set v2ray_port=1088
 nvram set v2ray_port=`cat /etc/storage/v2ray_config_script.sh | grep -Eo '"port": [0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
@@ -82,6 +88,8 @@ v2ray_http_enable=`nvram get v2ray_http_enable`
 v2ray_http_format=`nvram get v2ray_http_format`
 [ -z $v2ray_http_format ] && v2ray_http_format=1 && nvram set v2ray_http_format=1
 v2ray_http_config=`nvram get v2ray_http_config`
+ss_ip46=`nvram get ss_ip46`
+[ -z $ss_ip46 ] && ss_ip46=0 && nvram set ss_ip46=0
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep v2ray)" ]  && [ ! -s /tmp/script/_v2ray ]; then
 	mkdir -p /tmp/script
@@ -135,7 +143,7 @@ exit 0
 v2ray_get_status () {
 
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$app_74$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_enable$chinadns_ng_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$app_74$ss_ip46$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -546,7 +554,7 @@ v2ray_v_tmp=`v2ray -version`
 v2ray_v=`echo "$v2ray_v_tmp" | grep -Eo "^[^(]+" | sed -n '1p'`
 nvram set v2ray_v="$v2ray_v"
 cd "$(dirname "$v2ray_path")"
-eval "$su_cmd" '"V2RAY_CONF_GEOLOADER=memconservative;cmd_name=v2ray;'"$su_cmd2"' $cmd_log"' &
+eval "$su_cmd" '"export V2RAY_CONF_GEOLOADER=memconservative;cmd_name=v2ray;'"$su_cmd2"' $cmd_log"' &
 #eval "$su_cmd2 $cmd_log" &
 sleep 4
 #restart_dhcpd
@@ -564,6 +572,7 @@ logger -t "【v2ray】" "备注：默认配置的透明代理会导致广告过�
 if [ ! -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] && [ "$mk_mode_routing" == "0" ] ; then
 	logger -t "【v2ray】" "配置含内置 DNS outbound 功能，让 V2Ray 充当 DNS 服务。"
 	chinadns_enable=0
+	chinadns_ng_enable=0
 	nvram set app_102=0
 	nvram set app_1=0
 	nvram set chinadns_status=""
@@ -574,7 +583,7 @@ if [ ! -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] &
 else
 	dns_start_dnsproxy='0' # 0:自动开启第三方 DNS 程序(dnsproxy) ;
 fi
-if [ "$chinadns_enable" != "0" ] && [ "$chinadns_port" = "8053" ] ; then
+if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
 logger -t "【v2ray】" "chinadns 已经启动 防止域名污染"
 else
 if [ -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] ; then
@@ -624,15 +633,17 @@ ss_tproxy_mode_x=`nvram get app_110`
 [ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "2" ] && sstp_set mode='global'
 [ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set mode='chnlist'
 [ "$mk_mode_routing" == "0" ] && sstp_set mode='global'
-sstp_set ipv4='true' ; sstp_set ipv6='false' ;
+[ "$ss_ip46" = "0" ] && { sstp_set ipv4='true' ; sstp_set ipv6='false' ; }
+[ "$ss_ip46" = "1" ] && { sstp_set ipv4='false' ; sstp_set ipv6='true' ; }
+[ "$ss_ip46" = "2" ] && { sstp_set ipv4='true' ; sstp_set ipv6='true' ; }
  # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
  # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
 sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
 sstp_set tcponly="$tcponly" # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
 nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
-nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
-nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
+#nvram set ss_pdnsd_all="$dns_start_dnsproxy" # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
+#nvram set app_113="$dns_start_dnsproxy"      #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 sstp_set uid_owner='0'          # 非 0 时进行用户ID匹配跳过代理本机流量
 gid_owner="$(nvram get gid_owner)"
 sstp_set gid_owner="$gid_owner" # 非 0 时进行组ID匹配跳过代理本机流量
@@ -787,7 +798,7 @@ rm -f /tmp/vmess/gfw*
 awk '{printf("\,\"%s\"", $1, $1 )}' /tmp/vmess/all_domain.txt > /tmp/vmess/r.gfwlist.conf
 rm -f /tmp/vmess/all_domain.txt
 fi
-[ -s "/tmp/vmess/r.gfwlist.conf" ] && [ -s "/tmp/vmess/mk_vmess.json" ] && sed -Ei 's@"gfwall.com",@"services.googleapis.cn","googleapis.cn"'"$(cat /tmp/vmess/r.gfwlist.conf)"',@g'  /tmp/vmess/mk_vmess.json
+[ -s "/tmp/vmess/r.gfwlist.conf" ] && [ -s "/tmp/vmess/mk_vmess.json" ] && sed -Ei 's@"gfwall.com",@"services.googleapis.cn","googleapis.cn"'"$(cat /tmp/vmess/r.gfwlist.conf)"',"geosite:facebook","geosite:twitter","geosite:telegram",@g'  /tmp/vmess/mk_vmess.json
 fi
 }
 
@@ -897,7 +908,8 @@ echo '{
     }
   ],
   "routing": {
-    "domainStrategy": "AsIs",
+    "domainStrategy": "IPIfNonMatch",
+    "domainMatcher": "mph",
     "balancers": [],
     "rules": [
       {
@@ -1043,17 +1055,17 @@ mk_mode_x="`nvram get app_69`"
 if [ "$mk_mode_x" = "0" ] ; then
 logger -t "【v2ray】" "方案一chnroutes，国外IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"IPIfNonMatch")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",2];"geosite:google")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",3];"geosite:facebook")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",4];"geosite:geolocation-!cn")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domains",2];"geosite:google")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domains",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domains",4];"geosite:geolocation-!cn")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
 fi
 if [ "$mk_mode_x" = "1" ] ; then
 logger -t "【v2ray】" "方案二gfwlist（推荐），只有被墙的站点IP走代理"
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","domainStrategy"];"AsIs")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",2];"geosite:google")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",3];"geosite:facebook")')
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domain",4];"geosite:geolocation-!cn")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domains",2];"geosite:google")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domains",3];"geosite:facebook")')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",7,"domains",4];"geosite:geolocation-!cn")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",10]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",9]])')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",8]])')
@@ -1094,6 +1106,9 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",0]])')
 else
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["dns","servers",4]])')
 fi
+[ "$ss_ip46" = "0" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["dns","queryStrategy"];"UseIPv4")')
+[ "$ss_ip46" = "1" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["dns","queryStrategy"];"UseIPv6")')
+[ "$ss_ip46" = "2" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["dns","queryStrategy"];"UseIP")')
 echo $mk_vmess| jq --raw-output '.' > /tmp/vmess/mk_vmess.json
 if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
 	logger -t "【v2ray】" "错误！生成配置为空，请看看哪里问题？"
@@ -1535,6 +1550,7 @@ echo '{
     }
   ],
   "dns": {
+    "queryStrategy": "UseIPv4",
     "servers": [
       {
         "address": "8.8.8.8",
@@ -1543,6 +1559,9 @@ echo '{
           "domain:cn2qq.com",
           "geosite:google",
           "geosite:geolocation-!cn",
+          "geosite:facebook",
+          "geosite:twitter",
+          "geosite:telegram",
           "domain:youtube.com",
           "domain:appspot.com",
           "domain:telegram.com",
@@ -1558,6 +1577,9 @@ echo '{
         "port": 53,
         "domains": [
           "geosite:cn"
+        ],
+        "expectIPs": [
+          "geoip:cn"
         ]
       },
       "8.8.8.8",
@@ -1566,7 +1588,8 @@ echo '{
     ]
   },
   "routing": {
-    "domainStrategy": "AsIs",
+    "domainStrategy": "IPIfNonMatch",
+    "domainMatcher": "mph",
     "balancers": [],
     "rules": [
       {
@@ -1577,7 +1600,7 @@ echo '{
       {
         "type": "field",
         "outboundTag": "blocked",
-        "domain": [
+        "domains": [
           "geosite:category-ads-all"
         ]
       },
@@ -1631,7 +1654,7 @@ echo '{
       },
       {
         "type": "field",
-        "domain": [
+        "domains": [
           "gfwall.com",
           "cn2qq.com"
         ],
@@ -1639,7 +1662,7 @@ echo '{
       },
       {
         "type": "field",
-        "domain": [
+        "domains": [
           "domain:baidu.com",
           "domain:qq.com",
           "domain:taobao.com",
