@@ -20,7 +20,7 @@ echo "" > /var/log/chinadns_watchdog.log
 http_username=`nvram get http_username`
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
-sed -Ei '/github|ipip.net|_vlmcs._tcp|txt-record=_jetbrains-license-server.lan|adbyby_host.conf|cflist.conf|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy/d' /etc/storage/dnsmasq/dnsmasq.conf
+sed -Ei '/github|ipip.net|_vlmcs._tcp|txt-record=_jetbrains-license-server.lan|adbyby_host.conf|cflist.conf|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy|chinadns_ng|chinadns_0/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 rm -rf /tmp/ss/dnsmasq.d/*

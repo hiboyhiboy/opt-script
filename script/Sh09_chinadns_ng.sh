@@ -202,14 +202,12 @@ done
 
 chinadns_ng_close () {
 kill_ps "$scriptname keep"
-sed -Ei '/【chinadns_ng】|【chinadns】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 restart_dhcpd
-killall chinadns chinadns_ng dns2tcp smartdns
-killall -9 chinadns chinadns_ng dns2tcp smartdns
-kill_ps "/tmp/script/_app1"
-kill_ps "_chinadns.sh"
+killall  chinadns_ng dns2tcp smartdns
+killall -9  chinadns_ng dns2tcp smartdns
 kill_ps "/tmp/script/_app19"
 kill_ps "_chinadns_ng.sh"
 kill_ps "$scriptname"

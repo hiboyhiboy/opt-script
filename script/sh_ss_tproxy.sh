@@ -887,6 +887,8 @@ update_gfwlist_ipset() {
 		is_true "$ipv6" && logger -t "【update_gfwlist】" "已经加载 gfwlist dns ipv6 规则 0%" && gfwlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_remote6"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 gfwlist dns ipv6 规则.+/已经加载 gfwlist dns ipv6 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' $file_gfwlist_txt)" && echo "$gfwlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		gfwlist_conf=""
 		logger -t "【update_gfwlist】" "已经加载 gfwlist ipset 规则 0%" && gfwlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("ipset=/%s/'"$gfwlist_ipset_setname"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 gfwlist ipset 规则.+/已经加载 gfwlist ipset 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' $file_gfwlist_txt)" && echo "$gfwlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		gfwlist_conf=""
+		sed -e '/^$/d' -i /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		nvram set gfwlist_list="gfwlist规则`cat /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf | wc -l` 行 Update:$(date "+%m-%d %H:%M")"
 		logger -t "【update_gfwlist】" "配置更新，完成加载 gfwlist 规则...."
 	else
@@ -960,6 +962,7 @@ update_chnlist_ipset() {
 		is_true "$ipv6" && logger -t "【update_chnlist】" "已经加载 chnlist dns ipv6 规则 0%" && chnlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_remote6"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist dns ipv6 规则.+/已经加载 chnlist dns ipv6 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' /opt/app/ss_tproxy/rule/chnlist.txt)" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		chnlist_conf=""
 		logger -t "【update_chnlist】" "已经加载 chnlist ipset 规则 0%" && chnlist_conf="$(awk 'BEGIN {c=0;a=1}{printf("ipset=/%s/'"$gfwlist_ipset_setname"'\n", $1 )}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist ipset 规则.+/已经加载 chnlist ipset 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}' /opt/app/ss_tproxy/rule/chnlist.txt)" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
+		chnlist_conf=""
 		sed -e '/^$/d' -i /opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf
 		logger -t "【update_chnlist】" "配置更新，完成加载 chnlist 规则...."
 		else
@@ -987,6 +990,7 @@ update_chnlist_ipset() {
 		is_true "$ipv4" && logger -t "【update_chnlist】" "已经加载 chnlist ipv4 规则 0%" && chnlist_conf="$(cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$DNS_china"'\n", $1)}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist ipv4 规则.+/已经加载 chnlist ipv4 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}')" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		chnlist_conf=""
 		is_true "$ipv6" && logger -t "【update_chnlist】" "已经加载 chnlist ipv6 规则 0%" && chnlist_conf="$(cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_direct6"'\n", $1)}{i++}{b=i/ENVIRON["file_number"]*100}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist ipv6 规则.+/已经加载 chnlist ipv6 规则 "c"%/g\\\"  -Ei /tmp/syslog.log")}}')" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
+		chnlist_conf=""
 		logger -t "【update_chnlist】" "配置更新，完成加载 chnlist 规则...."
 		sed -e '/^$/d' -i /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		else
@@ -1507,6 +1511,9 @@ fi
 
 start_dnsserver_confset() {
 sed -Ei '/no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy/d' /etc/storage/dnsmasq/dnsmasq.conf
+if [ "$ss_dnsproxy_x" != "2" ] ; then
+sed -Ei '/chinadns_ng|chinadns_0/d' /etc/storage/dnsmasq/dnsmasq.conf
+fi
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 echo "#ss_tproxy" >> /etc/storage/dnsmasq/dnsmasq.conf
 if [ "$ss_pdnsd_all" = "1" ] ; then
