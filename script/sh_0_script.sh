@@ -31,7 +31,7 @@ mkdir -p /tmp/script
 { echo '#!/bin/bash' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' ; } > /tmp/script/_mountopt
 chmod 777 /tmp/script/_mountopt
 nvram set ss_internet="0"
-/etc/storage/inet_state_script.sh 12 t
+/etc/storage/script/sh_ezscript.sh connAPSite_scan
 /etc/storage/script/Sh??_mento_hust.sh &
 ping_text=`ping -4 223.5.5.5 -c 1 -w 4 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
@@ -62,10 +62,7 @@ if [ "$rb" -gt 3 ] ; then
 	break
 fi
 done
-if [[ $(cat /tmp/apauto.lock) == 1 ]] ; then
-	killall sh_apauto.sh
-	/tmp/sh_apauto.sh &
-fi
+/etc/storage/ap_script.sh crontabs
 [ -d /etc/storage/script ] && chmod 777 /etc/storage/script -R
 /etc/storage/script/Sh01_mountopt.sh upopt
 /etc/storage/script/sh_upscript.sh
