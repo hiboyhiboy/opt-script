@@ -1827,7 +1827,9 @@ if [ "$link_protocol" == "vmess" ] || [ "$link_protocol" == "vless" ] || [ "$lin
 [ -z "$ping_time" ] && ping_time=9999
 [ "$ping_time" -gt 9999 ] && ping_time=9999
 get_ping="00000""$ping_time"
-get_ping="$(echo -n "${get_ping:0-4}")"
+get_ping_l="$(echo -n $get_ping | wc -c)"
+get_ping_a="$(( get_ping_l - 3 ))"
+get_ping="$(echo -n "$get_ping" | cut -b "$get_ping_a-$get_ping_l")"
 echo $get_ping"$link_name""↪️""$link_input""↩️" >> /tmp/link/matching/link_v2_matching_0.txt
 fi
 
@@ -1852,12 +1854,6 @@ fi
 if [ "$vmess_x_tmp" = "v2ray_link_v2_matching" ] ; then
 	v2ray_link_v2_matching
 	return
-fi
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-json_jq_check
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	return 1
-fi
 fi
 
 vmess_link="`nvram get app_66`"
@@ -1889,6 +1885,12 @@ if [ "$vmess_x_tmp" != "up_link" ] ; then
 	return
 fi
 
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+json_jq_check
+if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	return 1
+fi
+fi
 logger -t "【v2ray】" "服务器订阅：开始更新"
 
 vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
@@ -1953,7 +1955,6 @@ if [ ! -s /tmp/link/vmess/0_link.txt ] ; then
 	return
 fi
 dos2unix /tmp/link/vmess/0_link.txt
-sed -e 's@\r@@g' -i /tmp/link/vmess/0_link.txt
 sed -e '/^$/d' -i /tmp/link/vmess/0_link.txt
 if [ ! -z "$(cat /tmp/link/vmess/0_link.txt | grep "ssd://")" ] ; then
 	logger -t "【v2ray】" "不支持【ssd://】订阅文件"

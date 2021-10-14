@@ -203,11 +203,11 @@ fi
 }
 
 cut_B_re () {
-B_restart="$(echo ${B_restart:0-5})"
+B_restart="$(echo ${B_restart:0:5})"
 }
 
 cut_C_re () {
-C_restart="$(echo ${C_restart:0-5})"
+C_restart="$(echo ${C_restart:0:5})"
 }
 
 

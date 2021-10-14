@@ -344,26 +344,19 @@ if [ "$ss_opt_x" = "5" ] ; then
 	fi
 fi
 if [ ! -z "$upanPath" ] ; then
-	if [ ! -z "$(modprobe -l | grep ext4)" ] ; then
-	# 检测ext4磁盘
 	mkdir -p /tmp/AiDisk_opt
 	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
 	mount -o bind "$upanPath" /tmp/AiDisk_opt
 	[ "$(cat  /proc/mounts | grep " /tmp/AiDisk_opt " | awk '{print $3}')" = "ext4" ] && ext4_check=1 || ext4_check=0
 	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
-	rm -f /tmp/AiDisk_opt
+	[ -z "$(ls -l /tmp/AiDisk_opt)" ] && rm -rf /tmp/AiDisk_opt
 	if [ "$(losetup -h 2>&1 | wc -l)" -gt 2 ] && [ "$ext4_check" = "0" ] ; then
 		# 不是ext4磁盘时用镜像生成opt
 		mkoptimg "$upanPath"
-	else
+	fi
+	if ! mountpoint -q /opt ; then
 		[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
 		logger -t "【opt】" "$upanPath/opt文件夹模式挂载/opt"
-		mount -o bind "$upanPath/opt" /opt
-	fi
-	else
-	# 无 ext4模块，不创建镜像。
-		[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
-		logger -t "【opt】" "无 ext4模块，不创建镜像。直接使用 $upanPath/opt文件夹模式挂载/opt"
 		mount -o bind "$upanPath/opt" /opt
 	fi
 	rm -f /tmp/AiDisk_00
@@ -537,7 +530,7 @@ mkoptimg () {
 # 创建o_p_t.img
 upanPath="$1"
 logger -t "【opt】" "$upanPath/opt/o_p_t.img镜像(ext4)模式挂载/media/o_p_t_img"
-if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
+if [ ! -s "$upanPath/opt/o_p_t.img" ] && [ ! -z "$(which mkfs.ext4)" ] ; then
 	[ -d "$upanPath/opt" ] && mv -f "$upanPath/opt" "$upanPath/opt_old_"$(date "+%Y-%m-%d_%H-%M-%S")
 	[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
 	[ -d "$upanPath" ] && block="$(check_disk_size $upanPath)"
@@ -552,6 +545,32 @@ if [ ! -s "$upanPath/opt/o_p_t.img" ] ; then
 	[ ! -f $upanPath/opt/o_p_t.img ] && { rm -f $upanPath/opt/o_p_t.img; dd if=/dev/zero of=$upanPath/opt/o_p_t.img bs=1M seek=$opt_cifs_block count=1 ; sleep 5 ; }
 	losetup `losetup -f` $upanPath/opt/o_p_t.img
 	mkfs.ext4 -i 16384 `losetup -a | grep o_p_t.img | awk -F ':' '{print $1}'`
+fi
+if [ ! -s "$upanPath/opt/o_p_t.img" ] && [ -z "$(which mkfs.ext4)" ] ; then
+	# 直接下载镜像(ext4)文件
+	[ -d "$upanPath/opt" ] && mv -f "$upanPath/opt" "$upanPath/opt_old_"$(date "+%Y-%m-%d_%H-%M-%S")
+	[ ! -d "$upanPath/opt" ] && mkdir -p "$upanPath/opt"
+	[ -d "$upanPath" ] && block="$(check_disk_size $upanPath)"
+	[ -z "$block" ] && block="0"
+	[ "$block" != "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：$block M"
+	[ "$block" = "0" ] && logger -t "【opt】" "路径$upanPath剩余空间：获取失败"
+	if [ "$block" != "0" ] && [ ! -z "$block" ] && [ "$block" -lt "2010" ] ; then
+		[ "$block" = "0" ] && logger -t "【opt】" "错误！！！路径$upanPath剩余空间少于 2010M 创建镜像(ext4)文件失败"
+	else
+	logger -t "【opt】" "创建$upanPath/opt/o_p_t.img镜像(ext4)文件，2000 M"
+	if [ ! -s "$upanPath/opt/o_p_t_img_2000M.tgz" ] ; then
+	logger -t "【opt】" "下载: $upanPath/opt/o_p_t_img_2000M.tgz"
+	wgetcurl.sh "$upanPath/opt/o_p_t_img_2000M.tgz" "$hiboyfile/o_p_t_img_2000M.tgz" "$hiboyfile/o_p_t_img_2000M.tgz"
+	fi 
+	logger -t "【opt】" "$upanPath/opt/o_p_t_img_2000M.tgz 下载完成，开始解压，解压需要 5-15 分钟。"
+	tar -xz -C "$upanPath/opt/" -f "$upanPath/opt/o_p_t_img_2000M.tgz"
+	if [ -f "$upanPath/opt/o_p_t.img" ] ; then
+	logger -t "【opt】" "$upanPath/opt/o_p_t_img_2000M.tgz 解压完成！"
+	losetup `losetup -f` $upanPath/opt/o_p_t.img
+	else
+	logger -t "【opt】" "错误！！！解压 $upanPath/opt/o_p_t_img_2000M.tgz 失败！"
+	fi
+	fi
 fi
 [ -z "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" ] && losetup `losetup -f` $upanPath/opt/o_p_t.img
 [ -z "$(df -m | grep "/dev/loop" | grep "/media/o_p_t_img")" ] && { modprobe -q ext4 ; mkdir -p /media/o_p_t_img ; mount -t ext4 -o noatime,sync "$(losetup -a | grep o_p_t.img | awk -F ':' '{print $1}')" "/media/o_p_t_img" ; }
@@ -699,7 +718,9 @@ if [ ! -f /opt/opt.tgz ]  ; then
 	if [ ! -z "$(grep ' /opt ' /proc/mounts | grep /dev)" ] || [ ! -z "$(grep ' /opt ' /proc/mounts | grep " cifs ")" ]  ; then
 		for optupanfileN in $(seq 0 $optupanfileS) ; do
 		optupanfileN="00""$optupanfileN"
-		optupanfileN="${optupanfileN:0-2}"
+		optupanfileN_l="$(echo -n $optupanfileN | wc -c)"
+		optupanfileN_a="$(( optupanfileN_l - 1 ))"
+		optupanfileN="$(echo -n "$optupanfileN" | cut -b "$optupanfileN_a-$optupanfileN_l")"
 		logger -t "【opt】" "下载: $optupanfile.$optupanfileN"
 		wgetcurl.sh "/opt/opt.tgz.$optupanfileN" "$optupanfile.$optupanfileN" "$optupanfile2.$optupanfileN"
 		done

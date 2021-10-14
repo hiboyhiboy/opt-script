@@ -544,7 +544,8 @@ if [ ! -s $yml_tmp ] ; then
 	logger -t "【clash】" "错误！！clash 服务器订阅文件获取失败！请检查地址"
 	return
 else
-	cp -f $yml_tmp $app_20
+	dos2unix $yml_tmp
+	cp -f $yml_tmp /etc/storage/app_20.sh
 	#yq w -i $app_20 allow-lan true
 	#rm_temp
 	logger -t "【clash】" "下载 clash 配置完成！"

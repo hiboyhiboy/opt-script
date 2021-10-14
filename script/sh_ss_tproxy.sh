@@ -630,8 +630,8 @@ update_gfwlist_file() {
 		raw_url='https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt'
 		wgetcurl_checkmd5 $tmp_base64_gfwlist  "$url" "$raw_url" N 5
 		if [ -s $tmp_base64_gfwlist ] && [ -z "$(cat $tmp_base64_gfwlist | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
+		dos2unix $tmp_base64_gfwlist
 		sed -e  ':a;N;$!ba;s/\n//g' -i $tmp_base64_gfwlist
-		sed -e  ':a;N;$!ba;s/\r//g' -i $tmp_base64_gfwlist
 		sed -e  's@$@====@g' -i $tmp_base64_gfwlist
 		cat $tmp_base64_gfwlist | base64 -d > $tmp_down_file
 		rm -f $tmp_base64_gfwlist 

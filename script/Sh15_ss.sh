@@ -1361,7 +1361,9 @@ if [ "$link_protocol" == "ss" ] || [ "$link_protocol" == "ssr" ] ; then
 [ -z "$ping_time" ] && ping_time=9999
 [ "$ping_time" -gt 9999 ] && ping_time=9999
 get_ping="00000""$ping_time"
-get_ping="$(echo -n "${get_ping:0-4}")"
+get_ping_l="$(echo -n $get_ping | wc -c)"
+get_ping_a="$(( get_ping_l - 3 ))"
+get_ping="$(echo -n "$get_ping" | cut -b "$get_ping_a-$get_ping_l")"
 echo $get_ping"$link_name""↪️""$link_input""↩️" >> /tmp/link/matching/link_ss_matching_0.txt
 fi
 
@@ -1480,7 +1482,6 @@ if [ ! -s /tmp/link/ss/0_link.txt ] ; then
 	return
 fi
 dos2unix /tmp/link/ss/0_link.txt
-sed -e 's@\r@@g' -i /tmp/link/ss/0_link.txt
 sed -e '/^$/d' -i /tmp/link/ss/0_link.txt
 if [ ! -z "$(cat /tmp/link/ss/0_link.txt | grep "ssd://")" ] ; then
 	logger -t "【ss】" "不支持【ssd://】订阅文件"
