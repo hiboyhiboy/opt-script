@@ -1,6 +1,6 @@
 #!/bin/sh
 
-Builds="/etc/storage/Builds-2021-10-11"
+Builds="/etc/storage/Builds-2021-10-15"
 result=0
 mtd_part_name="Storage"
 mtd_part_dev="/dev/mtdblock5"
@@ -262,6 +262,7 @@ func_resetsh()
 	sleep 1
 	#eval /etc/storage/www_sh/menu_title.sh re
 	touch /tmp/menu_title_re
+	touch /tmp/www_asp_re
 
 }
 

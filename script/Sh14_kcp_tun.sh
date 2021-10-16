@@ -283,6 +283,19 @@ killall nslookup
 if [ -s /tmp/arNslookup/$$ ] ; then
 	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
 	rm -f /tmp/arNslookup/$$
+else
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- --header 'accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name='"$1"'&type=AAAA')"
+		if [ $? -eq 0 ]; then
+		echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p'
+		fi
+	else
+		Address="$(curl --user-agent "$user_agent" -s -H 'accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name='"$1"'&type=AAAA')"
+		if [ $? -eq 0 ]; then
+		echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p'
+		fi
+	fi
 fi
 }
 initopt () {

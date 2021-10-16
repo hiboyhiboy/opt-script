@@ -32,7 +32,7 @@ fi
 if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2021-10-14"
+	nvram set scripto="2021-10-15"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -144,6 +144,21 @@ done
 sync;echo 3 > /proc/sys/vm/drop_caches
 }
 
+www_asp_re () {
+rm -f /tmp/www_asp_re
+logger -t "【WebUI】" "恢复内置 web 页面"
+# 解压内置 asp 文件
+[ -s /etc_ro/www_asp.tgz ] && { tar -xzvf /etc_ro/www_asp.tgz -C /tmp ;  chmod 666 /tmp/www_asp -R ; }
+for i in `/usr/bin/find /tmp/www_asp/ -name 'Advanced*'` ; do
+	[ -z "${i}" ] && continue
+	i_2="$(/usr/bin/find /opt/app/ -name '*'"$(echo $(basename $i) | sed -e 's@asp$@@g')"'.asp')"
+	[ -z "${i_2}" ] && continue
+	cp -f "${i}" "${i_2}"
+	rm -f "${i}"
+done
+sync;echo 3 > /proc/sys/vm/drop_caches
+}
+
 case $ACTION in
 check_opt)
 	check_opt
@@ -171,6 +186,9 @@ start)
 upweb)
 	all_up_web
 	check_opt
+	;;
+www_asp_re)
+	www_asp_re
 	;;
 upscript)
 	upscript_enable=1

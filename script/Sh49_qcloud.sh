@@ -183,6 +183,32 @@ if [ "$qcloud_domain6"x != "x" ] && [ "$qcloud_name6"x != "x" ] ; then
 	arDdnsCheck $qcloud_domain6 $qcloud_name6
 fi
 
+source /etc/storage/ddns_script.sh
+while read line
+do
+	line=`echo $line | cut -d '#' -f1`
+	line=$(echo $line)
+	[ -z "$line" ] && continue
+	IPv6=1
+	IPv6_neighbor=1
+	timestamp=`date +%s`
+	qcloud_record_id=""
+	name="$(echo "$line" | cut -d '@' -f1)"
+	domain="$(echo "$line" | cut -d '@' -f2)"
+	inf_MAC="$(echo "$line" | cut -d '@' -f3 | tr 'A-Z' 'a-z')"
+	inf_match="$(echo "$line" | cut -d '@' -f4)"
+	inf_v_match="$(echo "$line" | cut -d '@' -f5)"
+	[ -z "$inf_v_match" ] && inf_v_match="inf_v_match"
+	inet6_neighbor="$(echo "$line" | cut -d '@' -f6)"
+	inet6_neighbor=$(echo $inet6_neighbor)
+	if [ -z "$inet6_neighbor" ] ; then
+		ip -f inet6 neighbor show > /tmp/ip6_neighbor.log
+		inet6_neighbor="$(cat /tmp/ip6_neighbor.log | grep "$inf_MAC" | grep -v "$inf_v_match" | grep "$inf_match" | awk -F ' ' '{print $1}' | sed -n '1p')"
+	fi
+	[ ! -z "$inet6_neighbor" ] && arDdnsCheck $domain $name
+	IPv6_neighbor=0
+done < /tmp/ip6_ddns_inf
+
 }
 
 urlencode() {
@@ -317,6 +343,19 @@ killall nslookup
 if [ -s /tmp/arNslookup/$$ ] ; then
 	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
 	rm -f /tmp/arNslookup/$$
+else
+	curltest=`which curl`
+	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+		Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- --header 'accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name='"$1"'&type=AAAA')"
+		if [ $? -eq 0 ]; then
+		echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p'
+		fi
+	else
+		Address="$(curl --user-agent "$user_agent" -s -H 'accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name='"$1"'&type=AAAA')"
+		if [ $? -eq 0 ]; then
+		echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p'
+		fi
+	fi
 fi
 }
 
@@ -468,11 +507,30 @@ arIpAddress6 () {
 ifconfig $(nvram get wan0_ifname_t) | awk '/Global/{print $3}' | awk -F/ '{print $1}'
 #curl -6 -s https://www.cloudflare.com/cdn-cgi/trace | awk -F= '/ip/{print $2}'
 }
+if [ "$IPv6_neighbor" != "1" ] ; then
 if [ "$IPv6" = "1" ] ; then
 arIpAddress=$(arIpAddress6)
 else
 arIpAddress=$(arIpAddress)
 fi
+else
+arIpAddress=$inet6_neighbor
+inet6_neighbor=""
+IPv6_neighbor=0
+fi
+
+# 根据 ip -f inet6 neighbor show 获取终端的信息，设置 ddns 解析，实现每个终端的 IPV6 动态域名
+# 参数说明：使用 @ 符号分割，①前缀名称 ②域名 ③MAC【不限大小写】
+# ④匹配关键词的ip6地址【可留空】 ⑤排除关键词的ip6地址【可留空】 ⑥手动指定ip【可留空】 
+# 下面是信号填写例子：（删除前面的#可生效）
+cat >/tmp/ip6_ddns.inf <<-\EOF
+#www@google.com@09:9B:9A:90:9F:D9@@fe80::@  # 参数填写例子
+
+
+
+EOF
+cat /tmp/ip6_ddns.inf | grep -v '^#'  | grep -v "^$" > /tmp/ip6_ddns_inf
+rm -f /tmp/ip6_ddns.inf
 EEE
     chmod 755 "$ddns_script"
 fi

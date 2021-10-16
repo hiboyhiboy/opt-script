@@ -1066,10 +1066,8 @@ update_chnroute_file() {
 	fi
 	rm -f $tmp_down_file
 	if [ ! -s $tmp_chnroute ] ; then
-		 rm -f /etc/storage/china_ip_list.txt
-		 tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp ; cd /opt
-		 ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
-		[ -s /etc/storage/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！下载文件为空，使用 固件内置 /etc/storage/china_ip_list.txt 规则...." && cat /etc/storage/china_ip_list.txt > $tmp_chnroute
+		tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp ; cd /opt
+		[ -s /tmp/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！下载文件为空，使用 固件内置 /etc_ro/china_ip_list.tgz 规则...." && cat /tmp/china_ip_list.txt > $tmp_chnroute
 	fi
 	# 添加自定义白名单
 	cat $file_wanlist_ext | grep -E "^b" | cut -c3- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
@@ -1096,11 +1094,11 @@ update_chnroute_file() {
 update_chnroute_ipset() {
 	mkdir -p /opt/app/ss_tproxy/rule
 	if [ ! -s $file_chnroute_txt ] ; then
-		rm -f /etc/storage/china_ip_list.txt
 		tar -xzvf /etc_ro/china_ip_list.tgz -C /tmp ; cd /opt
-		ln -sf /tmp/china_ip_list.txt /etc/storage/china_ip_list.txt
-		[ -s /etc/storage/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！ $file_chnroute_txt 文件为空，使用 固件内置 /etc/storage/china_ip_list.txt 规则...." && cat /etc/storage/china_ip_list.txt > $file_chnroute_txt
+		[ -s /tmp/china_ip_list.txt ] && logger -t "【update_chnroute】" "错误！！！ $file_chnroute_txt 文件为空，使用 固件内置 /etc_ro/china_ip_list.tgz 规则...." && cat /tmp/china_ip_list.txt > $file_chnroute_txt
 	fi
+	rm -f /etc/storage/china_ip_list.txt
+	ln -sf $file_chnroute_txt /etc/storage/china_ip_list.txt
 	chnroute_list="chnroute规则`ipset list chnroute -t | awk -F: '/Number/{print $2}'` 行"
 	chnroute6_list="chnroute6规则`ipset list chnroute6 -t | awk -F: '/Number/{print $2}'` 行"
 	if [ "$1" != "ipv6" ]; then

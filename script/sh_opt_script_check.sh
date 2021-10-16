@@ -9,6 +9,14 @@ if [ ! -s /tmp/script/_opt_script_check ] && [ ! -z "$(echo $scriptfilepath | gr
 	exit
 fi
 
+opt_script_check=`nvram get opt_script_check`
+opt_script_check=$((opt_script_check - 1))
+nvram settmp opt_script_check="$opt_script_check"
+if [ "$opt_script_check" -lt 1 ] ; then
+nvram settmp opt_script_check="10"
+ip -f inet6 neighbor show > /tmp/ip6_neighbor.log
+fi
+
 syslog_tmp="`cat /tmp/syslog.log | grep "EMI\?\|dnsmasq is missing,"`"
 dnsmasq_tmp="`echo $syslog_tmp | grep 'dnsmasq is missing,'`"
 if [ ! -z "$dnsmasq_tmp" ] ; then
