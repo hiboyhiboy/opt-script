@@ -662,8 +662,9 @@ update_gfwlist_file() {
 	ss_3p_kool=`nvram get ss_3p_kool`
 	if [ "$ss_3p_kool" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 koolshare 列表...."
-		url='https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf'
-		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
+		url='https://cdn.jsdelivr.net/gh/hq450/fancyss/master/rules/gfwlist.conf'
+		raw_url='https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf'
+		wgetcurl_checkmd5 $tmp_down_file "$url" "$raw_url" N 5
 		if [ -s $tmp_down_file ] ; then
 		echo ""  >> $tmp_down_file
 		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' >> $tmp_gfwlist

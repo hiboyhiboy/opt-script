@@ -1,4 +1,4 @@
-sh_ss_tproxy=1fa6bbc7af20767c73ee3c0a207a4ac0
+sh_ss_tproxy=8dd4e4dcb1bad60fc79b253ccac2f261
 sh_opt_script_check=6deff971cafce7a2274fada9d2f2452f
 sh_link=9f6f176b2f4d1fee74d23973f914c0c8
 sh_ezscript=76df3b8e8c95d830ef56e71e7b217a24
