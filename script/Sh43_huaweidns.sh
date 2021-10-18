@@ -194,6 +194,7 @@ do
 	line=`echo $line | cut -d '#' -f1`
 	line=$(echo $line)
 	[ -z "$line" ] && continue
+	sleep 1
 	IPv6=1
 	IPv6_neighbor=1
 	RECORD_ID=""
