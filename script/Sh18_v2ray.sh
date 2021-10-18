@@ -2088,7 +2088,7 @@ logger -t "【v2ray】" "自动下载 Xray-core 主程序"
 fi
 if [ ! -z "$link_get" ] ; then
 rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
-wgetcurl_file "$v2ray_path" "$hiboyfile/""link_get" "$hiboyfile2/""link_get"
+wgetcurl_file "$v2ray_path" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
 fi
 
 }
