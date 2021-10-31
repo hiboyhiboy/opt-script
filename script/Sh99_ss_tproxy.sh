@@ -496,10 +496,6 @@ dns_bind_port='8053'                  # 本地 dnsproxy 服务器监听端口
 
 ## dnsmasq
 dnsmasq_bind_port='53'                  # dnsmasq 服务器监听端口，见 README
-dnsmasq_cache_size='4096'               # DNS 缓存大小，大小为 0 表示禁用缓存
-dnsmasq_cache_time='3600'               # DNS 缓存时间，单位是秒，最大 3600 秒
-dnsmasq_log_enable='false'              # 记录详细日志，除非进行调试，否则不建议启用
-dnsmasq_log_file='/tmp/syslog.log'      # 日志文件，如果不想保存日志可以改为 /dev/null
 dnsmasq_conf_dir="/tmp/ss_tproxy/dnsmasq.d"                          # `--conf-dir` 选项的参数，可以填多个，空格隔开
 dnsmasq_conf_file="/opt/app/ss_tproxy/dnsmasq_conf_file.txt"           # `--conf-file` 选项的参数，可以填多个，空格隔开
 dnsmasq_conf_string="/opt/app/ss_tproxy/conf/dnsmasq_conf_string.conf" # 自定义配置的配置文件(文件里面每一行一个配置)

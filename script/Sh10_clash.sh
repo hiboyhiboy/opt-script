@@ -793,6 +793,10 @@ yq w -i /etc/storage/app_20.sh secret "$clash_secret"
 rm_temp
 fi
 mkdir -p /opt/app/clash/config
+mkdir -p /etc/storage/clash/config
+[ -f /opt/app/clash/config/.cache ] && [ ! -f /etc/storage/clash/config/.cache ] && cp -f /opt/app/clash/config/.cache /etc/storage/clash/config/.cache
+touch /etc/storage/clash/config/.cache
+ln -sf /etc/storage/clash/config/.cache /opt/app/clash/config/.cache
 if [ "$app_default_config" = "1" ] ; then
 logger -t "【clash】" "不改写配置，直接使用原始配置启动！（有可能端口不匹配导致功能失效）"
 logger -t "【clash】" "请手动修改配置， HTTP 代理端口：7890"
@@ -931,6 +935,10 @@ update_2_yml () {
 [ "$clash_mixed" != "1" ] && return
 logger -t "【clash】" "初始化 clash 双开 mixed 代理"
 mkdir -p /opt/app/clash/config2
+mkdir -p /etc/storage/clash/config2
+[ -f /opt/app/clash/config2/.cache ] && [ ! -f /etc/storage/clash/config2/.cache ] && cp -f /opt/app/clash/config2/.cache /etc/storage/clash/config2/.cache
+touch /etc/storage/clash/config2/.cache
+ln -sf /etc/storage/clash/config2/.cache /opt/app/clash/config2/.cache
 ln -sf /opt/app/clash/config/Country.mmdb /opt/app/clash/config2/Country.mmdb
 config_2_yml="/opt/app/clash/config2/config.yaml"
 rm_temp
