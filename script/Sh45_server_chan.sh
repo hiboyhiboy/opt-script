@@ -179,6 +179,11 @@ serverchan_notify_4=`nvram get serverchan_notify_4`
 user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 mkdir -p /tmp/var
 resub=1
+# 消息推送接口，独立出来方便自定义：$1标题，$2内容
+    pushmsg(){
+        # ServerChan 卡片不显示内容，故在标题冗余内容
+        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=$1：$2" -d "&desp=$2" &
+    }
 # 获得外网地址
     arIpAddress() {
     curltest=`which curl`
@@ -247,7 +252,7 @@ if [ "$serverchan_notify_1" = "1" ] ; then
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
         logger -t "【互联网 IP 变动】" "目前 IP: ${hostIP}"
         logger -t "【互联网 IP 变动】" "上次 IP: ${lastIP}"
-        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】互联网IP变动：${hostIP}" -d "&desp=${hostIP}" &
+        pushmsg "【PDCN_"`nvram get computer_name`"】互联网IP变动" "${hostIP}"
         logger -t "【微信推送】" "互联网IP变动:${hostIP}"
         echo -n $hostIP > /etc/storage/lastIPAddress
     fi
@@ -266,7 +271,7 @@ if [ "$serverchan_notify_2" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname相同行.txt /tmp/var/newhostname.txt > /tmp/var/newhostname不重复.txt
     if [ -s "/tmp/var/newhostname不重复.txt" ] ; then
         content=`cat /tmp/var/newhostname不重复.txt | grep -v "^$"`
-        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】新设备加入：${content}" -d "&desp=${content}" &
+        pushmsg "【PDCN_"`nvram get computer_name`"】新设备加入" "${content}"
         logger -t "【微信推送】" "PDCN新设备加入:${content}"
         cat /tmp/var/newhostname不重复.txt | grep -v "^$" >> /etc/storage/hostname.txt
     fi
@@ -286,7 +291,7 @@ if [ "$serverchan_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname相同行_上线.txt /tmp/var/newhostname.txt > /tmp/var/newhostname不重复_上线.txt
     if [ -s "/tmp/var/newhostname不重复_上线.txt" ] ; then
         content=`cat /tmp/var/newhostname不重复_上线.txt | grep -v "^$"`
-        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】设备【上线】Online：${content}" -d "&desp=${content}" &
+        pushmsg "【PDCN_"`nvram get computer_name`"】设备上线" "${content}"
         logger -t "【微信推送】" "PDCN设备【上线】:${content}"
         cat /tmp/var/newhostname不重复_上线.txt | grep -v "^$" >> /etc/storage/hostname_上线.txt
     fi
@@ -294,7 +299,7 @@ if [ "$serverchan_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname.txt /etc/storage/hostname_上线.txt > /tmp/var/newhostname不重复_下线.txt
     if [ -s "/tmp/var/newhostname不重复_下线.txt" ] ; then
         content=`cat /tmp/var/newhostname不重复_下线.txt | grep -v "^$"`
-        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】设备【下线】offline：${content}" -d "&desp=${content}" &
+        pushmsg "【PDCN_"`nvram get computer_name`"】设备下线" "${content}"
         logger -t "【微信推送】" "PDCN设备【下线】:${content}"
         cat /tmp/var/newhostname.txt | grep -v "^$" > /etc/storage/hostname_上线.txt
     fi
@@ -310,7 +315,7 @@ if [ "$serverchan_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/osub
         content="新的固件： `cat /tmp/var/nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/osub | grep -v "^$"` "
         logger -t "【微信推送】" "固件 新的更新：${content}"
-        curl -L -s "http://sc.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】固件更新提醒：${content}" -d "&desp=${content}" &
+        pushmsg "【PDCN_"`nvram get computer_name`"】固件更新提醒" "${content}"
         echo -n `cat /tmp/var/nsub | grep -v "^$"` > /tmp/var/osub
     fi
 fi
