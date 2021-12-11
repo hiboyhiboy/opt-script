@@ -257,7 +257,7 @@ esac
 # 获得Zone_ID
 get_Zone_ID
 # 获得最后更新IP
-recordIP=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
+recordIP=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records?type=$domain_type&match=all" \
      -H "Content-Type: application/json" \
      $account_key_a1 "$account_key_1" \
      $account_key_a2 "$account_key_2")
@@ -388,7 +388,7 @@ while [ -z "$RECORD_ID" ] ; do
 # 获得Zone_ID
 get_Zone_ID
 # 获得记录ID
-RECORD_ID=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records" \
+RECORD_ID=$(curl -L    -s -X GET "https://api.cloudflare.com/client/v4/zones/$Zone_ID/dns_records?type=$domain_type&match=all" \
      -H "Content-Type: application/json" \
      $account_key_a1 "$account_key_1" \
      $account_key_a2 "$account_key_2")

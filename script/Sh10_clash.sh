@@ -996,7 +996,7 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		logger -t "【clash】" "找不到 curl ，需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
-		eturn 1
+		return 1
 	fi
 fi
 # if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
