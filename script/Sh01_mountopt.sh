@@ -96,6 +96,20 @@ fi
 
 opt_force
 
+opt_http_force () {
+
+opt_force_enable=`nvram get opt_force_enable`
+[ "$opt_force_enable" != "1" ] && opt_force_enable="1" && nvram set opt_force_enable="$opt_force_enable"
+opt_download_enable=`nvram get opt_download_enable`
+if [ "$opt_download_enable" != "0" ] ; then
+	opt_download_enable="0" && nvram set opt_download_enable="$opt_download_enable"
+fi
+opt_force_www="http://opt.cn2qq.com" && nvram set opt_force_www="$opt_force_www"
+logger -t "【script】" "下载地址失效 https://opt.cn2qq.com"
+logger -t "【script】" "尝试变更使用 http://opt.cn2qq.com"
+opt_force
+
+}
 
 opt_cdn_force () {
 
@@ -610,7 +624,12 @@ if [ "$mountp" = "0" ] && [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
 		logger -t "【opt】" "下载证书"
 		wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
-		if [ ! -s "/opt/app/ipk/certs.tgz" ] ; then
+		[ -s /opt/app/ipk/certs.tgz ] && tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/ ; cd /opt
+		if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+			wgetcurl.sh /opt/app/ipk/certs.tgz "http://opt.cn2qq.com/opt-file/certs.tgz"
+			[ -s /opt/app/ipk/certs.tgz ] && tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/ ; cd /opt
+		fi
+		if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 			wgetcurl.sh /opt/app/ipk/certs.tgz "$(echo -n "$hiboyfile/certs.tgz" | sed -e "s/https:/http:/g")" "$(echo -n "$hiboyfile2/certs.tgz" | sed -e "s/https:/http:/g")"
 		fi
 		logger -t "【opt】" "安装证书"
@@ -817,6 +836,10 @@ nvram set opto="`cat /opt/opti.txt`"
 
 upopt2 () {
 wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
+if [ ! -s /tmp/opti.txt ] ; then
+	opt_http_force
+	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
+fi
 if [ ! -s /tmp/opti.txt ] ; then
 	opt_cdn_force
 	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
@@ -1057,6 +1080,9 @@ re_upan_storage)
 	;;
 opt_force)
 	opt_force
+	;;
+opt_http_force)
+	opt_http_force
 	;;
 opt_cdn_force)
 	opt_cdn_force
