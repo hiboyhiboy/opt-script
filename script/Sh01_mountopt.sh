@@ -101,16 +101,16 @@ opt_cdn_force () {
 opt_force_enable=`nvram get opt_force_enable`
 if [ "$opt_force_enable" != "0" ] ; then
 	logger -t "【script】" "自定义 opt 环境下载地址失效 $opt_force_www"
-	logger -t "【script】" "建议使用免费CDN https://cdn.jsdelivr.net/gh/HiboyHiboy"
+	logger -t "【script】" "建议使用免费CDN https://gcore.jsdelivr.net/gh/HiboyHiboy"
 else
 	opt_force_enable="1" && nvram set opt_force_enable="$opt_force_enable"
 	opt_download_enable=`nvram get opt_download_enable`
 	if [ "$opt_download_enable" != "0" ] ; then
 		opt_download_enable="0" && nvram set opt_download_enable="$opt_download_enable"
 	fi
-	opt_force_www="https://cdn.jsdelivr.net/gh/HiboyHiboy" && nvram set opt_force_www="$opt_force_www"
+	opt_force_www="https://gcore.jsdelivr.net/gh/HiboyHiboy" && nvram set opt_force_www="$opt_force_www"
 	logger -t "【script】" "下载地址失效 https://opt.cn2qq.com"
-	logger -t "【script】" "变更使用免费CDN https://cdn.jsdelivr.net/gh/HiboyHiboy"
+	logger -t "【script】" "变更使用免费CDN https://gcore.jsdelivr.net/gh/HiboyHiboy"
 	opt_force
 fi
 

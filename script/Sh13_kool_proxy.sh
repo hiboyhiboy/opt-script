@@ -27,8 +27,8 @@ ss_mode_x=`nvram get ss_mode_x`
 adbyby_adblocks=`nvram get adbyby_adblocks`
 koolproxy_uprules=`nvram get koolproxy_uprules`
 
-koolproxyfile="https://cdn.jsdelivr.net/gh/houzi-/CDN/binary/v3.8.5/mipsel"
-koolproxyfilecdn="https://cdn.jsdelivr.net/gh/houzi-/CDN/binary/v3.8.5/mipsel"
+koolproxyfile="https://gcore.jsdelivr.net/gh/houzi-/CDN/binary/v3.8.5/mipsel"
+koolproxyfilecdn="https://gcore.jsdelivr.net/gh/houzi-/CDN/binary/v3.8.5/mipsel"
 koolproxyfile2="$hiboyfile/koolproxy"
 koolproxyfile22="$hiboyfile2/koolproxy"
 koolproxyfile3="$hiboyfile/7620koolproxy.tgz"
@@ -950,9 +950,9 @@ if [ ! -f "$koolproxy_rules_list" ] || [ ! -s "$koolproxy_rules_list" ] ; then
 #（可选项：前面添加#停用规则,删除前面的#可生效）
 # 开关 0表示关闭 1表示开启
 # 开关|规则名字|规则网址|规则备注名字
-1|koolproxy.txt|https://cdn.jsdelivr.net/gh/houzi-/CDN/koolproxy.txt|
-1|daily.txt|https://cdn.jsdelivr.net/gh/houzi-/CDN/daily.txt|
-1|kp.dat|https://cdn.jsdelivr.net/gh/houzi-/CDN/kp.dat|
+1|koolproxy.txt|https://gcore.jsdelivr.net/gh/houzi-/CDN/koolproxy.txt|
+1|daily.txt|https://gcore.jsdelivr.net/gh/houzi-/CDN/daily.txt|
+1|kp.dat|https://gcore.jsdelivr.net/gh/houzi-/CDN/kp.dat|
 1|user.txt||
 
 EEE

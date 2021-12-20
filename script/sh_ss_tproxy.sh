@@ -626,7 +626,7 @@ update_gfwlist_file() {
 	ss_3p_gfwlist=`nvram get ss_3p_gfwlist`
 	if [ "$ss_3p_gfwlist" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取官方 gfwlist...."
-		url='https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
+		url='https://gcore.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
 		raw_url='https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt'
 		wgetcurl_checkmd5 $tmp_base64_gfwlist  "$url" "$raw_url" N 5
 		if [ -s $tmp_base64_gfwlist ] && [ -z "$(cat $tmp_base64_gfwlist | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
@@ -662,7 +662,7 @@ update_gfwlist_file() {
 	ss_3p_kool=`nvram get ss_3p_kool`
 	if [ "$ss_3p_kool" = "1" ] ; then
 		logger -t "【update_gfwlist】" "正在获取 koolshare 列表...."
-		url='https://cdn.jsdelivr.net/gh/hq450/fancyss/rules/gfwlist.conf'
+		url='https://gcore.jsdelivr.net/gh/hq450/fancyss/rules/gfwlist.conf'
 		raw_url='https://raw.githubusercontent.com/hq450/fancyss/master/rules/gfwlist.conf'
 		wgetcurl_checkmd5 $tmp_down_file "$url" "$raw_url" N 5
 		if [ -s $tmp_down_file ] ; then
@@ -912,7 +912,7 @@ update_chnlist_file() {
 	mkdir -p /opt/app/ss_tproxy/rule
 	tmp_down_file="/opt/app/ss_tproxy/rule/tmp_chnlist_tmp.txt"
 	rm -f $tmp_down_file
-	url='https://cdn.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
+	url='https://gcore.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
 	raw_url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
 	wgetcurl_checkmd5 $tmp_down_file "$url" "$raw_url" N 5
 	sed -e "s@server=/@@g" -i  $tmp_down_file
@@ -1028,7 +1028,7 @@ update_chnroute_file() {
 	rm -f $tmp_chnroute $tmp_down_file
 	if [ "$1" != "ipv6" ]; then
 	logger -t "【update_chnroute】" "开始下载更新 chnroute 文件...."
-	url='https://cdn.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
+	url='https://gcore.jsdelivr.net/gh/17mon/china_ip_list/china_ip_list.txt'
 	wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 	if [ -s $tmp_down_file ] ; then
 	echo ""  >> $tmp_down_file
