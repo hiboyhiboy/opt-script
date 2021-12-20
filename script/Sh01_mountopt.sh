@@ -96,21 +96,6 @@ fi
 
 opt_force
 
-opt_http_force () {
-
-opt_force_enable=`nvram get opt_force_enable`
-[ "$opt_force_enable" != "1" ] && opt_force_enable="1" && nvram set opt_force_enable="$opt_force_enable"
-opt_download_enable=`nvram get opt_download_enable`
-if [ "$opt_download_enable" != "0" ] ; then
-	opt_download_enable="0" && nvram set opt_download_enable="$opt_download_enable"
-fi
-opt_force_www="http://opt.cn2qq.com" && nvram set opt_force_www="$opt_force_www"
-logger -t "【script】" "下载地址失效 https://opt.cn2qq.com"
-logger -t "【script】" "尝试变更使用 http://opt.cn2qq.com"
-opt_force
-
-}
-
 opt_cdn_force () {
 
 opt_force_enable=`nvram get opt_force_enable`
@@ -607,6 +592,40 @@ re_size () {
 
 }
 
+re_ca_tmp () {
+re_size
+if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+# 安装ca-certificates
+	mkdir -p /tmp/ssl/ipk/
+	mkdir -p /tmp/ssl/certs
+	rm -f /etc/ssl/certs
+	ln -sf /tmp/ssl/certs  /etc/ssl/certs
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
+		tar -xzvf /etc_ro/certs.tgz -C /tmp/ssl/ ; cd /opt
+	fi
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
+		logger -t "【opt】" "下载证书"
+		wgetcurl.sh /tmp/ssl/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
+		[ -s /tmp/ssl/ipk/certs.tgz ] && tar -xzvf /tmp/ssl/ipk/certs.tgz -C /tmp/ssl/ ; cd /opt
+		if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+			wgetcurl.sh /tmp/ssl/ipk/certs.tgz "http://opt.cn2qq.com/opt-file/certs.tgz"
+			[ -s /tmp/ssl/ipk/certs.tgz ] && tar -xzvf /tmp/ssl/ipk/certs.tgz -C /tmp/ssl/ ; cd /opt
+		fi
+		if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+			wgetcurl.sh /tmp/ssl/ipk/certs.tgz "$(echo -n "$hiboyfile/certs.tgz" | sed -e "s/https:/http:/g")" "$(echo -n "$hiboyfile2/certs.tgz" | sed -e "s/https:/http:/g")"
+		fi
+		logger -t "【opt】" "安装证书"
+		tar -xzvf /tmp/ssl/ipk/certs.tgz -C /tmp/ssl/ ; cd /opt
+	fi
+	rm -f /tmp/ssl/ipk/certs.tgz
+	chmod 644 /etc/ssl/certs -R
+	chmod 777 /etc/ssl/certs
+	chmod 644 /tmp/ssl/certs -R
+	chmod 777 /tmp/ssl/certs
+fi
+}
+
 AiDisk00 () {
 re_size
 if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
@@ -819,6 +838,10 @@ upopt () {
 if [ "$upopt_enable" = "1" ] ; then
 wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 if [ ! -s /tmp/opti.txt ] ; then
+	re_ca_tmp
+	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
+fi
+if [ ! -s /tmp/opti.txt ] ; then
 	opt_cdn_force
 	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 fi
@@ -837,7 +860,7 @@ nvram set opto="`cat /opt/opti.txt`"
 upopt2 () {
 wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 if [ ! -s /tmp/opti.txt ] ; then
-	opt_http_force
+	re_ca_tmp
 	wgetcurl.sh "/tmp/opti.txt" "$opt_txt_file1" "$opt_txt_file2"
 fi
 if [ ! -s /tmp/opti.txt ] ; then
@@ -1081,11 +1104,11 @@ re_upan_storage)
 opt_force)
 	opt_force
 	;;
-opt_http_force)
-	opt_http_force
-	;;
 opt_cdn_force)
 	opt_cdn_force
+	;;
+re_ca_tmp)
+	re_ca_tmp
 	;;
 *)
 	mount_check
