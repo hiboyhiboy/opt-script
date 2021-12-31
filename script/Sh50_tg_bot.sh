@@ -201,7 +201,7 @@ tgbot_notify_3=`nvram get app_51`
 tgbot_notify_4=`nvram get app_52`
 tgbot_api=`nvram get app_87`
 [ -z $tgbot_api ] && tgbot_api="https://api.telegram.org" && nvram set app_87="$tgbot_api"
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4792.0 Safari/537.36'
 mkdir -p /tmp/var
 resub=1
 # 获得外网地址

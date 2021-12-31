@@ -13,7 +13,7 @@ hiboyscript="https://opt.cn2qq.com/opt-script"
 hiboyfile2="https://raw.githubusercontent.com/hiboyhiboy/opt-file/master"
 hiboyscript2="https://raw.githubusercontent.com/hiboyhiboy/opt-script/master"
 # --user-agent
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4792.0 Safari/537.36'
 ACTION=$1
 scriptfilepath=$(cd "$(dirname "$0")"; pwd)/$(basename $0)
 #echo $scriptfilepath
