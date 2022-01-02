@@ -293,7 +293,7 @@ esac
 	sleep 1
 	Record_ID="$(echo $Record_re|grep -o "\"id\":\"[0-9a-z]*\",\"name\":\"$HOST2.$DOMAIN.\",\"description\""|grep -o "id\":\"[0-9a-z]*\""| awk -F : '{print $2}'|grep -o "[a-z0-9]*")"
 	# 检查是否有名称重复的子域名
-	if [ "$(echo $Record_ID | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
+	if [ "$(echo "$Record_ID" | grep -o "[0-9a-z]\{32,\}"| wc -l)" -gt "1" ] ; then
 		logger -t "【huaweidns动态域名】" "$HOST.$DOMAIN 更新记录信息时发现重复的子域名！"
         for Delete_RECORD_ID in $Record_ID
         do

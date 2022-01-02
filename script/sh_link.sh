@@ -6,7 +6,7 @@ de_2_base64 () {
 if [ -z "$(echo "$1" | awk -F '#' '{print $1}' | grep -Eo [^A-Za-z0-9+/=:_-]+)" ] ; then
 # 有些链接会多一层 base64 包裹，链接2次解码
 	if [ ! -z "$(echo "$1" | awk -F '#' '{print $2}')" ] ; then
-		echo "$(echo -n "$1" | awk -F '#' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)"'#'"$(echo $1 | awk -F '#' '{print $2}')"
+		echo "$(echo -n "$1" | awk -F '#' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)"'#'"$(echo -n "$1" | awk -F '#' '{print $2}')"
 	else
 		echo "$(echo -n "$1" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)"
 	fi
@@ -14,6 +14,12 @@ else
 	echo "$1"
 fi
 
+}
+
+is_2_base64() {
+	check_base64="$(echo -n "$1" | sed -e "s@://@@g" | awk -F '#' '{print $1}' | grep -Eo [^A-Za-z0-9+/=:_-]+ | sed ":a;N;s/\n//g;ba")"
+	check_base64="$(echo -n "$check_base64" | wc -c)"
+	[ "$check_base64" -eq 0 ]
 }
 
 #↪️123🔀🔁➿123↩️

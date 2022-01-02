@@ -18,9 +18,9 @@ ip -f inet6 neighbor show > /tmp/ip6_neighbor.log
 fi
 
 syslog_tmp="`cat /tmp/syslog.log | grep "EMI\?\|dnsmasq is missing,"`"
-dnsmasq_tmp="`echo $syslog_tmp | grep 'dnsmasq is missing,'`"
+dnsmasq_tmp="`echo "$syslog_tmp" | grep 'dnsmasq is missing,'`"
 if [ ! -z "$dnsmasq_tmp" ] ; then
-	dnsmasq_tmp2="`echo $dnsmasq_tmp | grep 'dnsmasq is missing, start again!'`"
+	dnsmasq_tmp2="`echo "$dnsmasq_tmp" | grep 'dnsmasq is missing, start again!'`"
 	if [ ! -z "$dnsmasq_tmp2" ] ; then
 		echo -n 1 >> /tmp/dnsmasq_missing1.txt
 	else
@@ -48,7 +48,7 @@ if [ ! -z "$dnsmasq_tmp" ] ; then
 		fi
 	fi
 fi
-EMI_tmp="`echo $syslog_tmp | grep 'EMI?'`"
+EMI_tmp="`echo "$syslog_tmp" | grep 'EMI?'`"
 if [ ! -z "$EMI_tmp" ] ; then
 	logger -t "script_check" "检测到 电磁干扰【EMI】"
 	sleep 1
@@ -96,16 +96,16 @@ sed -Ei "/^$/d" /tmp/top_run
 while read line
 do
 if [ ! -z "$line" ] ; then
-top_PID="$(echo $line | awk -F '©' '{print $1}')"
-top_CPU="$(echo $line | awk -F '©' '{print $2}')"
-top_COMMAND="$(echo $line | awk -F '§' '{print $3}')"
+top_PID="$(echo "$line" | awk -F '©' '{print $1}')"
+top_CPU="$(echo "$line" | awk -F '©' '{print $2}')"
+top_COMMAND="$(echo "$line" | awk -F '§' '{print $3}')"
 [ ! -f /tmp/top ] && top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" | sed -e "s@^@#@g" > /tmp/top
 if [ -z "$(cat /tmp/top | grep "$top_PID ")" ] ; then
 sed -Ei "/^[ \t]*$top_PID©/d" /tmp/top_run
 break
 #continue
 fi
-top_i="$(echo $line | awk -F '§' '{print $2}')"
+top_i="$(echo "$line" | awk -F '§' '{print $2}')"
 top_2i=`expr $top_i + 1`
 if [ $top_2i -gt 100 ] ; then
 kill $top_PID

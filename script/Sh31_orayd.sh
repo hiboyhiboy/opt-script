@@ -81,7 +81,7 @@ orayslstatus=`head -n 3 $USER_DATA`
 SN=`head -n 2 $USER_DATA  | tail -n 1 | cut -d= -f2-`;
 STATUS=`head -n 3 $USER_DATA  | tail -n 1 | cut -d= -f2-`;
 szUID=`cat /etc/storage/PhMain.ini | grep "szUID=" | awk -F '=' '{print $2}'`;
-online=$(echo $orayslstatus | grep "ONLINE" | wc -l);
+online=$(echo "$orayslstatus" | grep "ONLINE" | wc -l);
 }
 
 

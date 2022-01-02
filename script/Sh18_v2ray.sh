@@ -1969,11 +1969,15 @@ http_link_d1="$(cat /tmp/link/vmess/0_link.txt | grep "://" | wc -l)"
 [ "$http_link_d1" -eq 0 ] && http_link_dd="1" #没找到链接，需要2次解码
 if [ "$http_link_d1" -eq 1 ] ; then #找到1个链接，尝试解码
 http_link_dd_text="$(cat /tmp/link/vmess/0_link.txt  | awk -F '://' '{print $2}')"
-http_link_dd_text="$(echo $http_link_dd_text | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)"
+if is_2_base64 "$http_link_dd_text" ; then 
+http_link_dd_text="$(echo "$http_link_dd_text" | awk -F '#' '{print $1}' | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)"
 # 含多个链接，不需2次解码
-http_link_d2="$(echo $http_link_dd_text | grep "://" | wc -l)"
+http_link_d2="$(echo "$http_link_dd_text" | grep "://" | wc -l)"
 [ "$http_link_d2" -eq 0 ] && http_link_dd="0" #没找到链接，不需2次解码
 [ "$http_link_d2" -gt 0 ] && http_link_dd="1" #含多个链接，需要2次解码
+else
+http_link_dd="0" #不是base64，不需2次解码
+fi
 fi
 [ "$http_link_d1" -gt 1 ] && http_link_dd="0" #含多个链接，不需2次解码
 if [ "$http_link_dd" == "1" ] ; then
