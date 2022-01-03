@@ -28,9 +28,8 @@ clash_mode_x=`nvram get app_122`
 [ -z $clash_mode_x ] && clash_mode_x=0 && nvram set app_122=0
 [ -z $log_level ] && log_level="error" && nvram set app_121="error"
 app_78="$(nvram get app_78)"
-[ -z $app_78 ] && app_78=0 && nvram set app_78=0
 app_79="$(nvram get app_79)"
-[ -z $app_79 ] && app_79=0 && nvram set app_79=0
+[ -z $app_79 ] && app_79="yacd_1" && nvram set app_79="yacd_1"
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
@@ -113,7 +112,7 @@ exit 0
 clash_get_status () {
 
 A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$chinadns_ng_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114$app_78$app_79$ss_ip46"
+B_restart="$clash_enable$chinadns_enable$chinadns_ng_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114$app_78$ss_ip46"
 B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")""$(cat /etc/storage/app_33.sh | grep -v '^#' | grep -v "^$")"
 [ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
@@ -165,7 +164,9 @@ if [ "$clash_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$clash_enable" = "1" ] ; then
+	[ ! -z "`pidof clash`" ] && clash_get_clash_webs
 	if [ "$needed_restart" = "1" ] ; then
+		[ ! -z "`pidof clash`" ] && clash_get_releases
 		clash_close
 		clash_start
 	else
@@ -231,15 +232,17 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
-clash_get_releases
 for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
-if [ "$app_78" == "premium" ] || [ "$app_78" == "premium_1" ] ; then
-	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 premium (闭源版) 主程序: https://github.com/Dreamacro/clash/releases/tag/premium" && [ "$app_78" != "premium_1" ] && nvram set app_78="premium_1" && app_78="premium_1"
-	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash-premium" "$hiboyfile2/clash-premium"
-else
+if [ "$app_78" == "experimental" ] || [ "$app_78" == "experimental_1" ] ; then
 	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载支持Vless+XTLS的CDN核心 experimental 主程序: https://github.com/ClashDotNetFramework/experimental-clash" && [ "$app_78" != "experimental_1" ] && nvram set app_78="experimental_1" && app_78="experimental_1"
 	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash" "$hiboyfile2/clash"
+elif [ "$app_78" == "meta" ] || [ "$app_78" == "meta_1" ] ; then
+	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 Clash.Meta 主程序: https://github.com/Clash-Mini/Clash.Meta" && [ "$app_78" != "meta_1" ] && nvram set app_78="meta_1" && app_78="meta_1"
+	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash-meta" "$hiboyfile2/clash-meta"
+else
+	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 premium (闭源版) 主程序: https://github.com/Dreamacro/clash/releases/tag/premium" && [ "$app_78" != "premium_1" ] && nvram set app_78="premium_1" && app_78="premium_1"
+	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash-premium" "$hiboyfile2/clash-premium"
 fi
 done
 clash_v=$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $2;}')
@@ -263,23 +266,6 @@ mount -o remount,size=60% tmpfs /tmp
 Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
 fi
-clash_get_clash_webs
-# 下载clash_webs
-if [ ! -d "/opt/app/clash/clash_webs" ] ; then
-	if [ "$app_79" == "clash" ] || [ "$app_79" == "clash_1" ] ; then
-		logger -t "【clash】" "下载 yacd 面板 Source: https://github.com/haishanh/yacd"
-		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs2.tgz" "$hiboyfile2/clash_webs2.tgz" N
-		[ "$app_79" != "clash_1" ] && nvram set app_79="clash_1" && app_79="clash_1"
-	else
-		logger -t "【clash】" " 下载 clash 面板 : http://clash.razord.top/"
-		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs.tgz" "$hiboyfile2/clash_webs.tgz" N
-		[ "$app_79" != "yacd_1" ] && nvram set app_79="yacd_1" && app_79="yacd_1"
-	fi
-	tar -xzvf /opt/app/clash/clash_webs.tgz -C /opt/app/clash ; cd /opt
-	rm -f /opt/app/clash/clash_webs.tgz
-	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
-fi
-
 if [ ! -s /opt/app/clash/config/Country.mmdb ] ; then
 logger -t "【clash】" "初次启动会自动下载 geoip 数据库文件：/opt/app/clash/config/Country.mmdb"
 logger -t "【clash】" "备注：如果缺少 geoip 数据库文件会启动失败，需 v0.17.1 或以上版本才能自动下载 geoip 数据库文件"
@@ -368,6 +354,29 @@ fi
 nvram set ss_internet="1"
 # 恢复web节点选择
 #reload_yml "check" ; reload_yml "set"
+clash_get_clash_webs
+# 下载clash_webs
+if [ ! -d "/opt/app/clash/clash_webs" ] ; then
+	if [ "$app_79" == "clash" ] || [ "$app_79" == "clash_1" ] ; then
+		logger -t "【clash】" " 下载 clash 面板 : http://clash.razord.top/"
+		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs2.tgz" "$hiboyfile2/clash_webs2.tgz" N
+		[ "$app_79" != "clash_1" ] && nvram set app_79="clash_1" && app_79="clash_1"
+	fi
+	if [ "$app_79" == "yacd" ] || [ "$app_79" == "yacd_1" ] ; then
+		logger -t "【clash】" "下载 yacd 面板 Source: https://github.com/haishanh/yacd"
+		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs.tgz" "$hiboyfile2/clash_webs.tgz" N
+		[ "$app_79" != "yacd_1" ] && nvram set app_79="yacd_1" && app_79="yacd_1"
+	fi
+	if [ "$app_79" == "meta" ] || [ "$app_79" == "meta_1" ] ; then
+		logger -t "【clash】" "下载 Meta 面板 Source: https://github.com/Clash-Mini/Dashboard/"
+		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs3.tgz" "$hiboyfile2/clash_webs3.tgz" N
+		[ "$app_79" != "meta_1" ] && nvram set app_79="meta_1" && app_79="meta_1"
+	fi
+	tar -xzvf /opt/app/clash/clash_webs.tgz -C /opt/app/clash ; cd /opt
+	rm -f /opt/app/clash/clash_webs.tgz
+	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
+fi
+
 eval "$scriptfilepath keep &"
 
 exit 0
@@ -1049,12 +1058,21 @@ link_get="clash"
 nvram set app_78="experimental_1" ; app_78="experimental_1"
 logger -t "【clash】" "更换支持Vless+XTLS的CDN核心 experimental 主程序: https://github.com/ClashDotNetFramework/experimental-clash"
 fi
+if [ "$app_78" == "meta" ] ; then
+link_get="clash-meta"
+nvram set app_78="meta_1" ; app_78="meta_1"
+logger -t "【clash】" "更换 Clash.Meta 主程序: https://github.com/Clash-Mini/Clash.Meta"
+fi
 if [ ! -z "$link_get" ] ; then
 SVC_PATH="$(which clash)"
 [ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/clash"
-rm -rf "$SVC_PATH" /opt/opt_backup/bin/clash
 logger -t "【clash】" "自动下载 clash 主程序"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
+wgetcurl_file "$SVC_PATH""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
+sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
+killall clash
+killall -9 clash
+rm -rf "$SVC_PATH" /opt/opt_backup/bin/clash
+mv -f "$SVC_PATH""_file" "$SVC_PATH"
 fi
 }
 
@@ -1070,6 +1088,11 @@ if [ "$app_79" == "clash" ] ; then
 link_get="clash_webs2.tgz"
 nvram set app_79="clash_1" ; app_79="clash_1"
 logger -t "【clash】" " 更换 clash 面板 : http://clash.razord.top/"
+fi
+if [ "$app_79" == "meta" ] ; then
+link_get="clash_webs3.tgz"
+nvram set app_79="meta_1" ; app_79="meta_1"
+logger -t "【clash】" " 更换 Meta 面板 : https://github.com/Clash-Mini/Dashboard/"
 fi
 if [ ! -z "$link_get" ] ; then
 # 下载clash_webs

@@ -166,6 +166,7 @@ if [ "$v2ray_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 fi
 if [ "$v2ray_enable" = "1" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
+		[ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && v2ray_get_releases
 		v2ray_close
 		v2ray_start
 	else
@@ -2081,6 +2082,7 @@ sed -Ei '/dellink_ss|^$/d' /etc/storage/app_25.sh
 }
 
 v2ray_get_releases(){
+app_74="$(nvram get app_74)"
 link_get=""
 if [ "$app_74" == "0" ] ; then
 echo "不检测主程序版本"
@@ -2096,8 +2098,12 @@ link_get="v2ray"
 logger -t "【v2ray】" "自动下载 Xray-core 主程序"
 fi
 if [ ! -z "$link_get" ] ; then
+wgetcurl_file "$v2ray_path""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
+sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
+killall v2ray v2ctl v2ray_script.sh
+killall -9 v2ray v2ctl v2ray_script.sh
 rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
-wgetcurl_file "$v2ray_path" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
+mv -f "$v2ray_path""_file" "$v2ray_path"
 fi
 
 }
