@@ -266,6 +266,7 @@ mount -o remount,size=60% tmpfs /tmp
 Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
 fi
+mkdir -p /opt/app/clash/clash_webs/
 if [ ! -s /opt/app/clash/config/Country.mmdb ] ; then
 logger -t "【clash】" "初次启动会自动下载 geoip 数据库文件：/opt/app/clash/config/Country.mmdb"
 logger -t "【clash】" "备注：如果缺少 geoip 数据库文件会启动失败，需 v0.17.1 或以上版本才能自动下载 geoip 数据库文件"
@@ -356,7 +357,7 @@ nvram set ss_internet="1"
 #reload_yml "check" ; reload_yml "set"
 clash_get_clash_webs
 # 下载clash_webs
-if [ ! -d "/opt/app/clash/clash_webs" ] ; then
+if [ ! -f "/opt/app/clash/clash_webs/index.html" ] ; then
 	if [ "$app_79" == "clash" ] || [ "$app_79" == "clash_1" ] ; then
 		logger -t "【clash】" " 下载 clash 面板 : http://clash.razord.top/"
 		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs2.tgz" "$hiboyfile2/clash_webs2.tgz" N
@@ -374,7 +375,7 @@ if [ ! -d "/opt/app/clash/clash_webs" ] ; then
 	fi
 	tar -xzvf /opt/app/clash/clash_webs.tgz -C /opt/app/clash ; cd /opt
 	rm -f /opt/app/clash/clash_webs.tgz
-	[ -d "/opt/app/clash/clash_webs" ] && logger -t "【clash】" "下载 clash_webs 完成"
+	[ -f "/opt/app/clash/clash_webs/index.html" ] && logger -t "【clash】" "下载 clash_webs 完成"
 fi
 
 eval "$scriptfilepath keep &"
@@ -1100,7 +1101,7 @@ rm -rf /opt/app/clash/clash_webs_tmp
 mkdir -p /opt/app/clash/clash_webs_tmp
 wgetcurl_checkmd5 /opt/app/clash/clash_webs_tmp/clash_webs.tgz "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get" N
 tar -xzvf /opt/app/clash/clash_webs_tmp/clash_webs.tgz -C /opt/app/clash/clash_webs_tmp ; cd /opt
-if [ -d "/opt/app/clash/clash_webs_tmp/clash_webs" ] ; then
+if [ -f "/opt/app/clash/clash_webs_tmp/clash_webs/index.html" ] ; then
 rm -rf /opt/app/clash/clash_webs_tmp/clash_webs
 logger -t "【clash】" "下载 clash_webs 完成"
 logger -t "【clash】" "需按 Ctrl + F5 强制刷新 web 面板"
