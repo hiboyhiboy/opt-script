@@ -264,7 +264,7 @@ kill_ps "Sh99_ss_tproxy.sh keep"
 sed -Ei '/【ss_tproxy】|^$/d' /tmp/script/_opt_script_check
 ss_tproxy_run "stop"
 nvram set ss_tproxy_auser="$auser_a"
-restart_dhcpd
+restart_dhcpd &
 killall ss_tproxy sh_ss_tproxy.sh
 killall -9 ss_tproxy sh_ss_tproxy.sh
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态

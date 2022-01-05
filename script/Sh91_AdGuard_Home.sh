@@ -155,7 +155,7 @@ if [ "$port" != 0 ] ; then
 	echo 'server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
 	logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 恢复 server=127.0.0.1#8053"
 fi
-restart_dhcpd
+restart_dhcpd &
 killall AdGuardHome
 killall -9 AdGuardHome
 kill_ps "/tmp/script/_app17"
@@ -242,7 +242,7 @@ else
 		logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
 		sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
 		echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-		restart_dhcpd
+		restart_dhcpd &
 	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	cd /opt/AdGuardHome
@@ -268,7 +268,7 @@ if [ "$AdGuardHome_dns" == "0" ] ; then
 	echo "dns-forward-max=1000 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 fi
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-restart_dhcpd
+restart_dhcpd &
 exit 0
 }
 

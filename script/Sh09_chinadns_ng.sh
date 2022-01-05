@@ -129,7 +129,7 @@ dns-forward-max=1000 #chinadns_ng
 min-cache-ttl=1800 #chinadns_ng
 domain-needed #chinadns_ng
 EOF
-			restart_dhcpd
+			restart_dhcpd &
 		fi
 	fi
 fi
@@ -193,7 +193,7 @@ dns-forward-max=1000 #chinadns_ng
 min-cache-ttl=1800 #chinadns_ng
 domain-needed #chinadns_ng
 EOF
-		restart_dhcpd
+		restart_dhcpd &
 	fi
 sleep 69
 chinadns_ng_enable=`nvram get app_102` #chinadns_ng_enable
@@ -205,7 +205,7 @@ kill_ps "$scriptname keep"
 sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/no-resolv|server=|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-restart_dhcpd
+restart_dhcpd &
 killall  chinadns_ng dns2tcp smartdns
 killall -9  chinadns_ng dns2tcp smartdns
 kill_ps "/tmp/script/_app19"
@@ -310,7 +310,7 @@ min-cache-ttl=1800 #chinadns_ng
 domain-needed #chinadns_ng
 EOF
 
-restart_dhcpd
+restart_dhcpd &
 
 chinadns_ng_get_status
 eval "$scriptfilepath keep &"

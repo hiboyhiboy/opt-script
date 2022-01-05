@@ -1360,7 +1360,7 @@ mkdir -p /tmp/ss_tproxy/dnsmasq.d
 rm -rf /tmp/ss/dnsmasq.d/*
 dnsmasq_file="`ls -p /opt/app/ss_tproxy/dnsmasq.d | grep -v tmp | grep -v /`"
 [ ! -z "$dnsmasq_file" ] && echo "$dnsmasq_file" | while read conf_file; do [ "$(cat /opt/app/ss_tproxy/dnsmasq.d/$conf_file | grep -c "server=\|ipset=")" != "0"  ] &&  ln -sf /opt/app/ss_tproxy/dnsmasq.d/$conf_file /tmp/ss_tproxy/dnsmasq.d/$conf_file ; done
-restart_dhcpd
+restart_dhcpd &
 }
 
 update_check_file() {

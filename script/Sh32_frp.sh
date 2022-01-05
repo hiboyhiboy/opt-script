@@ -258,7 +258,7 @@ logger -t "【frp】" "运行 frp_script"
 
 rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
 eval "/etc/storage/frp_script.sh $cmd_log" &
-restart_dhcpd
+restart_dhcpd &
 if [ "$frpc_enable" = "1" ] ; then
 	frpc_v="`/opt/bin/frpc --version`"
 	nvram set frpc_v=$frpc_v

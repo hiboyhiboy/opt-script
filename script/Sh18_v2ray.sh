@@ -305,7 +305,7 @@ ss_internet="$(nvram get ss_internet)"
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
 logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"
-#restart_dhcpd
+#restart_dhcpd &
 #/etc/storage/crontabs_script.sh &
 
 #404
@@ -563,7 +563,7 @@ cd "$(dirname "$v2ray_path")"
 eval "$su_cmd" '"export V2RAY_CONF_GEOLOADER=memconservative;cmd_name=v2ray;'"$su_cmd2"' $cmd_log"' &
 #eval "$su_cmd2 $cmd_log" &
 sleep 4
-#restart_dhcpd
+#restart_dhcpd &
 [ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动成功 $v2ray_v " && v2ray_restart o
 [ -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 
@@ -600,7 +600,7 @@ fi
 Sh99_ss_tproxy.sh auser_check "Sh18_v2ray.sh"
 ss_tproxy_set "Sh18_v2ray.sh"
 Sh99_ss_tproxy.sh on_start "Sh18_v2ray.sh"
-#restart_dhcpd
+#restart_dhcpd &
 
 logger -t "【v2ray】" "载入 透明代理 转发规则设置"
 

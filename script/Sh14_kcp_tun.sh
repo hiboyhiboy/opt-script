@@ -231,7 +231,7 @@ cat >> "/etc/storage/kcptun_script.sh" <<-EUI
 EUI
 
 /etc/storage/kcptun_script.sh &
-restart_dhcpd
+restart_dhcpd &
 sleep 4
 [ ! -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "启动成功" && kcptun_restart o
 [ -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && kcptun_restart x

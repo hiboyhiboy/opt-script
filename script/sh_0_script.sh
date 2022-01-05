@@ -25,7 +25,7 @@ sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei "/\/tmp\/ss\/dnsmasq.d/d" /etc/storage/dnsmasq/dnsmasq.conf
 rm -rf /tmp/ss/dnsmasq.d/*
 killall crond
-restart_dhcpd
+restart_dhcpd &
 [ -f /tmp/menu_title_re ] && /etc/storage/www_sh/menu_title.sh re &
 mkdir -p /tmp/script
 { echo '#!/bin/bash' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' ; } > /tmp/script/_mountopt

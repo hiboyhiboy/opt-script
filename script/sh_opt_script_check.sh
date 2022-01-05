@@ -34,7 +34,7 @@ if [ ! -z "$dnsmasq_tmp" ] ; then
 		rm -f /tmp/dnsmasq_missing0.txt /tmp/dnsmasq_missing1.txt
 		echo -n "" > /tmp/dnsmasq_missing0.txt
 		echo -n "" > /tmp/dnsmasq_missing1.txt
-		restart_dhcpd
+		restart_dhcpd &
 		sleep 1
 		sed  "s/dnsmasq is missing,/【dnsmasq is missing】,/" -Ei /tmp/syslog.log
 	else

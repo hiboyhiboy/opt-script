@@ -161,7 +161,7 @@ meow_path="$SVC_PATH"
 logger -t "【meow】" "运行 meow_script"
 /etc/storage/meow_script.sh
 eval "$meow_path -rc /etc/storage/meow_config_script.sh $cmd_log" &
-restart_dhcpd
+restart_dhcpd &
 sleep 4
 [ ! -z "$(ps -w | grep "$meow_path" | grep -v grep )" ] && logger -t "【meow】" "启动成功" && meow_restart o
 [ -z "$(ps -w | grep "$meow_path" | grep -v grep )" ] && logger -t "【meow】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && meow_restart x

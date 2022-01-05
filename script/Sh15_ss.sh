@@ -1182,7 +1182,7 @@ logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
 [ -z "$rebss" ] && rebss=0
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
-#restart_dhcpd
+#restart_dhcpd &
 #/etc/storage/crontabs_script.sh &
 
 #404
