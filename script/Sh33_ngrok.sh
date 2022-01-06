@@ -180,7 +180,7 @@ ngrokc -SER[Shost:$ngrok_server,Sport:$ngrok_port,Atoken:$ngrok_token] -AddTun[T
 EUI
 fi
 eval "/etc/storage/ngrok_script.sh $cmd_log" &
-restart_dhcpd &
+restart_dhcpd
 sleep 4
 [ ! -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "启动成功" && ngrok_restart o
 [ -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ngrok_restart x

@@ -305,7 +305,7 @@ ss_internet="$(nvram get ss_internet)"
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
 logger -t "【v2ray】" " v2ray 服务器 【$app_98】 检测到问题"
-#restart_dhcpd &
+#restart_dhcpd
 #/etc/storage/crontabs_script.sh &
 
 #404
@@ -563,7 +563,7 @@ cd "$(dirname "$v2ray_path")"
 eval "$su_cmd" '"export V2RAY_CONF_GEOLOADER=memconservative;cmd_name=v2ray;'"$su_cmd2"' $cmd_log"' &
 #eval "$su_cmd2 $cmd_log" &
 sleep 4
-#restart_dhcpd &
+#restart_dhcpd
 [ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动成功 $v2ray_v " && v2ray_restart o
 [ -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
 
@@ -600,7 +600,7 @@ fi
 Sh99_ss_tproxy.sh auser_check "Sh18_v2ray.sh"
 ss_tproxy_set "Sh18_v2ray.sh"
 Sh99_ss_tproxy.sh on_start "Sh18_v2ray.sh"
-#restart_dhcpd &
+#restart_dhcpd
 
 logger -t "【v2ray】" "载入 透明代理 转发规则设置"
 
@@ -728,20 +728,6 @@ ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 [ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 [ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【v2ray】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
-}
-
-sstp_set() {
-sstp_conf='/etc/storage/app_27.sh'
-sstp_set_a="$(echo "$1" | awk -F '=' '{print $1}')"
-sstp_set_b="$(echo "$1" | awk -F '=' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"="$i}}}END{print sum}')"
-if [ ! -z "$(grep -Eo $sstp_set_a=.\+\(\ #\) $sstp_conf)" ] ; then
-sed -e "s@^$sstp_set_a=.\+\(\ #\)@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
-else
-sed -e "s@^$sstp_set_a=.\+@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
-fi
-if [ -z "$(cat $sstp_conf | grep "$sstp_set_a=""'""$sstp_set_b""'"" #")" ] ; then
-echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
-fi
 }
 
 sleep_rnd () {

@@ -162,7 +162,7 @@ cow_path="$SVC_PATH"
 logger -t "【cow】" "运行 cow_script"
 /etc/storage/cow_script.sh
 eval "$cow_path -rc /etc/storage/cow_config_script.sh $cmd_log" &
-restart_dhcpd &
+restart_dhcpd
 sleep 4
 [ ! -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "启动成功" && cow_restart o
 [ -z "$(ps -w | grep "$cow_path" | grep -v grep )" ] && logger -t "【cow】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && cow_restart x

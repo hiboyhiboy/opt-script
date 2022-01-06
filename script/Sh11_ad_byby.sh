@@ -373,7 +373,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	adbyby_mount
 	sed -e '/^$/d' -i /etc/storage/dnsmasq/hosts
 	sed -e '/^$/d' -i /etc/storage/dnsmasq/dnsmasq.servers
-	restart_dhcpd &
+	restart_dhcpd
 	[ -s /tmp/bin/data/video.txt ] && rm -f /tmp/bin/data/video.txt /tmp/bin/data/video_B.txt
 	[ -s /tmp/bin/data/lazy.txt ] && rm -f /tmp/bin/data/lazy.txt /tmp/bin/data/lazy_B.txt
 	# logger -t "【Adbyby】" "测试下载规则"
@@ -534,7 +534,7 @@ sed -Ei "/\/opt\/app\/ss_tproxy\/dnsmasq.d\/r.gfwlist.conf/d" /etc/storage/dnsma
 [ -s /tmp/ss_tproxy/dnsmasq.d/r.gfwlist.conf ] && [ -z "$(cat /etc/storage/dnsmasq/dnsmasq.conf | grep "/tmp/ss_tproxy/dnsmasq.d")" ] && echo "conf-file=/opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 ipset flush adbybylist
 ipset add adbybylist 100.100.100.100
-restart_dhcpd &
+restart_dhcpd
 
 logger -t "【iptables】" "gfwlist 规则处理完毕"
 
@@ -548,7 +548,7 @@ ipset -F adbybylist &> /dev/null
 #ipset destroy adbybylist &> /dev/null
 rm -f /tmp/adbyby_host.conf
 sed -Ei "/\/opt\/app\/ss_tproxy\/dnsmasq.d\/r.gfwlist.conf/d" /etc/storage/dnsmasq/dnsmasq.conf
-restart_dhcpd &
+restart_dhcpd
 logger -t "【iptables】" "完成删除8118规则"
 }
 

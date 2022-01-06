@@ -327,20 +327,6 @@ ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【ipt2socks】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 
-sstp_set() {
-sstp_conf='/etc/storage/app_27.sh'
-sstp_set_a="$(echo "$1" | awk -F '=' '{print $1}')"
-sstp_set_b="$(echo "$1" | awk -F '=' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"="$i}}}END{print sum}')"
-if [ ! -z "$(grep -Eo $sstp_set_a=.\+\(\ #\) $sstp_conf)" ] ; then
-sed -e "s@^$sstp_set_a=.\+\(\ #\)@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
-else
-sed -e "s@^$sstp_set_a=.\+@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
-fi
-if [ -z "$(cat $sstp_conf | grep "$sstp_set_a=""'""$sstp_set_b""'"" #")" ] ; then
-echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
-fi
-}
-
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return

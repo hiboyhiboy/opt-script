@@ -155,7 +155,7 @@ if [ "$port" != 0 ] ; then
 	echo 'server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
 	logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 恢复 server=127.0.0.1#8053"
 fi
-restart_dhcpd &
+restart_dhcpd
 killall AdGuardHome
 killall -9 AdGuardHome
 kill_ps "/tmp/script/_app17"
@@ -207,9 +207,16 @@ else
 		fi
 	fi
 	chmod 777 "$SVC_PATH"
+	if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+		yq_check
+	if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+		logger -t "【AdGuardHome】" "找不到 /opt/bin/yq ，需要手动安装 /opt/bin/yq"
+		logger -t "【AdGuardHome】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
+	fi
+	fi
 	AdGuardHome_v=$($SVC_PATH -c /etc/storage/app_19.sh -w /opt/AdGuardHome --check-config --verbose 2>&1 | grep version | sed -n '1p' | awk -F 'version' '{print $2;}'| awk -F ',' '{print $1;}')
 	nvram set AdGuardHome_v="$AdGuardHome_v"
-	[ -z "$AdGuardHome_v" ] && rm -rf $SVC_PATH
+	[ -z "$AdGuardHome_v" ] && { eval "$SVC_PATH -c /etc/storage/app_19.sh -w /opt/AdGuardHome --check-config --verbose $cmd_log2" ; rm -rf $SVC_PATH ; }
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【AdGuardHome】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 		logger -t "【AdGuardHome】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
@@ -219,38 +226,37 @@ else
 	# 生成配置文件
 	if [ "$AdGuardHome_dns" != "0" ] ; then
 		AdGuardHome_server='server=127.0.0.1#53'
-		sed -Ei 's/  port: 5353/  port: 53/g' /etc/storage/app_19.sh
+		yq w -i /etc/storage/app_19.sh dns.port 53
 		logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:12353"
-		set_dns "127.0.0.1:12353"
-		set_dns "1.1.1.1" "del"
-		set_dns "127.0.0.1:8053" "del"
+		yq w -i /etc/storage/app_19.sh dns.upstream_dns ""
+		yq w -i /etc/storage/app_19.sh dns.upstream_dns[0] "127.0.0.1:12353"
 	else
 		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 		if [ "$port" != 0 ] ; then
 			logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:8053"
-			set_dns "127.0.0.1:8053"
-			set_dns "1.1.1.1" "del"
-			set_dns "127.0.0.1:12353" "del"
+			yq w -i /etc/storage/app_19.sh dns.upstream_dns ""
+			yq w -i /etc/storage/app_19.sh dns.upstream_dns[0] "127.0.0.1:8053"
 		else
-			set_dns "127.0.0.1:8053" "del"
-			set_dns "127.0.0.1:12353" "del"
+			yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==127.0.0.1:8053)"
+			yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==127.0.0.1:12353)"
+			yq w -i /etc/storage/app_19.sh dns.upstream_dns[0] "1.1.1.1"
 		fi
-		sed -Ei 's/  port: 5353/  port: 53/g' /etc/storage/app_19.sh
-		sed -Ei 's/  port: 53/  port: 5353/g' /etc/storage/app_19.sh
+		yq w -i /etc/storage/app_19.sh dns.port 5353
 	fi
 	if [ "$AdGuardHome_dns" != "0" ] ; then
 		logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
 		sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
 		echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-		restart_dhcpd &
+		restart_dhcpd
 	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	cd /opt/AdGuardHome
-	eval "/opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
+	eval "/opt/AdGuardHome/AdGuardHome --no-etc-hosts -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
 	sleep 3
 	[ ! -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动成功" && AdGuardHome_restart o
 	[ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动失败, 注意检AdGuardHome是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
-		AdGuardHome_get_status
+	restart_dhcpd
+	AdGuardHome_get_status
 	eval "$scriptfilepath keep &"
 fi
 if [ "$AdGuardHome_dns" == "0" ] ; then
@@ -268,35 +274,8 @@ if [ "$AdGuardHome_dns" == "0" ] ; then
 	echo "dns-forward-max=1000 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 fi
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-restart_dhcpd &
+restart_dhcpd
 exit 0
-}
-
-set_dns () {
-add_dns="$1"
-del_dns="$2"
-get_dns="$(awk '/upstream_dns:/,/tls:/'  /etc/storage/app_19.sh)"
-tmp_dns=""
-if [ "$del_dns" != "del" ] ; then
-	if [ -z "$(echo "$get_dns" | grep "  - $add_dns")" ] ; then
-		logger -t "【AdGuardHome】" "增加上游 DNS 服务器: $add_dns"
-		tmp_dns="$(echo "$get_dns" | sed '/upstream_dns:/a\  - '"$add_dns")"
-		get_dns="$tmp_dns"
-	fi
-else
-	if [ ! -z "$(echo "$get_dns" | grep "  - $add_dns")" ] ; then
-		logger -t "【AdGuardHome】" "删除上游 DNS 服务器: $add_dns"
-		tmp_dns="$(echo "$get_dns" | sed /"$add_dns"/d)"
-		get_dns="$tmp_dns"
-	fi
-fi
-if [ -z "$(echo "$get_dns" | grep "  - ")" ] ; then
-	tmp_dns="$(echo "$get_dns" | sed '/upstream_dns:/a\  - 1.1.1.1')"
-fi
-if [ ! -z "$tmp_dns" ] ; then
-tmp_dns2="$(echo "$tmp_dns" | sed -e ":a;N;s/\n/\\\n/g;ta")"
-sed -i ':a;$!{N;ba};s@  upstream_dns.*\ntls:@'"$tmp_dns2"'@' /etc/storage/app_19.sh
-fi
 }
 
 initopt () {
@@ -383,6 +362,33 @@ EEE
 	chmod 755 "$app_19"
 fi
 
+}
+
+yq_check () {
+
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "找不到 yq，安装 opt 程序"
+	/etc/storage/script/Sh01_mountopt.sh start
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	for h_i in $(seq 1 2) ; do
+	[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
+	wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
+	done
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "找不到 yq，安装 opt 程序"
+	rm -f /opt/bin/yq
+	/etc/storage/script/Sh01_mountopt.sh start
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	#opkg update
+	#opkg install yq
+if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
+	logger -t "【clash】" "找不到 yq，需要手动安装 opt 后输入[opkg update; opkg install yq]安装"
+	return 1
+fi
+fi
+fi
+fi
+fi
 }
 
 initconfig

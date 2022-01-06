@@ -142,7 +142,7 @@ iptables -t nat -D OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-p
 iptables -t nat -D PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 iptables -t nat -D OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 rm -rf /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
-restart_dhcpd &
+restart_dhcpd
 [ ! -z "$fakeincn_path" ] && eval $(ps -w | grep 'l 1008' | grep -v grep | awk '{print "kill "$1";";}')
 killall app_1.sh fakeincn
 killall -9 app_1.sh fakeincn
@@ -228,7 +228,7 @@ sed -Ei '/^$|api.ip.sb/d' /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
 ipset=/api.ip.sb/tocn
 _CONF
 
-restart_dhcpd &
+restart_dhcpd
 
 fakeincn_get_status
 eval "$scriptfilepath keep &"

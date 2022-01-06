@@ -179,7 +179,7 @@ done
 upd2pro_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check
-# restart_dhcpd &
+# restart_dhcpd
 killall app_3.sh app_4.sh udp2raw speeder speederv2
 killall -9 app_3.sh app_4.sh udp2raw speeder speederv2
 kill_ps " /tmp/script/_app3"

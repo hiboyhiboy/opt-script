@@ -163,7 +163,7 @@ fi
 tinyproxy_path="$SVC_PATH"
 logger -t "【tinyproxy】" "运行 $tinyproxy_path"
 eval "$tinyproxy_path -c /etc/storage/tinyproxy_script.sh $cmd_log" &
-restart_dhcpd &
+restart_dhcpd
 sleep 4
 [ ! -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动成功" && tinyproxy_restart o
 [ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tinyproxy_restart x

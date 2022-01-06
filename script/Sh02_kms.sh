@@ -66,7 +66,7 @@ sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf
 nvram set lan_domain="lan"
 echo "srv-host=_vlmcs._tcp.lan,$computer_name.lan,1688,0,100" >> /etc/storage/dnsmasq/dnsmasq.conf
 /etc/storage/vlmcsdini_script.sh
-restart_dhcpd &
+restart_dhcpd
 sleep 4
 [ ! -z "$(ps -w | grep "vlmcsd" | grep -v grep )" ] && logger -t "【kms】" "启动成功"
 [ -z "$(ps -w | grep "vlmcsd" | grep -v grep )" ] && logger -t "【kms】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }

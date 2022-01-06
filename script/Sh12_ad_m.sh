@@ -431,7 +431,7 @@ sed -Ei "/\/opt\/app\/ss_tproxy\/dnsmasq.d\/r.gfwlist.conf/d" /etc/storage/dnsma
 [ -s /tmp/ss_tproxy/dnsmasq.d/r.gfwlist.conf ] && [ -z "$(cat /etc/storage/dnsmasq/dnsmasq.conf | grep "/tmp/ss_tproxy/dnsmasq.d")" ] && echo "conf-file=/opt/app/ss_tproxy/dnsmasq.d/r.gfwlist.conf" >> "/etc/storage/dnsmasq/dnsmasq.conf"
 ipset flush adbybylist
 ipset add adbybylist 188.188.188.188
-restart_dhcpd &
+restart_dhcpd
 
 logger -t "【iptables】" "admlist 规则处理完毕"
 
@@ -444,7 +444,7 @@ flush_r
 ipset -F adbybylist &> /dev/null
 #ipset destroy adbybylist &> /dev/null
 sed -Ei "/\/opt\/app\/ss_tproxy\/dnsmasq.d\/r.gfwlist.conf/d" /etc/storage/dnsmasq/dnsmasq.conf
-restart_dhcpd &
+restart_dhcpd
 logger -t "【iptables】" "完成删除18309规则"
 }
 

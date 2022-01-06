@@ -70,20 +70,6 @@ exit
 
 }
 
-sstp_set() {
-sstp_conf='/etc/storage/app_27.sh'
-sstp_set_a="$(echo "$1" | awk -F '=' '{print $1}')"
-sstp_set_b="$(echo "$1" | awk -F '=' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"="$i}}}END{print sum}')"
-if [ ! -z "$(grep -Eo $sstp_set_a=.\+\(\ #\) $sstp_conf)" ] ; then
-sed -e "s@^$sstp_set_a=.\+\(\ #\)@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
-else
-sed -e "s@^$sstp_set_a=.\+@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
-fi
-if [ -z "$(cat $sstp_conf | grep "$sstp_set_a=""'""$sstp_set_b""'"" #")" ] ; then
-echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
-fi
-}
-
 ss_tproxy_restart () {
 
 relock="/var/lock/ss_tproxy_restart.lock"
@@ -264,7 +250,7 @@ kill_ps "Sh99_ss_tproxy.sh keep"
 sed -Ei '/【ss_tproxy】|^$/d' /tmp/script/_opt_script_check
 ss_tproxy_run "stop"
 nvram set ss_tproxy_auser="$auser_a"
-restart_dhcpd &
+restart_dhcpd
 killall ss_tproxy sh_ss_tproxy.sh
 killall -9 ss_tproxy sh_ss_tproxy.sh
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态

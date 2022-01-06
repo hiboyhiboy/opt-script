@@ -149,7 +149,7 @@ sed -Ei '/【hysteria】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh08_hysteria.sh"
 killall hysteria
 killall -9 hysteria
-restart_dhcpd &
+restart_dhcpd
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app24"
 kill_ps "_hysteria.sh"
@@ -237,7 +237,7 @@ logger -t "【hysteria】" "完成 透明代理 转发规则设置"
 if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
 logger -t "【hysteria】" "已经启动 chinadns 防止域名污染"
 fi
-restart_dhcpd &
+restart_dhcpd
 logger -t "【hysteria】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
 logger -t "【hysteria】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
 logger -t "【hysteria】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
@@ -353,20 +353,6 @@ ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 [ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 [ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【hysteria】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
-}
-
-sstp_set() {
-sstp_conf='/etc/storage/app_27.sh'
-sstp_set_a="$(echo "$1" | awk -F '=' '{print $1}')"
-sstp_set_b="$(echo "$1" | awk -F '=' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"="$i}}}END{print sum}')"
-if [ ! -z "$(grep -Eo $sstp_set_a=.\+\(\ #\) $sstp_conf)" ] ; then
-sed -e "s@^$sstp_set_a=.\+\(\ #\)@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
-else
-sed -e "s@^$sstp_set_a=.\+@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
-fi
-if [ -z "$(cat $sstp_conf | grep "$sstp_set_a=""'""$sstp_set_b""'"" #")" ] ; then
-echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
-fi
 }
 
 initopt () {

@@ -194,6 +194,23 @@ if [ -f "$output" ] ; then
 fi
 }
 
+sstp_set() {
+	sstp_conf='/etc/storage/app_27.sh'
+	sstp_set_a="$(echo "$1" | awk -F '=' '{print $1}')"
+	sstp_set_b="$(echo "$1" | awk -F '=' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"="$i}}}END{print sum}')"
+	(
+		flock 527
+		if [ ! -z "$(grep -Eo $sstp_set_a=.\+\(\ #\) $sstp_conf)" ] ; then
+		sed -e "s@^$sstp_set_a=.\+\(\ #\)@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
+		else
+		sed -e "s@^$sstp_set_a=.\+@$sstp_set_a='$sstp_set_b' #@g" -i $sstp_conf
+		fi
+		if [ -z "$(cat $sstp_conf | grep "$sstp_set_a=""'""$sstp_set_b""'"" #")" ] ; then
+		echo "$sstp_set_a=""'""$sstp_set_b""'"" #" >> $sstp_conf
+		fi
+	) 527>/var/lock/sstp_set.lock
+}
+
 check_webui_yes () {
 
 if [ ! -f /tmp/webui_yes ] ; then

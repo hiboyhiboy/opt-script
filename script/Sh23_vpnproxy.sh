@@ -144,7 +144,7 @@ fi
 chmod 777 "$SVC_PATH"
 logger -t "【vpnproxy】" "运行 $SVC_PATH"
 eval "$SVC_PATH -port=$vpnproxy_wan_port -proxy=127.0.0.1:$vpnproxy_vpn_port $cmd_log" &
-restart_dhcpd &
+restart_dhcpd
 sleep 4
 [ ! -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "启动成功" && vpnproxy_restart o
 [ -z "`pidof nvpproxy`" ] && logger -t "【vpnproxy】" "启动失败, 注意检查端口【netstat -anp | grep LISTEN】是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && vpnproxy_restart x
