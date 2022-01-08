@@ -207,6 +207,8 @@ else
 		fi
 	fi
 	chmod 777 "$SVC_PATH"
+	# 更新 yq
+	[ -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && rm -rf /opt/bin/yq /opt/opt_backup/bin/yq
 	if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 		yq_check
 	if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
@@ -228,18 +230,18 @@ else
 		AdGuardHome_server='server=127.0.0.1#53'
 		yq w -i /etc/storage/app_19.sh dns.port 53
 		logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:12353"
-		yq w -i /etc/storage/app_19.sh dns.upstream_dns ""
+		yq w -i /etc/storage/app_19.sh dns.upstream_dns "[]"
 		yq w -i /etc/storage/app_19.sh dns.upstream_dns[0] "127.0.0.1:12353"
 	else
 		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 		if [ "$port" != 0 ] ; then
 			logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:8053"
-			yq w -i /etc/storage/app_19.sh dns.upstream_dns ""
+			yq w -i /etc/storage/app_19.sh dns.upstream_dns "[]"
 			yq w -i /etc/storage/app_19.sh dns.upstream_dns[0] "127.0.0.1:8053"
 		else
 			yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==127.0.0.1:8053)"
 			yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==127.0.0.1:12353)"
-			yq w -i /etc/storage/app_19.sh dns.upstream_dns[0] "1.1.1.1"
+			[ "$(yq r /etc/storage/app_19.sh dns.upstream_dns)" == '[]' ] && yq w -i /etc/storage/app_19.sh dns.upstream_dns[0] "1.1.1.1"
 		fi
 		yq w -i /etc/storage/app_19.sh dns.port 5353
 	fi
