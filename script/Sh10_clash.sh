@@ -29,7 +29,7 @@ clash_mode_x=`nvram get app_122`
 [ -z $log_level ] && log_level="error" && nvram set app_121="error"
 app_78="$(nvram get app_78)"
 app_79="$(nvram get app_79)"
-[ -z $app_79 ] && app_79="yacd_1" && nvram set app_79="yacd_1"
+[ -z $app_79 ] && app_79="clash" && nvram set app_79="clash"
 if [ "$clash_enable" != "0" ] ; then
 if [ "$clash_follow" != 0 ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`

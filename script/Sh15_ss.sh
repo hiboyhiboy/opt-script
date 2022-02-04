@@ -1684,6 +1684,8 @@ G,149.154.175.50
 @b,api.cloud.189.cn
 @b,pv.sohu.com
 @b,members.3322.org
+@b,members.3322.net
+@b,ip.3322.net
 @b,www.cloudxns.net
 @b,dnsapi.cn
 @b,api.dnspod.com
