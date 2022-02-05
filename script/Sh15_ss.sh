@@ -1682,7 +1682,7 @@ G,149.154.175.50
 @g,api.telegram.org
 @g,raw.githubusercontent.com
 @b,api.cloud.189.cn
-@b,pv.sohu.com
+@b,ddns.oray.com
 @b,members.3322.org
 @b,members.3322.net
 @b,ip.3322.net
@@ -1690,6 +1690,7 @@ G,149.154.175.50
 @b,dnsapi.cn
 @b,api.dnspod.com
 @b,www.ipip.net
+@b,myip.ipip.net
 @b,alidns.aliyuncs.com
 @b,services.googleapis.cn
 # 
