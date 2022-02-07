@@ -17,6 +17,7 @@ rm -f "/opt/etc/init.d/S96sh3.sh"
 echo "" > /var/log/shadowsocks_watchdog.log
 echo "" > /var/log/Pcap_DNSProxy_watchdog.log
 echo "" > /var/log/chinadns_watchdog.log
+echo 0 > /proc/sys/net/ipv4/tcp_tw_recycle
 http_username=`nvram get http_username`
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib

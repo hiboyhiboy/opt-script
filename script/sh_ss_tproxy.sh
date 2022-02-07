@@ -28,8 +28,6 @@ echo "$dnsmasq_conf_file
 $proxy_all_svraddr
 $proxy_svraddr4
 $proxy_svraddr6
-$chinadns_privaddr4
-$chinadns_privaddr6
 $dnsmasq_conf_string
 $file_gfwlist_txt
 $file_gfwlist_ext
@@ -320,6 +318,8 @@ resolve_svraddr() {
 #ipset destroy $setname &>/dev/null
 ipset flush proxyaddr &>/dev/null
 ipset flush proxyaddr6 &>/dev/null
+ipset flush localaddr &>/dev/null
+ipset flush localaddr6 &>/dev/null
 ipset flush privaddr &>/dev/null
 ipset flush privaddr6 &>/dev/null
 
@@ -330,6 +330,8 @@ create chnroute6 hash:net hashsize 1024 family inet6
 create gfwlist hash:net hashsize 1024 family inet
 create gfwlist6 hash:net hashsize 1024 family inet6
 create adbybylist hash:net hashsize 1024 family inet
+create localaddr hash:net hashsize 64 family inet
+create localaddr6 hash:net hashsize 64 family inet6
 create privaddr hash:net hashsize 64 family inet
 create privaddr6 hash:net hashsize 64 family inet6
 create sstp_dst_bp hash:net hashsize 64 family inet
@@ -360,6 +362,10 @@ create sstp_mac_chn hash:mac hashsize 64" | while read sstp_name; do ipset -! $s
 	[ ! -z "$proxy_svripv4" ] && { for svr_ip in $proxy_svripv4; do echo "-A proxyaddr $svr_ip"; done | ipset -! restore &>/dev/null ; }
 	proxy_svripv6="$(cat $proxy_svraddr6)"
 	[ ! -z "$proxy_svripv6" ] && { for svr_ip in $proxy_svripv6; do echo "-A proxyaddr6 $svr_ip"; done | ipset -! restore &>/dev/null ; }
+	ipset flush localaddr &>/dev/null
+	ipset flush localaddr6 &>/dev/null
+	ifconfig -a | grep inet | grep -v inet6 | awk '{print $2}' | tr -d "addr:"​ | while read ip_addr; do echo "-A localaddr $ip_addr"; done | ipset -! restore &>/dev/null
+	ifconfig -a | grep inet6 | awk '{print $3}' | while read ip_addr; do echo "-A localaddr6 $ip_addr"; done | ipset -! restore &>/dev/null
 	ipset flush privaddr &>/dev/null
 	ipset flush privaddr6 &>/dev/null
 	for priv_ip in $IPV4_RESERVED_IPADDRS; do echo "-A privaddr $priv_ip"; done | ipset -! restore &>/dev/null
@@ -1178,6 +1184,8 @@ create chnroute6 hash:net hashsize 1024 family inet6
 create gfwlist hash:net hashsize 1024 family inet
 create gfwlist6 hash:net hashsize 1024 family inet6
 create adbybylist hash:net hashsize 1024 family inet
+create localaddr hash:net hashsize 64 family inet
+create localaddr6 hash:net hashsize 64 family inet6
 create privaddr hash:net hashsize 64 family inet
 create privaddr6 hash:net hashsize 64 family inet6
 create sstp_dst_bp hash:net hashsize 64 family inet
@@ -1636,6 +1644,8 @@ delete_gfwlist() {
 }
 
 delete_chnroute() {
+	ipset -X localaddr  &>/dev/null
+	ipset -X localaddr6 &>/dev/null
 	ipset -X privaddr  &>/dev/null
 	ipset -X privaddr6 &>/dev/null
 	ipset -X chnroute  &>/dev/null
@@ -1733,9 +1743,9 @@ check_dnsredir() {
 	[ ! -z "$ipts_reddns_ip" ] && is_ipv4_ipts $1 && direct_dns_ip="$ipts_reddns_ip"
 
 	$1 -t nat -N SSTP_PREROUTING  &>/dev/null
-	$1 -t nat -A SSTP_PREROUTING  -m addrtype ! --src-type LOCAL -p udp --dport 53 -j DNAT --to-destination $direct_dns_ip
+	$1 -t nat -A SSTP_PREROUTING  -m set ! --match-set $localaddr_setname src -p udp --dport 53 -j DNAT --to-destination $direct_dns_ip
 	$1 -t nat -N SSTP_POSTROUTING &>/dev/null
-	$1 -t nat -A SSTP_POSTROUTING -m addrtype ! --src-type LOCAL -p udp -d $direct_dns_ip --dport 53 -j MASQUERADE &>/dev/null
+	$1 -t nat -A SSTP_POSTROUTING -m set ! --match-set $localaddr_setname src -p udp -d $direct_dns_ip --dport 53 -j MASQUERADE &>/dev/null
 }
 
 check_startdnsredir() {
@@ -1745,7 +1755,7 @@ check_startdnsredir() {
 	[ ! -z "$ipts_reddns_ip" ] && is_ipv4_ipts $1 && direct_dns_ip="$ipts_reddns_ip"
 
 	$1 -t nat -N SSTP_PREROUTING  &>/dev/null
-	$1 -t nat -I SSTP_PREROUTING  -m addrtype ! --src-type LOCAL -p udp --dport 53 -j DNAT --to-destination $direct_dns_ip
+	$1 -t nat -I SSTP_PREROUTING  -m set ! --match-set $localaddr_setname src -p udp --dport 53 -j DNAT --to-destination $direct_dns_ip
 }
 
 check_snatrule() {
@@ -1755,10 +1765,10 @@ check_snatrule() {
 	is_false "$set_snat_rule" && return
 
 	$1 -t nat -N SSTP_POSTROUTING &>/dev/null
-	$1 -t nat -A SSTP_POSTROUTING -m addrtype ! --src-type LOCAL -m conntrack --ctstate SNAT,DNAT   -j RETURN
-	$1 -t nat -A SSTP_POSTROUTING -m addrtype ! --src-type LOCAL -p tcp --syn                       -j MASQUERADE
-	$1 -t nat -A SSTP_POSTROUTING -m addrtype ! --src-type LOCAL -p udp -m conntrack --ctstate NEW  -j MASQUERADE
-	$1 -t nat -A SSTP_POSTROUTING -m addrtype ! --src-type LOCAL -p icmp -m conntrack --ctstate NEW -j MASQUERADE
+	$1 -t nat -A SSTP_POSTROUTING -m set ! --match-set $localaddr_setname src -m conntrack --ctstate SNAT,DNAT   -j RETURN
+	$1 -t nat -A SSTP_POSTROUTING -m set ! --match-set $localaddr_setname src -p tcp --syn                       -j MASQUERADE
+	$1 -t nat -A SSTP_POSTROUTING -m set ! --match-set $localaddr_setname src -p udp -m conntrack --ctstate NEW  -j MASQUERADE
+	$1 -t nat -A SSTP_POSTROUTING -m set ! --match-set $localaddr_setname src -p icmp -m conntrack --ctstate NEW -j MASQUERADE
 }
 
 check_iptschain() {
@@ -1860,6 +1870,9 @@ start_iptables_tproxy_mode() {
 
 	is_ipv4_ipts $1 && privaddr_setname="privaddr" || privaddr_setname="privaddr6"
 
+	is_ipv4_ipts $1 && localaddr_setname="localaddr" || localaddr_setname="localaddr6"
+
+	ipset -! -N $localaddr_setname hash:net hashsize 64 family $gfwlist_setfamily
 	ipset -! -N $privaddr_setname hash:net hashsize 64 family $gfwlist_setfamily
 	ipset -! -N $chnroute_setname hash:net family $gfwlist_setfamily &>/dev/null
 	ipset -! -N $gfwlist_setname hash:net family $gfwlist_setfamily &>/dev/null
@@ -1942,8 +1955,8 @@ start_iptables_tproxy_mode() {
 	$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_gfw_setname src -j SSTP_WAN_GFW
 	$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_chn_setname src -j SSTP_WAN_CHN
 	if [ "$LAN_AC_IP" == "2" ] ; then
-	$1 -t mangle -A SSTP_LAN_AC -m addrtype ! --src-type LOCAL -j RETURN
-	$1 -t mangle -A SSTP_LAN_AC -m addrtype --src-type LOCAL -j SSTP_WAN_AC
+	$1 -t mangle -A SSTP_LAN_AC -m set ! --match-set $localaddr_setname src -j RETURN
+	$1 -t mangle -A SSTP_LAN_AC -m set --match-set $localaddr_setname src -j SSTP_WAN_AC
 	else
 	$1 -t mangle -A SSTP_LAN_AC -j ${LAN_TARGET:=SSTP_WAN_AC}
 	fi
@@ -1980,19 +1993,19 @@ start_iptables_tproxy_mode() {
 		fi
 	fi
 
-	$1 -t mangle -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p tcp -j SSTP_RULE
-	is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p udp -j SSTP_RULE
+	$1 -t mangle -A SSTP_OUTPUT -m set --match-set $localaddr_setname src -m set ! --match-set $localaddr_setname dst -p tcp -j SSTP_RULE
+	is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m set --match-set $localaddr_setname src -m set ! --match-set $localaddr_setname dst -p udp -j SSTP_RULE
 
 	$1 -t mangle -A SSTP_PREROUTING -i $ipts_if_lo -m mark ! --mark $ipts_rt_mark -j RETURN
 
 	if is_false "$selfonly"; then
 		if is_nonstd_dnsport "$dnsmasq_bind_port"; then
-			is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -m addrtype ! --src-type LOCAL --dst-type LOCAL -p udp --dport 53 -j RETURN
-			$1 -t nat -A SSTP_PREROUTING -m addrtype ! --src-type LOCAL --dst-type LOCAL -p udp --dport 53 -j REDIRECT --to-ports $dnsmasq_bind_port
+			is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -m set ! --match-set $localaddr_setname src -m set --match-set $localaddr_setname dst -p udp --dport 53 -j RETURN
+			$1 -t nat -A SSTP_PREROUTING -m set ! --match-set $localaddr_setname src -m set --match-set $localaddr_setname dst -p udp --dport 53 -j REDIRECT --to-ports $dnsmasq_bind_port
 		fi
 
-		$1 -t mangle -A SSTP_PREROUTING -m addrtype ! --src-type LOCAL ! --dst-type LOCAL -p tcp -j SSTP_RULE
-		is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -m addrtype ! --src-type LOCAL ! --dst-type LOCAL -p udp -j SSTP_RULE
+		$1 -t mangle -A SSTP_PREROUTING -m set ! --match-set $localaddr_setname src -m set ! --match-set $localaddr_setname dst -p tcp -j SSTP_RULE
+		is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -m set ! --match-set $localaddr_setname src -m set ! --match-set $localaddr_setname dst -p udp -j SSTP_RULE
 	fi
 
 	if [ "$lan_ipaddr" != "$loopback_addr" ] ; then
@@ -2028,6 +2041,9 @@ start_iptables_redirect_mode() {
 
 	is_ipv4_ipts $1 && privaddr_setname="privaddr" || privaddr_setname="privaddr6"
 
+	is_ipv4_ipts $1 && localaddr_setname="localaddr" || localaddr_setname="localaddr6"
+
+	ipset -! -N $localaddr_setname hash:net hashsize 64 family $gfwlist_setfamily
 	ipset -! -N $privaddr_setname hash:net hashsize 64 family $gfwlist_setfamily
 	ipset -! -N $chnroute_setname hash:net family $gfwlist_setfamily &>/dev/null
 	ipset -! -N $gfwlist_setname hash:net family $gfwlist_setfamily &>/dev/null
@@ -2100,8 +2116,8 @@ start_iptables_redirect_mode() {
 	$1 -t nat -A SSTP_LAN_AC -m set --match-set $sstp_src_gfw_setname src -j SSTP_WAN_GFW
 	$1 -t nat -A SSTP_LAN_AC -m set --match-set $sstp_src_chn_setname src -j SSTP_WAN_CHN
 	if [ "$LAN_AC_IP" == "2" ] ; then
-	$1 -t nat -A SSTP_LAN_AC -m addrtype ! --src-type LOCAL -j RETURN
-	$1 -t nat -A SSTP_LAN_AC -m addrtype --src-type LOCAL -j SSTP_WAN_AC
+	$1 -t nat -A SSTP_LAN_AC -m set ! --match-set $localaddr_setname src -j RETURN
+	$1 -t nat -A SSTP_LAN_AC -m set --match-set $localaddr_setname src -j SSTP_WAN_AC
 	else
 	$1 -t nat -A SSTP_LAN_AC -j ${LAN_TARGET:=SSTP_WAN_AC}
 	fi
@@ -2189,8 +2205,8 @@ start_iptables_redirect_mode() {
 		$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_gfw_setname src -j SSTP_WAN_GFW
 		$1 -t mangle -A SSTP_LAN_AC -m set --match-set $sstp_src_chn_setname src -j SSTP_WAN_CHN
 		if [ "$LAN_AC_IP" == "2" ] ; then
-		$1 -t mangle -A SSTP_LAN_AC -m addrtype ! --src-type LOCAL -j RETURN
-		$1 -t mangle -A SSTP_LAN_AC -m addrtype --src-type LOCAL -j SSTP_WAN_AC
+		$1 -t mangle -A SSTP_LAN_AC -m set ! --match-set $localaddr_setname src -j RETURN
+		$1 -t mangle -A SSTP_LAN_AC -m set --match-set $localaddr_setname src -j SSTP_WAN_AC
 		else
 		$1 -t mangle -A SSTP_LAN_AC -j ${LAN_TARGET:=SSTP_WAN_AC}
 		fi
@@ -2229,23 +2245,23 @@ start_iptables_redirect_mode() {
 
 	[ "$uid_owner" != "0" ] &&     $1 -t nat -I SSTP_OUTPUT -m owner --uid-owner $uid_owner -j RETURN
 	[ "$gid_owner" != "0" ] &&     $1 -t nat -I SSTP_OUTPUT -m owner --gid-owner $gid_owner -j RETURN
-	[ "$output_return" != "1" ] && $1 -t nat -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p tcp -j SSTP_RULE
+	[ "$output_return" != "1" ] && $1 -t nat -A SSTP_OUTPUT -m set --match-set $localaddr_setname src -m set ! --match-set $localaddr_setname dst -p tcp -j SSTP_RULE
 	[ "$uid_owner" != "0" ] && is_enabled_udp && $1 -t mangle -I SSTP_OUTPUT -m owner --uid-owner $uid_owner -j RETURN
 	[ "$gid_owner" != "0" ] && is_enabled_udp && $1 -t mangle -I SSTP_OUTPUT -m owner --gid-owner $gid_owner -j RETURN
 	if [ "$output_return" != "1" ] || [ "$output_udp_return" == "1" ] ; then
-		is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m addrtype --src-type LOCAL ! --dst-type LOCAL -p udp -j SSTP_RULE
+		is_enabled_udp && $1 -t mangle -A SSTP_OUTPUT -m set --match-set $localaddr_setname src -m set ! --match-set $localaddr_setname dst -p udp -j SSTP_RULE
 	fi
 
 	is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -i $ipts_if_lo -m mark ! --mark $ipts_rt_mark -j RETURN
 
 	if is_false "$selfonly"; then
 		if is_nonstd_dnsport "$dnsmasq_bind_port"; then
-			is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -m addrtype ! --src-type LOCAL --dst-type LOCAL -p udp --dport 53 -j RETURN
-			$1 -t nat -A SSTP_PREROUTING -m addrtype ! --src-type LOCAL --dst-type LOCAL -p udp --dport 53 -j REDIRECT --to-ports $dnsmasq_bind_port
+			is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -m set ! --match-set $localaddr_setname src -m set --match-set $localaddr_setname dst -p udp --dport 53 -j RETURN
+			$1 -t nat -A SSTP_PREROUTING -m set ! --match-set $localaddr_setname src -m set --match-set $localaddr_setname dst -p udp --dport 53 -j REDIRECT --to-ports $dnsmasq_bind_port
 		fi
 
-		$1 -t nat -A SSTP_PREROUTING -m addrtype ! --src-type LOCAL ! --dst-type LOCAL -p tcp -j SSTP_RULE
-		is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -m addrtype ! --src-type LOCAL ! --dst-type LOCAL -p udp -j SSTP_RULE
+		$1 -t nat -A SSTP_PREROUTING -m set ! --match-set $localaddr_setname src -m set ! --match-set $localaddr_setname dst -p tcp -j SSTP_RULE
+		is_enabled_udp && $1 -t mangle -A SSTP_PREROUTING -m set ! --match-set $localaddr_setname src -m set ! --match-set $localaddr_setname dst -p udp -j SSTP_RULE
 	fi
 
 	if [ "$lan_ipaddr" != "$loopback_addr" ] ; then

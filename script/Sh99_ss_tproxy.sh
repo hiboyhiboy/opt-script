@@ -322,7 +322,6 @@ fi
 }
 
 ss_tproxy_start () {
-ipt_m_check
 check_webui_yes
 for h_i in $(seq 1 2) ; do
 [ -z "$(grep "main " /etc/storage/script/sh_ss_tproxy.sh)" ] && rm -rf /etc/storage/script/sh_ss_tproxy.sh
@@ -362,39 +361,6 @@ eval "$scriptfilepath keep &"
 exit 0
 }
 
-ipt_m_check () {
-NUM=`iptables -m addrtype -h 2>&1 | grep 'type\ type' | wc -l`
-if [ "$NUM" == "0" ] ; then
-rm -f /tmp/webui_yes
-logger -t "【ss_tproxy】" "【错误】！！！固件缺少 iptables -m addrtype 模块"
-logger -t "【ss_tproxy】" "【错误】！！！需要升级固件才能使用 ss_tproxy 脚本"
-rm -f /tmp/script/_opt_script_check
-kill_ps "_opt_script_check"
-kill_ps "Sh99_ss_tproxy.sh"
-kill_ps "sh_ss_tproxy.sh"
-kill_ps "Sh09_chinadns_ng.sh"
-kill_ps "Sh10_clash.sh"
-kill_ps "Sh15_ss.sh"
-kill_ps "Sh18_v2ray.sh"
-kill_ps "Sh39_ipt2socks.sh"
-kill_ps "Sh58_tran_socks.sh"
-logger -t "【ss_tproxy】" "现在自动更新固件"
-rm -f /tmp/webui_yes
-rm -f /tmp/script/_opt_script_check
-mtd_storage.sh save
-nvram set upscript_enable=0
-ss_tproxy_enable=0
-nvram set app_109=0
-nvram commit
-nvram save
-#一键自动更新固件脚本
-wget -q -O- https://opt.cn2qq.com/opt-script/up.sh > /tmp/up.sh && bash < /tmp/up.sh
-sleep 5
-/bin/mtd_write -r unlock mtd1 #reboot
-sleep 5
-exit
-fi
-}
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return
@@ -485,18 +451,6 @@ dnsmasq_bind_port='53'                  # dnsmasq 服务器监听端口，见 RE
 dnsmasq_conf_dir="/tmp/ss_tproxy/dnsmasq.d"                          # `--conf-dir` 选项的参数，可以填多个，空格隔开
 dnsmasq_conf_file="/opt/app/ss_tproxy/dnsmasq_conf_file.txt"           # `--conf-file` 选项的参数，可以填多个，空格隔开
 dnsmasq_conf_string="/opt/app/ss_tproxy/conf/dnsmasq_conf_string.conf" # 自定义配置的配置文件(文件里面每一行一个配置)
-
-## chinadns
-chinadns_bind_port='65353'               # chinadns-ng 服务器监听端口，通常不用改动
-chinadns_timeout='3'                     # 等待上游 DNS 返回响应的超时时间，单位为秒
-chinadns_repeat='1'                      # 向可信 DNS 发送几次 DNS 查询请求，默认为 1
-chinadns_fairmode='false'                # 使用公平模式，具体看 chinadns-ng 的 README
-chinadns_gfwlist_mode='true'             # gfwlist 模式，加载 gfwlist.txt/gfwlist.ext
-chinadns_noip_as_chnip='true'            # 启用 chinadns-ng 的 `--noip-as-chnip` 选项
-chinadns_verbose='false'                 # 记录详细日志，除非进行调试，否则不建议启用
-chinadns_logfile='/tmp/syslog.log'       # 日志文件，如果不想保存日志可以改为 /dev/null
-chinadns_privaddr4="/opt/app/ss_tproxy/conf/chinadns_privaddr4.txt" # IPv4 私有地址段的配置文件(文件里面每一行一个IP)
-chinadns_privaddr6="/opt/app/ss_tproxy/conf/chinadns_privaddr6.txt" # IPv6 私有地址段的配置文件(文件里面每一行一个IP)
 
 ## dns2tcp
 dns2tcp_bind_port='65454'               # dns2tcp 转发服务器监听端口，如有冲突请修改
@@ -629,20 +583,17 @@ check)
 	;;
 s_*)
 	sstp_run="$(echo "$ACTION" | awk -F '_' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"_"$i}}}END{print sum}')"
-	ipt_m_check
 	auser_check $2
 	$sstp_run
 	exit
 	;;
 x_*)
 	sstp_run="$(echo "$ACTION" | awk -F '_' '{for(i=2;i<=NF;++i) { if(i==2){sum=$i}else{sum=sum"_"$i}}}END{print sum}')"
-	ipt_m_check
 	auser_check $2
 	ss_tproxy_run $sstp_run
 	exit
 	;;
 on_start)
-	ipt_m_check
 	auser_check $2
 	ss_tproxy_enable=1
 	nvram set app_109=1
