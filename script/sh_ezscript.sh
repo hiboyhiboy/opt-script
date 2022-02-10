@@ -352,7 +352,7 @@ if [ -z "$curltest" ] ; then
 	nvram set serverchan_desp=""
 fi
 if [ ! -z "$serverchan_text" ] ; then
-curl -s "http://sc.ftqq.com/$serverchan_sckey.send?text=$serverchan_text" -d "&desp=$serverchan_desp" 
+curl -s "http://sctapi.ftqq.com/$serverchan_sckey.send?text=$serverchan_text" -d "&desp=$serverchan_desp" 
 logger -t "【微信推送】" "消息标题:$serverchan_text"
 logger -t "【微信推送】" "消息内容:$serverchan_desp"
 nvram set serverchan_text=""
