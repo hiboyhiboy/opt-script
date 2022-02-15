@@ -59,6 +59,9 @@ ss_ip46=`nvram get ss_ip46`
 [ -z $ss_ip46 ] && ss_ip46=0 && nvram set ss_ip46=0
 LAN_AC_IP=`nvram get LAN_AC_IP`
 [ -z $LAN_AC_IP ] && LAN_AC_IP=0 && nvram set LAN_AC_IP=$LAN_AC_IP
+ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
+ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
+[ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
 clash_renum=`nvram get clash_renum`
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="clash"
@@ -445,9 +448,9 @@ sstp_set lan_ipv4_ipaddr='127.0.0.1'
 sstp_set ipts_set_snat='false'
 sstp_set ipts_set_snat6='false'
 sstp_set ipts_reddns_onstop='false'
-sstp_set ipts_reddns_onstart='true' # ss-tproxy start 后，是否将其它主机发至本机的 DNS 重定向至自定义 IPv4 地址
- # sstp_set ipts_reddns_onstart='false'
-sstp_set ipts_reddns_ip="$lan_ipaddr" # 自定义 DNS 重定向地址(只支持 IPv4 )
+[ "$ss_DNS_Redirect" == "1" ] && sstp_set ipts_reddns_onstart='true' # ss-tproxy start 后，是否将其它主机发至本机的 DNS 重定向至自定义 IPv4 地址
+[ "$ss_DNS_Redirect" != "1" ] && sstp_set ipts_reddns_onstart='false'
+sstp_set ipts_reddns_ip="$ss_DNS_Redirect_IP" # 自定义 DNS 重定向地址(只支持 IPv4 )
 sstp_set ipts_proxy_dst_port_tcp="1:65535"
 sstp_set ipts_proxy_dst_port_udp="1:65535"
 sstp_set LAN_AC_IP="$LAN_AC_IP"
