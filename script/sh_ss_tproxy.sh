@@ -784,7 +784,7 @@ update_md5_check() {
         md5_check="OK"
         return 0
     else
-        md5sum "$@" $ss_tproxy_config > $md5_file
+        md5sum "$@" $ss_tproxy_config /opt/app/ss_tproxy/ss_tproxy > $md5_file
         md5_check="NOT"
         return 1
     fi

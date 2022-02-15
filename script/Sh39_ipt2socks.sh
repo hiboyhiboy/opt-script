@@ -14,6 +14,8 @@ app_114=`nvram get app_114` #0:代理本机流量; 1:跳过代理本机流量
 transocks_listen_address=`nvram get app_30`
 transocks_listen_port=`nvram get app_31`
 transocks_server="$(nvram get app_32)"
+LAN_AC_IP=`nvram get LAN_AC_IP`
+[ -z $LAN_AC_IP ] && LAN_AC_IP=0 && nvram set LAN_AC_IP=$LAN_AC_IP
 if [ "$ipt2socks_enable" != "0" ]  ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
 if [ "Sh39_ipt2socks.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" ] ; then
@@ -282,7 +284,7 @@ sstp_set ipts_reddns_onstart='true' # ss-tproxy start 后，是否将其它主�
 sstp_set ipts_reddns_ip="$lan_ipaddr" # 自定义 DNS 重定向地址(只支持 IPv4 )
 sstp_set ipts_proxy_dst_port_tcp="1:65535"
 sstp_set ipts_proxy_dst_port_udp="1:65535"
-sstp_set LAN_AC_IP="0"
+sstp_set LAN_AC_IP="$LAN_AC_IP"
 ## opts
 sstp_set opts_overwrite_resolv='false'
 sstp_set opts_ip_for_check_net=''

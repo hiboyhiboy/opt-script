@@ -57,6 +57,8 @@ chinadns_ng_enable=0
 fi
 ss_ip46=`nvram get ss_ip46`
 [ -z $ss_ip46 ] && ss_ip46=0 && nvram set ss_ip46=0
+LAN_AC_IP=`nvram get LAN_AC_IP`
+[ -z $LAN_AC_IP ] && LAN_AC_IP=0 && nvram set LAN_AC_IP=$LAN_AC_IP
 clash_renum=`nvram get clash_renum`
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="clash"
@@ -448,7 +450,7 @@ sstp_set ipts_reddns_onstart='true' # ss-tproxy start 后，是否将其它主�
 sstp_set ipts_reddns_ip="$lan_ipaddr" # 自定义 DNS 重定向地址(只支持 IPv4 )
 sstp_set ipts_proxy_dst_port_tcp="1:65535"
 sstp_set ipts_proxy_dst_port_udp="1:65535"
-sstp_set LAN_AC_IP="0"
+sstp_set LAN_AC_IP="$LAN_AC_IP"
 ## opts
 sstp_set opts_overwrite_resolv='false'
 sstp_set opts_ip_for_check_net=''

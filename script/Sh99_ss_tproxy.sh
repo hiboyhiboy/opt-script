@@ -45,7 +45,13 @@ else
 fi
 koolproxy_enable=`nvram get koolproxy_enable`
 
+LAN_AC_IP=`nvram get LAN_AC_IP`
+[ -z $LAN_AC_IP ] && LAN_AC_IP=0 && nvram set LAN_AC_IP=$LAN_AC_IP
+ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
+ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
+
 if [ "$ss_tproxy_enable" = "1" ] ; then
+sstp_set LAN_AC_IP="$LAN_AC_IP"
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
 Mem_lt=100000
@@ -125,12 +131,12 @@ exit 0
 ss_tproxy_get_status () {
 
 A_restart=`nvram get ss_tproxy_status`
-B_restart="$ss_tproxy_enable$ss_tproxy_mode_x$ss_pdnsd_all$ss_dnsproxy_x$ss_udp_enable$chinadns_enable$chinadns_ng_enable$(cat /etc/storage/app_27.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
-C_restart="$ss_udp_enable$dns_start_dnsproxy$ss_pdnsd_cn_all$output_return$ss_pdnsd_all$ss_dnsproxy_x$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$chinadns_enable$chinadns_ng_enable$chinadns_port$koolproxy_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$LAN_AC_IP$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_pdnsd_cn_all$output_return$ss_tproxy_enable$ss_tproxy_mode_x$ss_pdnsd_all$ss_dnsproxy_x$ss_udp_enable$chinadns_enable$chinadns_ng_enable$(cat /etc/storage/app_27.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/shadowsocks_ss_spec_wan.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v "^#" | grep -v "^$")"
+C_restart="$LAN_AC_IP$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_tproxy_enable$ss_tproxy_mode_x$ss_udp_enable$dns_start_dnsproxy$ss_pdnsd_cn_all$output_return$ss_pdnsd_all$ss_dnsproxy_x$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$chinadns_enable$chinadns_ng_enable$chinadns_port$koolproxy_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/shadowsocks_ss_spec_wan.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v "^#" | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_C_re
+C_restart="$(echo $C_restart)"
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set ss_tproxy_status=$B_restart
 	sstp_set ss_tproxy_status="$C_restart"

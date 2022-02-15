@@ -90,6 +90,8 @@ v2ray_http_format=`nvram get v2ray_http_format`
 v2ray_http_config=`nvram get v2ray_http_config`
 ss_ip46=`nvram get ss_ip46`
 [ -z $ss_ip46 ] && ss_ip46=0 && nvram set ss_ip46=0
+LAN_AC_IP=`nvram get LAN_AC_IP`
+[ -z $LAN_AC_IP ] && LAN_AC_IP=0 && nvram set LAN_AC_IP=$LAN_AC_IP
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep v2ray)" ]  && [ ! -s /tmp/script/_v2ray ]; then
 	mkdir -p /tmp/script
@@ -687,7 +689,7 @@ sstp_set ipts_reddns_onstart='true' # ss-tproxy start 后，是否将其它主�
 sstp_set ipts_reddns_ip="$lan_ipaddr" # 自定义 DNS 重定向地址(只支持 IPv4 )
 sstp_set ipts_proxy_dst_port_tcp="1:65535"
 sstp_set ipts_proxy_dst_port_udp="1:65535"
-sstp_set LAN_AC_IP="0"
+sstp_set LAN_AC_IP="$LAN_AC_IP"
 ## opts
 sstp_set opts_overwrite_resolv='false'
 sstp_set opts_ip_for_check_net=''
