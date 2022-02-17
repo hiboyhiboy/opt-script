@@ -103,6 +103,7 @@ if [ "$opt_force_enable" != "0" ] ; then
 	logger -t "【script】" "自定义 opt 环境下载地址失效 $opt_force_www"
 	logger -t "【script】" "建议使用免费CDN https://gcore.jsdelivr.net/gh/HiboyHiboy"
 else
+	if [ ! -z "$(ping -4 -c 1 -w 4 -q "gcore.jsdelivr.net" | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}')" ] ; then
 	opt_force_enable="1" && nvram set opt_force_enable="$opt_force_enable"
 	opt_download_enable=`nvram get opt_download_enable`
 	if [ "$opt_download_enable" != "0" ] ; then
@@ -112,6 +113,7 @@ else
 	logger -t "【script】" "下载地址失效 https://opt.cn2qq.com"
 	logger -t "【script】" "变更使用免费CDN https://gcore.jsdelivr.net/gh/HiboyHiboy"
 	opt_force
+	fi
 fi
 
 }

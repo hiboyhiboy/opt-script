@@ -57,9 +57,9 @@ Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
 Mem_lt=100000
 [ "$Mem_total" -lt 66 ] && Mem_total="66" || { [ "$Mem_total" -ge 66 ] || Mem_total="66" ; }
 if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
-	[ ! -z "$optPath" ] && logger -t "【ss_tproxy】" " /opt/ 在内存储存"
 	if [ "$Mem_total" -lt "$Mem_lt" ] ; then
 		if [ "$ss_pdnsd_cn_all" != "1" ] ; then
+			logger -t "【ss_tproxy】" " /opt/ 在内存储存"
 			logger -t "【ss_tproxy】" "内存不足100M，停止 China 域名加速查询 DNS"
 			ss_pdnsd_cn_all=1 && nvram set app_113=1
 		fi
