@@ -9,6 +9,22 @@ if [ ! -s /tmp/script/_opt_script_check ] && [ ! -z "$(echo $scriptfilepath | gr
 	exit
 fi
 
+crond_enable=`nvram get crond_enable`
+crond_f="/etc/storage/cron/crontabs"
+crond_f="$crond_f/`nvram get http_username`"
+if [ ! -z "$(grep "#cru\.sh#" $crond_f)" ] && [ "$crond_enable" != "1" ] ; then
+	nvram set crond_enable=1
+	crond_enable=1
+fi
+if [ -z "`pidof crond`" ] && [ "$crond_enable" == "1" ] ; then
+crond_log=`nvram get crond_log`
+if [ "$crond_log" == "1" ]; then
+	crond -d8
+else
+	crond
+fi
+fi
+
 opt_script_check=`nvram get opt_script_check`
 opt_script_check=$((opt_script_check - 1))
 nvram settmp opt_script_check="$opt_script_check"
