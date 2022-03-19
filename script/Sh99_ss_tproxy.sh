@@ -416,7 +416,7 @@ post_stop() {
 VVR
 	fi
 
-	if [ ! -f "/etc/storage/app_27.sh" ] || [ ! -s "/etc/storage/app_27.sh" ] ; then
+	if [ ! -f "/etc/storage/app_27.sh" ] || [ ! -s "/etc/storage/app_27.sh" ] || [ -z "$(grep opts_ss_netstat /etc/storage/app_27.sh)" ] ; then
 cat > "/etc/storage/app_27.sh" <<-\VVR
 # ss-tproxy 配置文件
 # https://github.com/zfl9/ss-tproxy
