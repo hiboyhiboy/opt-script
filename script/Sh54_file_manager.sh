@@ -12,6 +12,9 @@ caddy_enable=`nvram get app_54`
 [ "$caddy_enable" = "2" ] && filemanager_exe="filebrowser"
 [ "$caddy_enable" = "1" ] && filemanager_exe="caddy_filebrowser"
 [ "$caddy_enable" = "0" ] && filemanager_exe="filemanager"
+filebrowser_usage=`nvram get app_80`
+[ -z "$(echo "$filebrowser_usage" | grep filebrowser)" ] && filebrowser_usage="filebrowser -a 0.0.0.0 --disable-preview-resize --disable-type-detection-by-header" && nvram set app_80="$filebrowser_usage"
+
 filemanager_upanPath=`nvram get filemanager_upanPath`
 #if [ "$filemanager_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep filemanager | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -219,7 +222,7 @@ nvram set filemanager_v="$filemanager_v"
 logger -t "【filemanager】" "运行 filebrowser $filemanager_v"
 iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 
-eval "cd $upanPath/filebrowser ; filebrowser -a 0.0.0.0 -p $filemanager_wan_port -d $upanPath/filebrowser/filebrowser.db -r $upanPath $cmd_log" &
+eval "cd $upanPath/filebrowser ; $filebrowser_usage -p $filemanager_wan_port -d $upanPath/filebrowser/filebrowser.db -r $upanPath $cmd_log" &
 
 }
 
