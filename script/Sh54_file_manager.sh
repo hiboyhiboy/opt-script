@@ -8,8 +8,10 @@ filemanager_enable=`nvram get app_15`
 filemanager_wan=`nvram get app_16`
 [ -z $filemanager_wan ] && filemanager_wan=0 && nvram set app_16=0
 caddy_enable=`nvram get app_54`
-[ -z $caddy_enable ] && caddy_enable=0 && nvram set app_54=0
-[ "$caddy_enable" = "1" ] && filemanager_exe="caddy_filebrowser" || filemanager_exe="filemanager"
+[ -z $caddy_enable ] && caddy_enable=2 && nvram set app_54=2
+[ "$caddy_enable" = "2" ] && filemanager_exe="filebrowser"
+[ "$caddy_enable" = "1" ] && filemanager_exe="caddy_filebrowser"
+[ "$caddy_enable" = "0" ] && filemanager_exe="filemanager"
 filemanager_upanPath=`nvram get filemanager_upanPath`
 #if [ "$filemanager_enable" != "0" ] ; then
 #nvramshow=`nvram showall | grep '=' | grep filemanager | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
@@ -87,6 +89,7 @@ filemanager_get_status
 if [ "$filemanager_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof caddy_filebrowser`" ] && logger -t "【filemanager】" "停止 $filemanager_exe" && filemanager_close
 	[ ! -z "`pidof filemanager`" ] && logger -t "【filemanager】" "停止 $filemanager_exe" && filemanager_close
+	[ ! -z "`pidof filebrowser`" ] && logger -t "【filemanager】" "停止 $filemanager_exe" && filemanager_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$filemanager_enable" = "1" ] ; then
@@ -105,13 +108,13 @@ logger -t "【filemanager】" "守护进程启动"
 if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof $filemanager_exe\`" ] || [ ! -s "$filemanager_upanPath/filemanager/$filemanager_exe" ] && nvram set filemanager_status=00 && logger -t "【filemanager】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check # 【filemanager】
+[ -z "\`pidof $filemanager_exe\`" ] && nvram set filemanager_status=00 && logger -t "【filemanager】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check # 【filemanager】
 OSC
 return
 fi
 
 while true; do
-	if [ -z "`pidof $filemanager_exe`" ] || [ ! -s "$filemanager_upanPath/filemanager/$filemanager_exe" ] ; then
+	if [ -z "`pidof $filemanager_exe`" ] ; then
 		logger -t "【filemanager】" "重新启动"
 		filemanager_restart
 	fi
@@ -124,8 +127,8 @@ filemanager_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
-killall filemanager caddy_filebrowser
-killall -9 filemanager caddy_filebrowser
+killall filemanager caddy_filebrowser filebrowser
+killall -9 filemanager caddy_filebrowser filebrowser
 kill_ps "/tmp/script/_app5"
 kill_ps "_file_manager.sh"
 kill_ps "$scriptname"
@@ -133,6 +136,7 @@ kill_ps "$scriptname"
 
 filemanager_start () {
 
+check_webui_yes
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
 [ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
@@ -164,21 +168,39 @@ if [ -z "$upanPath" ] ; then
 	filemanager_restart x
 	exit 0
 fi
+if [ "$caddy_enable" = "2" ] ; then
+SVC_PATH="$(which filebrowser)"
+mkdir -p "$upanPath/filebrowser/"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/filebrowser"
+if [ ! -s "$SVC_PATH" ] ; then
+	logger -t "【filemanager】" "找不到 $SVC_PATH，安装 opt 程序"
+	/etc/storage/script/Sh01_mountopt.sh start
+fi
+for h_i in $(seq 1 2) ; do
+[[ "$($SVC_PATH help 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
+wgetcurl_file "$SVC_PATH" "$hiboyfile/filebrowser" "$hiboyfile2/filebrowser"
+done
+else
 SVC_PATH="$upanPath/filemanager/$filemanager_exe"
 mkdir -p "$upanPath/filemanager/"
 [ "$caddy_enable" = "1" ] && wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy" "$hiboyfile2/caddy"
-[ "$caddy_enable" = "1" ] || wgetcurl_file "$SVC_PATH" "$hiboyfile/filemanager" "$hiboyfile2/filemanager"
+[ "$caddy_enable" = "0" ] && wgetcurl_file "$SVC_PATH" "$hiboyfile/filemanager" "$hiboyfile2/filemanager"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 [ "$caddy_enable" = "1" ] && { [ -z "$($SVC_PATH -plugins 2>&1 | grep http.filebrowser)" ] && rm -rf $SVC_PATH ; }
+fi
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【filemanager】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【filemanager】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
 fi
 chmod 777 "$SVC_PATH"
+if [ "$caddy_enable" = "2" ] ; then
+	filebrowser2_start
+else
 if [ "$caddy_enable" = "1" ] ; then
 	caddy_start
 else
 	filebrowser_start
+fi
 fi
 sleep 7
 [ ! -z "$(ps -w | grep "$filemanager_exe" | grep -v grep )" ] && logger -t "【filemanager】" "启动成功" && filemanager_restart o
@@ -190,12 +212,22 @@ eval "$scriptfilepath keep &"
 exit 0
 }
 
+filebrowser2_start () {
+
+filemanager_v=$($SVC_PATH version | grep Browser | awk -F '-' '{print $1;}' | awk -F ' ' '{print $3;}' | tr -d 'v')
+nvram set filemanager_v="$filemanager_v"
+logger -t "【filemanager】" "运行 filebrowser $filemanager_v"
+iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
+
+eval "cd $upanPath/filebrowser ; filebrowser -a 0.0.0.0 -p $filemanager_wan_port -d $upanPath/filebrowser/filebrowser.db -r $upanPath $cmd_log" &
+
+}
+
 filebrowser_start () {
 
-check_webui_yes
 filemanager_v=$($SVC_PATH -v | grep version | awk -F 'version' '{print $2;}')
 nvram set filemanager_v="$filemanager_v"
-logger -t "【filemanager】" "运行 filemanager"
+logger -t "【filemanager】" "运行 filemanager $filemanager_v"
 
 filemanager_wan_port=`cat /etc/storage/app_5.sh | grep -Eo '"port": [0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
 nvram set app_14=$filemanager_wan_port
@@ -209,12 +241,11 @@ eval "$upanPath/filemanager/filemanager -c /tmp/filemanager.json $cmd_log" &
 
 }
 
-
 caddy_start () {
 
 filemanager_v=$($SVC_PATH -version | cut -d'(' -f1 | tr -d ' ' | sed -n '1p')
 nvram set filemanager_v="$filemanager_v"
-logger -t "【filemanager】" "运行 caddy_filebrowser"
+logger -t "【filemanager】" "运行 caddy_filebrowser $filemanager_v"
 
 filemanager_wan_port=`cat /etc/storage/app_11.sh | grep -Eo ':[0-9]+' | cut -d':' -f2 | tr -d ' ' | sed -n '1p'`
 nvram set app_14=$filemanager_wan_port
@@ -310,6 +341,7 @@ if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/filemanager/Advanced_Extensions_filemanager.asp
 	[ -f "$filemanager_upanPath/filemanager/filemanager" ] && rm -f $filemanager_upanPath/filemanager/filemanager
 	[ -f "$filemanager_upanPath/filemanager/caddy_filebrowser" ] && rm -f $filemanager_upanPath/filemanager/caddy_filebrowser
+	[ -f "/opt/bin/filebrowser" ] && rm -f /opt/bin/filebrowser
 fi
 
 initconfig
