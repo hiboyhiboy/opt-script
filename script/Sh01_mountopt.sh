@@ -30,16 +30,25 @@ opt_force () {
 # 自定义 opt 环境下载地址
 opt_force_enable=`nvram get opt_force_enable`
 [ -z $opt_force_enable ] && opt_force_enable="0" && nvram set opt_force_enable="$opt_force_enable"
+opt_force_file=`nvram get opt_force_file`
+[ -z $opt_force_file ] && opt_force_file="https://opt.cn2qq.com/opt-file" && nvram set opt_force_file="$opt_force_file"
+opt_force_script=`nvram get opt_force_script`
+[ -z $opt_force_script ] && opt_force_script="https://opt.cn2qq.com/opt-script" && nvram set opt_force_script="$opt_force_script"
+if [ -z "$(cat /sbin/wgetcurl.sh | grep "/tmp/script/wgetcurl.sh")" ] ; then
 opt_force_www=`nvram get opt_force_www`
 [ -z $opt_force_www ] && opt_force_www="https://opt.cn2qq.com" && nvram set opt_force_www="$opt_force_www"
+opt_force_file="$opt_force_www/opt-script"
+opt_force_script="$opt_force_www/opt-script"
+fi
 if [ "$opt_force_enable" != "0" ] ; then
-	opt_force_www="$(echo $opt_force_www | sed  "s@/\$@@g")"
+	opt_force_file="$(echo $opt_force_file | sed  "s@/\$@@g")"
+	opt_force_script="$(echo $opt_force_script | sed  "s@/\$@@g")"
 	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
 	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
-	echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
-	echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
-	hiboyfile="$opt_force_www/opt-file"
-	hiboyscript="$opt_force_www/opt-script"
+	echo 'hiboyfile="'$opt_force_file'"' >> /etc/storage/script/init.sh
+	echo 'hiboyscript="'$opt_force_script'"' >> /etc/storage/script/init.sh
+	hiboyfile="$opt_force_file"
+	hiboyscript="$opt_force_script"
 else
 	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
 	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
@@ -52,46 +61,46 @@ fi
 # 部署离线 opt 环境下载地址
 opt_download_enable=`nvram get opt_download_enable`
 [ -z $opt_download_enable ] && opt_download_enable="0" && nvram set opt_download_enable="$opt_download_enable"
-http_proto=`nvram get http_proto`
-http_lanport=`nvram get http_lanport`
-[ -z $http_lanport ] && http_lanport=80 && nvram set http_lanport=80
-lan_ipaddr=`nvram get lan_ipaddr`
-[ "$http_proto" != "1" ] && opt_force_www_tmp="http://127.0.0.1:$http_lanport"
-[ "$http_proto" == "1" ] && opt_force_www_tmp="https://127.0.0.1:$http_lanport"
+opt_force_file_tmp="/www/opt-file"
+opt_force_script_tmp="/www/opt-script"
 if [ "$opt_download_enable" != "0" ] ; then
 	nvram set opt_force_enable=1
 	# 设置下载地址
-	nvram set opt_force_www="$opt_force_www_tmp"
-	opt_force_www="$opt_force_www_tmp"
+	opt_force_file="$opt_force_file_tmp"
+	opt_force_script="$opt_force_script_tmp"
+	nvram set opt_force_file="$opt_force_file"
+	nvram set opt_force_script="$opt_force_script"
 	sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
 	sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
-	echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
-	echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
-	hiboyfile="$opt_force_www/opt-file"
-	hiboyscript="$opt_force_www/opt-script"
+	echo 'hiboyfile="'$opt_force_file'"' >> /etc/storage/script/init.sh
+	echo 'hiboyscript="'$opt_force_script'"' >> /etc/storage/script/init.sh
+	hiboyfile="$opt_force_file"
+	hiboyscript="$opt_force_script"
 else
-	if [ "$opt_force_www" == "$opt_force_www_tmp" ] ; then
-		nvram set opt_force_www="https://opt.cn2qq.com"
-		opt_force_www="https://opt.cn2qq.com"
+	if [ "$opt_force_file" == "$opt_force_file_tmp" ] ; then
+		opt_force_file="https://opt.cn2qq.com/opt-file"
+		opt_force_script="https://opt.cn2qq.com/opt-script"
+		nvram set opt_force_file="$opt_force_file"
+		nvram set opt_force_script="$opt_force_script"
 		sed -Ei '/^hiboyfile=/d' /etc/storage/script/init.sh
 		sed -Ei '/^hiboyscript=/d' /etc/storage/script/init.sh
-		echo 'hiboyfile="'$opt_force_www'/opt-file"' >> /etc/storage/script/init.sh
-		echo 'hiboyscript="'$opt_force_www'/opt-script"' >> /etc/storage/script/init.sh
-		hiboyfile="$opt_force_www/opt-file"
-		hiboyscript="$opt_force_www/opt-script"
+		echo 'hiboyfile="'$opt_force_file'"' >> /etc/storage/script/init.sh
+		echo 'hiboyscript="'$opt_force_script'"' >> /etc/storage/script/init.sh
+		hiboyfile="$opt_force_file"
+		hiboyscript="$opt_force_script"
 	fi
 fi
 
- opttmpfile="$hiboyfile/opttmpg11.tgz"
- opttmpfile2="$hiboyfile2/opttmpg11.tgz"
+ opttmpfile="$hiboyfile/opttmpg12.tgz"
+ opttmpfile2="$hiboyfile2/opttmpg12.tgz"
  
- optupanfile="$hiboyfile/optupang11.tgz"
- optupanfile2="$hiboyfile2/optupang11.tgz"
+ optupanfile="$hiboyfile/optupang12.tgz"
+ optupanfile2="$hiboyfile2/optupang12.tgz"
  optupanfileS="10"
- optupanfile_md5="da0d5ebd045d1c1592daac9343071184"
+ optupanfile_md5="95ad0784dc31263e994fb5a3d2a670e5"
  
- opt_txt_file1="$hiboyfile/optg11.txt"
- opt_txt_file2="$hiboyfile2/optg11.txt"
+ opt_txt_file1="$hiboyfile/optg12.txt"
+ opt_txt_file2="$hiboyfile2/optg12.txt"
 }
 
 opt_force
@@ -100,8 +109,8 @@ opt_cdn_force () {
 
 opt_force_enable=`nvram get opt_force_enable`
 if [ "$opt_force_enable" != "0" ] ; then
-	logger -t "【script】" "自定义 opt 环境下载地址失效 $opt_force_www"
-	logger -t "【script】" "建议使用免费CDN https://gcore.jsdelivr.net/gh/HiboyHiboy"
+	logger -t "【script】" "自定义 opt 环境下载地址失效 $opt_force_file"
+	logger -t "【script】" "建议使用免费CDN https://gcore.jsdelivr.net/gh/HiboyHiboy/opt-file"
 else
 	if [ ! -z "$(ping -4 -c 1 -w 4 -q "gcore.jsdelivr.net" | head -n1 | sed -r 's/\(|\)/|/g' | awk -F'|' '{print $2}')" ] ; then
 	opt_force_enable="1" && nvram set opt_force_enable="$opt_force_enable"
@@ -109,9 +118,10 @@ else
 	if [ "$opt_download_enable" != "0" ] ; then
 		opt_download_enable="0" && nvram set opt_download_enable="$opt_download_enable"
 	fi
-	opt_force_www="https://gcore.jsdelivr.net/gh/HiboyHiboy" && nvram set opt_force_www="$opt_force_www"
+	opt_force_file="https://gcore.jsdelivr.net/gh/HiboyHiboy/opt-file" && nvram set opt_force_file="$opt_force_file"
+	opt_force_script="https://gcore.jsdelivr.net/gh/HiboyHiboy/opt-script" && nvram set opt_force_script="$opt_force_script"
 	logger -t "【script】" "下载地址失效 https://opt.cn2qq.com"
-	logger -t "【script】" "变更使用免费CDN https://gcore.jsdelivr.net/gh/HiboyHiboy"
+	logger -t "【script】" "变更使用免费CDN https://gcore.jsdelivr.net/gh/HiboyHiboy/opt-file"
 	opt_force
 	fi
 fi
@@ -208,7 +218,7 @@ ln_mkflie="off"
 [ "$(md5sum /opt/etc/passwd | awk '{print $1;}')" != "$(md5sum /etc/passwd | awk '{print $1;}')" ] && ln_mkflie="on"
 [ -d /opt/opt_backup ] && [ "$(md5sum /opt/opt_backup/etc/passwd | awk '{print $1;}')" != "$(md5sum /etc/passwd | awk '{print $1;}')" ] && ln_mkflie="on"
 [ "$ln_mkflie" == "off" ] && return
-# 创建软链 /usr/bin/find /opt/opt_backup/ -type l -exec ls -l {} \; | awk -F 'opt_backup' '{print $2}' > /opt/ln.txt ; sed -Ei "s/ -> /丨/g" /opt/ln.txt ;
+# 创建软链 /usr/bin/find /opt/ -type l -exec ls -l {} \; | grep -v opt_backup | awk '{print substr($0,58)}' > /opt/ln.txt ; sed -Ei "s/ -> /丨/g" /opt/ln.txt ; sed -Ei "s@^/opt@@g" /opt/ln.txt ;
 logger -t "【opt】" "ln 链接文件失效，开始恢复 ln 链接文件为原始文件"
 echo '#!/bin/bash' > /opt/ln_mkflie.sh
 chmod 777 /opt/ln_mkflie.sh
@@ -749,13 +759,20 @@ logger -t "【opt】" "以上两个数据如出现占用100%时，则 opt 数据
 }
 
 opt_file () {
-
+opt_mini=$1
+logger -t "【opt】" "opt $opt_mini 下载/opt/opt.tgz"
 if [ ! -f /opt/opt.tgz ]  ; then
 	rm -f /opt/opt.tgz*
 	logger -t "【opt】" "/opt 可用空间：$(df -m | grep '% /opt' | awk 'NR==1' | awk -F' ' '{print $4}')M"
 	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
-	[ ! -z "$optPath" ] && { logger -t "【opt】" "下载: $opttmpfile" ; wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
-	if [ ! -z "$(grep ' /opt ' /proc/mounts | grep /dev)" ] || [ ! -z "$(grep ' /opt ' /proc/mounts | grep " cifs ")" ]  ; then
+	if [ ! -z "$optPath" ] || [ "$opt_mini" = "mini" ] ; then
+	opt_mini="mini"
+	echo "opt_mini"
+	fi
+	[ "$opt_mini" = "mini" ] && { logger -t "【opt】" "下载: $opttmpfile" ; wgetcurl.sh '/opt/opt.tgz' "$opttmpfile" "$opttmpfile2"; }
+	if [ ! -z "$(grep ' /opt ' /proc/mounts | grep /dev)" ] || [ ! -z "$(grep ' /opt ' /proc/mounts | grep " cifs ")" ] ; then
+	if [ "$opt_mini" = "full" ] ; then
+		echo "opt_full"
 		for optupanfileN in $(seq 0 $optupanfileS) ; do
 		optupanfileN="00""$optupanfileN"
 		optupanfileN_l="$(echo -n $optupanfileN | wc -c)"
@@ -773,9 +790,10 @@ if [ ! -f /opt/opt.tgz ]  ; then
 			rm -f /opt/opt.tgz.*
 		fi
 	fi
+	fi
 	[ -f /opt/opt.tgz ] && logger -t "【opt】" "/opt/opt.tgz 下载完成，开始解压" || logger -t "【opt】" "/opt/opt.tgz 下载失败！"
 else
-	logger -t "【opt】" "/opt/opt.tgz 已经存在，开始解压"
+	logger -t "【opt】" "/opt/opt.tgz 已经存在，开始解压，需 5-15 分钟时间，解压时可能会出现程序不能运行的情况"
 fi
 if [ -f /opt/opt.tgz ]  ; then
 tar -xzvf /opt/opt.tgz -C /opt ; cd /opt
@@ -788,10 +806,12 @@ sync
 }
 
 opt_wget () {
+opt_mini=$1
 #opt检查更新
 upopt
 if [ -s /tmp/opti.txt ] && [ "$(cat /tmp/opti.txt)"x != "$(cat /opt/opti.txt)"x ] && [ "$upopt_enable" = "1" ] && [ -f /tmp/opti.txt ] ; then
 	logger -t "【opt】" "opt 需要更新, 自动启动更新"
+	#rm -rf /opt/opt_backup/*
 	rm -rf /opt/opti.txt /opt/opt_backup/opti.txt
 	rm -rf /opt/lnmp.txt
 	rm -rf /opt/opt.tgz
@@ -802,14 +822,8 @@ if [ "$optw_enable" != "2" ] ; then
 	nvram commit
 fi
 if [ ! -f "/opt/opti.txt" ] ; then
-	logger -t "【opt】" "自动安装（覆盖 opt 文件夹）"
-	logger -t "【opt】" "opt 第一次下载/opt/opt.tgz"
-	opt_file
-	if [ ! -s "/opt/opti.txt" ] ; then
-		logger -t "【opt】" "/opt/opt.tgz 下载失败"
-		logger -t "【opt】" "opt 第二次下载/opt/opt.tgz"
-		opt_file
-	fi
+	logger -t "【opt】" "自动安装 opt $opt_mini （覆盖 opt 文件夹）"
+	opt_file "$opt_mini"
 	opt_Available
 	if [ -s "/opt/opti.txt" ] ; then
 		logger -t "【opt】" "/opt 解压完成"
@@ -821,16 +835,14 @@ if [ ! -f "/opt/opti.txt" ] ; then
 	optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 	if [ -z "$optPath" ] && [ -s "/opt/opt.tgz" ] ; then
 		logger -t "【opt】" "备份文件到 /opt/opt_backup"
-		mkdir -p /opt/opt_backup
-		tar -xzvf /opt/opt.tgz -C /opt/opt_backup ; cd /opt
+		mkdir -p /opt/opt_backup/bin /opt/opt_backup/sbin /opt/opt_backup/lib /opt/opt_backup/etc
+		cp -r -f -a /opt/bin/* /opt/opt_backup/bin
+		cp -r -f -a /opt/sbin/* /opt/opt_backup/sbin
+		cp -r -f -a /opt/lib/* /opt/opt_backup/lib
+		cp -r -f -a /opt/etc/* /opt/opt_backup/etc
+		cp -f /opt/opti.txt /opt/opt_backup/opti.txt
+		#libmd5_backup
 		opt_Available
-		if [ -s "/opt/opt_backup/opti.txt" ] ; then
-			logger -t "【opt】" "/opt/opt_backup 解压完成"
-			# flush buffers
-			sync
-		else
-			logger -t "【opt】" "/opt/opt_backup 解压失败"
-		fi
 	fi
 	ln_check
 fi
@@ -896,13 +908,18 @@ logger -t "【libmd5_恢复】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
 /usr/bin/find /opt/opt_backup/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
 /usr/bin/find /opt/opt_backup/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | grep -v "/opt/opt_backup/bin/nps/conf" | grep -v "/opt/opt_backup/bin/ss_tproxy" | grep -v "/opt/opt_backup/bin/kcptun" | grep -v "/opt/opt_backup/bin/chinadns-ng" | sort -r  >> /tmp/md5/libmd5f
+/usr/bin/find /opt/opt_backup/sbin/ -perm '-u+x' -name '*' | grep -v "/opt/opt_backup/sbin/ifconfig" | grep -v "/opt/opt_backup/sbin/route" | sort -r  > /tmp/md5/libmd5f
 /usr/bin/find /opt/opt_backup/etc/init.d/ -perm '-u+x' -name '*' | grep -v "S10iptables" | grep -v Sh61_lnmp.sh | sort -r  >> /tmp/md5/libmd5f
 while read line
 do
 if [ -f "$line" ] ; then
-	MD5_backup="$(md5sum $line | awk '{print $1;}')"
 	b_line="$(echo $line | sed  "s@^/opt/opt_backup/@/opt/@g")"
+	if [ -f "$b_line" ] ; then
+	MD5_backup="$(md5sum $line | awk '{print $1;}')"
 	MD5_OPT="$(md5sum $b_line | awk '{print $1;}')"
+	else
+	MD5_backup="1" ; MD5_OPT="2" ;
+	fi
 	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
 	logger -t "【libmd5_恢复】" "【 $b_line 】，md5不匹配！"
 	logger -t "【libmd5_恢复】" "恢复文件【 $line 】"
@@ -931,13 +948,18 @@ logger -t "【libmd5_备份】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
 /usr/bin/find /opt/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
 /usr/bin/find /opt/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | grep -v "/opt/bin/nps/conf" | grep -v "/opt/bin/ss_tproxy" | grep -v "/opt/bin/kcptun" | grep -v "/opt/bin/chinadns-ng" | sort -r  >> /tmp/md5/libmd5f
+/usr/bin/find /opt/sbin/ -perm '-u+x' -name '*' | grep -v "/opt/sbin/ifconfig" | grep -v "/opt/sbin/route" | sort -r  >> /tmp/md5/libmd5f
 #/usr/bin/find /opt/etc/init.d/ -perm '-u+x' -name '*' | grep -v "S10iptables" | sort -r  >> /tmp/md5/libmd5f
 while read line
 do
 if [ -f "$line" ] ; then
-	MD5_backup="$(md5sum $line | awk '{print $1;}')"
 	b_line="$(echo $line | sed  "s@^/opt/@/opt/opt_backup/@g")"
+	if [ -f "$b_line" ] ; then
+	MD5_backup="$(md5sum $line | awk '{print $1;}')"
 	MD5_OPT="$(md5sum $b_line | awk '{print $1;}')"
+	else
+	MD5_backup="1" ; MD5_OPT="2" ;
+	fi
 	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
 	logger -t "【libmd5_备份】" "【 $b_line 】，md5不匹配！"
 	logger -t "【libmd5_备份】" "备份文件【 $line 】"
@@ -1043,23 +1065,35 @@ stop)
 	;;
 start)
 	mount_check
-	[ "$optinstall" = "1" ] && opt_wget
+	[ "$optinstall" = "1" ] && opt_wget "mini"
+	[ "$optinstall" = "2" ] && opt_wget "full"
 	;;
 check)
 	mount_check
-	[ "$optinstall" = "1" ] && opt_wget
+	[ "$optinstall" = "1" ] && opt_wget "mini"
+	[ "$optinstall" = "2" ] && opt_wget "full"
 	;;
 check_opt)
 	mount_check
 	;;
 optwget)
 	mount_check
-	opt_wget
+	[ "$optinstall" != "2" ] && opt_wget "mini"
+	[ "$optinstall" = "2" ] && opt_wget "full"
+	;;
+opt_mini_wget)
+	mount_check
+	opt_wget "mini"
+	;;
+opt_full_wget)
+	mount_check
+	opt_wget "full"
 	;;
 upopt)
 	mount_check
-	if [ "$optinstall" = "1" ] || [ "$upopt_enable" = "1" ] ; then
-		opt_wget
+	if [ "$upopt_enable" = "1" ] ; then
+		[ "$optinstall" = "1" ] && opt_wget "mini"
+		[ "$optinstall" = "2" ] && opt_wget "full"
 	else
 		upopt
 	fi
@@ -1068,7 +1102,8 @@ reopt)
 	mount_check
 	rm -rf /opt/opti.txt /opt/opt_backup/opti.txt
 	rm -rf /opt/lnmp.txt
-	opt_wget
+	[ "$optinstall" != "2" ] && opt_wget "mini"
+	[ "$optinstall" = "2" ] && opt_wget "full"
 	[ -f /opt/lcd.tgz ] && untar.sh "/opt/lcd.tgz" "/opt/" "/opt/bin/lcd4linux"
 	;;
 libmd5_check)
@@ -1114,8 +1149,9 @@ re_ca_tmp)
 	;;
 *)
 	mount_check
-	if [ "$optinstall" = "1" ] || [ "$upopt_enable" = "1" ] ; then
-		opt_wget
+	if [ "$upopt_enable" = "1" ] ; then
+		[ "$optinstall" = "1" ] && opt_wget "mini"
+		[ "$optinstall" = "2" ] && opt_wget "full"
 	fi
 	;;
 esac

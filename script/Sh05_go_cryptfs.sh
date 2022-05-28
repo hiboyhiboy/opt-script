@@ -186,11 +186,20 @@ for h_i in $(seq 1 2) ; do
 wgetcurl_file "$SVC_PATH" "$hiboyfile/gocryptfs" "$hiboyfile2/gocryptfs"
 done
 if [ ! -s "/opt/bin/fusermount" ] ; then
-	logger -t "【gocryptfs】" "找不到 /opt/bin/fusermount ，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh optwget
+	logger -t "【gocryptfs】" "找不到 /opt/bin/fusermount ，安装 opt mini 程序"
+	/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
+fi
+if [ ! -s "/opt/bin/fusermount" ] ; then
+	logger -t "【gocryptfs】" "找不到 $SVC_PATH，正在尝试[opkg update; opkg install fuse-utils]安装"
+	opkg update
+	opkg install fuse-utils
+	if [ ! -s "$SVC_PATH" ] ; then
+		logger -t "【gocryptfs】" "找不到 $SVC_PATH，安装 opt full 程序"
+		/etc/storage/script/Sh01_mountopt.sh opt_full_wget
+	fi
 fi
 if [ ! -s "$SVC_PATH" ] || [ ! -s "/opt/bin/fusermount" ] ; then
-	logger -t "【gocryptfs】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
+	logger -t "【gocryptfs】" "找不到 $SVC_PATH，需要手动安装 opt 后输入[opkg update; opkg install fuse-utils]安装"
 	logger -t "【gocryptfs】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && gocryptfs_restart x
 fi
 get_tg_pass

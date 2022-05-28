@@ -191,8 +191,8 @@ cp -f /etc/storage/display_lcd4linux_script.sh /tmp/lcd4linux.conf
 SVC_PATH=/opt/bin/lcd4linux
 chmod 777 "$SVC_PATH"
 if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【相框显示】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh optwget
+	logger -t "【相框显示】" "找不到 $SVC_PATH，安装 opt full 程序"
+	/etc/storage/script/Sh01_mountopt.sh opt_full_wget
 fi
 [[ "$(lcd4linux -h 2>&1 | wc -l)" -lt 2 ]] && /etc/storage/script/Sh01_mountopt.sh libmd5_check
 if [ ! -s "$SVC_PATH" ] ; then

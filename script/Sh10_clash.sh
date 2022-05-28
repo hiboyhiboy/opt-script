@@ -23,6 +23,9 @@ app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
 clash_secret=`nvram get app_119`
 app_120=`nvram get app_120`
+if [ "$app_120" != "2" ]  ; then
+curltest=`which curl`
+fi
 log_level=`nvram get app_121`
 clash_mode_x=`nvram get app_122`
 [ -z $clash_mode_x ] && clash_mode_x=0 && nvram set app_122=0
@@ -119,7 +122,9 @@ clash_get_status () {
 A_restart=`nvram get clash_status`
 B_restart="$clash_enable$chinadns_enable$chinadns_ng_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114$app_78$ss_ip46"
 B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")""$(cat /etc/storage/app_33.sh | grep -v '^#' | grep -v "^$")"
-[ "$app_120" == "2" ] && B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
+if [ -z "$curltest" ] || [ "$app_120" == "2" ] ; then
+B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
+fi
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
 [ "$(nvram get app_86)" = "clash_wget_geoip" ] && update_geoip
 if [ "$(nvram get app_86)" = "clash_save_yml" ] ; then
@@ -145,7 +150,7 @@ if [ "$A_restart" != "$B_restart" ] ; then
 else
 	needed_restart=0
 fi
-[ "$app_120" != "2" ] && clash_get_2_status
+[ ! -z "$curltest" ] && [ "$app_120" != "2" ] && clash_get_2_status
 }
 
 clash_get_2_status () {
@@ -252,6 +257,7 @@ fi
 done
 clash_v=$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $2;}')
 [ -z "$clash_v" ] && clash_v=$($SVC_PATH -v)
+[ "$clash_v" == "Meta" ] && clash_v="$clash_v""_""$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $3;}')"
 nvram set clash_v="$clash_v"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【clash】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
@@ -552,7 +558,9 @@ else
 	logger -t "【clash】" "下载 clash 配置完成！"
 	rm -f $yml_tmp
 fi
-[ "$app_120" == "2" ] && nvram set clash_status=wget_yml
+if [ -z "$curltest" ] || [ "$app_120" == "2" ] ; then
+nvram set clash_status=wget_yml
+fi
 logger -t "【clash】" "服务器订阅：更新完成"
 logger -t "【clash】" "请按F5或刷新 web 页面刷新配置"
 }
@@ -971,7 +979,9 @@ logger -t "【clash】" "初始化 clash 双开 配置完成！实际运行配�
 }
 
 reload_api () {
-[ "$app_120" == "2" ] && return
+if [ -z "$curltest" ] || [ "$app_120" == "2" ] ; then
+return
+fi
 [ -z "`pidof clash`" ] && return
 #api热重载
 reload_yml "check"
@@ -986,27 +996,12 @@ Sh99_ss_tproxy.sh x_resolve_svraddr "Sh10_clash.sh"
 
 reload_yml () {
 [ "$(nvram get app_86)" = "clash_save_yml" ] && nvram set app_86=0
-[ "$app_120" == "2" ] && return
+if [ -z "$curltest" ] || [ "$app_120" == "2" ] ; then
+return
+fi
 [ -z "`pidof clash`" ] && return
 
 if [ "$1" == "check" ] ; then
-curltest=`which curl`
-if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	logger -t "【clash】" "找不到 curl ，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh optwget
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		logger -t "【clash】" "找不到 curl ，需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
-		return 1
-	fi
-fi
-# if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-# jq_check
-# if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	# logger -t "【clash】" "错误！找不到 jq 程序"
-	# return 1
-# fi
-# fi
 mkdir -p /etc/storage/clash
 secret="$(yq r /opt/app/clash/config/config.yaml secret)"
 rm_temp
@@ -1014,20 +1009,6 @@ rm_temp
 api_port="$(yq r /opt/app/clash/config/config.yaml external-controller | awk -F ':' '{print $2}')"
 rm_temp
 fi
-# if [ "$1" == "save" ] ; then
-# logger -t "【clash】" "保存web节点选择"
-# curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).name' > /tmp/Selector_name.txt
-# [ -s /tmp/Selector_name.txt ] && { rm -f /etc/storage/clash/Selector_name.txt ;  cat /tmp/Selector_name.txt | while read now_txt; do enc "$now_txt" >> /etc/storage/clash/Selector_name.txt ; done ; }
-# curl -H "Authorization: Bearer $secret" 'http://127.0.0.1:'"$api_port"'/proxies' | jq --raw-output '(.proxies[]|select(.type=="Selector")).now' > /tmp/Selector_now.txt
-# [ -s /tmp/Selector_now.txt ] && cp -f /tmp/Selector_now.txt /etc/storage/clash/Selector_now.txt
-# rm -f /tmp/Selector_name.txt /tmp/Selector_now.txt
-# logger -t "【clash】" "保存web节点选择，完成！"
-# fi
-# if [ "$1" == "set" ] ; then
-# logger -t "【clash】" "恢复web节点选择"
-# [ -s /etc/storage/clash/Selector_name.txt ] && [ -s /etc/storage/clash/Selector_now.txt ] && eval "$(awk 'NR==FNR{a[NR]=$0}NR>FNR{print "curl -X PUT -w \"\%\{http_code\}\" -H \"Authorization: Bearer '$secret'\" -H \"Content-Type: application\/json\" -d \047\{\"name\": \""$0"\"\}\047  \047http://127.0.0.1:'"$api_port"'/proxies/"a[FNR]"\047"}' /etc/storage/clash/Selector_name.txt /etc/storage/clash/Selector_now.txt)"
-# logger -t "【clash】" "恢复web节点选择，完成！"
-# fi
 if [ "$1" == "reload" ] ; then
 logger -t "【clash】" "api热重载配置"
 curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config/config.yaml"}' 'http://127.0.0.1:'"$api_port"'/configs?force=true'

@@ -343,7 +343,7 @@ serverchan_desp=`nvram get serverchan_desp`
 if [ ! -z "$serverchan_text" ] ; then
 curltest=`which curl`
 if [ -z "$curltest" ] ; then
-/etc/storage/script/Sh01_mountopt.sh optwget
+/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
 fi
 curltest=`which curl`
 if [ -z "$curltest" ] ; then

@@ -153,8 +153,8 @@ huaweidns_start () {
 check_webui_yes
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-	logger -t "【huaweidns动态域名】" "找不到 curl ，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh optwget
+	logger -t "【huaweidns动态域名】" "找不到 curl ，安装 opt mini 程序"
+	/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
 	initopt
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then

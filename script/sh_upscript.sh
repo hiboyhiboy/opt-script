@@ -37,7 +37,7 @@ fi
 if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2022-04-04"
+	nvram set scripto="2022-05-28"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -62,6 +62,7 @@ if [ ! -z "$c_line" ] && [ ! -z "$file_name" ] ; then
 			mv -f /tmp/script/$file_name.sh /etc/storage/script/$file_name.sh
 			if [ "$file_name"x = "initx" ] ; then
 				/etc/storage/script/Sh01_mountopt.sh opt_force
+				echo -n "" > /tmp/script/wgetcurl.sh
 				source /etc/storage/script/init.sh
 			fi
 		else

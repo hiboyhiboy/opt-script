@@ -178,15 +178,19 @@ set_app_list_off
 SVC_PATH=/opt/bin/cryfs
 chmod 777 "$SVC_PATH"
 if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【cryfs】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh optwget
+	logger -t "【cryfs】" "找不到 $SVC_PATH，安装 opt mini 程序"
+	/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
 fi
 if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【cryfs】" "找不到 $SVC_PATH，opkg update; opkg install cryfs 安装程序"
+	logger -t "【cryfs】" "找不到 $SVC_PATH，正在尝试[opkg update; opkg install cryfs]安装"
 	opkg update
 	opkg install cryfs
 	if [ ! -s "$SVC_PATH" ] ; then
-		logger -t "【cryfs】" "找不到 $SVC_PATH ，需要手动安装 opt 后输入[opkg update; opkg install cryfs]"
+		logger -t "【cryfs】" "找不到 $SVC_PATH，安装 opt full 程序"
+		/etc/storage/script/Sh01_mountopt.sh opt_full_wget
+	fi
+	if [ ! -s "$SVC_PATH" ] ; then
+		logger -t "【cryfs】" "找不到 $SVC_PATH，需要手动安装 opt 后输入[opkg update; opkg install cryfs]安装"
 		logger -t "【cryfs】" "启动失败, 30 秒后自动尝试重新启动" && sleep 30 && cryfs_restart x
 	else
 		logger -t "【cryfs】" "找到 $SVC_PATH"

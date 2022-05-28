@@ -812,7 +812,7 @@ if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
 	rm -f /opt/bin/jq
-	/etc/storage/script/Sh01_mountopt.sh optwget
+	/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
 if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	#opkg update
 	#opkg install jq
