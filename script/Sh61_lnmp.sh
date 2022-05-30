@@ -426,6 +426,8 @@ eval "sh_onmp8.sh install_typecho stop $cmd_log2"
 eval "sh_onmp8.sh install_zblog stop $cmd_log2"
 eval "sh_onmp8.sh install_dzzoffice stop $cmd_log2"
 
+[ -d /opt/lib/php8 ] && { rm -rf /opt/lib/php /opt/opt_backup/lib/php ; ln -sf /opt/lib/php8 /opt/lib/php ; }
+
 logger -t "【LNMP】" "运行 nginx+php+mysql 环境"
 if [ "$default_enable" = "1" ] || [ "$default_enable" = "2" ] ; then
 	eval "sh_onmp8.sh install_default $default_port n $cmd_log2"

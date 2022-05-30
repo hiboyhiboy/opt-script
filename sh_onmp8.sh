@@ -641,7 +641,7 @@ default_mimetype = "text/html"
 ; UNIX: "/path1:/path2"
 ;include_path = ".:/php/includes"
 user_dir =
-extension_dir = "/opt/lib/php"
+extension_dir = "/opt/lib/php8"
 enable_dl = On
 ;cgi.force_redirect = 1
 ;cgi.nph = 1
@@ -1027,7 +1027,7 @@ chdir = /
 ; exectute php code.
 ; Note: set an empty value to allow all extensions.
 ; Default Value: .php
-;security.limit_extensions = .php .php3 .php4 .php5
+;security.limit_extensions = .php .php3 .php4 .php5 .php6 .php7
 
 ; Pass environment variables like LD_LIBRARY_PATH. All $VARIABLEs are taken from
 ; the current environment.

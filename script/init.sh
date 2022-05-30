@@ -309,7 +309,7 @@ fi
 
 wgetcurl_file () {
 if [ ! -s "$1" ] ; then
-logger -t "【下载】" "找不到 $output ，重新下载数据，请稍后"
+logger -t "【下载】" "找不到 $1 ，重新下载数据，请稍后"
 wgetcurl.sh $*
 fi
 }
