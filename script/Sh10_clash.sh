@@ -23,9 +23,9 @@ app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
 clash_secret=`nvram get app_119`
 app_120=`nvram get app_120`
-if [ "$app_120" != "2" ]  ; then
 curltest=`which curl`
-fi
+secret=""
+api_port=""
 log_level=`nvram get app_121`
 clash_mode_x=`nvram get app_122`
 [ -z $clash_mode_x ] && clash_mode_x=0 && nvram set app_122=0
@@ -220,8 +220,6 @@ kill_ps "$scriptname keep"
 nvram set ss_internet="0"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
-# 保存web节点选择
-#reload_yml "check" ; reload_yml "save"
 killall clash
 killall -9 clash
 restart_dhcpd
@@ -364,8 +362,6 @@ logger -t "【clash】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清
 # 透明代理
 fi
 nvram set ss_internet="1"
-# 恢复web节点选择
-#reload_yml "check" ; reload_yml "set"
 clash_get_clash_webs
 # 下载clash_webs
 if [ ! -f "/opt/app/clash/clash_webs/index.html" ] ; then
@@ -985,10 +981,8 @@ fi
 [ -z "`pidof clash`" ] && return
 #api热重载
 reload_yml "check"
-#reload_yml "save"
 update_yml
 reload_yml "reload"
-#reload_yml "set"
 Sh99_ss_tproxy.sh auser_check "Sh10_clash.sh"
 ss_tproxy_set "Sh10_clash.sh"
 Sh99_ss_tproxy.sh x_resolve_svraddr "Sh10_clash.sh"
@@ -1005,9 +999,10 @@ if [ "$1" == "check" ] ; then
 mkdir -p /etc/storage/clash
 secret="$(yq r /opt/app/clash/config/config.yaml secret)"
 rm_temp
-#secret="$clash_secret"
+[ -z "$secret" ] && secret="$clash_secret"
 api_port="$(yq r /opt/app/clash/config/config.yaml external-controller | awk -F ':' '{print $2}')"
 rm_temp
+[ -z "$api_port" ] && api_port="$(echo $clash_ui | awk -F':' '{print $2}')"
 fi
 if [ "$1" == "reload" ] ; then
 logger -t "【clash】" "api热重载配置"
