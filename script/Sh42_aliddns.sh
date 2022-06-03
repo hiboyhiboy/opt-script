@@ -328,7 +328,6 @@ done
 killall nslookup
 if [ -s /tmp/arNslookup/$$ ] ; then
 cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
@@ -343,6 +342,7 @@ else
 		fi
 	fi
 fi
+rm -f /tmp/arNslookup/$$
 }
 
 arNslookup6() {
@@ -357,7 +357,6 @@ done
 killall nslookup
 if [ -s /tmp/arNslookup/$$ ] ; then
 	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-	rm -f /tmp/arNslookup/$$
 else
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
@@ -372,6 +371,7 @@ else
 		fi
 	fi
 fi
+rm -f /tmp/arNslookup/$$
 }
 
 # 更新记录信息
