@@ -176,6 +176,7 @@ download_k_wait () {
 }
 
 download_curl () {
+	rm -f "$output"
 	curl_path=$*
 	echo $check_time > /tmp/wait/check/$check_time
 	{ check="`$curl_path --max-redirs $check_time --user-agent "$user_agent" -L -s -w "%{http_code}" -o $output`" ; echo "$check" > /tmp/wait/check/$check_time ; } &
@@ -191,6 +192,7 @@ download_curl () {
 }
 
 download_wget () {
+	rm -f "$output"
 	wget_path=$*
 	echo $check_time > /tmp/wait/check/$check_time
 	{ $wget_path --user-agent "$user_agent" -O $output -T "$check_time" -t 10 ; [ "$?" == "0" ] && check=200 || check=404 ; echo "$check" > /tmp/wait/check/$check_time ; } &

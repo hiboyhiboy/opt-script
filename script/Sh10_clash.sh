@@ -329,17 +329,16 @@ chmod 644 /etc/ssl/certs -R
 chmod 777 /etc/ssl/certs
 su_cmd2="$SVC_PATH -d /opt/app/clash/config"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
-sleep 7
-[ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
-[ -z "`pidof clash`" ] && logger -t "【clash】" "启动失败, 注意检clash是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
-clash_get_status
+sleep 3
 if [ "$clash_mixed" == "1" ] ; then
 logger -t "【clash】" "双开 clash 开启 mixed 代理"
 su_cmd2="$SVC_PATH -d /opt/app/clash/config2"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
-
 fi
-
+sleep 3
+[ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
+[ -z "`pidof clash`" ] && logger -t "【clash】" "启动失败, 注意检clash是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
+clash_get_status
 
 if [ "$clash_follow" = "1" ] ; then
 Sh99_ss_tproxy.sh auser_check "Sh10_clash.sh"
@@ -700,7 +699,9 @@ app_33="/etc/storage/app_33.sh"
 if [ ! -f "$app_33" ] || [ ! -s "$app_33" ] ; then
 	cat > "$app_33" <<-\EEE
 #!/bin/bash
-[ -z "$config_yml" ] && config_yml="/opt/app/clash/config/config.yaml"
+if [ "$1" == "config1" ] ; then
+# 更新修改 ① 启动 clash 的配置代理节点
+config_yml="/opt/app/clash/config/config.yaml"
 # 先删除旧配置
 echo '- command: delete
   path: proxies(name==V2Ray本地代理)
@@ -746,6 +747,11 @@ echo '- command: update
   value:
     SS本地代理
 ' | yq w -i -s - $config_yml
+fi
+if [ "$1" == "config2" ] ; then
+# 双开 clash 时，更新修改 ② 启动 clash 的配置代理节点
+config_yml="/opt/app/clash/config2/config.yaml"
+fi
 EEE
 	chmod 755 "$app_33"
 fi
@@ -871,7 +877,7 @@ rm -f /opt/app/clash/config/config.yml
 ln -sf $config_yml /opt/app/clash/config/config.yml
 if [ "$clash_input" == "1" ] ; then
 logger -t "【clash】" "配置 clash 添加本地代理节点"
-[ ! -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && source /etc/storage/app_33.sh
+[ ! -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && /etc/storage/app_33.sh "config1"
 if [ ! -s $config_yml ] ; then
 logger -t "【clash】" "yq 添加本地代理节点 配置错误！请检查配置！"
 cp -f /etc/storage/app_20.sh $config_yml
@@ -950,6 +956,14 @@ rm_temp
 cp -f /opt/app/clash/config/config.yaml $config_2_yml
 rm -f /opt/app/clash/config2/config.yml
 ln -sf $config_2_yml /opt/app/clash/config2/config.yml
+if [ "$clash_input" == "1" ] ; then
+logger -t "【clash】" "配置 clash 添加本地代理节点"
+[ ! -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && /etc/storage/app_33.sh "config2"
+if [ ! -s $config_2_yml ] ; then
+logger -t "【clash】" "yq 添加本地代理节点 配置错误！请检查配置！"
+cp -f /opt/app/clash/config/config.yaml $config_2_yml
+fi
+fi
 yq d -i $config_2_yml port
 rm_temp
 yq d -i $config_2_yml socks-port
@@ -969,7 +983,6 @@ rm_temp
 yq w -i $config_2_yml mixed-port 7893
 rm_temp
 yq w -i $config_2_yml external-controller "0.0.0.0:9091"
-
 logger -t "【clash】" "初始化 clash 双开 配置完成！实际运行配置：/opt/app/clash/config2/config.yaml"
 
 }
