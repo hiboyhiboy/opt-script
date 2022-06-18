@@ -6,7 +6,7 @@ menu0_title="配置扩展环境  ShadowSocks 花生壳内网版 广告屏蔽功�
 menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端    相框设置 goflyway virtualhere 自建微信推送"
 menu_title2="SS配置 SS节点 ss_tproxy Kcptun SS_Server SSR_Server  COW    MEOW SoftEtherVPN hysteria"
 menu_title3="花生壳内网版 Ngrok  frp      DNSPod   huaweidns  Aliddns cloudflare qcloud nps ddnsto"
-menu_title4="Adbyby     ADM    koolproxy  guestkit transocks ipt2socks translate   tgbot tmall cryfs gocryptfs AdGuardHome"
+menu_title4="Adbyby     ADM    koolproxy  guestkit transocks ipt2socks tgbot tmall cryfs gocryptfs AdGuardHome"
 menu_title5="搭建Web环境 v2ray  chinadns chinadns_ng 假装在中国 upd2pro 家庭云提速 filemanager verysync clash"
 ################################
 menu_title_all="$menu_title1 $menu_title2 $menu_title3 $menu_title4 $menu_title5"

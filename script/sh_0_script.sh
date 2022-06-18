@@ -70,8 +70,12 @@ done
 /etc/storage/www_sh/menu_title.sh upver &
 /etc/storage/script/Sh01_mountopt.sh libmd5_check
 /tmp/sh_theme.sh &
+stop_aria
 run_aria
+stop_transmission
 run_transmission
+stop_nfsd
+run_nfsd
 rm -f /tmp/cron_adb.lock
 [ ! -f /etc/storage/PhMain.ini ] && touch /etc/storage/PhMain.ini
 [ ! -f /etc/storage/init.status ] && touch /etc/storage/init.status

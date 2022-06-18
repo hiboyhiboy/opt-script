@@ -262,7 +262,7 @@ if [ -s "/opt/bin/curl" ] && [ ! -s "$output" ] ; then
 	download_curl /opt/bin/curl $url1
 fi
 if [ -s "/usr/sbin/curl" ] && [ ! -s "$output" ] ; then
-	download_curl /opt/bin/curl --capath /etc/ssl/certs $url1
+	download_curl /usr/sbin/curl --capath /etc/ssl/certs $url1
 fi
 if [ -s "/opt/bin/wget" ] && [ ! -s "$output" ] ; then
 	download_wget /opt/bin/wget $url1
