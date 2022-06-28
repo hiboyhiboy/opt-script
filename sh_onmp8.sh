@@ -33,7 +33,7 @@ url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.29.2.zip"
 url_Lychee="https://github.com/electerious/Lychee/archive/master.zip"
 
 # (7) Kodexplorer（可道云aka芒果云在线文档管理器）
-url_Kodexplorer="http://static.kodcloud.com/update/download/kodexplorer4.40.zip"
+url_Kodexplorer="https://static.kodcloud.com/update/download/kodexplorer4.48.zip"
 
 # (8) Typecho (流畅的轻量级开源博客程序)
 url_Typecho="http://typecho.org/downloads/1.1-17.10.30-release.tar.gz"
