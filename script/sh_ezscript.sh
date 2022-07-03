@@ -528,7 +528,7 @@ if [ "$ap" = "1" ] || [ "$1" = "scan" ] ; then
 	logger -t "【连接 AP】" "scan 5g $radio_main"
 	iwpriv $radio_main set SiteSurvey=1
 	sleep 1
-	wds_aplist_5g="$(iwpriv $radio_main get_site_survey)"
+	wds_aplist5g="$(iwpriv $radio_main get_site_survey)"
 	[ ! -z "$(echo "$wds_aplist"| grep "get_site_survey:No BssInfo")" ] && sleep 2 && wds_aplist="$(iwpriv $radio_main get_site_survey)"
 	[ ! -z "$(echo "$wds_aplist"| grep "get_site_survey:No BssInfo")" ] && sleep 3 && wds_aplist="$(iwpriv $radio_main get_site_survey)"
 	aplist_n="$(echo "$wds_aplist5g" | sed -n '2p')"
