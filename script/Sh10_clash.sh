@@ -682,6 +682,7 @@ dns:
       - 240.0.0.0/4
     domain:
       - '+.google.com'
+      - '+.googleapis.com'
       - '+.youtube.com'
       - '+.appspot.com'
       - '+.telegram.com'

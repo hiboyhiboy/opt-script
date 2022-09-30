@@ -795,7 +795,7 @@ rm -f /tmp/vmess/gfw*
 awk '{printf("\,\"%s\"", $1, $1 )}' /tmp/vmess/all_domain.txt > /tmp/vmess/r.gfwlist.conf
 rm -f /tmp/vmess/all_domain.txt
 fi
-[ -s "/tmp/vmess/r.gfwlist.conf" ] && [ -s "/tmp/vmess/mk_vmess.json" ] && sed -Ei 's@"gfwall.com",@"services.googleapis.cn","googleapis.cn"'"$(cat /tmp/vmess/r.gfwlist.conf)"',"geosite:facebook","geosite:twitter","geosite:telegram",@g'  /tmp/vmess/mk_vmess.json
+[ -s "/tmp/vmess/r.gfwlist.conf" ] && [ -s "/tmp/vmess/mk_vmess.json" ] && sed -Ei 's@"gfwall.com",@"services.googleapis.cn","googleapis.cn","translate.googleapis.com"'"$(cat /tmp/vmess/r.gfwlist.conf)"',"geosite:facebook","geosite:twitter","geosite:telegram",@g'  /tmp/vmess/mk_vmess.json
 fi
 }
 
@@ -1566,6 +1566,7 @@ echo '{
           "domain:twitter.com",
           "domain:blogger.com",
           "domain:gmail.com",
+          "domain:translate.googleapis.com",
           "domain:gvt1.com"
         ]
       },
