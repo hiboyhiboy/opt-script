@@ -1720,6 +1720,7 @@ _flush_iptables() {
 flush_iptables() {
 	is_true "$ipv4" && _flush_iptables "iptables"
 	is_true "$ipv6" && _flush_iptables "ip6tables"
+	is_true "$ipv6" && [ ! -z "$(ip6tables -vnL INPUT --line-numbers | grep -Ei "udp *dpt:53 *reject")" ] && ip6tables -D INPUT -p udp --dport 53 -j REJECT
 }
 
 _show_iptables() {
@@ -2294,6 +2295,7 @@ start_iptables() {
 	wifidognx=""
 	wifidogn_manglex=""
 	is_true "$ipv6" && start_iptables_post_rules "ip6tables"
+	is_true "$ipv6" && [ -z "$(ip6tables -vnL INPUT --line-numbers | grep -Ei "udp *dpt:53 *reject")" ] && ip6tables -I INPUT -p udp --dport 53 -j REJECT
 }
 
 gen_include() {

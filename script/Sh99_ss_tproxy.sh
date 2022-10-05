@@ -263,6 +263,8 @@ while true; do
 	fi
 	dnsmasq_file="`ls -p /tmp/ss_tproxy/dnsmasq.d | grep -v tmp | grep -v /`"
 [ ! -z "$dnsmasq_file" ] && echo "$dnsmasq_file" | while read conf_file; do [ "$(cat /tmp/ss_tproxy/dnsmasq.d/$conf_file | grep -c "server=\|ipset=")" == "0" ] &&  rm -f /tmp/ss_tproxy/dnsmasq.d/$conf_file ; done
+	ifconfig -a | grep inet | grep -v inet6 | awk '{print $2}' | tr -d "addr:"​ | while read ip_addr; do echo "-A localaddr $ip_addr"; done | ipset -! restore &>/dev/null
+	ifconfig -a | grep inet6 | awk '{print $3}' | while read ip_addr; do echo "-A localaddr6 $ip_addr"; done | ipset -! restore &>/dev/null
 sleep 60
 done
 }
