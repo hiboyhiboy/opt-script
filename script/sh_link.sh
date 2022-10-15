@@ -223,12 +223,19 @@ vless_link_key_url="$(echo -n "$vless_link_specific" | grep -Eo "key=[^&]*"  | c
 [ ! -z "$vless_link_key_url" ] && vless_link_key="$(printf $(echo -n $vless_link_key_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
 
 vless_link_serviceName="$(echo -n "$vless_link_specific" | grep -Eo "service[Nn]ame=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_serviceName" ] && vless_link_serviceName="$(printf $(echo -n $vless_link_serviceName | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
 
 vless_link_mode="$(echo -n "$vless_link_specific" | grep -Eo "mode=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 [ -z "$vless_link_mode" ] && vless_link_mode="gun"
 
 vless_link_sni="$(echo -n "$vless_link_specific" | grep -Eo "sni=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+if [ -z "$vless_link_sni" ] ; then
+if [ $(echo "$vless_link_remote_host" | grep -Ec '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$') -ne 0 ] || [ $(echo "$vless_link_remote_host" | grep -c '[:]') -ne 0 ] ; then
+[ -z "$vless_link_sni" ] && vless_link_sni="$vless_link_host"
+else
 [ -z "$vless_link_sni" ] && vless_link_sni="$vless_link_remote_host"
+fi
+fi
 
 vless_link_alpn_url="$(echo -n "$vless_link_specific" | grep -Eo "alpn=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 [ ! -z "$vless_link_alpn_url" ] && vless_link_alpn="$(printf $(echo -n $vless_link_alpn_url | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
@@ -333,6 +340,7 @@ case $vless_link_type in
 	;;
 	grpc)
 		vless_link_serviceName="$(echo "$link" | jq -r .path)"
+		[ ! -z "$vless_link_serviceName" ] && vless_link_serviceName="$(printf $(echo -n $vless_link_serviceName | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
 	;;
 esac
 fi
