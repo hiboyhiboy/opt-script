@@ -463,7 +463,7 @@ if [ "$app_74" == "5" ] || [ "$app_74" == "6" ] ; then
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 V2ray-core v5 主程序"
 	[ "$app_74" != "6" ] && nvram set app_74="6" && app_74="6"
 	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray5" "$hiboyfile2/v2ray-v2ray5"
-fi
+else
 if [ "$app_74" == "1" ] || [ "$app_74" == "3" ] ; then
 	[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 V2ray-core 主程序"
@@ -474,6 +474,7 @@ else
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 Xray-core 主程序"
 	[ "$app_74" != "4" ] && nvram set app_74="4" && app_74="4"
 	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+fi
 fi
 done
 if [ -s "$v2ray_path" ] ; then
@@ -571,7 +572,9 @@ else
 	[ "$app_74" == "4" ] && su_cmd2="$v2ray_path run -c /tmp/vmess/mk_vmess.json"
 	[ "$app_74" == "6" ] && su_cmd2="$v2ray_path run -c /tmp/vmess/mk_vmess.json"
 fi
-v2ray_v_tmp=`v2ray -version`
+[ "$app_74" == "3" ] && v2ray_v_tmp=`v2ray -version`
+[ "$app_74" == "4" ] && v2ray_v_tmp=`v2ray version`
+[ "$app_74" == "6" ] && v2ray_v_tmp=`v2ray version`
 v2ray_v=`echo "$v2ray_v_tmp" | grep -Eo "^[^(]+" | sed -n '1p'`
 nvram set v2ray_v="$v2ray_v"
 cd "$(dirname "$v2ray_path")"
