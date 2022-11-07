@@ -230,11 +230,11 @@ vless_link_mode="$(echo -n "$vless_link_specific" | grep -Eo "mode=[^&]*"  | cut
 
 vless_link_sni="$(echo -n "$vless_link_specific" | grep -Eo "sni=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 if [ -z "$vless_link_sni" ] ; then
-if [ $(echo "$vless_link_remote_host" | grep -Ec '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$') -ne 0 ] || [ $(echo "$vless_link_remote_host" | grep -c '[:]') -ne 0 ] ; then
-[ -z "$vless_link_sni" ] && vless_link_sni="$vless_link_host"
-else
-[ -z "$vless_link_sni" ] && vless_link_sni="$vless_link_remote_host"
-fi
+	if [ $(echo "$vless_link_remote_host" | grep -Ec '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$') -ne 0 ] || [ $(echo "$vless_link_remote_host" | grep -c '[:]') -ne 0 ] ; then
+		vless_link_sni="$vless_link_host"
+	else
+		vless_link_sni="$vless_link_remote_host"
+	fi
 fi
 
 vless_link_alpn_url="$(echo -n "$vless_link_specific" | grep -Eo "alpn=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"

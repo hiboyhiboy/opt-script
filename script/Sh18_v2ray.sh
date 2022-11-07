@@ -77,7 +77,6 @@ ss_link_1=`nvram get ss_link_1`
 [ "$ss_link_1" -lt 66 ] && ss_link_1="66" || { [ "$ss_link_1" -ge 66 ] || { ss_link_1="66" ; nvram set ss_link_1="66" ; } ; }
 v2ray_path=`nvram get v2ray_path`
 [ -z $v2ray_path ] && v2ray_path="/opt/bin/v2ray" && nvram set v2ray_path=$v2ray_path
-v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
 geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
 geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
 v2ray_door=`nvram get v2ray_door`
@@ -343,8 +342,8 @@ kill_ps "Sh18_v2ray.sh"
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh18_v2ray.sh"
 [ ! -z "$v2ray_path" ] && kill_ps "$v2ray_path"
-killall v2ray v2ctl v2ray_script.sh
-killall -9 v2ray v2ctl v2ray_script.sh
+killall v2ray v2ray_script.sh
+killall -9 v2ray v2ray_script.sh
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_v2ray"
 kill_ps "_v2ray.sh"
@@ -386,17 +385,15 @@ nvram set ss_internet="2"
 if [ ! -s "$v2ray_path" ] ; then
 	v2ray_path="/opt/bin/v2ray"
 fi
-v2ctl_path="$(cd "$(dirname "$v2ray_path")"; pwd)/v2ctl"
 geoip_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geoip.dat"
 geosite_path="$(cd "$(dirname "$v2ray_path")"; pwd)/geosite.dat"
 chmod 777 "$v2ray_path"
-[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
 if [ ! -s "$v2ray_path" ] ; then
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "找不到 $v2ray_path，安装 opt 程序"
 	/etc/storage/script/Sh01_mountopt.sh start
 fi
-killall v2ray v2ctl v2ray_script.sh
-killall -9 v2ray v2ctl v2ray_script.sh
+killall v2ray v2ray_script.sh
+killall -9 v2ray v2ray_script.sh
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
 Mem_lt=100000
@@ -461,12 +458,21 @@ logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空
 fi
 v2ray_get_releases
 for h_i in $(seq 1 2) ; do
-[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+if [ "$app_74" == "5" ] || [ "$app_74" == "6" ] ; then
+	[[ "$(v2ray help 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 V2ray-core v5 主程序"
+	[ "$app_74" != "6" ] && nvram set app_74="6" && app_74="6"
+	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray5" "$hiboyfile2/v2ray-v2ray5"
+fi
 if [ "$app_74" == "1" ] || [ "$app_74" == "3" ] ; then
-	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 V2ray-core 主程序" && [ "$app_74" != "3" ] && nvram set app_74="3" && app_74="3"
+	[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 V2ray-core 主程序"
+	[ "$app_74" != "3" ] && nvram set app_74="3" && app_74="3"
 	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray" "$hiboyfile2/v2ray-v2ray"
 else
-	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 Xray-core 主程序" && [ "$app_74" != "4" ] && nvram set app_74="4" && app_74="4"
+	[[ "$(v2ray help 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 Xray-core 主程序"
+	[ "$app_74" != "4" ] && nvram set app_74="4" && app_74="4"
 	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
 fi
 done
@@ -526,6 +532,8 @@ fi
 if [ "$v2ray_http_enable" = "1" ] && [ ! -z "$v2ray_http_config" ] ; then
 	[ "$v2ray_http_format" = "1" ] && su_cmd2="$v2ray_path -format json -config $v2ray_http_config"
 	[ "$v2ray_http_format" = "2" ] && su_cmd2="$v2ray_path -format pb  -config $v2ray_http_config"
+	[ "$app_74" == "4" ] && su_cmd2="$v2ray_path run -c $v2ray_http_config"
+	[ "$app_74" == "6" ] && su_cmd2="$v2ray_path run -c $v2ray_http_config"
 else
 	if [ "$app_default_config" = "1" ] ; then
 	logger -t "【v2ray】" "不改写配置，直接使用原始配置启动！（有可能端口不匹配导致功能失效）"
@@ -560,6 +568,8 @@ else
 	chmod 777 /etc/storage/v2ray_config_script.sh
 	chmod 777 /opt/bin
 	su_cmd2="$v2ray_path -config /tmp/vmess/mk_vmess.json -format json"
+	[ "$app_74" == "4" ] && su_cmd2="$v2ray_path run -c /tmp/vmess/mk_vmess.json"
+	[ "$app_74" == "6" ] && su_cmd2="$v2ray_path run -c /tmp/vmess/mk_vmess.json"
 fi
 v2ray_v_tmp=`v2ray -version`
 v2ray_v=`echo "$v2ray_v_tmp" | grep -Eo "^[^(]+" | sed -n '1p'`
@@ -2089,11 +2099,16 @@ nvram set app_74="4" ; app_74="4"
 link_get="v2ray"
 logger -t "【v2ray】" "自动下载 Xray-core 主程序"
 fi
+if [ "$app_74" == "5" ]; then
+nvram set app_74="6" ; app_74="6"
+link_get="v2ray-v2ray5"
+logger -t "【v2ray】" "自动下载 Xray-core v5 主程序"
+fi
 if [ ! -z "$link_get" ] ; then
 wgetcurl_file "$v2ray_path""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
-killall v2ray v2ctl v2ray_script.sh
-killall -9 v2ray v2ctl v2ray_script.sh
+killall v2ray v2ray_script.sh
+killall -9 v2ray v2ray_script.sh
 rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
 mv -f "$v2ray_path""_file" "$v2ray_path"
 fi
@@ -2122,7 +2137,7 @@ v2raykeep)
 updatev2ray)
 	v2ray_restart o
 	[ "$v2ray_enable" = "1" ] && nvram set v2ray_status="updatev2ray" && logger -t "【v2ray】" "重启" && v2ray_restart
-	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path $v2ctl_path $geoip_path $geosite_path ; rm -rf /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ctl /opt/opt_backup/bin/v2ctl ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
+	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path $geoip_path $geosite_path ; rm -rf /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
 	;;
 initconfig)
 	initconfig

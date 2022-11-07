@@ -390,6 +390,7 @@ if [ ! -f "$app_34" ] || [ ! -s "$app_34" ] ; then
     "listen": "0.0.0.1:18000",
     "timeout": 60
   },
+  "resolve_preference": "4",
   "disable_mtu_discovery": true
 }
 
