@@ -1140,8 +1140,11 @@ mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"id"];
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"port"];'$vless_link_remote_port')')
 if [ "$link_protocol" == "vless" ] ; then
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"encryption"];"'$vless_link_encryption'")')
-[ "$vless_link_security" == "xtls" ] && [ ! -z "$vless_link_flow" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"flow"];"'$vless_link_flow'")')
-[ "$vless_link_security" != "xtls" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["vnext",0,"users",0,"flow"]])')
+if [ "$vless_link_security" == "tls" ] || [ "$vless_link_security" == "xtls" ] ; then
+[ ! -z "$vless_link_flow" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"flow"];"'$vless_link_flow'")')
+else
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["vnext",0,"users",0,"flow"]])')
+fi
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["vnext",0,"users",0,"security"]])')
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["vnext",0,"users",0,"alterId"]])')
 fi
@@ -1170,6 +1173,9 @@ if [ ! -z "$vless_link_sni" ] ; then
 	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","serverName"];"'$vless_link_sni'")')
 else
 	mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["tlsSettings","serverName"]])')
+fi
+if [ "$vless_link_flow" == "xtls-rprx-vision" ] ; then
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","fingerprint"];"chrome")')
 fi
 if [ ! -z "$vless_link_alpn" ] ; then
 	vless_link_alpn=$(echo $vless_link_alpn | sed 's/,/ /g')
