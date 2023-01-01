@@ -38,6 +38,10 @@ if [ "$chinadns_port" != "8053" ] ; then
 chinadns_enable=0
 chinadns_ng_enable=0
 fi
+ss_all_udp=`nvram get app_81`
+if [ "$ss_all_udp" != "0" ] && [ "$ss_all_udp" != "1" ] ; then
+	ss_all_udp=0 ; nvram set app_81=0
+fi
 if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
 	ss_dnsproxy_x=2 ; nvram set ss_dnsproxy_x=2
 else
@@ -131,7 +135,7 @@ exit 0
 ss_tproxy_get_status () {
 
 A_restart=`nvram get ss_tproxy_status`
-C_restart="$chinadns_enable$chinadns_ng_enable$chinadns_port$dns_start_dnsproxy$koolproxy_enable$LAN_AC_IP$output_return$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_dnsproxy_x$ss_pdnsd_all$ss_pdnsd_cn_all$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_tproxy_enable$ss_tproxy_mode_x$ss_udp_enable$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/shadowsocks_ss_spec_wan.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v "^#" | grep -v "^$")"
+C_restart="$chinadns_enable$chinadns_ng_enable$chinadns_port$dns_start_dnsproxy$koolproxy_enable$LAN_AC_IP$output_return$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_dnsproxy_x$ss_pdnsd_all$ss_pdnsd_cn_all$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_tproxy_enable$ss_tproxy_mode_x$ss_udp_enable$ss_all_udp$(cat /etc/storage/app_26.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/shadowsocks_ss_spec_wan.sh | grep -v "^#" | grep -v "^$")$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v "^#" | grep -v "^$")"
 C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 C_restart="$(echo $C_restart)"
 [ "$C_restart" != "$(sstp_get "ss_tproxy_status")" ] && sstp_set ss_tproxy_status="$C_restart"
@@ -449,6 +453,7 @@ ext_ss_pdnsd_cn_all=''    #app_113 0:使用 8053 端口查询全部 DNS 时进�
 ## iptables -t nat -I SSTP_OUTPUT -j RETURN
 ext_output_return=''      #app_114 0:代理本机流量; 1:跳过代理本机流量
 ext_output_udp_return=''  #ss_udp_enable 0:停用本机 UDP 转发; 1:启动本机 UDP 转发 (需服务器支持 UDP 代理才有效)
+ext_ss_all_udp=''         #app_81 0:udp 分流模式跟随 tcp 设置; 1:全局 UDP 转发，不分流
 ## iptables -t nat -I SSTP_OUTPUT -m owner --uid-owner 777 -j RETURN
 uid_owner="0"    # 非 0 时进行用户ID匹配跳过代理本机流量
 gid_owner="0"    # 非 0 时进行组ID匹配跳过代理本机流量

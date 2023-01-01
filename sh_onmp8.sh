@@ -27,13 +27,13 @@ url_Owncloud="https://download.owncloud.org/community/owncloud-10.0.10.zip"
 url_Nextcloud="https://download.nextcloud.com/server/releases/nextcloud-13.0.6.zip"
 
 # (5) h5ai（优秀的文件目录）
-url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.29.2.zip"
+url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.30.0.zip"
 
 # (6) Lychee（一个很好看，易于使用的Web相册）
 url_Lychee="https://github.com/electerious/Lychee/archive/master.zip"
 
 # (7) Kodexplorer（可道云aka芒果云在线文档管理器）
-url_Kodexplorer="https://static.kodcloud.com/update/download/kodexplorer4.48.zip"
+url_Kodexplorer="https://static.kodcloud.com/update/download/kodexplorer4.50.zip"
 
 # (8) Typecho (流畅的轻量级开源博客程序)
 url_Typecho="http://typecho.org/downloads/1.1-17.10.30-release.tar.gz"

@@ -508,6 +508,10 @@ load_config() {
 	output_udp_return=`nvram get ss_udp_enable`
 	[ -z $output_udp_return ] && output_udp_return=0 && nvram set ss_udp_enable=0
 	[ ! -z "$ext_output_udp_return" ] && output_udp_return="$ext_output_udp_return"
+	
+	ss_all_udp=`nvram get app_81`
+	[ -z $ss_all_udp ] && ss_all_udp=0 && nvram set app_81=0
+	[ ! -z "$ext_ss_all_udp" ] && ss_all_udp="$ext_ss_all_udp"
 }
 
 check_config() {
@@ -1965,11 +1969,13 @@ start_iptables_tproxy_mode() {
 	$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_GFW
 	$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_CHN
 	$1 -t mangle -A SSTP_GFW_CHN -j RETURN
+	is_enabled_udp && [ "$ss_all_udp" == "1" ] && $1 -t mangle -A SSTP_WAN_GFW -p udp -j SSTP_WAN_FW
 	$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 	$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 	$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_bp_setname dst -j RETURN
 	$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $gfwlist_setname dst -j ${GFWLIST_TARGET:=SSTP_WAN_FW}
 	$1 -t mangle -A SSTP_WAN_GFW -j RETURN
+	is_enabled_udp && [ "$ss_all_udp" == "1" ] && $1 -t mangle -A SSTP_WAN_CHN -p udp -j SSTP_WAN_FW
 	$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 	$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 	$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_bp_setname dst -j RETURN
@@ -2215,11 +2221,13 @@ start_iptables_redirect_mode() {
 		$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_GFW
 		$1 -t mangle -A SSTP_GFW_CHN -j SSTP_WAN_CHN
 		$1 -t mangle -A SSTP_GFW_CHN -j RETURN
+		[ "$ss_all_udp" == "1" ] && $1 -t mangle -A SSTP_WAN_GFW -p udp -j SSTP_WAN_FW
 		$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 		$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 		$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $sstp_dst_bp_setname dst -j RETURN
 		$1 -t mangle -A SSTP_WAN_GFW -m set --match-set $gfwlist_setname dst -j ${GFWLIST_TARGET:=SSTP_WAN_FW}
 		$1 -t mangle -A SSTP_WAN_GFW -j RETURN
+		[ "$ss_all_udp" == "1" ] && $1 -t mangle -A SSTP_WAN_CHN -p udp -j SSTP_WAN_FW
 		$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_dns_fw_setname dst -j SSTP_WAN_DNS
 		$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_fw_setname dst -j SSTP_WAN_FW
 		$1 -t mangle -A SSTP_WAN_CHN -m set --match-set $sstp_dst_bp_setname dst -j RETURN
