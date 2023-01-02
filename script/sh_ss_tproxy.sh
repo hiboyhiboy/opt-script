@@ -916,6 +916,7 @@ update_gfwlist_ipset() {
 
 update_chnlist() {
 	update_chnlist_file
+	[ "$ss_pdnsd_cn_all" != "1" ] && update_chnlist_file "chnlist_mini.txt"
 	return
 }
 
@@ -927,7 +928,13 @@ update_chnlist_file() {
 	#url='https://gcore.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
 	#raw_url='https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf'
 	#wgetcurl_checkmd5 $tmp_down_file "$url" "$raw_url" N 5
+	if [ "$1" = 'chnlist_mini.txt' ] ; then
+	chnlist_txt="chnlist_mini.txt"
+	wgetcurl_checkmd5 $tmp_down_file "$hiboyfile/chinalist.txt" "$hiboyfile2/chinalist.txt" N 5
+	else
+	chnlist_txt="chnlist.txt"
 	wgetcurl_checkmd5 $tmp_down_file "$hiboyfile/accelerated-domains.china.conf" "$hiboyfile2/accelerated-domains.china.conf" N 5
+	fi
 	sed -e "s@server=/@@g" -i  $tmp_down_file
 	sed -e 's@/.*@@g' -i  $tmp_down_file
 	printf "com.cn\nedu.cn\nnet.cn\norg.cn\ngov.cn\n" >> $tmp_down_file
@@ -936,12 +943,12 @@ update_chnlist_file() {
 	#删除忽略的域名
 	cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | > /opt/app/ss_tproxy/tmp/awk_del_list_tmp
 	awk_del_list /opt/app/ss_tproxy/tmp/awk_del_list_tmp $tmp_down_file
-	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/ss_tproxy/rule/chnlist.txt
-	sed -e '/^$/d' -i /opt/app/ss_tproxy/rule/chnlist.txt
+	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/ss_tproxy/rule/$chnlist_txt
+	sed -e '/^$/d' -i /opt/app/ss_tproxy/rule/$chnlist_txt
 	#删除gfwlist的域名
-	awk_del_list $file_gfwlist_txt /opt/app/ss_tproxy/rule/chnlist.txt
-	dos2unix /opt/app/ss_tproxy/rule/chnlist.txt
-	logger -t "【update_chnlist】" "完成下载 chnlist 文件"
+	awk_del_list $file_gfwlist_txt /opt/app/ss_tproxy/rule/$chnlist_txt
+	dos2unix /opt/app/ss_tproxy/rule/$chnlist_txt
+	logger -t "【update_chnlist】" "完成下载 $chnlist_txt 文件"
 	rm -f $tmp_down_file
 }
 
@@ -992,31 +999,31 @@ update_chnlist_ipset() {
 		fi
 	else
 		if [ "$ss_pdnsd_cn_all" != "1" ] ; then
-		[ ! -s /opt/app/ss_tproxy/rule/chnlist.txt ] && update_chnlist_file
-		update_md5_check update_chnlist2_txt /opt/app/ss_tproxy/rule/chnlist.txt
+		[ ! -s /opt/app/ss_tproxy/rule/chnlist_mini.txt ] && update_chnlist_file "chnlist_mini.txt"
+		update_md5_check update_chnlist2_txt /opt/app/ss_tproxy/rule/chnlist_mini.txt
 		if is_md5_not ; then
 		echo "" > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
-		if [ -s /opt/app/ss_tproxy/rule/chnlist.txt ] ; then
-		logger -t "【update_chnlist】" "加速国内 dns 访问"
-		logger -t "【update_chnlist】" "开始加载 chnlist 规则...."
+		if [ -s /opt/app/ss_tproxy/rule/chnlist_mini.txt ] ; then
+		logger -t "【update_chnlist_mini】" "加速国内 dns 访问"
+		logger -t "【update_chnlist_mini】" "开始加载 chnlist_mini 规则...."
 		wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
 		[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 		[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 		[ -z "$DNS_china" ] && DNS_china="$dns_direct"
 		chnlist_conf=""
-		export file_number=`cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' |sed 's/^[[:space:]]*//g; /^$/d; /#/d' |wc -l|awk -F'\ ' '{print $1}'`
-		is_true "$ipv4" && logger -t "【update_chnlist】" "已经加载 chnlist ipv4 规则 0%" && chnlist_conf="$(cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$DNS_china"'\n", $1)}{i++}{b=i/ENVIRON["file_number"]*10}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist ipv4 规则.+/已经加载 chnlist ipv4 规则 "c"0%/g\\\"  -Ei /tmp/syslog.log")}}')" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
+		export file_number=`cat /opt/app/ss_tproxy/rule/chnlist_mini.txt | sed -e 's@^cn$@com.cn@g' |sed 's/^[[:space:]]*//g; /^$/d; /#/d' |wc -l|awk -F'\ ' '{print $1}'`
+		is_true "$ipv4" && logger -t "【update_chnlist_mini】" "已经加载 chnlist_mini ipv4 规则 0%" && chnlist_conf="$(cat /opt/app/ss_tproxy/rule/chnlist_mini.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$DNS_china"'\n", $1)}{i++}{b=i/ENVIRON["file_number"]*10}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist_mini ipv4 规则.+/已经加载 chnlist_mini ipv4 规则 "c"0%/g\\\"  -Ei /tmp/syslog.log")}}')" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		chnlist_conf=""
-		is_true "$ipv6" && logger -t "【update_chnlist】" "已经加载 chnlist ipv6 规则 0%" && chnlist_conf="$(cat /opt/app/ss_tproxy/rule/chnlist.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_direct6"'\n", $1)}{i++}{b=i/ENVIRON["file_number"]*10}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist ipv6 规则.+/已经加载 chnlist ipv6 规则 "c"0%/g\\\"  -Ei /tmp/syslog.log")}}')" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
+		is_true "$ipv6" && logger -t "【update_chnlist_mini】" "已经加载 chnlist_mini ipv6 规则 0%" && chnlist_conf="$(cat /opt/app/ss_tproxy/rule/chnlist_mini.txt | sed -e 's@^cn$@com.cn@g' | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | awk 'BEGIN {c=0;a=1}{printf("server=/%s/'"$dns_direct6"'\n", $1)}{i++}{b=i/ENVIRON["file_number"]*10}{if(b>a){a++}}{if(c!=a){c=a;system("eval  sed \\\"s/已经加载 chnlist_mini ipv6 规则.+/已经加载 chnlist_mini ipv6 规则 "c"0%/g\\\"  -Ei /tmp/syslog.log")}}')" && echo "$chnlist_conf" >> /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		chnlist_conf=""
-		logger -t "【update_chnlist】" "配置更新，完成加载 chnlist 规则...."
+		logger -t "【update_chnlist_mini】" "配置更新，完成加载 chnlist_mini 规则...."
 		sed -e '/^$/d' -i /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
 		else
-		logger -t "【update_chnlist】" "更新错误！！！ /opt/app/ss_tproxy/rule/chnlist.txt 规则为空...."
+		logger -t "【update_chnlist_mini】" "更新错误！！！ /opt/app/ss_tproxy/rule/chnlist_mini.txt 规则为空...."
 		fi
 		else
-		[ ! -s /opt/app/ss_tproxy/rule/chnlist.txt ] && logger -t "【update_chnlist】" "匹配错误！！！ /opt/app/ss_tproxy/rule/chnlist.txt 规则为空...."
-		logger -t "【update_chnlist】" "配置匹配，完成加载 chnlist 规则...."
+		[ ! -s /opt/app/ss_tproxy/rule/chnlist_mini.txt ] && logger -t "【update_chnlist_mini】" "匹配错误！！！ /opt/app/ss_tproxy/rule/chnlist_mini.txt 规则为空...."
+		logger -t "【update_chnlist_mini】" "配置匹配，完成加载 chnlist_mini 规则...."
 		fi
 		else
 		echo "" > /opt/app/ss_tproxy/dnsmasq.d/accelerated-domains.china.conf
