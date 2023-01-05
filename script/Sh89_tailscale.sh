@@ -57,6 +57,7 @@ iptables -D INPUT -i tailscale0 -j ACCEPT
 killall tailscaled tailscale
 killall -9 tailscaled tailscale
 rm -rf /opt/app/tailscale/lib/*
+rm -rf /etc/storage/tailscale/lib/*
 tailscale_enable=2 && nvram set app_82=2
 fi
 A_restart=`nvram get tailscale_status`
