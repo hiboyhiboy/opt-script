@@ -211,6 +211,12 @@ fi
 AiDisk00
 }
 
+ln_mk () {
+
+# 创建软链
+/usr/bin/find /opt/ -type l -exec ls -l {} \; | grep -v opt_backup | awk '{print substr($0,58)}' > /opt/ln.txt ; sed -Ei "s/ -> /丨/g" /opt/ln.txt ; sed -Ei "s@^/opt@@g" /opt/ln.txt ;
+}
+
 ln_check () {
 
 ln_mkflie="off"
@@ -218,7 +224,6 @@ ln_mkflie="off"
 [ "$(md5sum /opt/etc/passwd | awk '{print $1;}')" != "$(md5sum /etc/passwd | awk '{print $1;}')" ] && ln_mkflie="on"
 [ -d /opt/opt_backup ] && [ "$(md5sum /opt/opt_backup/etc/passwd | awk '{print $1;}')" != "$(md5sum /etc/passwd | awk '{print $1;}')" ] && ln_mkflie="on"
 [ "$ln_mkflie" == "off" ] && return
-# 创建软链 /usr/bin/find /opt/ -type l -exec ls -l {} \; | grep -v opt_backup | awk '{print substr($0,58)}' > /opt/ln.txt ; sed -Ei "s/ -> /丨/g" /opt/ln.txt ; sed -Ei "s@^/opt@@g" /opt/ln.txt ;
 logger -t "【opt】" "ln 链接文件失效，开始恢复 ln 链接文件为原始文件"
 echo '#!/bin/bash' > /opt/ln_mkflie.sh
 chmod 777 /opt/ln_mkflie.sh
@@ -886,6 +891,17 @@ fi
 nvram set optt="`cat /tmp/opti.txt`"
 }
 
+libmd5_mk () {
+/usr/bin/find /opt/opt_backup/lib/ -perm '-u+x' -name '*' ! -type l | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f_opt_backup
+/usr/bin/find /opt/opt_backup/bin/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt_backup
+/usr/bin/find /opt/opt_backup/sbin/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt_backup
+#/usr/bin/find /opt/opt_backup/etc/init.d/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt_backup
+/usr/bin/find /opt/lib/ -perm '-u+x' -name '*' ! -type l | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f_opt
+/usr/bin/find /opt/bin/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt
+/usr/bin/find /opt/sbin/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt
+#/usr/bin/find /opt/etc/init.d/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt
+}
+
 libmd5_check () {
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 if [ ! -z "$optPath" ] ; then
@@ -902,14 +918,10 @@ if [ ! -f "/opt/opt_backup/opti.txt" ] ; then
 	if [ -s "/opt/opti.txt" ] ; then
 		logger -t "【libmd5_恢复】" "/opt/opt_backup 文件解压完成"
 	fi
-	ln_check
 fi
 logger -t "【libmd5_恢复】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
-/usr/bin/find /opt/opt_backup/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
-/usr/bin/find /opt/opt_backup/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | grep -v "/opt/opt_backup/bin/nps/conf" | grep -v "/opt/opt_backup/bin/ss_tproxy" | grep -v "/opt/opt_backup/bin/kcptun" | grep -v "/opt/opt_backup/bin/chinadns-ng" | sort -r  >> /tmp/md5/libmd5f
-/usr/bin/find /opt/opt_backup/sbin/ -perm '-u+x' -name '*' | grep -v "/opt/opt_backup/sbin/ifconfig" | grep -v "/opt/opt_backup/sbin/route" | sort -r  > /tmp/md5/libmd5f
-/usr/bin/find /opt/opt_backup/etc/init.d/ -perm '-u+x' -name '*' | grep -v "S10iptables" | grep -v Sh61_lnmp.sh | sort -r  >> /tmp/md5/libmd5f
+libmd5_mk
 while read line
 do
 if [ -f "$line" ] ; then
@@ -924,11 +936,11 @@ if [ -f "$line" ] ; then
 	logger -t "【libmd5_恢复】" "【 $b_line 】，md5不匹配！"
 	logger -t "【libmd5_恢复】" "恢复文件【 $line 】"
 	mkdir -p "$(dirname "$b_line")"
-	cp -Hrf $line $b_line
+	cp -Hrf "$line" "$b_line"
 	lib_status=1
 	fi
 fi
-done < /tmp/md5/libmd5f
+done < /tmp/md5/libmd5f_opt_backup
 logger -t "【libmd5_恢复】" "md5对比，完成！"
 # flush buffers
 sync;echo 3 > /proc/sys/vm/drop_caches
@@ -946,10 +958,7 @@ fi
 mkdir -p /opt/opt_backup
 logger -t "【libmd5_备份】" "正在对比 /opt/lib/ 文件 md5"
 mkdir -p /tmp/md5/
-/usr/bin/find /opt/lib/ -perm '-u+x' -name '*' | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f
-/usr/bin/find /opt/bin/ -perm '-u+x' -name '*' | grep -v "\.sh" | grep -v "/opt/bin/nps/conf" | grep -v "/opt/bin/ss_tproxy" | grep -v "/opt/bin/kcptun" | grep -v "/opt/bin/chinadns-ng" | sort -r  >> /tmp/md5/libmd5f
-/usr/bin/find /opt/sbin/ -perm '-u+x' -name '*' | grep -v "/opt/sbin/ifconfig" | grep -v "/opt/sbin/route" | sort -r  >> /tmp/md5/libmd5f
-#/usr/bin/find /opt/etc/init.d/ -perm '-u+x' -name '*' | grep -v "S10iptables" | sort -r  >> /tmp/md5/libmd5f
+libmd5_mk
 while read line
 do
 if [ -f "$line" ] ; then
@@ -964,12 +973,26 @@ if [ -f "$line" ] ; then
 	logger -t "【libmd5_备份】" "【 $b_line 】，md5不匹配！"
 	logger -t "【libmd5_备份】" "备份文件【 $line 】"
 	mkdir -p "$(dirname "$b_line")"
-	cp -Hrf $line $b_line
+	cp -Hrf "$line" "$b_line"
 	lib_status=1
 	fi
 fi
-done < /tmp/md5/libmd5f
+done < /tmp/md5/libmd5f_opt
+while read line
+do
+if [ -f "$line" ] ; then
+	b_line="$(echo $line | sed  "s@^/opt/opt_backup/@/opt/@g")"
+	if [ ! -f "$b_line" ] ; then
+	logger -t "【libmd5_备份】" "删除多余的备份文件【 $line 】"
+	rm -f $line
+	fi
+fi
+done < /tmp/md5/libmd5f_opt_backup
 logger -t "【libmd5_备份】" "md5对比，完成！"
+ln_mk
+cp -f /opt/ln.txt /opt/opt_backup/ln.txt
+cp -f /opt/opti.txt /opt/opt_backup/opti.txt
+rm -f /tmp/md5/libmd5f_opt /tmp/md5/libmd5f_opt_backup
 # flush buffers
 sync;echo 3 > /proc/sys/vm/drop_caches
 
