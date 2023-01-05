@@ -157,9 +157,10 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
-# 链接配置文件到路由内部储存
 mkdir -p /etc/storage/tailscale/lib
 mkdir -p /opt/app/tailscale/lib
+if [ -s "/etc/storage/tailscale/lib/tailscaled.state" ] && [ -s "/etc/storage/tailscale/lib/cmd.log.conf" ] ; then
+logger -t "【tailscale】" "链接配置文件到路由内部储存"
 touch /etc/storage/tailscale/lib/tailscaled.state
 touch /etc/storage/tailscale/lib/cmd.log.conf
 touch /opt/app/tailscale/lib/tailscaled.state
@@ -168,6 +169,7 @@ umount /opt/app/tailscale/lib/tailscaled.state
 umount /opt/app/tailscale/lib/cmd.log.conf
 mount --bind /etc/storage/tailscale/lib/tailscaled.state /opt/app/tailscale/lib/tailscaled.state
 mount --bind /etc/storage/tailscale/lib/cmd.log.conf /opt/app/tailscale/lib/cmd.log.conf
+fi
 for h_i in $(seq 1 2) ; do
 mkdir -p /opt/app/tailscale/lib
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
@@ -203,6 +205,14 @@ sleep 4
 [ ! -z "`pidof tailscale`" ] && logger -t "【tailscale】" "本机管理界面 启动成功" && tailscale_restart o
 [ -z "`pidof tailscale`" ] && logger -t "【tailscale】" "本机管理界面 启动失败, 注意检tailscale是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tailscale_restart x
 logger -t "【tailscale】" "本机管理界面 (5分钟自动关闭)"
+fi
+if [ ! -s "/etc/storage/tailscale/lib/tailscaled.state" ] && [ ! -s "/etc/storage/tailscale/lib/cmd.log.conf" ] && [ -s "/opt/app/tailscale/lib/tailscaled.state" ] && [ -s "/opt/app/tailscale/lib/cmd.log.conf" ] ; then
+logger -t "【tailscale】" "链接配置文件到路由内部储存"
+umount /opt/app/tailscale/lib/tailscaled.state
+umount /opt/app/tailscale/lib/cmd.log.conf
+cp -f /opt/app/tailscale/lib/tailscaled.state /etc/storage/tailscale/lib/tailscaled.state
+cp -f /opt/app/tailscale/lib/cmd.log.conf /etc/storage/tailscale/lib/cmd.log.conf
+tailscale_restart
 fi
 eval "$scriptfilepath keep &"
 
