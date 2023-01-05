@@ -139,6 +139,8 @@ sed -Ei '/【tailscale】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -i tailscale0 -j ACCEPT
 killall tailscaled tailscale
 killall -9 tailscaled tailscale
+umount /opt/app/tailscale/lib/tailscaled.state
+umount /opt/app/tailscale/lib/cmd.log.conf
 kill_ps "/tmp/script/_app11"
 kill_ps "_tailscale.sh"
 kill_ps "$scriptname"
@@ -155,7 +157,17 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
+# 链接配置文件到路由内部储存
+mkdir -p /etc/storage/tailscale/lib
 mkdir -p /opt/app/tailscale/lib
+touch /etc/storage/tailscale/lib/tailscaled.state
+touch /etc/storage/tailscale/lib/cmd.log.conf
+touch /opt/app/tailscale/lib/tailscaled.state
+touch /opt/app/tailscale/lib/cmd.log.conf
+umount /opt/app/tailscale/lib/tailscaled.state
+umount /opt/app/tailscale/lib/cmd.log.conf
+mount --bind /etc/storage/tailscale/lib/tailscaled.state /opt/app/tailscale/lib/tailscaled.state
+mount --bind /etc/storage/tailscale/lib/cmd.log.conf /opt/app/tailscale/lib/cmd.log.conf
 for h_i in $(seq 1 2) ; do
 mkdir -p /opt/app/tailscale/lib
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
