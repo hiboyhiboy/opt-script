@@ -172,13 +172,10 @@ cp -f /etc/storage/tailscale/lib/tailscaled.state /opt/app/tailscale/lib/tailsca
 cp -f /etc/storage/tailscale/lib/cmd.log.conf /opt/app/tailscale/lib/cmd.log.conf
 fi
 for h_i in $(seq 1 2) ; do
-mkdir -p /opt/app/tailscale/lib
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
 wgetcurl_file "$SVC_PATH" "$hiboyfile/tailscaled" "$hiboyfile2/tailscaled"
-if [ "$tailscale_enable" = "2" ] ; then
 [[ "$($SVC_PATH2 -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH2 ] && rm -rf $SVC_PATH2
 wgetcurl_file "$SVC_PATH2" "$hiboyfile/tailscale" "$hiboyfile2/tailscale"
-fi
 done
 tailscale_v=$($SVC_PATH -version | sed -n '1p')
 nvram set tailscale_v="$tailscale_v"
