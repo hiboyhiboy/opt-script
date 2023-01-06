@@ -120,6 +120,7 @@ iptables -C INPUT -i tailscale0 -j ACCEPT
 if [ "$?" != 0 ] ; then
 	iptables -A INPUT -i tailscale0 -j ACCEPT
 fi
+tailscale_backup
 sleep 100
 if [ "$tailscale_enable" = "2" ] ; then
 if [ "$offweb" -gt "3" ] ; then
@@ -140,6 +141,7 @@ sed -Ei '/【tailscale】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -i tailscale0 -j ACCEPT
 killall tailscaled tailscale
 killall -9 tailscaled tailscale
+tailscale_backup
 umount /opt/app/tailscale/lib/tailscaled.state
 umount /opt/app/tailscale/lib/cmd.log.conf
 kill_ps "/tmp/script/_app11"
@@ -160,17 +162,9 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 mkdir -p /etc/storage/tailscale/lib
 mkdir -p /opt/app/tailscale/lib
-if [ -s "/etc/storage/tailscale/lib/tailscaled.state" ] && [ -s "/etc/storage/tailscale/lib/cmd.log.conf" ] ; then
-logger -t "【tailscale】" "链接配置文件到路由内部储存"
-touch /etc/storage/tailscale/lib/tailscaled.state
-touch /etc/storage/tailscale/lib/cmd.log.conf
-touch /opt/app/tailscale/lib/tailscaled.state
-touch /opt/app/tailscale/lib/cmd.log.conf
-umount /opt/app/tailscale/lib/tailscaled.state
-umount /opt/app/tailscale/lib/cmd.log.conf
-mount --bind /etc/storage/tailscale/lib/tailscaled.state /opt/app/tailscale/lib/tailscaled.state
-mount --bind /etc/storage/tailscale/lib/cmd.log.conf /opt/app/tailscale/lib/cmd.log.conf
-fi
+logger -t "【tailscale】" "恢复路由内部储存配置文件到/opt/app/tailscale/lib/"
+cp -f /etc/storage/tailscale/lib/tailscaled.state /opt/app/tailscale/lib/tailscaled.state
+cp -f /etc/storage/tailscale/lib/cmd.log.conf /opt/app/tailscale/lib/cmd.log.conf
 for h_i in $(seq 1 2) ; do
 mkdir -p /opt/app/tailscale/lib
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
@@ -207,17 +201,32 @@ sleep 4
 [ -z "`pidof tailscale`" ] && logger -t "【tailscale】" "本机管理界面 启动失败, 注意检tailscale是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tailscale_restart x
 logger -t "【tailscale】" "本机管理界面 (5分钟自动关闭)"
 fi
-if [ ! -s "/etc/storage/tailscale/lib/tailscaled.state" ] && [ ! -s "/etc/storage/tailscale/lib/cmd.log.conf" ] && [ -s "/opt/app/tailscale/lib/tailscaled.state" ] && [ -s "/opt/app/tailscale/lib/cmd.log.conf" ] ; then
-logger -t "【tailscale】" "链接配置文件到路由内部储存"
-umount /opt/app/tailscale/lib/tailscaled.state
-umount /opt/app/tailscale/lib/cmd.log.conf
+tailscale_backup
+eval "$scriptfilepath keep &"
+
+exit 0
+}
+
+
+tailscale_backup () {
+
+backup_storage=0
+MD5_backup="$(md5sum /opt/app/tailscale/lib/tailscaled.state | awk '{print $1;}')"
+MD5_storage="$(md5sum /etc/storage/tailscale/lib/tailscaled.state | awk '{print $1;}')"
+if [ "$MD5_backup"x != "$MD5_storage"x ] ; then
+backup_storage=1
+fi
+MD5_backup="$(md5sum /opt/app/tailscale/lib/cmd.log.conf | awk '{print $1;}')"
+MD5_storage="$(md5sum /etc/storage/tailscale/lib/cmd.log.conf | awk '{print $1;}')"
+if [ "$MD5_backup"x != "$MD5_storage"x ] ; then
+backup_storage=1
+fi
+if [ "$backup_storage" == "1" ] ; then
+logger -t "【tailscale】" "备份配置文件到路由内部储存"
 cp -f /opt/app/tailscale/lib/tailscaled.state /etc/storage/tailscale/lib/tailscaled.state
 cp -f /opt/app/tailscale/lib/cmd.log.conf /etc/storage/tailscale/lib/cmd.log.conf
 tailscale_restart
 fi
-eval "$scriptfilepath keep &"
-
-exit 0
 }
 
 initopt () {
