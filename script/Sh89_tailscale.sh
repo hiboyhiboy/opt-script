@@ -162,9 +162,15 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 mkdir -p /etc/storage/tailscale/lib
 mkdir -p /opt/app/tailscale/lib
+if [ ! -s /opt/app/tailscale/lib/tailscaled.state ] || [ ! -s /opt/app/tailscale/lib/cmd.log.conf ] ; then
+rm -f /opt/app/tailscale/lib/tailscaled.state
+rm -f /opt/app/tailscale/lib/cmd.log.conf
+fi
+if [ -s /etc/storage/tailscale/lib/tailscaled.state ] && [ -s /etc/storage/tailscale/lib/cmd.log.conf ] ; then
 logger -t "【tailscale】" "恢复路由内部储存配置文件到/opt/app/tailscale/lib/"
 cp -f /etc/storage/tailscale/lib/tailscaled.state /opt/app/tailscale/lib/tailscaled.state
 cp -f /etc/storage/tailscale/lib/cmd.log.conf /opt/app/tailscale/lib/cmd.log.conf
+fi
 for h_i in $(seq 1 2) ; do
 mkdir -p /opt/app/tailscale/lib
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
@@ -210,6 +216,7 @@ exit 0
 
 tailscale_backup () {
 
+if [ -s /opt/app/tailscale/lib/tailscaled.state ] && [ -s /opt/app/tailscale/lib/cmd.log.conf ] ; then
 backup_storage=0
 MD5_backup="$(md5sum /opt/app/tailscale/lib/tailscaled.state | awk '{print $1;}')"
 MD5_storage="$(md5sum /etc/storage/tailscale/lib/tailscaled.state | awk '{print $1;}')"
@@ -226,6 +233,7 @@ logger -t "【tailscale】" "备份配置文件到路由内部储存"
 cp -f /opt/app/tailscale/lib/tailscaled.state /etc/storage/tailscale/lib/tailscaled.state
 cp -f /opt/app/tailscale/lib/cmd.log.conf /etc/storage/tailscale/lib/cmd.log.conf
 tailscale_restart
+fi
 fi
 }
 
