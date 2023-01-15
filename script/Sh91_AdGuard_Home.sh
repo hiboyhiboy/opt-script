@@ -138,6 +138,7 @@ else
 		fi
 	fi
 fi
+[ "$(grep "</textarea>"  /etc/storage/app_19.sh | wc -l)" != 0 ] && sed -Ei s@\<\/textarea\>@@g /etc/storage/app_19.sh
 sleep 61
 done
 }

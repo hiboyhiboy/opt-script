@@ -205,6 +205,7 @@ OSC
 fi
 clash_enable=`nvram get app_88`
 while [ "$clash_enable" = "1" ]; do
+[ "$(grep "</textarea>"  /etc/storage/app_20.sh | wc -l)" != 0 ] && sed -Ei s@\<\/textarea\>@@g /etc/storage/app_20.sh
 	clash_follow=`nvram get app_92`
 	if [ "$clash_follow" = "1" ] ; then
 		ss_internet="$(nvram get ss_internet)"
@@ -547,6 +548,7 @@ if [ ! -s $yml_tmp ] ; then
 	return
 else
 	dos2unix $yml_tmp
+	sed -Ei s@\<\/textarea\>@@g $yml_tmp
 	cp -f $yml_tmp /etc/storage/app_20.sh
 	#yq w -i $app_20 allow-lan true
 	#rm_temp

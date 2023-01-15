@@ -207,6 +207,7 @@ v2ray_enable=`nvram get v2ray_enable`
 rebss=`nvram get ss_rebss_b`
 [ -z "$rebss" ] &&  rebss=0 && nvram set ss_rebss_b=0
 while [ "$v2ray_enable" = "1" ]; do
+[ "$(grep "</textarea>"  /etc/storage/app_25.sh | wc -l)" != 0 ] && sed -Ei s@\<\/textarea\>@@g /etc/storage/app_25.sh
 	NUM=`ps -w | grep "$v2ray_path" | grep -v grep |wc -l`
 	if [ "$NUM" -lt "1" ] || [ ! -s "$v2ray_path" ] ; then
 		logger -t "【v2ray】" "重新启动$NUM"
@@ -1127,6 +1128,7 @@ else
 	nvram set app_72="$link_input"
 	logger -t "【v2ray】" "完成！生成配置，请刷新web页面查看！（应用新配置需按F5）"
 	cp -f /tmp/vmess/mk_vmess.json /etc/storage/v2ray_config_script.sh
+	sed -Ei s@\<\/textarea\>@@g /etc/storage/v2ray_config_script.sh
 fi
 
 }
@@ -2008,8 +2010,10 @@ touch /etc/storage/app_25.sh
 down_i_link="2"
 sed -Ei '/^$/d' /tmp/link/vmess/1_link.txt
 sed -Ei 's@^@'🔗'@g' /tmp/link/vmess/1_link.txt
+sed -Ei s@\<\/textarea\>@@g /tmp/link/vmess/1_link.txt
 cat /tmp/link/vmess/1_link.txt >> /etc/storage/app_25.sh
 sed -Ei '/dellink_ss|^$/d' /etc/storage/app_25.sh
+sed -Ei s@\<\/textarea\>@@g /etc/storage/app_25.sh
 rm -rf /tmp/link/vmess/*
 
 }

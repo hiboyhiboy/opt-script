@@ -1028,6 +1028,7 @@ rebss=`nvram get ss_rebss_b`
 [ -z "$rebss" ] && rebss=0 && nvram set ss_rebss_b=0
 while [ "$ss_enable" = "1" ];
 do
+[ "$(grep "</textarea>"  /etc/storage/app_24.sh | wc -l)" != 0 ] && sed -Ei s@\<\/textarea\>@@g /etc/storage/app_24.sh
 ss_rebss_n=`nvram get ss_rebss_n`
 ss_rebss_a=`nvram get ss_rebss_a`
 if [ "$ss_rebss_n" != 0 ] ; then
@@ -1504,8 +1505,10 @@ touch /etc/storage/app_24.sh
 down_i_link="2"
 sed -Ei '/^$/d' /tmp/link/ss/1_link.txt
 sed -Ei 's@^@'🔗'@g' /tmp/link/ss/1_link.txt
+sed -Ei s@\<\/textarea\>@@g /tmp/link/ss/1_link.txt
 cat /tmp/link/ss/1_link.txt >> /etc/storage/app_24.sh
 sed -Ei '/dellink_ss|^$/d' /etc/storage/app_24.sh
+sed -Ei s@\<\/textarea\>@@g /etc/storage/app_24.sh
 rm -rf /tmp/link/ss/*
 
 }
