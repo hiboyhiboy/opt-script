@@ -195,7 +195,7 @@ else
 			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt
 		fi
 		if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
-			static_adguard="https://static.adguard.com/adguardhome/release/AdGuardHome_linux_mipsle_softfloat.tar.gz"
+			static_adguard="https://static.adtidy.org/adguardhome/beta/AdGuardHome_linux_mipsle_softfloat.tar.gz"
 			logger -t "【AdGuardHome】" "开始下载 $static_adguard"
 			wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "$static_adguard"
 			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt ; cd /opt/AdGuardHome
