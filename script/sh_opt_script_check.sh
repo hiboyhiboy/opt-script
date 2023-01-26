@@ -83,7 +83,7 @@ if [ "$cmd_cpu_enable" == "1" ] ; then
 if [ -f /tmp/top ] ; then
 rm -f /tmp/top
 else
-top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" | sed -e "s@^@#@g" > /tmp/top
+top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" | grep -v "mtd_write" | grep -v "/usr/sbin/httpd" | grep -v "/usr/sbin/dropbear" | sed -e "s@^@#@g" > /tmp/top
 if [ -s /tmp/top ] ; then
  #21445 21444 admin    R     1972  0.4   2 24.9 COMMAND
  #  810 30601 admin    R     1588  0.3   3  2.2 top -n 1
