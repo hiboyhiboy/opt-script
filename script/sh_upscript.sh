@@ -37,7 +37,7 @@ fi
 if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2023-01-26"
+	nvram set scripto="2023-01-27"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -98,10 +98,9 @@ check_opt () {
 [ ! -f /tmp/scriptsh.txt ] && file_t_check
 for initopt in `ls -p /opt/etc/init.d`
 do
-if [ ! -z `cat /tmp/scriptsh.txt | grep "$(echo $initopt | sed 's/\.sh//g')")` ] ; then
+if [ ! -z "$(cat /tmp/scriptsh.txt | grep "$(echo $initopt | sed 's/\.sh//g')")" ] ; then
 	cp -f /etc/storage/script/$initopt /opt/etc/init.d/$initopt 
 fi
-
 done
 
 }
@@ -121,7 +120,7 @@ rm -f /tmp/webui_yes
 chmod 777 /etc/storage/script -R
 killall menu_title.sh 
 # start all services Sh??_* in /etc/storage/script
-for i in `ls /etc/storage/script/Sh??_* 2>/dev/null` ; do
+for i in /etc/storage/script/Sh??_* ; do
 	[ ! -x "${i}" ] && continue
 	[ -f /tmp/webui_yes ] && continue
 	eval ${i} stop
@@ -142,7 +141,7 @@ logger -t "【WebUI】" "遍历更新 web 页面"
 [ -s /etc_ro/www_asp.tgz ] && { tar -xzvf /etc_ro/www_asp.tgz -C /tmp ;  chmod 666 /tmp/www_asp -R ; }
 chmod 777 /etc/storage/script -R
 # start all services Sh??_* in /etc/storage/script
-for i in `ls /etc/storage/script/Sh??_* 2>/dev/null` ; do
+for i in /etc/storage/script/Sh??_* ; do
 	[ ! -x "${i}" ] && continue
 	eval ${i} update_asp
 done

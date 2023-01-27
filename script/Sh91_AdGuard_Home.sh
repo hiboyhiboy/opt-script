@@ -378,7 +378,7 @@ if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	/etc/storage/script/Sh01_mountopt.sh start
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 	for h_i in $(seq 1 2) ; do
-	[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
+	[[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
 	wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
 	done
 if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then

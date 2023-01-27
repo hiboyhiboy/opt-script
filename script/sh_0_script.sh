@@ -5,12 +5,13 @@
 source /etc/storage/script/init.sh
 [ -f /tmp/script.lock ] && exit 0
 kill_ps "sh_0_script.sh"
+mkdir -p /tmp/ss_tproxy/dnsmasq.d
 rm -f /tmp/webui_yes
 rm -f /tmp/script/_opt_script_check
 touch /tmp/script.lock
 touch /tmp/script_script_yes
 [ ! -z "$(cat /tmp/syslog.log | grep "SPI flash chip"| grep 32768)" ] && { nvram set cmd_reboot_enable=1 ; nvram commit ; nvram save ; }
-. /etc/storage/script0_script.sh
+source /etc/storage/script0_script.sh
 ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
 ln -sf "/etc/storage/init.status" "/etc/init.status"
 rm -f "/opt/etc/init.d/S96sh3.sh"
@@ -18,7 +19,6 @@ echo "" > /var/log/shadowsocks_watchdog.log
 echo "" > /var/log/Pcap_DNSProxy_watchdog.log
 echo "" > /var/log/chinadns_watchdog.log
 echo 0 > /proc/sys/net/ipv4/tcp_tw_recycle
-http_username=`nvram get http_username`
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 sed -Ei '/github|ipip.net|_vlmcs._tcp|txt-record=_jetbrains-license-server.lan|adbyby_host.conf|cflist.conf|accelerated-domains|no-resolv|server=127.0.0.1#8053|dns-forward-max=1000|min-cache-ttl=1800|ss_tproxy|chinadns_ng|chinadns_0/d' /etc/storage/dnsmasq/dnsmasq.conf
@@ -85,14 +85,14 @@ chmod 777 /tmp/script -R
 touch /tmp/webui_yes
 /etc/storage/www_sh/menu_title.sh &
 # extend path to /opt
-for i in `ls /opt/etc/init.d/_* 2>/dev/null` ; do
+for i in /opt/etc/init.d/_* ; do
 	rm -f ${i}
 done
-for i in `ls /opt/etc/init.d/Sh??_* 2>/dev/null` ; do
+for i in /opt/etc/init.d/Sh??_* ; do
 	rm -f ${i}
 done
 # start all services S* in /opt/etc/init.d
-for i in `ls /opt/etc/init.d/S??* 2>/dev/null` ; do
+for i in /opt/etc/init.d/S??* ; do
 	[ ! -x "${i}" ] && continue
 	[ ! -f /tmp/webui_yes ] && continue
 	${i} start

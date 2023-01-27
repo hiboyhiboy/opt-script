@@ -528,7 +528,7 @@ check_config() {
 
 	[ -z "$proxy_svrport" ] && log_error "the value of the proxy_svrport option is empty: $proxy_svrport"
 	if [ "$uid_owner" == "0" ] && [ "$gid_owner" == "0" ] ; then
-		[ -z "cat $proxy_svraddr4" ] && [ -z "cat $proxy_svraddr6" ] && log_error "both proxy_svraddr4 and proxy_svraddr6 are empty"
+		[ -z "$(cat $proxy_svraddr4)" ] && [ -z "$(cat $proxy_svraddr6)" ] && log_error "both proxy_svraddr4 and proxy_svraddr6 are empty"
 	fi
 
 	command_is_exists 'ipset'   || log_error "command not found: ipset"
@@ -941,7 +941,7 @@ update_chnlist_file() {
 	# 添加自定义白名单
 	cat $file_wanlist_ext | grep -E "^@b" | cut -c4- | while read domain_addr; do echo "$domain_addr" >> $tmp_down_file; done 
 	#删除忽略的域名
-	cat $file_wanlist_ext | grep -E "^@g" | cut -c4- | > /opt/app/ss_tproxy/tmp/awk_del_list_tmp
+	cat $file_wanlist_ext | grep -E "^@g" | cut -c4- > /opt/app/ss_tproxy/tmp/awk_del_list_tmp
 	awk_del_list /opt/app/ss_tproxy/tmp/awk_del_list_tmp $tmp_down_file
 	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/ss_tproxy/rule/$chnlist_txt
 	sed -e '/^$/d' -i /opt/app/ss_tproxy/rule/$chnlist_txt

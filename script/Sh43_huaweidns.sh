@@ -223,7 +223,7 @@ versions="$(curl -L    -s -X  GET \
 https://dns.myhuaweicloud.com/ \
   -H 'content-type: application/json' \
    | grep -Eo '"id":"[^"]*"' | awk -F 'id":"' '{print $2}' | tr -d '"' |head -n1)"
-[ "$versions" != "v2"] && logger -t "【huaweidns动态域名】" "错误！API的版本不是【v2】，请更新脚本后尝试重新启动" && sleep 10 && huaweidns_restart x
+[ "$versions" != "v2" ] && logger -t "【huaweidns动态域名】" "错误！API的版本不是【v2】，请更新脚本后尝试重新启动" && sleep 10 && huaweidns_restart x
 sleep 1
 eval 'token_X="$(curl -L    -s -D - -o /dev/null  -X POST \
   https://iam.myhuaweicloud.com/v3/auth/tokens \

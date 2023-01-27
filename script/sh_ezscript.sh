@@ -495,7 +495,7 @@ fi
 }
 
 connAPSite () {
-. /etc/storage/ap_script.sh
+source /etc/storage/ap_script.sh
 logger -t "【连接 AP】" "10秒后, 自动搜寻 ap"
 sleep 10
 ap_fenge=`nvram get ap_fenge`
