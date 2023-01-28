@@ -1776,9 +1776,9 @@ break
 fi
 done
 echo -n 'var ping_data = "' >> /tmp/link/ping_vmess.txt
-for ilox in $(ls /tmp/link/tmp_vmess/)
+for ilox in /tmp/link/tmp_vmess/*
 do
-echo -n "$(cat /tmp/link/tmp_vmess/$ilox)"  >> /tmp/link/ping_vmess.txt
+echo -n "$(cat "$ilox")"  >> /tmp/link/ping_vmess.txt
 done
 echo -n '";' >> /tmp/link/ping_vmess.txt
 sed -Ei '/^$/d' /tmp/link/ping_vmess.txt

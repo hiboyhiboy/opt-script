@@ -110,7 +110,6 @@ color_yellow() {
 
 log_error() {
 	logger -t "【sh_ss_tproxy.sh】" "【错误】""$*"
-	logger -t "【sh_ss_tproxy.sh】" "【错误】""$@  "
 	logger -t "【sh_ss_tproxy.sh】" "【错误】""出错了？试试手动重置 ss_tproxy 数据"
 	echo "$(font_bold $(color_yellow '[ERROR]')) $*" 1>&2
 	stop
@@ -527,9 +526,9 @@ check_config() {
 	{ is_false "$ipv4" && is_false "$ipv6"; } && log_error "both ipv4 and ipv6 are disabled, nothing to do"
 
 	[ -z "$proxy_svrport" ] && log_error "the value of the proxy_svrport option is empty: $proxy_svrport"
-	if [ "$uid_owner" == "0" ] && [ "$gid_owner" == "0" ] ; then
-		[ -z "$(cat $proxy_svraddr4)" ] && [ -z "$(cat $proxy_svraddr6)" ] && log_error "both proxy_svraddr4 and proxy_svraddr6 are empty"
-	fi
+	#if [ "$uid_owner" == "0" ] && [ "$gid_owner" == "0" ] ; then
+		#[ -z "$(cat $proxy_svraddr4)" ] && [ -z "$(cat $proxy_svraddr6)" ] && log_error "both proxy_svraddr4 and proxy_svraddr6 are empty"
+	#fi
 
 	command_is_exists 'ipset'   || log_error "command not found: ipset"
 	command_is_exists 'dnsmasq' || log_error "command not found: dnsmasq"
@@ -1643,7 +1642,8 @@ enable_ipforward() {
 }
 
 disable_icmpredir() {
-	for dir in $(ls /proc/sys/net/ipv4/conf); do
+	for dir in /proc/sys/net/ipv4/conf/* ; do
+		dir="$(basename "$dir")"
 		set_sysctl_option "net.ipv4.conf.${dir//.//}.send_redirects" 0
 	done
 }

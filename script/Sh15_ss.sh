@@ -1278,9 +1278,9 @@ ping_ss_link () {
 	fi
 	done
 	echo -n 'var ping_data = "' >> /tmp/link/ping_ss.txt
-	for ilox in $(ls /tmp/link/tmp_ss/)
+	for ilox in /tmp/link/tmp_ss/*
 	do
-	echo -n "$(cat /tmp/link/tmp_ss/$ilox)"  >> /tmp/link/ping_ss.txt
+	echo -n "$(cat "$ilox")"  >> /tmp/link/ping_ss.txt
 	done
 	echo -n '";' >> /tmp/link/ping_ss.txt
 	sed -Ei '/^$/d' /tmp/link/ping_ss.txt
