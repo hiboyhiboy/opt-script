@@ -114,9 +114,9 @@ if [ ! -z "$upanPath" ] ; then
 	mkdir -p $upanPath/ad/7620koolproxy
 	rm -f /tmp/7620koolproxy
 	ln -sf "$upanPath/ad/7620koolproxy" /tmp/7620koolproxy
-	if [ -s "$(ls /etc_ro/7620koolproxy_*.tgz  | sed -n '1i')" ] && [ ! -s "$upanPath/ad/7620koolproxy/koolproxy" ] ; then
+	if [ -s "$(ls /etc_ro/7620koolproxy_*.tgz  | sed -n '1p')" ] && [ ! -s "$upanPath/ad/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "使用内置主程序"
-		untar.sh "$(ls /etc_ro/7620koolproxy_*.tgz  | sed -n '1i')" $upanPath/ad $upanPath/ad/7620koolproxy/data/version
+		untar.sh "$(ls /etc_ro/7620koolproxy_*.tgz  | sed -n '1p')" $upanPath/ad $upanPath/ad/7620koolproxy/data/version
 	fi
 	if [ ! -s "$upanPath/ad/7620koolproxy/data/version" ] ; then
 		logger -t "【koolproxy】" "开始下载 7620koolproxy.tgz"
@@ -126,9 +126,9 @@ if [ ! -z "$upanPath" ] ; then
 else
 	logger -t "【koolproxy】" "未挂载储存设备, 主程序放路由内存存储"
 	mkdir -p /tmp/7620koolproxy
-	if [ -s "$(ls /etc_ro/7620koolproxy_*.tgz  | sed -n '1i')" ] && [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
+	if [ -s "$(ls /etc_ro/7620koolproxy_*.tgz  | sed -n '1p')" ] && [ ! -s "/tmp/7620koolproxy/koolproxy" ] ; then
 		logger -t "【koolproxy】" "使用内置主程序"
-		untar.sh "$(ls /etc_ro/7620koolproxy_*.tgz  | sed -n '1i')" /tmp /tmp/7620koolproxy/data/version
+		untar.sh "$(ls /etc_ro/7620koolproxy_*.tgz  | sed -n '1p')" /tmp /tmp/7620koolproxy/data/version
 	fi
 	if [ ! -s "/tmp/7620koolproxy/data/version" ] ; then
 		logger -t "【koolproxy】" "开始下载 7620koolproxy.tgz"
