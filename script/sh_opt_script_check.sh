@@ -31,6 +31,18 @@ nvram settmp opt_script_check="$opt_script_check"
 if [ "$opt_script_check" -lt 1 ] ; then
 nvram settmp opt_script_check="10"
 ip -f inet6 neighbor show > /tmp/ip6_neighbor.log
+dhcp_dnsv6_x=`nvram get dhcp_dnsv6_x`
+if [ "$dhcp_dnsv6_x" == "br0" ] ; then
+	addr6_lan1="$(ifconfig -a br0 | grep inet6 | grep Link | sed -n '1p' | awk '{print $3}' | awk -F '/' '{print $1}')"
+	addr6_lan2="$(ifconfig -a br0 | grep inet6 | grep Global | sed -n '$p' | awk '{print $3}' | awk -F '/' '{print $1}')"
+	if [ ! -z "$addr6_lan1" ] && [ -z "$(cat /etc/dnsmasq.conf | grep ${addr6_lan1})" ] ; then
+		restart_dhcpd
+	else
+		if [ ! -z "$addr6_lan2" ] && [ -z "$(cat /etc/dnsmasq.conf | grep ${addr6_lan2})" ] ; then
+		restart_dhcpd
+		fi
+	fi
+fi
 fi
 
 syslog_tmp="`cat /tmp/syslog.log | grep "EMI\?\|dnsmasq is missing,"`"
