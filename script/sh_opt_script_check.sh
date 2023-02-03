@@ -31,6 +31,8 @@ nvram settmp opt_script_check="$opt_script_check"
 if [ "$opt_script_check" -lt 1 ] ; then
 nvram settmp opt_script_check="10"
 ip -f inet6 neighbor show > /tmp/ip6_neighbor.log
+ip6_service=`nvram get ip6_service`
+if [ ! -z "$ip6_service" ] ; then
 dhcp_dnsv6_x=`nvram get dhcp_dnsv6_x`
 if [ "$dhcp_dnsv6_x" == "br0" ] ; then
 	addr6_lan1="$(ifconfig -a br0 | grep inet6 | grep Link | sed -n '1p' | awk '{print $3}' | awk -F '/' '{print $1}')"
@@ -42,6 +44,7 @@ if [ "$dhcp_dnsv6_x" == "br0" ] ; then
 		restart_dhcpd
 		fi
 	fi
+fi
 fi
 fi
 

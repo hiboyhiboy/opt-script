@@ -74,7 +74,7 @@ if [ "$2" == "check" ] || [ "$check2" == "404" ] ; then
 rm -f /tmp/check_timeout/check
 fi
 [ ! -f /tmp/check_timeout/ver_time ] && echo -n "0" > /tmp/check_timeout/ver_time
-new_time=$(date "+%y%m%d%H%M")
+new_time=$(date "+1%m%d%H%M")
 if [ $(($new_time - $(cat /tmp/check_timeout/ver_time))) -ge 3 ] || [ ! -s /tmp/check_timeout/check ] ; then
 	echo "$new_time check_timeout_network 开始新的检测"
 	echo -n "$new_time" > /tmp/check_timeout/ver_time

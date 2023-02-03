@@ -1394,9 +1394,9 @@ restart_dhcpd
 
 update_check_file() {
 	[ ! -f /opt/app/ss_tproxy/tmp/update_check_time ] && echo -n "0" > /opt/app/ss_tproxy/tmp/update_check_time
-	if [ $(($(date "+%y%m%d%H%M") - $(cat /opt/app/ss_tproxy/tmp/update_check_time))) -ge 70000 ] || [ ! -s /opt/app/ss_tproxy/tmp/update_check_time ] ; then
+	if [ $(($(date "+1%m%d%H%M") - $(cat /opt/app/ss_tproxy/tmp/update_check_time))) -ge 70000 ] || [ ! -s /opt/app/ss_tproxy/tmp/update_check_time ] ; then
 		echo "update_check_file 开始新的 update_file"
-		echo -n "$(date "+%y%m%d%H%M")" > /opt/app/ss_tproxy/tmp/update_check_time
+		echo -n "$(date "+1%m%d%H%M")" > /opt/app/ss_tproxy/tmp/update_check_time
 		update_gfwlist
 		update_chnroute
 		update_chnlist
