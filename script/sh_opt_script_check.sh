@@ -29,8 +29,8 @@ opt_script_check=`nvram get opt_script_check`
 opt_script_check=$((opt_script_check - 1))
 nvram settmp opt_script_check="$opt_script_check"
 if [ "$opt_script_check" -lt 1 ] ; then
-nvram settmp opt_script_check="10"
-ip -f inet6 neighbor show > /tmp/ip6_neighbor.log
+nvram settmp opt_script_check="5"
+ip6_neighbor_get
 ip6_service=`nvram get ip6_service`
 if [ ! -z "$ip6_service" ] ; then
 dhcp_dnsv6_x=`nvram get dhcp_dnsv6_x`

@@ -387,3 +387,78 @@ cut_C_re () {
 C_restart="$(echo ${C_restart:0:3}${C_restart:29:3})"
 }
 
+ip6_neighbor_get () {
+a_ip6=/tmp/ip6_neighbor.tmp
+b_ip6=/tmp/ip6_neighbor.log
+c_ip6=/tmp/ip6_ifconfig.tmp
+touch $a_ip6 $b_ip6 $c_ip6
+# 根据网络接口 ip6 提取前2段匹配的 ip6
+ifconfig | grep inet6 | grep -E "Global|Link" | grep -v FAILED > $c_ip6
+echo "$(awk -F ' ' '\
+NR==FNR{\
+  split($3, arrtmp, ":");\
+  atmp=arrtmp[1]":"arrtmp[2];\
+  a[atmp]++;\
+}\
+NR>FNR{\
+  split($0, arrtmp, ":");\
+  atmp=arrtmp[1]":"arrtmp[2];\
+  if(atmp in a) {\
+    print $0;\
+  }\
+}' $c_ip6 $b_ip6)" > $b_ip6
+# [a =>> b] 合并更新 MAC ip6
+# 提取 b 文件旧的 MAC ip6
+# 合并 a 文件新的 MAC ip6
+# 得到 b 文件 MAC 更新的 ip6
+ip -f inet6 neighbor show | grep -v FAILED | grep -v INCOMPLETE | grep -v router | grep br0 > $a_ip6
+echo "$(awk -F ' ' '\
+NR==FNR{\
+  split($0, arrtmp, ":");\
+  atmp=arrtmp[1]":"arrtmp[2]$5;\
+  a[atmp]++;\
+}\
+NR>FNR{\
+  split($0, arrtmp, ":");\
+  atmp=arrtmp[1]":"arrtmp[2]$5;\
+  if(!(atmp in a)) {\
+    print $0;\
+  }\
+}' $a_ip6 $b_ip6)" > $b_ip6
+echo "$(cat $a_ip6)" >> $b_ip6
+sed -e '/^$/d' -i $b_ip6
+
+tmp_ip6=/tmp/static_ip.tmp
+d_ip6=/tmp/static_ip.inf
+e_ip6=/tmp/static_ip6.inf
+touch $tmp_ip6 $d_ip6 $e_ip6
+cat $d_ip6 | tr '[A-Z]' '[a-z]' | tr ',' ' ' > $tmp_ip6
+# 提取 IPv6 广播中继: WAN to LAN 的二级路由客户端
+echo "$(awk -F ' ' '\
+NR==FNR{\
+  atmp=$2;\
+  atmp=tolower(atmp);\
+  a[atmp]++\
+}\
+NR>FNR{\
+  atmp=$5;\
+  if(!(atmp in a)) {\
+    print $5;\
+  }\
+}' $tmp_ip6 $a_ip6)" > $e_ip6
+# 数据去重
+awk '!a[$0]++' $e_ip6 > $tmp_ip6
+sed -e '/^$/d' -i $tmp_ip6
+# 构建 MAC 数据
+echo "$(awk '{\
+  if($0) {\
+    a=$0;\
+    a=toupper(a);\
+    print "----,"a",*,1,0,0";\
+  }\
+}' $tmp_ip6)" > $e_ip6
+sed -e '/^$/d' -i $e_ip6
+echo -n "$(cat $e_ip6 | grep "," | wc -l)" > /tmp/static_ip6.num
+
+}
+

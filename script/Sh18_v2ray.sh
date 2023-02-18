@@ -661,9 +661,8 @@ ss_tproxy_mode_x=`nvram get app_110`
 [ "$ss_ip46" = "0" ] && { sstp_set ipv4='true' ; sstp_set ipv6='false' ; }
 [ "$ss_ip46" = "1" ] && { sstp_set ipv4='false' ; sstp_set ipv6='true' ; }
 [ "$ss_ip46" = "2" ] && { sstp_set ipv4='true' ; sstp_set ipv6='true' ; }
- # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
- # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
-sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+[ "$ss_ip46" = "0" ] && sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+[ "$ss_ip46" != "0" ] && sstp_set tproxy='true'
 sstp_set tcponly="$tcponly" # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
 nvram set app_112="$dns_start_dnsproxy"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
@@ -685,7 +684,7 @@ DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
 sstp_set dns_remote='8.8.8.8#53'
-sstp_set dns_remote6='2001:4860:4860::8888#53'
+sstp_set dns_remote6='::1#8053'
 [ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_direct='8.8.8.8' # 回国模式
 [ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
 [ "$mk_mode_routing" == "1" ] && [ "$transocks_mode_x" == "3" ] && sstp_set dns_remote='223.5.5.5#53' # 回国模式
@@ -876,6 +875,11 @@ echo '{
         "followRedirect": true
       },
       "tag": "redir_1099",
+      "streamSettings": {
+        "sockopt": {
+          "tproxy": "redirect"
+        }
+      },
       "sniffing": {
         "enabled": false,
         "destOverride": [
@@ -958,6 +962,7 @@ fi
 fi
 logger -t "【v2ray】" "开始生成 ss_tproxy 配置"
 mk_ss_tproxy=$(json_int_ss_tproxy)
+[ "$ss_ip46" != "0" ] && mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["inbounds",1,"streamSettings","sockopt","tproxy"];"tproxy")')
 mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["inbounds",0,"listen"];"0.0.0.0")')
 mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"127.0.0.1")')
 logger -t "【v2ray】" "提取 outbounds 生成 ss_tproxy 配置"
@@ -1119,7 +1124,8 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["dns","servers",4]])')
 fi
 [ "$ss_ip46" = "0" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["dns","queryStrategy"];"UseIPv4")')
 [ "$ss_ip46" = "1" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["dns","queryStrategy"];"UseIPv6")')
-[ "$ss_ip46" = "2" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["dns","queryStrategy"];"UseIP")')
+[ "$ss_ip46" = "2" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["dns","queryStrategy"];"UseIPv4")')
+[ "$ss_ip46" != "0" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",1,"streamSettings","sockopt","tproxy"];"tproxy")')
 echo $mk_vmess| jq --raw-output '.' > /tmp/vmess/mk_vmess.json
 if [ ! -s /tmp/vmess/mk_vmess.json ] ; then
 	logger -t "【v2ray】" "错误！生成配置为空，请看看哪里问题？"
@@ -1177,7 +1183,7 @@ else
 	mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["tlsSettings","serverName"]])')
 fi
 if [ "$vless_link_flow" == "xtls-rprx-vision" ] ; then
-mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","fingerprint"];"chrome")')
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","fingerprint"];"'$vless_link_fp'")')
 fi
 if [ ! -z "$vless_link_alpn" ] ; then
 	vless_link_alpn=$(echo $vless_link_alpn | sed 's/,/ /g')
@@ -1501,6 +1507,11 @@ echo '{
         "followRedirect": true
       },
       "tag": "redir_1099",
+      "streamSettings": {
+        "sockopt": {
+          "tproxy": "redirect"
+        }
+      },
       "sniffing": {
         "enabled": true,
         "destOverride": [

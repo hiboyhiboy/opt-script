@@ -180,7 +180,8 @@ ss_tproxy_mode_x=`nvram get app_110`
 [ "$ss_ip46" = "0" ] && { sstp_set ipv4='true' ; sstp_set ipv6='false' ; }
 [ "$ss_ip46" = "1" ] && { sstp_set ipv4='false' ; sstp_set ipv6='true' ; }
 [ "$ss_ip46" = "2" ] && { sstp_set ipv4='true' ; sstp_set ipv6='true' ; }
-sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+[ "$ss_ip46" = "0" ] && sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+[ "$ss_ip46" != "0" ] && sstp_set tproxy='true'
 [ "$ss_udp_enable" == 1 ] && sstp_set tcponly='false' # true:仅代理TCP流量; false:代理TCP和UDP流量
 [ "$ss_udp_enable" != 1 ] && sstp_set tcponly='true' # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
@@ -203,7 +204,7 @@ DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 [ "$ss_tochina_enable" == "0" ] && sstp_set dns_direct="$DNS_china"
 [ "$ss_tochina_enable" == "0" ] && sstp_set dns_direct6='240C::6666'
 [ "$ss_tochina_enable" == "0" ] && sstp_set dns_remote='8.8.8.8#53'
-[ "$ss_tochina_enable" == "0" ] && sstp_set dns_remote6='2001:4860:4860::8888#53'
+[ "$ss_tochina_enable" == "0" ] && sstp_set dns_remote6='::1#8053'
 [ "$ss_tochina_enable" != "0" ] && sstp_set dns_direct='8.8.8.8' # 回国模式
 [ "$ss_tochina_enable" != "0" ] && sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
 [ "$ss_tochina_enable" != "0" ] && sstp_set dns_remote='223.5.5.5#53' # 回国模式
@@ -295,6 +296,8 @@ plugin_json="$(nvram get ss_plugin_name)"
 obfs_plugin_json="$(nvram get ss_plugin_config)"
 tcp_and_udp="tcp_only"
 [ "$ss_udp_enable" == 1 ] && tcp_and_udp="tcp_and_udp"
+tcp_tproxy="false"
+[ "$ss_ip46" != "0" ] && tcp_tproxy="true"
 fi
 cat > "$config_file" <<-SSJSON
 {
@@ -312,7 +315,8 @@ cat > "$config_file" <<-SSJSON
 "plugin": "$plugin_json",
 "plugin_opts": "$obfs_plugin_json",
 "reuse_port": true,
-"mode": "$tcp_and_udp"
+"mode": "$tcp_and_udp",
+"tcp_tproxy": $tcp_tproxy
 }
 
 SSJSON
@@ -915,7 +919,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$chinadns_enable$chinadns_ng_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_ip46$chinadns_enable$chinadns_ng_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

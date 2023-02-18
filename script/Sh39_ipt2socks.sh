@@ -11,6 +11,8 @@ ss_udp_enable=`nvram get ss_udp_enable` #udp转发  0、停用；1、启动
 [ -z $ss_udp_enable ] && ss_udp_enable=0 && nvram set ss_udp_enable=0
 app_114=`nvram get app_114` #0:代理本机流量; 1:跳过代理本机流量
 [ -z $app_114 ] && app_114=0 && nvram set app_114=0
+ss_ip46=`nvram get ss_ip46`
+[ -z $ss_ip46 ] && ss_ip46=0 && nvram set ss_ip46=0
 transocks_listen_address=`nvram get app_30`
 transocks_listen_port=`nvram get app_31`
 transocks_server="$(nvram get app_32)"
@@ -242,10 +244,11 @@ ss_tproxy_mode_x=`nvram get app_110`
 [ "$transocks_mode_x" == "1" ] && sstp_set mode='gfwlist'
 [ "$transocks_mode_x" == "2" ] && sstp_set mode='global'
 [ "$transocks_mode_x" == "3" ] && sstp_set mode='chnlist'
-sstp_set ipv4='true' ; sstp_set ipv6='false' ;
- # sstp_set ipv4='false' ; sstp_set ipv6='true' ;
- # sstp_set ipv4='true' ; sstp_set ipv6='true' ;
-sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+[ "$ss_ip46" = "0" ] && { sstp_set ipv4='true' ; sstp_set ipv6='false' ; }
+[ "$ss_ip46" = "1" ] && { sstp_set ipv4='false' ; sstp_set ipv6='true' ; }
+[ "$ss_ip46" = "2" ] && { sstp_set ipv4='true' ; sstp_set ipv6='true' ; }
+[ "$ss_ip46" = "0" ] && sstp_set tproxy='false' # true:TPROXY+TPROXY; false:REDIRECT+TPROXY
+[ "$ss_ip46" != "0" ] && sstp_set tproxy='true'
 sstp_set tcponly="$tcponly" # true:仅代理TCP流量; false:代理TCP和UDP流量
 sstp_set selfonly='false'  # true:仅代理本机流量; false:代理本机及"内网"流量
 nvram set app_112="0"      #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
@@ -266,7 +269,7 @@ DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
 sstp_set dns_remote='8.8.8.8#53'
-sstp_set dns_remote6='2001:4860:4860::8888#53'
+sstp_set dns_remote6='::1#8053'
 [ "$transocks_mode_x" == "3" ] && sstp_set dns_direct='8.8.8.8' # 回国模式
 [ "$transocks_mode_x" == "3" ] && sstp_set dns_direct6='2001:4860:4860::8888' # 回国模式
 [ "$transocks_mode_x" == "3" ] && sstp_set dns_remote='223.5.5.5#53' # 回国模式
@@ -342,16 +345,18 @@ fi
 }
 
 initconfig () {
-[ -z "$(cat /etc/storage/app_22.sh | grep '\-b 0.0.0.0 -l')" ] && rm -f /etc/storage/app_22.sh
-	if [ ! -f "/etc/storage/app_22.sh" ] || [ ! -s "/etc/storage/app_22.sh" ] ; then
+	app_22="/etc/storage/app_22.sh"
+	if [ ! -f "$app_22" ] || [ ! -s "$app_22" ] || [ -z "$(cat $app_22 | grep "tcp_tproxy")" ] || [ -z "$(cat $app_22 | grep '\-b 0.0.0.0 -l')" ] ; then
 cat > "/etc/storage/app_22.sh" <<-\VVR
 #!/bin/bash
 lan_ipaddr=`nvram get lan_ipaddr`
 transocks_listen_address=`nvram get app_30`
 transocks_listen_port=`nvram get app_31`
+ss_ip46=`nvram get ss_ip46` ; tp_set="" ; tcp_tproxy="" ; [ "$ss_ip46" = "0" ] && tcp_tproxy="-R" ;
+[ "$ss_ip46" = "0" ] && tp_set="-4" ; [ "$ss_ip46" = "1" ] && tp_set="-6" ;
 killall transocks ipt2socks
 
-/opt/bin/ipt2socks -R -4 -b 0.0.0.0 -l 1098 -s $transocks_listen_address -p $transocks_listen_port &
+/opt/bin/ipt2socks -b 0.0.0.0 -l 1098 -s $transocks_listen_address -p $transocks_listen_port $tcp_tproxy $tp_set &
 
 VVR
 	fi

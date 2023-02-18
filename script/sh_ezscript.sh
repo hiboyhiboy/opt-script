@@ -760,6 +760,36 @@ rm -f /tmp/apc.lock
 
 }
 
+ip6_disable_filter () {
+ip6tables -P FORWARD ACCEPT
+ip6tables -F FORWARD
+}
+
+ip6_cast_wan_to_lan () {
+wan6_ifname=`nvram get wan0_ifname_t`
+if [ ! -z "$wan6_ifname" ] ; then
+modprobe ip6table_mangle
+modprobe ebtable
+modprobe ebtable_filter
+echo 1 > /proc/sys/net/ipv6/conf/${wan6_ifname//.//}/forwarding
+logger -t "【IPv6_中继】" "设置只允许 IPv6 数据包通过网桥 $wan6_ifname" # ebtables -t broute -L
+ebtables -t broute -N CASTWAN
+ebtables -t broute -F CASTWAN
+ebtables -t broute -D BROUTING -j CASTWAN
+addr6_lan1="$(ifconfig -a br0 | grep inet6 | grep Link | sed -n '1p' | awk '{print $3}' | awk -F '/' '{print $1}')"
+if [ ! -z "$addr6_lan1" ] ; then
+ebtables -t broute -A CASTWAN -p ipv6 --ip6-src "$addr6_lan1" -j ACCEPT
+ebtables -t broute -A CASTWAN -p ipv6 --ip6-dst "$addr6_lan1" -j ACCEPT
+fi
+ebtables -t broute -A CASTWAN -p ! ipv6 -j DROP -i $wan6_ifname
+ebtables -t broute -A BROUTING -j CASTWAN
+logger -t "【IPv6_中继】" "br0 已桥接上 $wan6_ifname"
+brctl addif br0 $wan6_ifname
+else
+logger -t "【IPv6_中继】" "没找到 wan6 网卡名称"
+fi
+}
+
 case "$1" in
 1)
   button_1
@@ -799,5 +829,11 @@ connAPSite)
   ;;
 connAPSite_scan)
   connAPSite "scan"
+  ;;
+ip6_disable_filter)
+  ip6_disable_filter
+  ;;
+ip6_cast_wan_to_lan)
+  ip6_cast_wan_to_lan
   ;;
 esac

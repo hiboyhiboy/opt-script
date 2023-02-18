@@ -168,6 +168,7 @@ fi
 # 链接2次解码
 link="$(de_2_base64 "$(echo -n $link)")"
 # 详述 https://github.com/XTLS/Xray-core/issues/91# MessAEAD _ VLESS 分享链接标准提
+# https://github.com/XTLS/Xray-core/discussions/716# VMessAEAD / VLESS 分享链接标准提案
 if [ ! -z "$(echo -n "$link" | grep '#')" ] ; then
 vless_link_name_url="$(echo -n "$link" | awk -F '#' '{print $2}')"
 vless_link_name="$(echo $(printf $(echo -n "$vless_link_name_url" | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g')) | sed -n '1p')"
@@ -244,6 +245,8 @@ vless_link_allowInsecure="$(echo -n "$vless_link_specific" | grep -Eo "allow[Ii]
 
 vless_link_flow="$(echo -n "$vless_link_specific" | grep -Eo "flow=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 
+vless_link_fp="$(echo -n "$vless_link_specific" | grep -Eo "fp=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ -z "$vless_link_fp" ] && vless_link_fp="chrome"
 fi
 link_tmp=""
 
@@ -455,6 +458,7 @@ vless_link_sni=""
 vless_link_alpn=""
 vless_link_allowInsecure=""
 vless_link_flow=""
+vless_link_fp=""
 
 vless_link_v=""
 [ -z "$vless_link_v" ] && vless_link_v="0"

@@ -96,10 +96,10 @@ if [ -s "/tmp/padavan/$Firmware" ] && [ "$MD5_txt"x = "$MD5_down"x ] ; then
     sleep 1
     while [ ! -f /tmp/padavan/log.txt ] ; do
         sleep 10
-        logger_echo "$(date "+%Y-%m-%d %H:%M:%S")"" 稍等【$Firmware】请勿断电！"
+        logger_echo " 稍等【$Firmware】请勿断电！"
     done
     while [ -s /tmp/padavan/log.txt ] && [ ! -z "`pidof mtd_write`" ] ; do
-        logger_echo "$(date "+%Y-%m-%d %H:%M:%S")"" 稍等【$Firmware】正在更新！请勿断电！"
+        logger_echo " 稍等【$Firmware】正在更新！请勿断电！"
         sleep 10
     done
     mtd_log=`cat /tmp/padavan/log.txt | grep -Eo '\[ok\]'`

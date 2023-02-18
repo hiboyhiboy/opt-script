@@ -229,7 +229,6 @@ if [ "$backup_storage" == "1" ] ; then
 logger -t "【tailscale】" "备份配置文件到路由内部储存"
 cp -f /opt/app/tailscale/lib/tailscaled.state /etc/storage/tailscale/lib/tailscaled.state
 cp -f /opt/app/tailscale/lib/cmd.log.conf /etc/storage/tailscale/lib/cmd.log.conf
-tailscale_restart
 fi
 fi
 }

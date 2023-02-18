@@ -207,8 +207,8 @@ do
 	inet6_neighbor="$(echo "$line" | cut -d '@' -f6)"
 	inet6_neighbor=$(echo $inet6_neighbor)
 	if [ -z "$inet6_neighbor" ] ; then
-		ip -f inet6 neighbor show > /tmp/ip6_neighbor.log
-		inet6_neighbor="$(cat /tmp/ip6_neighbor.log | grep "$inf_MAC" | grep -v "$inf_v_match" | grep "$inf_match" | awk -F ' ' '{print $1}' | sed -n '1p')"
+		ip6_neighbor_get
+		inet6_neighbor="$(cat /tmp/ip6_neighbor.log | grep "$inf_MAC" | grep -v "$inf_v_match" | grep "$inf_match" | awk -F ' ' '{print $1}' | sed -n '$p')"
 	fi
 	[ ! -z "$inet6_neighbor" ] && arDdnsCheck $DOMAIN $HOST
 	IPv6_neighbor=0
