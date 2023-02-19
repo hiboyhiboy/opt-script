@@ -509,7 +509,7 @@ LAN_AC_IP='0' # 默认值 0
 ## opts
 opts_ss_netstat='auto'                  # auto/ss/netstat，用哪个端口检测工具，见 README
 opts_ping_cmd_to_use='auto'             # auto/standalone/parameter，ping 相关，见 README
-opts_hostname_resolver='auto'           # auto/dig/getent/ping，用哪个解析工具，见 README
+opts_hostname_resolver='auto'           # auto/doh/dig/getent/ping，用哪个解析工具，见 README
 opts_overwrite_resolv='false'           # true/false，定义如何修改 resolv.conf，见 README
 opts_ip_for_check_net='223.5.5.5'    # 检测外网是否可访问的 IP，ping，留空表示跳过此检查
 

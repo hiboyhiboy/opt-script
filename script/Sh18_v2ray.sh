@@ -1494,6 +1494,10 @@ echo '{
         "destOverride": [
           "http",
           "tls"
+        ],
+        "domainsExcluded": [
+          "mijia cloud",
+          "courier.push.apple.com"
         ]
       }
     },
@@ -1517,6 +1521,10 @@ echo '{
         "destOverride": [
           "http",
           "tls"
+        ],
+        "domainsExcluded": [
+          "mijia cloud",
+          "courier.push.apple.com"
         ]
       }
     },
@@ -1606,7 +1614,9 @@ echo '{
         "address": "223.5.5.5",
         "port": 53,
         "domains": [
-          "geosite:cn"
+          "geosite:cn",
+          "geosite:apple",
+          "domain:courier.push.apple.com"
         ],
         "expectIPs": [
           "geoip:cn"
@@ -1696,7 +1706,9 @@ echo '{
           "domain:baidu.com",
           "domain:qq.com",
           "domain:taobao.com",
-          "geosite:cn"
+          "geosite:cn",
+          "geosite:apple",
+          "domain:courier.push.apple.com"
         ],
         "outboundTag": "direct"
       },

@@ -246,7 +246,25 @@ set_sysctl_option() {
 }
 
 resolve_hostname_by_hosts() {
-	cat /etc/hosts | sed 's/#.*//g' | grep -F "$1" | head -n1 | awk '{print $1}'
+	cat /etc/hosts /etc/storage/dnsmasq/hosts | sed 's/#.*//g' | grep -v "^$" | grep -F "$1" | head -n1 | awk '{print $1}'
+}
+
+resolve_hostname_by_doh() {
+	addr_family="$1" ; hostname="$2"
+	ipaddr=$(resolve_hostname_by_hosts "$hostname")
+	if [ "$ipaddr" ]; then
+		if [ "$addr_family" = '-4' ] ; then
+			ipaddr=$(echo "$ipaddr" | grep -v ":" | head -n1)
+			is_ipv4_address "$ipaddr" && echo "$ipaddr"
+			return
+		fi
+		if [ "$addr_family" = '-6' ] ; then
+			ipaddr=$(echo "$ipaddr" | grep ':' | head -n1)
+			is_ipv6_address "$ipaddr" && echo "$ipaddr"
+			return
+		fi
+	fi
+	[ "$addr_family" = '-4' ] && arNslookup "$hostname" || arNslookup6 "$hostname"
 }
 
 resolve_hostname_by_dig() {
@@ -595,14 +613,23 @@ check_config() {
 
 	case "$opts_hostname_resolver" in
 		auto)
-			if command_is_exists 'dig'; then
+			if command_is_exists 'nslookup' || command_is_exists 'wget' || command_is_exists 'curl' ; then
+				resolver_func='resolve_hostname_by_doh'
+			elif command_is_exists 'dig'; then
 				resolver_func='resolve_hostname_by_dig'
 			elif command_is_exists 'getent'; then
 				resolver_func='resolve_hostname_by_getent'
 			elif command_is_exists 'ping'; then
 				resolver_func='resolve_hostname_by_ping'
 			else
-				log_error "command not found: dig/getent/ping"
+				log_error "command not found: nslookup/wget/curl/dig/getent/ping"
+			fi
+			;;
+		doh)
+			if command_is_exists 'nslookup' || command_is_exists 'wget' || command_is_exists 'curl' ; then
+				resolver_func='resolve_hostname_by_doh'
+			else
+				log_error "command not found: nslookup/wget/curl"
 			fi
 			;;
 		dig)

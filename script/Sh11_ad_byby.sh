@@ -808,34 +808,6 @@ adbyby_cron_job(){
 	fi
 }
 
-arNslookup() {
-mkdir -p /tmp/arNslookup
-nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":" > /tmp/arNslookup/$$ &
-I=5
-while [ ! -s /tmp/arNslookup/$$ ] ; do
-		I=$(($I - 1))
-		[ $I -lt 0 ] && break
-		sleep 1
-done
-if [ -s /tmp/arNslookup/$$ ] ; then
-cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-else
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
-		if [ $? -eq 0 ]; then
-		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
-		fi
-	else
-		Address="`curl --user-agent "$user_agent" -s http://119.29.29.29/d?dn=$1`"
-		if [ $? -eq 0 ]; then
-		echo "$Address" |  sed s/\;/"\n"/g | grep -E -o '([0-9]+\.){3}[0-9]+'
-		fi
-	fi
-fi
-rm -f /tmp/arNslookup/$$
-}
-
 initopt () {
 optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
 [ ! -z "$optPath" ] && return

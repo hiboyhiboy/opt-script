@@ -207,66 +207,6 @@ arDdnsInfo() {
 	fi
 }
 
-# 查询域名地址
-# 参数: 待查询域名
-arNslookup() {
-mkdir -p /tmp/arNslookup
-nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep -v ":" | sed -n '1p' > /tmp/arNslookup/$$ &
-I=5
-while [ ! -s /tmp/arNslookup/$$ ] ; do
-		I=$(($I - 1))
-		[ $I -lt 0 ] && break
-		sleep 1
-done
-killall nslookup
-if [ -s /tmp/arNslookup/$$ ] ; then
-cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-else
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="`wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- http://119.29.29.29/d?dn=$1`"
-		if [ $? -eq 0 ]; then
-		echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+'
-		fi
-	else
-		Address="`curl --user-agent "$user_agent" -s http://119.29.29.29/d?dn=$1`"
-		if [ $? -eq 0 ]; then
-		echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+'
-		fi
-	fi
-fi
-rm -f /tmp/arNslookup/$$
-}
-
-arNslookup6() {
-mkdir -p /tmp/arNslookup
-nslookup $1 | tail -n +3 | grep "Address" | awk '{print $3}'| grep ":" | sed -n '1p' > /tmp/arNslookup/$$ &
-I=5
-while [ ! -s /tmp/arNslookup/$$ ] ; do
-		I=$(($I - 1))
-		[ $I -lt 0 ] && break
-		sleep 1
-done
-killall nslookup
-if [ -s /tmp/arNslookup/$$ ] ; then
-	cat /tmp/arNslookup/$$ | sort -u | grep -v "^$"
-else
-	curltest=`which curl`
-	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- --header 'accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name='"$1"'&type=AAAA')"
-		if [ $? -eq 0 ]; then
-		echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p'
-		fi
-	else
-		Address="$(curl --user-agent "$user_agent" -s -H 'accept: application/dns-json' 'https://cloudflare-dns.com/dns-query?name='"$1"'&type=AAAA')"
-		if [ $? -eq 0 ]; then
-		echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p'
-		fi
-	fi
-fi
-rm -f /tmp/arNslookup/$$
-}
-
 # 读取接口数据
 # 参数: 接口类型 待提交数据
 arApiPost() {
@@ -386,7 +326,6 @@ arDdnsCheck() {
 	fi
 	echo "Updating Domain: $HOST.$DOMAIN"
 	echo "hostIP: $hostIP"
-	#lastIP=$(arNslookup "$HOST.$DOMAIN")
 	lastIP=$(arDdnsInfo "$DOMAIN" "$HOST")
 	if [ $? -eq 1 ]; then
 		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$HOST.$DOMAIN")

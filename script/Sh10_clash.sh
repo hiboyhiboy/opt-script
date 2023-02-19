@@ -328,6 +328,8 @@ chmod 644 /opt/etc/ssl/certs -R
 chmod 777 /opt/etc/ssl/certs
 chmod 644 /etc/ssl/certs -R
 chmod 777 /etc/ssl/certs
+$SVC_PATH -t -d /opt/app/clash/config >/dev/null
+if [ "$?" = 0 ];then
 su_cmd2="$SVC_PATH -d /opt/app/clash/config"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
 sleep 3
@@ -337,6 +339,7 @@ su_cmd2="$SVC_PATH -d /opt/app/clash/config2"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
 fi
 sleep 3
+fi
 [ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
 [ -z "`pidof clash`" ] && logger -t "【clash】" "启动失败, 注意检clash是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
 clash_get_status
@@ -644,7 +647,7 @@ dns:
   listen: 0.0.0.0:8053
   default-nameserver :
     - 8.8.8.8
-  enhanced-mode: redir-host
+  enhanced-mode: fake-ip
   # enhanced-mode: redir-host # 或 fake-ip
   # # fake-ip-range: 198.18.0.1/16 # 如果你不知道这个参数的作用，请勿修改
   # # 实验性功能 hosts, 支持通配符 (例如 *.clash.dev 甚至 *.foo.*.example.com)
@@ -653,6 +656,12 @@ dns:
   # hosts:
   #   '*.clash.dev': 127.0.0.1
   #   'alpha.clash.dev': '::1'
+  use-hosts: true # 查询 hosts
+  # 配置不使用fake-ip的域名
+  fake-ip-filter:
+    - '+.*'
+  #   - '*.lan'
+  #   - localhost.ptlogin2.qq.com
 
   nameserver:
     - 223.5.5.5
@@ -696,6 +705,26 @@ dns:
 EEE
 	chmod 755 "$app_21"
 fi
+
+
+if [ -z "$(cat $app_21 | grep sniffer)" ] ; then
+	cat >> "$app_21" <<-\EEE
+sniffer:
+  enable: true
+  override-destination: true
+  sniff:
+    http: { ports: [80, 8080] }
+    tls: { ports: [443, 8443] }
+  skip-domain:
+    #Apple
+    - 'courier.push.apple.com'
+    #mi
+    - 'Mijia Cloud'
+
+EEE
+	chmod 755 "$app_21"
+fi
+
 
 app_33="/etc/storage/app_33.sh"
 if [ ! -f "$app_33" ] || [ ! -s "$app_33" ] ; then
@@ -925,6 +954,8 @@ fi
 logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
 yq d -i $config_yml dns
 rm_temp
+yq d -i $config_yml sniffer
+rm_temp
 yq w -i $config_yml external-controller $clash_ui
 rm_temp
 yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
@@ -984,6 +1015,8 @@ rm_temp
 yq d -i $config_2_yml tproxy-port
 rm_temp
 yq d -i $config_2_yml mixed-port
+rm_temp
+yq d -i $config_2_yml sniffer
 rm_temp
 yq d -i $config_2_yml dns
 rm_temp
