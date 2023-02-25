@@ -51,7 +51,7 @@ if [ "$1" = "x" ] ; then
 	cryfs_renum=${cryfs_renum:-"0"}
 	cryfs_renum=`expr $cryfs_renum + 1`
 	nvram set cryfs_renum="$cryfs_renum"
-	if [ "$cryfs_renum" -gt "2" ] ; then
+	if [ "$cryfs_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【cryfs】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -64,7 +64,7 @@ if [ "$1" = "x" ] ; then
 			get_tg_pass
 			[ "$cryfs_key_enable" = "2" ] && [ ! -z "$cryfs_pass" ] && break
 		done
-		nvram set cryfs_renum="0"
+		nvram set cryfs_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

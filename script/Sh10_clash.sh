@@ -97,7 +97,7 @@ if [ "$1" = "x" ] ; then
 	clash_renum=${clash_renum:-"0"}
 	clash_renum=`expr $clash_renum + 1`
 	nvram set clash_renum="$clash_renum"
-	if [ "$clash_renum" -gt "2" ] ; then
+	if [ "$clash_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【clash】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -108,7 +108,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get clash_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set clash_renum="0"
+		nvram set clash_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -223,7 +223,7 @@ sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
 killall clash
 killall -9 clash
-restart_dhcpd
+restart_on_dhcpd
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app18"
 kill_ps "_clash.sh"
@@ -358,7 +358,7 @@ logger -t "【clash】" "已经启动 chinadns 防止域名污染"
 else
 logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
 fi
-restart_dhcpd
+restart_on_dhcpd
 logger -t "【clash】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
 logger -t "【clash】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
 logger -t "【clash】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"

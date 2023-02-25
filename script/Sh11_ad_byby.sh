@@ -153,7 +153,7 @@ if [ "$1" = "x" ] ; then
 	adbyby_renum=${adbyby_renum:-"0"}
 	adbyby_renum=`expr $adbyby_renum + 1`
 	nvram set adbyby_renum="$adbyby_renum"
-	if [ "$adbyby_renum" -gt "2" ] ; then
+	if [ "$adbyby_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【adbyby】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -164,7 +164,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get adbyby_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set adbyby_renum="0"
+		nvram set adbyby_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

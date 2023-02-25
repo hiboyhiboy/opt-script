@@ -63,7 +63,7 @@ if [ "$1" = "x" ] ; then
 	frp_renum=${frp_renum:-"0"}
 	frp_renum=`expr $frp_renum + 1`
 	nvram set frp_renum="$frp_renum"
-	if [ "$frp_renum" -gt "2" ] ; then
+	if [ "$frp_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【frp】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -74,7 +74,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get frp_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set frp_renum="0"
+		nvram set frp_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -258,7 +258,7 @@ logger -t "【frp】" "运行 frp_script"
 
 rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
 eval "/etc/storage/frp_script.sh $cmd_log" &
-restart_dhcpd
+restart_on_dhcpd
 if [ "$frpc_enable" = "1" ] ; then
 	frpc_v="`/opt/bin/frpc --version`"
 	nvram set frpc_v=$frpc_v

@@ -40,7 +40,7 @@ if [ "$1" = "x" ] ; then
 	softether_renum=${softether_renum:-"0"}
 	softether_renum=`expr $softether_renum + 1`
 	nvram set softether_renum="$softether_renum"
-	if [ "$softether_renum" -gt "2" ] ; then
+	if [ "$softether_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【softether】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -51,7 +51,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get softether_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set softether_renum="0"
+		nvram set softether_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -129,7 +129,7 @@ iptables -t filter -D INPUT -p udp --destination-port 1701 -j ACCEPT
 killall vpnserver softether_script.sh
 killall -9 vpnserver softether_script.sh
 rm -f /etc/storage/dnsmasq/dnsmasq.d/softether.conf
-restart_dhcpd
+restart_on_dhcpd
 kill_ps "/tmp/script/_softether"
 kill_ps "_softether.sh"
 kill_ps "$scriptname"
@@ -208,7 +208,7 @@ do
     if [ "$i" -lt 1 ];then
         logger -t "【softether】" "错误：不能正确启动 vpnserver!"
         rm -rf /etc/storage/dnsmasq/dnsmasq.d/softether.conf
-        restart_dhcpd
+        restart_on_dhcpd
         logger -t "【softether】" "错误：不能正确启动 vpnserver!"
         [ -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动失败, 注意检查hamcore.se2、vpncmd、vpnserver是否下载完整,10秒后自动尝试重新启动" && sleep 10 && nvram set softether_status=00 && /tmp/script/_softether &
         exit
@@ -219,7 +219,7 @@ done
 logger -t "【softether】" "正确启动 vpnserver!"
 brctl addif br0 $tap
 echo interface=tap_vpn > /etc/storage/dnsmasq/dnsmasq.d/softether.conf
-restart_dhcpd
+restart_on_dhcpd
 mtd_storage.sh save &
 FOF
 chmod 777 "/etc/storage/softether_script.sh"

@@ -71,7 +71,7 @@ if [ "$1" = "x" ] ; then
 	hysteria_renum=${hysteria_renum:-"0"}
 	hysteria_renum=`expr $hysteria_renum + 1`
 	nvram set hysteria_renum="$hysteria_renum"
-	if [ "$hysteria_renum" -gt "2" ] ; then
+	if [ "$hysteria_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【hysteria】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -82,7 +82,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get hysteria_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set hysteria_renum="0"
+		nvram set hysteria_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -156,7 +156,7 @@ sed -Ei '/【hysteria】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh08_hysteria.sh"
 killall hysteria
 killall -9 hysteria
-restart_dhcpd
+restart_on_dhcpd
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app24"
 kill_ps "_hysteria.sh"
@@ -245,7 +245,7 @@ logger -t "【hysteria】" "完成 透明代理 转发规则设置"
 if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
 logger -t "【hysteria】" "已经启动 chinadns 防止域名污染"
 fi
-restart_dhcpd
+restart_on_dhcpd
 logger -t "【hysteria】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
 logger -t "【hysteria】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
 logger -t "【hysteria】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"

@@ -895,7 +895,7 @@ if [ "$1" = "x" ] ; then
 	ss_renum=${ss_renum:-"0"}
 	ss_renum=`expr $ss_renum + 1`
 	nvram set ss_renum="$ss_renum"
-	if [ "$ss_renum" -gt "2" ] ; then
+	if [ "$ss_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【ss】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -906,7 +906,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get ss_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set ss_renum="0"
+		nvram set ss_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -1173,7 +1173,7 @@ logger -t "【SS】" " SS 服务器 【$app_97】 检测到问题, $rebss"
 [ -z "$rebss" ] && rebss=0
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
-#restart_dhcpd
+#restart_on_dhcpd
 #/etc/storage/crontabs_script.sh &
 
 #404

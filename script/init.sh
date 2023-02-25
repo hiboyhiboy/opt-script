@@ -13,7 +13,7 @@ hiboyscript="https://opt.cn2qq.com/opt-script"
 hiboyfile2="https://raw.githubusercontent.com/hiboyhiboy/opt-file/master"
 hiboyscript2="https://raw.githubusercontent.com/hiboyhiboy/opt-script/master"
 # --user-agent
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
 ACTION=$1
 scriptfilepath=$(cd "$(dirname "$0")"; pwd)/$(basename $0)
 #echo $scriptfilepath
@@ -551,5 +551,10 @@ if [ -s /tmp/arNslookup/$$ ] ; then
 fi
 fi
 rm -f /tmp/arNslookup/$$
+}
+
+restart_on_dhcpd() {
+eval "sed \"/""$(cat /tmp/syslog.log | grep -Eo "dnsmasq\[[0-9]+\]: started" | grep -Eo "[0-9]+" | awk '{print "\\\["$1"\\\]";}'| sed ':a;N;s/\n/|/g;ba')""/d\" -Ei /tmp/syslog.log"
+restart_dhcpd
 }
 

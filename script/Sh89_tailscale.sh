@@ -30,7 +30,7 @@ if [ "$1" = "x" ] ; then
 	tailscale_renum=${tailscale_renum:-"0"}
 	tailscale_renum=`expr $tailscale_renum + 1`
 	nvram set tailscale_renum="$tailscale_renum"
-	if [ "$tailscale_renum" -gt "2" ] ; then
+	if [ "$tailscale_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【tailscale】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -41,7 +41,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get tailscale_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set tailscale_renum="0"
+		nvram set tailscale_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

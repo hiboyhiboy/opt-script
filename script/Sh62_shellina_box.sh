@@ -50,7 +50,7 @@ if [ "$1" = "x" ] ; then
 	shellinabox_renum=${shellinabox_renum:-"0"}
 	shellinabox_renum=`expr $shellinabox_renum + 1`
 	nvram set shellinabox_renum="$shellinabox_renum"
-	if [ "$shellinabox_renum" -gt "2" ] ; then
+	if [ "$shellinabox_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "$shell_log" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -61,7 +61,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get shellinabox_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set shellinabox_renum="0"
+		nvram set shellinabox_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

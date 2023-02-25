@@ -43,7 +43,7 @@ if [ "$1" = "x" ] ; then
 	ddnsto_renum=${ddnsto_renum:-"0"}
 	ddnsto_renum=`expr $ddnsto_renum + 1`
 	nvram set ddnsto_renum="$ddnsto_renum"
-	if [ "$ddnsto_renum" -gt "2" ] ; then
+	if [ "$ddnsto_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【ddnsto】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -54,7 +54,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get ddnsto_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set ddnsto_renum="0"
+		nvram set ddnsto_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

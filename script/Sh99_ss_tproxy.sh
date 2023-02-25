@@ -112,7 +112,7 @@ if [ "$1" = "x" ] ; then
 	ss_tproxy_renum=${ss_tproxy_renum:-"0"}
 	ss_tproxy_renum=`expr $ss_tproxy_renum + 1`
 	nvram set ss_tproxy_renum="$ss_tproxy_renum"
-	if [ "$ss_tproxy_renum" -gt "2" ] ; then
+	if [ "$ss_tproxy_renum" -gt "3" ] ; then
 		I=1
 		echo $I > $relock
 		logger -t "【ss_tproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -123,7 +123,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get ss_tproxy_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set ss_tproxy_renum="0"
+		nvram set ss_tproxy_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -279,7 +279,7 @@ sed -Ei '/【ss_tproxy】|^$/d' /tmp/script/_opt_script_check
 ss_tproxy_run "flush_postrule"
 ss_tproxy_run "stop"
 nvram set ss_tproxy_auser="$auser_a"
-restart_dhcpd
+restart_on_dhcpd
 killall ss_tproxy sh_ss_tproxy.sh
 killall -9 ss_tproxy sh_ss_tproxy.sh
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态

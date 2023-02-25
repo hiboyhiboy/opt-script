@@ -46,7 +46,7 @@ if [ "$1" = "x" ] ; then
 	fakeincn_renum=${fakeincn_renum:-"0"}
 	fakeincn_renum=`expr $fakeincn_renum + 1`
 	nvram set fakeincn_renum="$fakeincn_renum"
-	if [ "$fakeincn_renum" -gt "2" ] ; then
+	if [ "$fakeincn_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【fakeincn】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -57,7 +57,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get fakeincn_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set fakeincn_renum="0"
+		nvram set fakeincn_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -142,7 +142,7 @@ iptables -t nat -D OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-p
 iptables -t nat -D PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 iptables -t nat -D OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 rm -rf /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
-restart_dhcpd
+restart_on_dhcpd
 [ ! -z "$fakeincn_path" ] && eval $(ps -w | grep 'l 1008' | grep -v grep | awk '{print "kill "$1";";}')
 killall app_1.sh fakeincn
 killall -9 app_1.sh fakeincn
@@ -228,7 +228,7 @@ sed -Ei '/^$|api.ip.sb/d' /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
 ipset=/api.ip.sb/tocn
 _CONF
 
-restart_dhcpd
+restart_on_dhcpd
 
 fakeincn_get_status
 eval "$scriptfilepath keep &"
@@ -271,7 +271,7 @@ server3=xxx3.dynu.com
 ss_router_port=1234   #服务器端口
 ss_passwd=xxxxxxxxx   #密码
 method=chacha20       #加密方式
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
 
 index=1
 ln -sf `which ss-redir` /opt/app/fakeincn/fakeincn

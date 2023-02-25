@@ -79,7 +79,7 @@ if [ "$1" = "x" ] ; then
 	transocks_renum=${transocks_renum:-"0"}
 	transocks_renum=`expr $transocks_renum + 1`
 	nvram set transocks_renum="$transocks_renum"
-	if [ "$transocks_renum" -gt "2" ] ; then
+	if [ "$transocks_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【$tran_c_socks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -90,7 +90,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get transocks_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set transocks_renum="0"
+		nvram set transocks_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

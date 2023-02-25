@@ -42,7 +42,7 @@ if [ "$1" = "x" ] ; then
 	phddns_renum=${phddns_renum:-"0"}
 	phddns_renum=`expr $phddns_renum + 1`
 	nvram set phddns_renum="$phddns_renum"
-	if [ "$phddns_renum" -gt "2" ] ; then
+	if [ "$phddns_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【花生壳内网版】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -53,7 +53,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get phddns_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set phddns_renum="0"
+		nvram set phddns_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

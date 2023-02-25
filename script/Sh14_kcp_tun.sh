@@ -74,7 +74,7 @@ if [ "$1" = "x" ] ; then
 	kcptun_renum=${kcptun_renum:-"0"}
 	kcptun_renum=`expr $kcptun_renum + 1`
 	nvram set kcptun_renum="$kcptun_renum"
-	if [ "$kcptun_renum" -gt "2" ] ; then
+	if [ "$kcptun_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【kcptun】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -85,7 +85,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get kcptun_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set kcptun_renum="0"
+		nvram set kcptun_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -244,7 +244,7 @@ cat >> "/etc/storage/kcptun_script.sh" <<-EUI
 EUI
 
 /etc/storage/kcptun_script.sh &
-restart_dhcpd
+restart_on_dhcpd
 sleep 4
 [ ! -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "启动成功" && kcptun_restart o
 [ -z "$(ps -w | grep "$kcptun_path" | grep -v grep )" ] && logger -t "【kcptun】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && kcptun_restart x

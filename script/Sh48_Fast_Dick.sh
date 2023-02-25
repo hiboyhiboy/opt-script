@@ -42,7 +42,7 @@ if [ "$1" = "x" ] ; then
 	FastDicks_renum=${FastDicks_renum:-"0"}
 	FastDicks_renum=`expr $FastDicks_renum + 1`
 	nvram set FastDicks_renum="$FastDicks_renum"
-	if [ "$FastDicks_renum" -gt "2" ] ; then
+	if [ "$FastDicks_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【FastDicks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -53,7 +53,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get FastDicks_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set FastDicks_renum="0"
+		nvram set FastDicks_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

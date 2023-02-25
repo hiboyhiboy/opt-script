@@ -63,7 +63,7 @@ if [ "$1" = "x" ] ; then
 	chinadns_renum=${chinadns_renum:-"0"}
 	chinadns_renum=`expr $chinadns_renum + 1`
 	nvram set chinadns_renum="$chinadns_renum"
-	if [ "$chinadns_renum" -gt "2" ] ; then
+	if [ "$chinadns_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【chinadns】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -74,7 +74,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get chinadns_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set chinadns_renum="0"
+		nvram set chinadns_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -127,7 +127,7 @@ server=127.0.0.1#$chinadns_port #chinadns_0
 dns-forward-max=1000 #chinadns_0
 min-cache-ttl=1800 #chinadns_0
 EOF
-			restart_dhcpd
+			restart_on_dhcpd
 		fi
 	fi
 fi
@@ -170,7 +170,7 @@ server=127.0.0.1#$chinadns_port #chinadns_0
 dns-forward-max=1000 #chinadns_0
 min-cache-ttl=1800 #chinadns_0
 EOF
-		restart_dhcpd
+		restart_on_dhcpd
 	fi
 sleep 69
 chinadns_enable=`nvram get app_1` #chinadns_enable
@@ -182,7 +182,7 @@ kill_ps "$scriptname keep"
 sed -Ei '/【chinadns】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/no-resolv|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_0/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-restart_dhcpd
+restart_on_dhcpd
 [ ! -z "$chinadns_path" ] && eval $(ps -w | grep "$chinadns_path " | grep -v grep | awk '{print "kill "$1";";}')
 killall chinadns
 killall -9 chinadns
@@ -256,7 +256,7 @@ dns-forward-max=1000 #chinadns_0
 min-cache-ttl=1800 #chinadns_0
 EOF
 
-restart_dhcpd
+restart_on_dhcpd
 
 chinadns_get_status
 eval "$scriptfilepath keep &"

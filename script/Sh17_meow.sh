@@ -46,7 +46,7 @@ if [ "$1" = "x" ] ; then
 	meow_renum=${meow_renum:-"0"}
 	meow_renum=`expr $meow_renum + 1`
 	nvram set meow_renum="$meow_renum"
-	if [ "$meow_renum" -gt "2" ] ; then
+	if [ "$meow_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【meow】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -57,7 +57,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get meow_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set meow_renum="0"
+		nvram set meow_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -161,7 +161,7 @@ meow_path="$SVC_PATH"
 logger -t "【meow】" "运行 meow_script"
 /etc/storage/meow_script.sh
 eval "$meow_path -rc /etc/storage/meow_config_script.sh $cmd_log" &
-restart_dhcpd
+restart_on_dhcpd
 sleep 4
 [ ! -z "$(ps -w | grep "$meow_path" | grep -v grep )" ] && logger -t "【meow】" "启动成功" && meow_restart o
 [ -z "$(ps -w | grep "$meow_path" | grep -v grep )" ] && logger -t "【meow】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && meow_restart x

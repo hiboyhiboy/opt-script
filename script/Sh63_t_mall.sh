@@ -64,7 +64,7 @@ if [ "$1" = "x" ] ; then
 	tmall_renum=${tmall_renum:-"0"}
 	tmall_renum=`expr $tmall_renum + 1`
 	nvram set tmall_renum="$tmall_renum"
-	if [ "$tmall_renum" -gt "2" ] ; then
+	if [ "$tmall_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【tmall】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -75,7 +75,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get tmall_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set tmall_renum="0"
+		nvram set tmall_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

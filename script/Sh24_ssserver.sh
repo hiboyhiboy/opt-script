@@ -52,7 +52,7 @@ if [ "$1" = "x" ] ; then
 	ssserver_renum=${ssserver_renum:-"0"}
 	ssserver_renum=`expr $ssserver_renum + 1`
 	nvram set ssserver_renum="$ssserver_renum"
-	if [ "$ssserver_renum" -gt "2" ] ; then
+	if [ "$ssserver_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【SS_server】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -63,7 +63,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get ssserver_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set ssserver_renum="0"
+		nvram set ssserver_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

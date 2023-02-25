@@ -52,7 +52,7 @@ if [ "$1" = "x" ] ; then
 	filemanager_renum=${filemanager_renum:-"0"}
 	filemanager_renum=`expr $filemanager_renum + 1`
 	nvram set filemanager_renum="$filemanager_renum"
-	if [ "$filemanager_renum" -gt "2" ] ; then
+	if [ "$filemanager_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【filemanager】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -63,7 +63,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get filemanager_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set filemanager_renum="0"
+		nvram set filemanager_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

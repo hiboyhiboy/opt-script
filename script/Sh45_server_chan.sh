@@ -37,7 +37,7 @@ if [ "$1" = "x" ] ; then
 	serverchan_renum=${serverchan_renum:-"0"}
 	serverchan_renum=`expr $serverchan_renum + 1`
 	nvram set serverchan_renum="$serverchan_renum"
-	if [ "$serverchan_renum" -gt "2" ] ; then
+	if [ "$serverchan_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【serverchan】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -48,7 +48,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get serverchan_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set serverchan_renum="0"
+		nvram set serverchan_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -176,7 +176,7 @@ serverchan_notify_1=`nvram get serverchan_notify_1`
 serverchan_notify_2=`nvram get serverchan_notify_2`
 serverchan_notify_3=`nvram get serverchan_notify_3`
 serverchan_notify_4=`nvram get serverchan_notify_4`
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4792.0 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
 mkdir -p /tmp/var
 resub=1
 # 获得外网地址

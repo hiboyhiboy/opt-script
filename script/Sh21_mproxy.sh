@@ -39,7 +39,7 @@ if [ "$1" = "x" ] ; then
 	mproxy_renum=${mproxy_renum:-"0"}
 	mproxy_renum=`expr $mproxy_renum + 1`
 	nvram set mproxy_renum="$mproxy_renum"
-	if [ "$mproxy_renum" -gt "2" ] ; then
+	if [ "$mproxy_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【mproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -50,7 +50,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get mproxy_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set mproxy_renum="0"
+		nvram set mproxy_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -143,7 +143,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 logger -t "【mproxy】" "运行 mproxy_script"
 eval "/etc/storage/mproxy_script.sh $cmd_log" &
-restart_dhcpd
+restart_on_dhcpd
 sleep 4
 [ ! -z "`pidof mproxy`" ] && logger -t "【mproxy】" "启动成功" && mproxy_restart o
 [ -z "`pidof mproxy`" ] && logger -t "【mproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整, 10 秒后自动尝试重新启动" && sleep 10 && mproxy_restart x

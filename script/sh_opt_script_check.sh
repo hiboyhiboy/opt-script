@@ -38,10 +38,10 @@ if [ "$dhcp_dnsv6_x" == "br0" ] ; then
 	addr6_lan1="$(ifconfig -a br0 | grep inet6 | grep Link | sed -n '1p' | awk '{print $3}' | awk -F '/' '{print $1}')"
 	addr6_lan2="$(ifconfig -a br0 | grep inet6 | grep Global | sed -n '$p' | awk '{print $3}' | awk -F '/' '{print $1}')"
 	if [ ! -z "$addr6_lan1" ] && [ -z "$(cat /etc/dnsmasq.conf | grep ${addr6_lan1})" ] ; then
-		restart_dhcpd
+		restart_on_dhcpd
 	else
 		if [ ! -z "$addr6_lan2" ] && [ -z "$(cat /etc/dnsmasq.conf | grep ${addr6_lan2})" ] ; then
-		restart_dhcpd
+		restart_on_dhcpd
 		fi
 	fi
 fi
@@ -65,7 +65,7 @@ if [ ! -z "$dnsmasq_tmp" ] ; then
 		rm -f /tmp/dnsmasq_missing0.txt /tmp/dnsmasq_missing1.txt
 		echo -n "" > /tmp/dnsmasq_missing0.txt
 		echo -n "" > /tmp/dnsmasq_missing1.txt
-		restart_dhcpd
+		restart_on_dhcpd
 		sleep 1
 		sed  "s/dnsmasq is missing,/【dnsmasq is missing】,/" -Ei /tmp/syslog.log
 	else

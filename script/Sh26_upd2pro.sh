@@ -51,7 +51,7 @@ if [ "$1" = "x" ] ; then
 	upd2pro_renum=${upd2pro_renum:-"0"}
 	upd2pro_renum=`expr $upd2pro_renum + 1`
 	nvram set upd2pro_renum="$upd2pro_renum"
-	if [ "$upd2pro_renum" -gt "2" ] ; then
+	if [ "$upd2pro_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【upd2pro】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -62,7 +62,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get upd2pro_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set upd2pro_renum="0"
+		nvram set upd2pro_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -179,7 +179,7 @@ done
 upd2pro_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check
-# restart_dhcpd
+# restart_on_dhcpd
 killall app_3.sh app_4.sh udp2raw speeder speederv2
 killall -9 app_3.sh app_4.sh udp2raw speeder speederv2
 kill_ps " /tmp/script/_app3"

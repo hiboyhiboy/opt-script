@@ -41,7 +41,7 @@ if [ "$1" = "x" ] ; then
 	tinyproxy_renum=${tinyproxy_renum:-"0"}
 	tinyproxy_renum=`expr $tinyproxy_renum + 1`
 	nvram set tinyproxy_renum="$tinyproxy_renum"
-	if [ "$tinyproxy_renum" -gt "2" ] ; then
+	if [ "$tinyproxy_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【tinyproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -52,7 +52,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get tinyproxy_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set tinyproxy_renum="0"
+		nvram set tinyproxy_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -163,7 +163,7 @@ fi
 tinyproxy_path="$SVC_PATH"
 logger -t "【tinyproxy】" "运行 $tinyproxy_path"
 eval "$tinyproxy_path -c /etc/storage/tinyproxy_script.sh $cmd_log" &
-restart_dhcpd
+restart_on_dhcpd
 sleep 4
 [ ! -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动成功" && tinyproxy_restart o
 [ -z "$(ps -w | grep "$tinyproxy_path" | grep -v grep )" ] && logger -t "【tinyproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tinyproxy_restart x

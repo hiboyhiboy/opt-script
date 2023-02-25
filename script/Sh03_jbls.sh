@@ -115,7 +115,7 @@ lan_ipaddr=`nvram get lan_ipaddr`
 echo "txt-record=_jetbrains-license-server.lan,url=http://$lan_ipaddr:1027" >> /etc/storage/dnsmasq/dnsmasq.conf
 killall jblicsvr
 jblicsvr -d -p 1027  2>&1 &
-restart_dhcpd
+restart_on_dhcpd
 
 EEE
 	chmod 755 "$jbls_script"

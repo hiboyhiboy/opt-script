@@ -64,7 +64,7 @@ if [ "$1" = "x" ] ; then
 	huaweidns_renum=${huaweidns_renum:-"0"}
 	huaweidns_renum=`expr $huaweidns_renum + 1`
 	nvram set huaweidns_renum="$huaweidns_renum"
-	if [ "$huaweidns_renum" -gt "2" ] ; then
+	if [ "$huaweidns_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【huaweidns】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -75,7 +75,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get huaweidns_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set huaweidns_renum="0"
+		nvram set huaweidns_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi

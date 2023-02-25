@@ -41,7 +41,7 @@ if [ "$1" = "x" ] ; then
 	AdGuardHome_renum=${AdGuardHome_renum:-"0"}
 	AdGuardHome_renum=`expr $AdGuardHome_renum + 1`
 	nvram set AdGuardHome_renum="$AdGuardHome_renum"
-	if [ "$AdGuardHome_renum" -gt "2" ] ; then
+	if [ "$AdGuardHome_renum" -gt "3" ] ; then
 		I=19
 		echo $I > $relock
 		logger -t "【AdGuardHome】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
@@ -52,7 +52,7 @@ if [ "$1" = "x" ] ; then
 			[ "$(nvram get AdGuardHome_renum)" = "0" ] && exit 0
 			[ $I -lt 0 ] && break
 		done
-		nvram set AdGuardHome_renum="0"
+		nvram set AdGuardHome_renum="1"
 	fi
 	[ -f $relock ] && rm -f $relock
 fi
@@ -156,7 +156,7 @@ if [ "$port" != 0 ] ; then
 	echo 'server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
 	logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 恢复 server=127.0.0.1#8053"
 fi
-restart_dhcpd
+restart_on_dhcpd
 killall AdGuardHome
 killall -9 AdGuardHome
 kill_ps "/tmp/script/_app17"
@@ -254,7 +254,7 @@ else
 		logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
 		sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
 		echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-		restart_dhcpd
+		restart_on_dhcpd
 	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	cd /opt/AdGuardHome
@@ -262,7 +262,7 @@ else
 	sleep 3
 	[ ! -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动成功" && AdGuardHome_restart o
 	[ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动失败, 注意检AdGuardHome是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
-	restart_dhcpd
+	restart_on_dhcpd
 	AdGuardHome_get_status
 	eval "$scriptfilepath keep &"
 fi
@@ -281,7 +281,7 @@ if [ "$AdGuardHome_dns" == "0" ] ; then
 	echo "dns-forward-max=1000 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
 fi
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-restart_dhcpd
+restart_on_dhcpd
 exit 0
 }
 
