@@ -1,6 +1,7 @@
 #!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
+source /etc/storage/script/sh_link.sh
 TAG="SSTP"		  # iptables tag
 FWI="/tmp/firewall.clash.pdcn"
 clash_enable=`nvram get app_88`
@@ -549,6 +550,10 @@ if [ ! -s $yml_tmp ] ; then
 	logger -t "【clash】" "错误！！clash 服务器订阅文件获取失败！请检查地址"
 	return
 else
+	if is_2_base64 "$(cat $yml_tmp)" ; then 
+	# 需2次解码
+	echo "$(echo -n "$(cat $yml_tmp)" | sed -e "s/_/\//g" | sed -e "s/-/\+/g" | sed 's/$/&====/g' | base64 -d)" > $yml_tmp
+	fi
 	dos2unix $yml_tmp
 	sed -Ei s@\<\/textarea\>@@g $yml_tmp
 	cp -f $yml_tmp /etc/storage/app_20.sh
