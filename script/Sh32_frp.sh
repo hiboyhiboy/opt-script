@@ -176,8 +176,8 @@ action_for=""
 [ "$frp_version" = "8" ] && nvram set frp_version=9 && frp_version=9
 # [ "$frp_version" = "9" ] # 使用最新版
 # [ "$frp_version" = "10" ] # 不变动版本
-[ "$frpc_enable" = "1" ] && action_for="frpc"
-[ "$frps_enable" = "1" ] && action_for=$action_for" frps"
+[ "$frps_enable" = "1" ] && action_for="frps"
+[ "$frpc_enable" = "1" ] && action_for=$action_for" frpc"
 del_tmp=0
 if [ "$frp_version" == "9" ] ; then
 # 获取最新版本
@@ -256,26 +256,31 @@ done
 
 logger -t "【frp】" "运行 frp_script"
 
-rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
-eval "/etc/storage/frp_script.sh $cmd_log" &
-restart_on_dhcpd
-if [ "$frpc_enable" = "1" ] ; then
-	frpc_v="`/opt/bin/frpc --version`"
-	nvram set frpc_v=$frpc_v
-	logger -t "【frp】" "frpc-version: $frpc_v"
-	sleep 4
-	[ -z "`pidof frpc`" ] && logger -t "【frp】" "frpc启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && frp_restart x
-fi
 if [ "$frps_enable" = "1" ] ; then
 	frps_v="`/opt/bin/frps --version`"
 	nvram set frps_v=$frps_v
 	logger -t "【frp】" "frps-version: $frps_v"
-	[ -z "`pidof frps`" ] && logger -t "【frp】" "frps启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && frp_restart x
+fi
+if [ "$frpc_enable" = "1" ] ; then
+	frpc_v="`/opt/bin/frpc --version`"
+	nvram set frpc_v=$frpc_v
+	logger -t "【frp】" "frpc-version: $frpc_v"
+fi
+rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
+eval "/etc/storage/frp_script.sh $cmd_log" &
+restart_on_dhcpd
+if [ "$frps_enable" = "1" ] ; then
 	sleep 4
+	[ -z "`pidof frps`" ] && logger -t "【frp】" "frps启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && frp_restart x
 	[ ! -z "`pidof frps`" ] && logger -t "【nps】" "请手动配置【外部网络 - 端口转发 - 启用手动端口映射】来开启WAN访问"
 fi
-[ "$frpc_enable" = "1" ] && [ ! -z "`pidof frpc`" ] && logger -t "【frp】" "frpc启动成功" && frp_restart o
+if [ "$frpc_enable" = "1" ] ; then
+	[ "$frps_enable" = "1" ] && sleep 64
+	sleep 4
+	[ -z "`pidof frpc`" ] && logger -t "【frp】" "frpc启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && frp_restart x
+fi
 [ "$frps_enable" = "1" ] && [ ! -z "`pidof frps`" ] && logger -t "【frp】" "frps启动成功" && frp_restart o
+[ "$frpc_enable" = "1" ] && [ ! -z "`pidof frpc`" ] && logger -t "【frp】" "frpc启动成功" && frp_restart o
 #frp_get_status
 eval "$scriptfilepath keep &"
 exit 0
@@ -351,11 +356,12 @@ frpc_enable=`nvram get frpc_enable`
 frpc_enable=${frpc_enable:-"0"}
 frps_enable=`nvram get frps_enable`
 frps_enable=${frps_enable:-"0"}
-if [ "$frpc_enable" = "1" ] ; then
-    frpc -c /tmp/frp/myfrpc.ini 2>&1 &
-fi
 if [ "$frps_enable" = "1" ] ; then
     frps -c /tmp/frp/myfrps.ini 2>&1 &
+fi
+if [ "$frpc_enable" = "1" ] ; then
+    [ "$frps_enable" = "1" ] && sleep 60
+    frpc -c /tmp/frp/myfrpc.ini 2>&1 &
 fi
 
 EEE
