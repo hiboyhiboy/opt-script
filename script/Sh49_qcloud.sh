@@ -36,7 +36,6 @@ hostIP=""
 domain=""
 name=""
 name1=""
-timestamp=`date +%s`
 qcloud_record_id=""
 [ -z $qcloud_interval ] && qcloud_interval=600 && nvram set qcloud_interval=$qcloud_interval
 [ -z $qcloud_ttl ] && qcloud_ttl=600 && nvram set qcloud_ttl=$qcloud_ttl
@@ -159,7 +158,6 @@ if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 fi
 IPv6=0
 if [ "$qcloud_domain"x != "x" ] && [ "$qcloud_name"x != "x" ] ; then
-	timestamp=`date +%s`
 	qcloud_record_id=""
 	domain="$qcloud_domain"
 	name="$qcloud_name"
@@ -167,7 +165,6 @@ if [ "$qcloud_domain"x != "x" ] && [ "$qcloud_name"x != "x" ] ; then
 fi
 if [ "$qcloud_domain2"x != "x" ] && [ "$qcloud_name2"x != "x" ] ; then
 	sleep 1
-	timestamp=`date +%s`
 	qcloud_record_id=""
 	domain="$qcloud_domain2"
 	name="$qcloud_name2"
@@ -176,7 +173,6 @@ fi
 if [ "$qcloud_domain6"x != "x" ] && [ "$qcloud_name6"x != "x" ] ; then
 	sleep 1
 	IPv6=1
-	timestamp=`date +%s`
 	qcloud_record_id=""
 	domain="$qcloud_domain6"
 	name="$qcloud_name6"
@@ -192,7 +188,6 @@ do
 	sleep 1
 	IPv6=1
 	IPv6_neighbor=1
-	timestamp=`date +%s`
 	qcloud_record_id=""
 	name="$(echo "$line" | cut -d '@' -f1)"
 	domain="$(echo "$line" | cut -d '@' -f2)"
@@ -232,39 +227,47 @@ enc() {
 }
 
 send_request() {
-	random=`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`
-	args="Action=$1&Nonce=""`echo ${random:0:5}`""&SecretId=$qcloud_ak&SignatureMethod=HmacSHA1&Timestamp=$timestamp&$2"
-	hash=$(echo -n "GETcns.api.qcloud.com/v2/index.php?$args" | openssl dgst -sha1 -hmac "$qcloud_sk" -binary | openssl base64)
-	curl -L    -s "https://cns.api.qcloud.com/v2/index.php?$args&Signature=$(enc "$hash")"
+	args="$1"
+	hash=$(echo -n "GETdnspod.tencentcloudapi.com/?$args" | openssl dgst -sha1 -hmac "$qcloud_sk" -binary | openssl base64)
+	curl -L	-s "https://dnspod.tencentcloudapi.com/?$args&Signature=$(enc "$hash")"
 	sleep 1
 }
 
 get_recordid() {
-	grep -Eo '"id":[0-9]+' | cut -d':' -f2 | tr -d '"' |head -n1
+	grep -Eo '"RecordId":[0-9]+' | cut -d':' -f2 | tr -d '"' |head -n1
 }
 
 get_recordIP() {
-	grep -Eo '"value":"[^"]*"' | awk -F 'value":"' '{print $2}' | tr -d '"' |head -n1
+	grep -Eo '"Value":"[^"]*"' | awk -F 'Value":"' '{print $2}' | tr -d '"' |head -n1
 }
 
-get_codeDesc() {
-	grep -Eo '"codeDesc":"[^"]*"' | awk -F 'codeDesc":"' '{print $2}' | tr -d '"' |head -n1
+get_Message() {
+	grep -Eo '"Message":"[^"]*"' | awk -F 'Message":"' '{print $2}' | tr -d '"' |head -n1
 }
 
 query_recordid() {
-	send_request "RecordList" "domain=$domain&recordType=$domain_type&subDomain=$name1"
+	random="`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`"
+	random="`echo ${random:0:5}`"
+	timestamp="`date +%s`"
+	send_request "Action=DescribeRecordList&Domain=${domain}&Language=en-US&Nonce=${random}&RecordType=${domain_type}&SecretId=${qcloud_ak}&Subdomain=${name1}&Timestamp=${timestamp}&Version=2021-03-23"
 }
 
 update_record() {
+	random="`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`"
+	random="`echo ${random:0:5}`"
+	timestamp="`date +%s`"
 	#hostIP_tmp=$(enc "$hostIP")
 	hostIP_tmp="$hostIP"
-	send_request "RecordModify" "domain=$domain&recordId=$1&recordLine=默认&recordType=$domain_type&subDomain=$name1&ttl=$qcloud_ttl&value=$hostIP_tmp"
+	send_request "Action=ModifyRecord&Domain=${domain}&Language=en-US&Nonce=${random}&RecordId=${1}&RecordLine=默认&RecordType=${domain_type}&SecretId=${qcloud_ak}&SubDomain=${name1}&TTL=${qcloud_ttl}&Timestamp=${timestamp}&Value=${hostIP_tmp}&Version=2021-03-23"
 }
 
 add_record() {
+	random="`cat /proc/sys/kernel/random/uuid | tr -cd "[0-9]"`"
+	random="`echo ${random:0:5}`"
+	timestamp="`date +%s`"
 	#hostIP_tmp=$(enc "$hostIP")
 	hostIP_tmp="$hostIP"
-	send_request "RecordCreate" "domain=$domain&recordLine=默认&recordType=$domain_type&subDomain=$name1&ttl=$qcloud_ttl&value=$hostIP_tmp"
+	send_request "Action=CreateRecord&Domain=${domain}&Language=en-US&Nonce=${random}&RecordLine=默认&RecordType=${domain_type}&SecretId=${qcloud_ak}&SubDomain=${name1}&TTL=${qcloud_ttl}&Timestamp=${timestamp}&Value=${hostIP_tmp}&Version=2021-03-23"
 }
 
 arDdnsInfo() {
@@ -276,7 +279,6 @@ name1=$name
 		domain_type="A"
 	fi
 	sleep 1
-	timestamp=`date +%s`
 	# 获得最后更新IP
 	recordIP=`query_recordid | get_recordIP`
 	
@@ -315,26 +317,24 @@ while [ -z "$qcloud_record_id" ] ; do
 	I=$(($I - 1))
 	[ $I -lt 0 ] && break
 	# 获得记录ID
-	timestamp=`date +%s`
 	qcloud_record_id=`query_recordid | get_recordid`
 	echo "recordID $qcloud_record_id"
 	sleep 1
 done
-	timestamp=`date +%s`
 if [ -z "$qcloud_record_id" ] ; then
-	qcloud_record_id=`add_record | get_codeDesc`
+	qcloud_record_id=`add_record | get_Message`
 	echo "added record $qcloud_record_id"
 	logger -t "【qcloud动态域名】" "添加的记录  $qcloud_record_id"
 else
-	qcloud_record_id=`update_record $qcloud_record_id | get_codeDesc`
+	qcloud_record_id=`update_record $qcloud_record_id | get_Message`
 	echo "updated record $qcloud_record_id"
 	logger -t "【qcloud动态域名】" "更新的记录  $qcloud_record_id"
 fi
 # save to file
-if [ "$qcloud_record_id" != "Success" ] ; then
+if [ ! -z "$qcloud_record_id" ] ; then
 	# failed
 	nvram set qcloud_last_act="`date "+%Y-%m-%d %H:%M:%S"`   更新失败"
-	logger -t "【qcloud动态域名】" "更新失败"
+	logger -t "【qcloud动态域名】" "更新失败: qcloud_record_id"
 	return 1
 else
 	nvram set qcloud_last_act="`date "+%Y-%m-%d %H:%M:%S"`   成功更新：$hostIP"
