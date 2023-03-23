@@ -471,21 +471,23 @@ curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- --header 'accept: application/dns-json' 'https://1.0.0.2/dns-query?name='"$1"'&type=A')"
 	if [ $? -eq 0 ]; then
-	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' > /tmp/arNslookup/$$
-	else
+	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep -v "^$" > /tmp/arNslookup/$$
+	fi
+	if [ ! -s /tmp/arNslookup/$$ ] ; then
 	Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- 'http://119.29.29.29/d?dn='"$1"'&type=A')"
 	if [ $? -eq 0 ]; then
-	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' > /tmp/arNslookup/$$
+	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' | grep -v "^$" > /tmp/arNslookup/$$
 	fi
 	fi
 else
 	Address="$(curl --user-agent "$user_agent" -s -H 'accept: application/dns-json' 'https://1.0.0.2/dns-query?name='"$1"'&type=A')"
 	if [ $? -eq 0 ]; then
-	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' > /tmp/arNslookup/$$
-	else
+	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep -v "^$" > /tmp/arNslookup/$$
+	fi
+	if [ ! -s /tmp/arNslookup/$$ ] ; then
 	Address="$(curl --user-agent "$user_agent" -s 'http://119.29.29.29/d?dn='"$1"'&type=A')"
 	if [ $? -eq 0 ]; then
-	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' > /tmp/arNslookup/$$
+	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' | grep -v "^$" > /tmp/arNslookup/$$
 	fi
 	fi
 fi
@@ -516,21 +518,23 @@ curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- --header 'accept: application/dns-json' 'https://1.0.0.2/dns-query?name='"$1"'&type=AAAA')"
 	if [ $? -eq 0 ]; then
-	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' > /tmp/arNslookup/$$
-	else
+	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep -v "^$" > /tmp/arNslookup/$$
+	fi
+	if [ ! -s /tmp/arNslookup/$$ ] ; then
 	Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- 'http://119.29.29.29/d?dn='"$1"'&type=AAAA')"
 	if [ $? -eq 0 ]; then
-	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' > /tmp/arNslookup/$$
+	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' | grep -v "^$" > /tmp/arNslookup/$$
 	fi
 	fi
 else
 	Address="$(curl --user-agent "$user_agent" -s -H 'accept: application/dns-json' 'https://1.0.0.2/dns-query?name='"$1"'&type=AAAA')"
 	if [ $? -eq 0 ]; then
-	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' > /tmp/arNslookup/$$
-	else
+	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep -v "^$" > /tmp/arNslookup/$$
+	fi
+	if [ ! -s /tmp/arNslookup/$$ ] ; then
 	Address="$(curl --user-agent "$user_agent" -s 'http://119.29.29.29/d?dn='"$1"'&type=AAAA')"
 	if [ $? -eq 0 ]; then
-	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' > /tmp/arNslookup/$$
+	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' | grep -v "^$" > /tmp/arNslookup/$$
 	fi
 	fi
 fi

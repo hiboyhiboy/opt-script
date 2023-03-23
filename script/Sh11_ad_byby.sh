@@ -341,23 +341,33 @@ update_ad_rules () {
 
 xwhyc_rules="$hiboyfile/video.txt"
 xwhyc_rules2="https://opt.cn2qq.com/opt-file/video.txt"
-xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
-xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
+#xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt"
+#xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/video.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules1 N 5
-[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules0 N 5
+wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules2 N 5
+#[ ! -s /tmp/bin/data/video.txt ] && wgetcurl.sh /tmp/bin/data/video.txt $xwhyc_rules $xwhyc_rules0 N 5
 xwhyc_rules="$hiboyfile/lazy.txt"
 xwhyc_rules2="https://opt.cn2qq.com/opt-file/lazy.txt"
-xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
-xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
+#xwhyc_rules1="https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt"
+#xwhyc_rules0="https://coding.net/u/adbyby/p/xwhyc-rules/git/raw/master/lazy.txt"
 logger -t "【Adbyby】" "下载规则:$xwhyc_rules"
-wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules1 N 100
-[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules0 N 100
+wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules2 N 100
+#[ ! -s /tmp/bin/data/lazy.txt ] && wgetcurl.sh /tmp/bin/data/lazy.txt $xwhyc_rules $xwhyc_rules0 N 100
 
 }
 
 adbyby_start () {
 check_webui_yes
+user_dnsmasq_serv=/etc/storage/dnsmasq/dnsmasq.servers
+if [ ! -z "$(grep "update.adbyby.com" $user_dnsmasq_serv)" ] ; then
+sed -Ei '/adbyby.com/d' $user_dnsmasq_serv
+sed -Ei '/^$/d' $user_dnsmasq_serv
+echo "address=/adbyby.com/127.0.0.1" >> $user_dnsmasq_serv
+restart_dhcpd
+fi
+logger -t "【opt】" "提醒！adbyby.com 域名已经失去控制，继续使用会有风险。"
+logger -t "【opt】" "提醒！adbyby.com 域名已经失去控制，继续使用会有风险。"
+logger -t "【opt】" "提醒！adbyby.com 域名已经失去控制，继续使用会有风险。"
 nvram set adbybylazy="【adbyby未启动】lazy更新："
 nvram set adbybyvideo="【adbyby未启动】video更新："
 nvram set adbybyuser3="第三方规则行数：行"
@@ -403,6 +413,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 	# 设置路由ip:8118
 	lan_ipaddr="0.0.0.0" #`nvram get lan_ipaddr`
 	sed -e "s|^\(listen-address.*\)=[^=]*$|\1=$lan_ipaddr:8118|" -i /tmp/bin/adhook.ini
+	sed -e "s|^\(rule.*\)=[^=]*$|\1=|" -i /tmp/bin/adhook.ini
 	# 处理第三方自定义规则 /tmp/rule_DOMAIN.txt
 	source /etc/storage/ad_config_script.sh
 	adbyby_adblocks=`nvram get adbyby_adblocks`
@@ -498,6 +509,9 @@ nvram set adbybyuser3="第三方规则行数:  `sed -n '$=' /tmp/bin/data/user3a
 nvram set adbybyuser="自定义规则行数:  `sed -n '$=' /tmp/bin/data/user_rules.txt | sed s/[[:space:]]//g ` 行"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 logger -t "【Adbyby】" "守护进程启动"
+logger -t "【opt】" "提醒！adbyby.com 域名已经失去控制，继续使用会有风险。"
+logger -t "【opt】" "提醒！adbyby.com 域名已经失去控制，继续使用会有风险。"
+logger -t "【opt】" "提醒！adbyby.com 域名已经失去控制，继续使用会有风险。"
 adbyby_cron_job
 [ ! -s /tmp/adbyby_host_backup.conf ] && cp -f /tmp/adbyby_host.conf /tmp/adbyby_host_backup.conf
 adbyby_cp_rules
