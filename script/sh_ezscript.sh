@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 
 # 按钮名称可自定义
 ad=`nvram get button_script_1_s`
-[ -z "$ad" ] && ad="Adbyby" && nvram set button_script_1_s="Adbyby"
+[ -z "$ad" ] && ad="KP" && nvram set button_script_1_s="KP"
 ss=`nvram get button_script_2_s`
 [ -z "$ss" ] && ss="SS" && nvram set button_script_2_s="SS"
 
