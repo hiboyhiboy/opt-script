@@ -17,7 +17,7 @@ fi
 }
 
 is_2_base64() {
-	check_base64="$(echo -n "$1" | sed -e "s@://@@g" | awk -F '#' '{print $1}' | grep -Eo [^A-Za-z0-9+/=:_-]+ | sed ":a;N;s/\n//g;ba")"
+	check_base64="$(echo -n "$1" | sed -e "s@://@@g" | awk -F '#' '{print $1}' | grep -Eo [^A-Za-z0-9+/=:_-]+ | tr -d "\n")"
 	check_base64="$(echo -n "$check_base64" | wc -c)"
 	[ "$check_base64" -eq 0 ]
 }
