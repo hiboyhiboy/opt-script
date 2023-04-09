@@ -333,13 +333,7 @@ $SVC_PATH -t -d /opt/app/clash/config >/dev/null
 if [ "$?" = 0 ];then
 su_cmd2="$SVC_PATH -d /opt/app/clash/config"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
-sleep 3
-if [ "$clash_mixed" == "1" ] ; then
-logger -t "【clash】" "双开 clash 开启 mixed 代理"
-su_cmd2="$SVC_PATH -d /opt/app/clash/config2"
-eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
-fi
-sleep 3
+sleep 5
 fi
 [ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
 [ -z "`pidof clash`" ] && logger -t "【clash】" "启动失败, 注意检clash是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
@@ -784,10 +778,6 @@ echo '- command: update
     SS本地代理
 ' | yq w -i -s - $config_yml
 fi
-if [ "$1" == "config2" ] ; then
-# 双开 clash 时，更新修改 ② 启动 clash 的配置代理节点
-config_yml="/opt/app/clash/config2/config.yaml"
-fi
 EEE
 	chmod 755 "$app_33"
 fi
@@ -939,6 +929,14 @@ else
 yq d -i $config_yml socks-port
 rm_temp
 fi
+if [ "$clash_mixed" != "0" ] ; then
+yq w -i $config_yml mixed-port 7893
+rm_temp
+logger -t "【clash】" "SOCKS5 代理端口：7891"
+else
+yq d -i $config_yml mixed-port
+rm_temp
+fi
 if [ "$clash_follow" != "0" ] ; then
 if [ "$ss_ip46" = "0" ] ; then
 yq d -i $config_yml tproxy-port
@@ -956,11 +954,15 @@ yq d -i $config_yml redir-port
 yq d -i $config_yml tproxy-port
 rm_temp
 fi
-logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 配置"
+logger -t "【clash】" "删除 Clash 配置文件中原有的 DNS 或其他配置"
 yq d -i $config_yml dns
 rm_temp
 yq d -i $config_yml sniffer
 rm_temp
+[ -s $config_dns_yml ] && eval "$(yq r $config_dns_yml --stripComments | grep -v "^ " | tr -d ":" | awk '{print "yq d -i $config_yml "$1;}')"
+logger -t "【clash】" "将 DNS 或其他配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
+cat $config_dns_yml >> $config_yml
+#merge_dns_ip
 yq w -i $config_yml external-controller $clash_ui
 rm_temp
 yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
@@ -978,62 +980,10 @@ logger -t "【clash】" "yq 初始化 clash 配置错误！请检查配置！"
 logger -t "【clash】" "尝试直接使用原始配置启动！"
 cp -f /etc/storage/app_20.sh $config_yml
 else
-logger -t "【clash】" "将 DNS 配置 /tmp/clash/dns.yml 以覆盖的方式与 $config_yml 合并"
-cat /tmp/clash/dns.yml >> $config_yml
-#yq m -x -i $config_yml /tmp/clash/dns.yml
-#rm_temp
-#merge_dns_ip
 logger -t "【clash】" "初始化 clash 配置完成！实际运行配置：/opt/app/clash/config/config.yaml"
-update_2_yml
-fi
-fi
-}
 
-update_2_yml () {
-[ "$clash_mixed" != "1" ] && return
-logger -t "【clash】" "初始化 clash 双开 mixed 代理"
-mkdir -p /opt/app/clash/config2
-mkdir -p /etc/storage/clash/config2
-[ -f /opt/app/clash/config2/cache.db ] && [ ! -f /etc/storage/clash/config2/cache.db ] && cp -f /opt/app/clash/config2/cache.db /etc/storage/clash/config2/cache.db
-touch /etc/storage/clash/config2/cache.db
-ln -sf /etc/storage/clash/config2/cache.db /opt/app/clash/config2/cache.db
-ln -sf /opt/app/clash/config/Country.mmdb /opt/app/clash/config2/Country.mmdb
-config_2_yml="/opt/app/clash/config2/config.yaml"
-rm_temp
-cp -f /opt/app/clash/config/config.yaml $config_2_yml
-rm -f /opt/app/clash/config2/config.yml
-ln -sf $config_2_yml /opt/app/clash/config2/config.yml
-if [ "$clash_input" == "1" ] ; then
-logger -t "【clash】" "配置 clash 添加本地代理节点"
-[ ! -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && /etc/storage/app_33.sh "config2"
-if [ ! -s $config_2_yml ] ; then
-logger -t "【clash】" "yq 添加本地代理节点 配置错误！请检查配置！"
-cp -f /opt/app/clash/config/config.yaml $config_2_yml
 fi
 fi
-yq d -i $config_2_yml port
-rm_temp
-yq d -i $config_2_yml socks-port
-rm_temp
-yq d -i $config_2_yml redir-port
-rm_temp
-yq d -i $config_2_yml tproxy-port
-rm_temp
-yq d -i $config_2_yml mixed-port
-rm_temp
-yq d -i $config_2_yml sniffer
-rm_temp
-yq d -i $config_2_yml dns
-rm_temp
-#yq w -i $config_2_yml dns.listen 9053
-#rm_temp
-#yq d -i $config_2_yml dns.ipv6
-#rm_temp
-yq w -i $config_2_yml mixed-port 7893
-rm_temp
-yq w -i $config_2_yml external-controller "0.0.0.0:9091"
-logger -t "【clash】" "初始化 clash 双开 配置完成！实际运行配置：/opt/app/clash/config2/config.yaml"
-
 }
 
 reload_api () {
@@ -1069,7 +1019,6 @@ fi
 if [ "$1" == "reload" ] ; then
 logger -t "【clash】" "api热重载配置"
 curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config/config.yaml"}' 'http://127.0.0.1:'"$api_port"'/configs?force=true'
-[ "$clash_mixed" == "1" ] && curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config2/config.yaml"}' 'http://127.0.0.1:9091/configs?force=true'
 logger -t "【clash】" "api热重载配置，完成！"
 fi
 
