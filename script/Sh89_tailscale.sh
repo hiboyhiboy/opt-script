@@ -2,10 +2,15 @@
 #copyright by hiboy
 source /etc/storage/script/init.sh
 tailscale_enable=`nvram get app_82`
-if [ "$tailscale_enable" != "0" ] && [ "$tailscale_enable" != "1" ] && [ "$tailscale_enable" != "2" ] && [ "$tailscale_enable" != "3" ] ; then
+if [ "$tailscale_enable" != "0" ] && [ "$tailscale_enable" != "1" ] && [ "$tailscale_enable" != "2" ] && [ "$tailscale_enable" != "3" ] && [ "$tailscale_enable" != "4" ] ; then
 	tailscale_enable=""
 fi
 [ -z $tailscale_enable ] && tailscale_enable=0 && nvram set app_82=0
+tailscale_cmd=`nvram get app_44`
+if [ -z "$(echo $tailscale_cmd | grep tailscale)" ] ; then
+	tailscale_cmd=""
+fi
+[ -z $tailscale_cmd ] && tailscale_cmd="tailscale up" && nvram set app_44="$tailscale_cmd"
 tailscale_renum=`nvram get tailscale_renum`
 
 if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tailscale)" ]  && [ ! -s /tmp/script/_app11 ]; then
@@ -53,18 +58,19 @@ exit 0
 tailscale_get_status () {
 
 if [ "$tailscale_enable" = "3" ] ; then
+logger -t "【tailscale】" "配置恢复初始化"
 iptables -D INPUT -i tailscale0 -j ACCEPT
 killall tailscaled tailscale
 killall -9 tailscaled tailscale
 rm -rf /opt/app/tailscale/lib/*
 rm -rf /etc/storage/tailscale/lib/*
-tailscale_enable=2 && nvram set app_82=2
+tailscale_enable=0 && nvram set app_82=0
 fi
 A_restart=`nvram get tailscale_status`
-if [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] ; then
+if [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] || [ "$tailscale_enable" = "4" ] ; then
 B_restart="1"
 fi
-B_restart="$B_restart"
+B_restart="$B_restart$tailscale_cmd"
 #B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -82,7 +88,7 @@ if [ "$tailscale_enable" = "0" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "`pidof tailscaled`" ] && logger -t "【tailscale】" "停止 tailscale" && tailscale_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
-if [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] ; then
+if [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] || [ "$tailscale_enable" = "4" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		tailscale_close
 		tailscale_start
@@ -115,19 +121,20 @@ OSC
 fi
 tailscale_enable=`nvram get app_82`
 offweb=1
-while [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] ; do
+while [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] || [ "$tailscale_enable" = "4" ] ; do
 iptables -C INPUT -i tailscale0 -j ACCEPT
 if [ "$?" != 0 ] ; then
 	iptables -A INPUT -i tailscale0 -j ACCEPT
 fi
 tailscale_backup
 sleep 100
-if [ "$tailscale_enable" = "2" ] ; then
+if [ "$tailscale_enable" = "2" ] || [ "$tailscale_enable" = "4" ] ; then
 if [ "$offweb" -gt "3" ] ; then
 offweb=1
+[ "$tailscale_enable" = "2" ] && logger -t "【tailscale】" "本机管理界面 (自动关闭)"
+[ "$tailscale_enable" = "4" ] && logger -t "【tailscale】" "自定义参数启动 (自动关闭)"
 tailscale_enable=1 && nvram set app_82=1
 killall tailscale
-logger -t "【tailscale】" "本机管理界面 (自动关闭)"
 fi
 offweb=`expr $offweb + 1`
 fi
@@ -162,15 +169,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 mkdir -p /etc/storage/tailscale/lib
 mkdir -p /opt/app/tailscale/lib
-if [ ! -s /opt/app/tailscale/lib/tailscaled.state ] || [ ! -s /opt/app/tailscale/lib/cmd.log.conf ] ; then
-rm -f /opt/app/tailscale/lib/tailscaled.state
-rm -f /opt/app/tailscale/lib/cmd.log.conf
-fi
-if [ -s /etc/storage/tailscale/lib/tailscaled.state ] && [ -s /etc/storage/tailscale/lib/cmd.log.conf ] ; then
-logger -t "【tailscale】" "恢复路由内部储存配置文件到/opt/app/tailscale/lib/"
-cp -f /etc/storage/tailscale/lib/tailscaled.state /opt/app/tailscale/lib/tailscaled.state
-cp -f /etc/storage/tailscale/lib/cmd.log.conf /opt/app/tailscale/lib/cmd.log.conf
-fi
+tailscale_backup rebackup
 for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
 wgetcurl_file "$SVC_PATH" "$hiboyfile/tailscaled" "$hiboyfile2/tailscaled"
@@ -195,6 +194,14 @@ if [ "$?" != 0 ] ; then
 	iptables -A INPUT -i tailscale0 -j ACCEPT
 fi
 
+if [ "$tailscale_enable" = "4" ] ; then
+tailscale_cmd
+logger -t "【tailscale】" "自定义参数启动 $su_cmd2"
+cmd_name="tailscale_cmd"
+$tailscale_cmd 2>&1 | awk '{cmd="logger -t '"'"'【'$cmd_name'】'"' ' "'"$0"'"' "';";system(cmd)}' &
+
+sleep 4
+fi
 if [ "$tailscale_enable" = "2" ] ; then
 su_cmd2="$SVC_PATH2 web --listen `nvram get lan_ipaddr`:8989"
 logger -t "【tailscale】" "运行本机管理界面 $su_cmd2"
@@ -212,25 +219,25 @@ exit 0
 
 
 tailscale_backup () {
+rebackup=$1
+for t_paths in /opt/app/tailscale/lib/*
+do
+	t_conf="$(basename "$(echo $t_paths | grep -v .txt)")"
+	if [ ! -z $t_conf ] ; then
+		MD5_backup="$(md5sum /opt/app/tailscale/lib/$t_conf | awk '{print $1;}')"
+		MD5_storage="$(md5sum /etc/storage/tailscale/lib/$t_conf | awk '{print $1;}')"
+		if [ "$MD5_backup"x != "$MD5_storage"x ] ; then
+			if [ -z "$rebackup" ] ; then
+			cp -f /opt/app/tailscale/lib/$t_conf /etc/storage/tailscale/lib/$t_conf
+			logger -t "【tailscale】" "备份配置文件 $t_conf 到路由内部储存"
+			else
+			cp -f /etc/storage/tailscale/lib/$t_conf /opt/app/tailscale/lib/$t_conf
+			logger -t "【tailscale】" "从路由内部储存恢复配置文件 $t_conf"
+			fi
+		fi
+	fi
+done
 
-if [ -s /opt/app/tailscale/lib/tailscaled.state ] && [ -s /opt/app/tailscale/lib/cmd.log.conf ] ; then
-backup_storage=0
-MD5_backup="$(md5sum /opt/app/tailscale/lib/tailscaled.state | awk '{print $1;}')"
-MD5_storage="$(md5sum /etc/storage/tailscale/lib/tailscaled.state | awk '{print $1;}')"
-if [ "$MD5_backup"x != "$MD5_storage"x ] ; then
-backup_storage=1
-fi
-MD5_backup="$(md5sum /opt/app/tailscale/lib/cmd.log.conf | awk '{print $1;}')"
-MD5_storage="$(md5sum /etc/storage/tailscale/lib/cmd.log.conf | awk '{print $1;}')"
-if [ "$MD5_backup"x != "$MD5_storage"x ] ; then
-backup_storage=1
-fi
-if [ "$backup_storage" == "1" ] ; then
-logger -t "【tailscale】" "备份配置文件到路由内部储存"
-cp -f /opt/app/tailscale/lib/tailscaled.state /etc/storage/tailscale/lib/tailscaled.state
-cp -f /opt/app/tailscale/lib/cmd.log.conf /etc/storage/tailscale/lib/cmd.log.conf
-fi
-fi
 }
 
 initopt () {
@@ -277,7 +284,7 @@ stop)
 	;;
 updateapp11)
 	tailscale_restart o
-	if [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] ; then
+	if [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] || [ "$tailscale_enable" = "4" ] ; then
 		nvram set tailscale_status="updatetailscale"
 		logger -t "【tailscale】" "重启"
 		tailscale_restart
