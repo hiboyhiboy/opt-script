@@ -244,9 +244,14 @@ vless_link_alpn_url="$(echo -n "$vless_link_specific" | grep -Eo "alpn=[^&]*"  |
 vless_link_allowInsecure="$(echo -n "$vless_link_specific" | grep -Eo "allow[Ii]nsecure=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 
 vless_link_flow="$(echo -n "$vless_link_specific" | grep -Eo "flow=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
-
 vless_link_fp="$(echo -n "$vless_link_specific" | grep -Eo "fp=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 [ -z "$vless_link_fp" ] && vless_link_fp="chrome"
+
+vless_link_pbk="$(echo -n "$vless_link_specific" | grep -Eo "pbk=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+vless_link_sid="$(echo -n "$vless_link_specific" | grep -Eo "sid=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+vless_link_spx="$(echo -n "$vless_link_specific" | grep -Eo "spx=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_spx" ] && vless_link_spx="$(printf $(echo -n $vless_link_spx | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
 fi
 link_tmp=""
 
@@ -459,6 +464,9 @@ vless_link_alpn=""
 vless_link_allowInsecure=""
 vless_link_flow=""
 vless_link_fp=""
+vless_link_pbk=""
+vless_link_sid=""
+vless_link_spx=""
 
 vless_link_v=""
 [ -z "$vless_link_v" ] && vless_link_v="0"

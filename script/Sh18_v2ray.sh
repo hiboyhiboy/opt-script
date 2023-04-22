@@ -897,6 +897,7 @@ echo '{
       "streamSettings": {
         "network": "",
         "security": "",
+        "realitySettings": {},
         "tlsSettings": {},
         "xtlsSettings": {},
         "tcpSettings": {},
@@ -1148,7 +1149,7 @@ mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"id"];
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"port"];'$vless_link_remote_port')')
 if [ "$link_protocol" == "vless" ] ; then
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"encryption"];"'$vless_link_encryption'")')
-if [ "$vless_link_security" == "tls" ] || [ "$vless_link_security" == "xtls" ] ; then
+if [ "$vless_link_security" == "tls" ] || [ "$vless_link_security" == "xtls" ] || [ "$vless_link_security" == "reality" ] ; then
 [ ! -z "$vless_link_flow" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"flow"];"'$vless_link_flow'")')
 else
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["vnext",0,"users",0,"flow"]])')
@@ -1170,6 +1171,15 @@ mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["network"];"'$vless_link_t
 # allowInsecure: 是否允许不安全连接（仅用于客户端）。默认值为 false。当值为 true 时，V2Ray 不会检查远端主机所提供的 TLS 证书的有效性。
 [ -z "$vless_link_allowInsecure" ] && vless_link_allowInsecure=`nvram get app_73`
 [ "$vless_link_allowInsecure" == "1" ] && vless_link_allowInsecure="true"
+# 配置 realitySettings star
+if [ "$vless_link_security" == "reality" ] ; then
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","fingerprint"];"'$vless_link_fp'")')
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","serverName"];"'$vless_link_sni'")')
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","publicKey"];"'$vless_link_pbk'")')
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","shortId"];"'$vless_link_sid'")')
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","spiderX"];"'$vless_link_spx'")')
+fi
+# 配置 realitySettings end
 # 配置 tlsSettings star
 if [ "$vless_link_security" == "tls" ] ; then
 if [ "$vless_link_allowInsecure" == "true" ] || [ "$vless_link_allowInsecure" == "false" ] ; then
@@ -1340,6 +1350,9 @@ json_int_vmess_streamSettings () {
 echo '{
   "network": "",
   "security": "",
+  "realitySettings": {
+    "show": false
+  },
   "tlsSettings": {
     "allowInsecure": true
   },
@@ -1547,6 +1560,7 @@ echo '{
       "streamSettings": {
         "network": "",
         "security": "",
+        "realitySettings": {},
         "tlsSettings": {},
         "xtlsSettings": {},
         "tcpSettings": {},
