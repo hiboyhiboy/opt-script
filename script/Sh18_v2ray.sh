@@ -1150,9 +1150,6 @@ mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"port"];'$vless_
 if [ "$link_protocol" == "vless" ] ; then
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"encryption"];"'$vless_link_encryption'")')
 if [ "$vless_link_security" == "tls" ] || [ "$vless_link_security" == "xtls" ] || [ "$vless_link_security" == "reality" ] ; then
-if [ "$vless_link_type" == "tcp" ] && [ "$vless_link_security" == "reality" ] ; then
-vless_link_flow="xtls-rprx-vision"
-fi
 [ ! -z "$vless_link_flow" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["vnext",0,"users",0,"flow"];"'$vless_link_flow'")')
 else
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["vnext",0,"users",0,"flow"]])')
