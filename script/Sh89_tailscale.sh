@@ -220,6 +220,7 @@ exit 0
 
 tailscale_backup () {
 rebackup=$1
+if [ -z "$rebackup" ] ; then
 for t_paths in /opt/app/tailscale/lib/*
 do
 	t_conf="$(basename "$(echo $t_paths | grep -v .txt)")"
@@ -227,17 +228,25 @@ do
 		MD5_backup="$(md5sum /opt/app/tailscale/lib/$t_conf | awk '{print $1;}')"
 		MD5_storage="$(md5sum /etc/storage/tailscale/lib/$t_conf | awk '{print $1;}')"
 		if [ "$MD5_backup"x != "$MD5_storage"x ] ; then
-			if [ -z "$rebackup" ] ; then
 			cp -f /opt/app/tailscale/lib/$t_conf /etc/storage/tailscale/lib/$t_conf
 			logger -t "【tailscale】" "备份配置文件 $t_conf 到路由内部储存"
-			else
-			cp -f /etc/storage/tailscale/lib/$t_conf /opt/app/tailscale/lib/$t_conf
-			logger -t "【tailscale】" "从路由内部储存恢复配置文件 $t_conf"
-			fi
 		fi
 	fi
 done
-
+else
+for t_paths in /etc/storage/tailscale/lib/*
+do
+	t_conf="$(basename "$(echo $t_paths | grep -v .txt)")"
+	if [ ! -z $t_conf ] ; then
+		MD5_backup="$(md5sum /opt/app/tailscale/lib/$t_conf | awk '{print $1;}')"
+		MD5_storage="$(md5sum /etc/storage/tailscale/lib/$t_conf | awk '{print $1;}')"
+		if [ "$MD5_backup"x != "$MD5_storage"x ] ; then
+			cp -f /etc/storage/tailscale/lib/$t_conf /opt/app/tailscale/lib/$t_conf
+			logger -t "【tailscale】" "从路由内部储存恢复配置文件 $t_conf"
+		fi
+	fi
+done
+fi
 }
 
 initopt () {
