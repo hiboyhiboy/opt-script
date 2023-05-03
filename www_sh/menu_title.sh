@@ -1,7 +1,7 @@
 #!/bin/bash
 #copyright by hiboy
 # 一级菜单显示标题：空格隔开
-menu0_title="配置扩展环境  ShadowSocks 花生壳内网版 广告屏蔽功能 搭建Web环境"
+menu0_title="配置扩展环境  ShadowSocks 内网穿透 广告屏蔽功能 搭建Web环境"
 # 菜单页面排序：空格隔开
 menu_title1="配置扩展环境 锐捷认证 Wifidog 微信推送  网页终端    相框设置 goflyway virtualhere 自建微信推送"
 menu_title2="SS配置 SS节点 ss_tproxy Kcptun  SS_Server  COW  MEOW  SoftEtherVPN hysteria tailscale"

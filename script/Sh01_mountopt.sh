@@ -892,14 +892,14 @@ nvram set optt="`cat /tmp/opti.txt`"
 }
 
 libmd5_mk () {
-/usr/bin/find /opt/opt_backup/lib/ -perm '-u+x' -name '*' ! -type l | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f_opt_backup
-/usr/bin/find /opt/opt_backup/bin/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt_backup
-/usr/bin/find /opt/opt_backup/sbin/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt_backup
-#/usr/bin/find /opt/opt_backup/etc/init.d/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt_backup
-/usr/bin/find /opt/lib/ -perm '-u+x' -name '*' ! -type l | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f_opt
-/usr/bin/find /opt/bin/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt
-/usr/bin/find /opt/sbin/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt
-#/usr/bin/find /opt/etc/init.d/ -perm '-u+x' -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt
+/usr/bin/find /opt/opt_backup/lib/ -type f -name '*' ! -type l | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f_opt_backup
+/usr/bin/find /opt/opt_backup/bin/ -type f -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt_backup
+/usr/bin/find /opt/opt_backup/sbin/ -type f -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt_backup
+/usr/bin/find /opt/opt_backup/etc/ -type f -name '*' ! -type l | sort -r  > /tmp/md5/libmd5f_etc_backup
+/usr/bin/find /opt/lib/ -type f -name '*' ! -type l | grep -v "/lib/opkg" | sort -r  > /tmp/md5/libmd5f_opt
+/usr/bin/find /opt/bin/ -type f -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt
+/usr/bin/find /opt/sbin/ -type f -name '*' ! -type l | sort -r  >> /tmp/md5/libmd5f_opt
+/usr/bin/find /opt/etc/ -type f -name '*' ! -type l | sort -r  > /tmp/md5/libmd5f_etc
 }
 
 libmd5_check () {
@@ -919,7 +919,7 @@ if [ ! -f "/opt/opt_backup/opti.txt" ] ; then
 		logger -t "【libmd5_恢复】" "/opt/opt_backup 文件解压完成"
 	fi
 fi
-logger -t "【libmd5_恢复】" "正在对比 /opt/lib/ 文件 md5"
+logger -t "【libmd5_恢复】" "正在对比 /opt/lib|bin|sbin 文件 md5"
 mkdir -p /tmp/md5/
 libmd5_mk
 while read line
@@ -941,7 +941,7 @@ if [ -f "$line" ] ; then
 	fi
 fi
 done < /tmp/md5/libmd5f_opt_backup
-logger -t "【libmd5_恢复】" "md5对比，完成！"
+logger -t "【libmd5_恢复】" "/opt/lib|bin|sbin ，md5 对比完成！"
 # flush buffers
 sync;echo 3 > /proc/sys/vm/drop_caches
 
@@ -956,7 +956,7 @@ if [ ! -z "$optPath" ] ; then
 	return 0
 fi
 mkdir -p /opt/opt_backup
-logger -t "【libmd5_备份】" "正在对比 /opt/lib/ 文件 md5"
+logger -t "【libmd5_备份】" "正在对比 /opt/lib|bin|sbin 文件 md5"
 mkdir -p /tmp/md5/
 libmd5_mk
 while read line
@@ -988,11 +988,44 @@ if [ -f "$line" ] ; then
 	fi
 fi
 done < /tmp/md5/libmd5f_opt_backup
-logger -t "【libmd5_备份】" "md5对比，完成！"
+logger -t "【libmd5_备份】" "/opt/lib|bin|sbin ，md5 对比完成！"
+logger -t "【libmd5_备份】" "/opt/lib|bin|sbin ，重启后自动恢复"
+logger -t "【libmd5_备份】" "正在对比 /opt/etc/ 文件 md5"
+while read line
+do
+if [ -f "$line" ] ; then
+	b_line="$(echo $line | sed  "s@^/opt/@/opt/opt_backup/@g")"
+	if [ -f "$b_line" ] ; then
+	MD5_backup="$(md5sum $line | awk '{print $1;}')"
+	MD5_OPT="$(md5sum $b_line | awk '{print $1;}')"
+	else
+	MD5_backup="1" ; MD5_OPT="2" ;
+	fi
+	if [ "$MD5_backup"x != "$MD5_OPT"x ] ; then
+	logger -t "【libmd5_备份】" "【 $b_line 】，md5不匹配！"
+	logger -t "【libmd5_备份】" "备份文件【 $line 】"
+	mkdir -p "$(dirname "$b_line")"
+	cp -Hrf "$line" "$b_line"
+	lib_status=1
+	fi
+fi
+done < /tmp/md5/libmd5f_etc
+while read line
+do
+if [ -f "$line" ] ; then
+	b_line="$(echo $line | sed  "s@^/opt/opt_backup/@/opt/@g")"
+	if [ ! -f "$b_line" ] ; then
+	logger -t "【libmd5_备份】" "删除多余的备份文件【 $line 】"
+	rm -f $line
+	fi
+fi
+done < /tmp/md5/libmd5f_etc_backup
+logger -t "【libmd5_备份】" "/opt/etc ，md5 对比完成！"
+logger -t "【libmd5_备份】" "/opt/etc ，重启后不会恢复"
 ln_mk
 cp -f /opt/ln.txt /opt/opt_backup/ln.txt
 cp -f /opt/opti.txt /opt/opt_backup/opti.txt
-rm -f /tmp/md5/libmd5f_opt /tmp/md5/libmd5f_opt_backup
+rm -f /tmp/md5/libmd5f_opt /tmp/md5/libmd5f_opt_backup /tmp/md5/libmd5f_etc /tmp/md5/libmd5f_etc_backup
 # flush buffers
 sync;echo 3 > /proc/sys/vm/drop_caches
 
