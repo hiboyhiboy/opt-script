@@ -14,6 +14,9 @@ if [ -z $wxsend_cgi ] ; then
 weekly=`tr -cd a-b0-9 </dev/urandom | head -c 12`
 wxsend_cgi="$weekly" && nvram set app_129="$weekly"
 fi
+wxsend_title=`nvram get app_130`
+[ -z "$wxsend_title" ] && wxsend_title=`nvram get computer_name` && nvram set app_130="$wxsend_title"
+[ -z "$wxsend_title" ] && wxsend_title="！" && nvram set app_130="$wxsend_title"
 tmall_enable=`nvram get app_55`
 [ -z $tmall_enable ] && tmall_enable=0 && nvram set app_55=0
 if [ "$wxsend_enable" != "0" ] ; then
@@ -57,7 +60,54 @@ send_message () {
 get_token
 access_token="$(cat /tmp/wx_access_token)"
 if [ ! -z "$access_token" ] ; then
-curl -H "Content-type: application/json;charset=UTF-8" -H "Accept: application/json" -H "Cache-Control: no-cache" -H "Pragma: no-cache" -X POST -d '{"touser":"'"$wxsend_touser"'","template_id":"'"$wxsend_template_id"'","data":{"title":{"value":"'"$1"'"},"content":{"value":"'"$2"'"}}}' "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=$access_token"
+new_time=$(date +%Y年%m月%d日\ %X)
+# 删除首个参数
+shift
+content1=${1:-"$new_time"}
+content2=${2:-"$new_time"}
+content3=${3:-"$new_time"}
+content4=${4:-"$new_time"}
+content5=${5:-"$new_time"}
+content6=${6:-"$new_time"}
+content7=${7:-"$new_time"}
+
+[ "$content7" == "$content6" ] && content7=""
+[ "$content6" == "$content5" ] && content6=""
+[ "$content5" == "$content4" ] && content5=""
+[ "$content4" == "$content3" ] && content4=""
+[ "$content3" == "$content2" ] && content3=""
+[ "$content2" == "$content1" ] && content2=""
+[ "$content1" == "" ] && content1="$new_time"
+
+# 空格分割消息：最多 7 段字符
+content_value="$(echo "$content1
+$content2
+$content3
+$content4
+$content5
+$content6
+$content7" | awk -F '|' 'BEGIN{h=0;}{ \
+for(i=1;i<=NF;++i) { \
+    ARGV[h]=$i; \
+    ++h;
+} \
+}END{ \
+  for(i=1;i<=7;++i) { \
+    if(i==1){ \
+      sum=sum "\"content\":{\"value\":\"" ARGV[i-1] "\"}";
+    }else{ \
+      sum=sum "\"content" i "\":{\"value\":\"" ARGV[i-1] "\"}";
+    } \
+    if(i<7){ \
+      sum=sum ",";
+    } \
+  } \
+  printf(sum); \
+}')"
+
+
+curl -H "Content-type: application/json;charset=UTF-8" -H "Accept: application/json" -H "Cache-Control: no-cache" -H "Pragma: no-cache" -X POST -d '{"touser":"'"$wxsend_touser"'","template_id":"'"$wxsend_template_id"'","data":{"title":{"value":"'" "'"},'"$content_value"'}}' "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=$access_token"
+
 else
 logger -t "【wxsend推送】" "获取 Access token 错误，请看看哪里问题？"
 fi
@@ -67,18 +117,23 @@ if [ ! -z "$PATH_INFO" ] && [ ! -z "$GATEWAY_INTERFACE" ] ; then
 #source /etc/storage/script/init.sh
 wxsend_title="$(echo -n "$PATH_INFO" | awk -F "/" '{print $2}')"
 wxsend_content="$(echo -n "$PATH_INFO" | awk -F "/" '{print $3}')"
+wxsend_content2="$(echo -n "$PATH_INFO" | awk -F "/" '{print $4}')"
+wxsend_content3="$(echo -n "$PATH_INFO" | awk -F "/" '{print $5}')"
+wxsend_content4="$(echo -n "$PATH_INFO" | awk -F "/" '{print $6}')"
+wxsend_content5="$(echo -n "$PATH_INFO" | awk -F "/" '{print $7}')"
+wxsend_content6="$(echo -n "$PATH_INFO" | awk -F "/" '{print $8}')"
 PATH_INFO=""
 GATEWAY_INTERFACE=""
-logger -t "【wxsend推送】" "API 消息标题: $wxsend_title"
-logger -t "【wxsend推送】" "API 消息内容: $wxsend_content"
-send_message "$wxsend_title" "$wxsend_content"
+logger -t "【wxsend推送】" "API 消息标记: $wxsend_title"
+logger -t "【wxsend推送】" "API 消息内容: $wxsend_content""$wxsend_content2""$wxsend_content3""$wxsend_content4" "$wxsend_content5""$wxsend_content6"
+send_message " " "【""$wxsend_title""】" "$wxsend_content" "$wxsend_content2" "$wxsend_content3" "$wxsend_content4" "$wxsend_content5" "$wxsend_content6"
 exit 0
 fi
 
-wxsend_title="$(nvram get app_130)"
+wxsend_title="$wxsend_title"
 wxsend_content="$(nvram get app_131)"
 # 在线发送wxsend推送
-if [ ! -z "$wxsend_title" ] || [ ! -z "$wxsend_content" ] ; then
+if [ ! -z "$wxsend_content" ] ; then
 if [ ! -z "$wxsend_appid" ] && [ ! -z "$wxsend_appsecret" ] && [ ! -z "$wxsend_touser" ] && [ ! -z "$wxsend_template_id" ] ; then
 	curltest=`which curl`
 	if [ -z "$curltest" ] ; then
@@ -87,13 +142,10 @@ if [ ! -z "$wxsend_appid" ] && [ ! -z "$wxsend_appsecret" ] && [ ! -z "$wxsend_t
 	curltest=`which curl`
 	if [ -z "$curltest" ] ; then
 		logger -t "【wxsend推送】" "未找到 curl 程序，停止 wxsend推送。需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
-		nvram set app_130=""
 		nvram set app_131=""
 	else
-		send_message "$wxsend_title" "$wxsend_content"
-		logger -t "【wxsend推送】" "消息标题: $wxsend_title"
+		send_message "$wxsend_title" "【""$wxsend_title""】" "$wxsend_content"
 		logger -t "【wxsend推送】" "消息内容: $wxsend_content"
-		nvram set app_130=""
 		nvram set app_131=""
 	fi
 else
@@ -146,7 +198,7 @@ exit 0
 wxsend_get_status () {
 
 A_restart=`nvram get wxsend_status`
-B_restart="$wxsend_enable$wxsend_port$tmall_enable$wxsend_appid$wxsend_appsecret$wxsend_touser$wxsend_template_id$wxsend_cgi$wxsend_notify_1$wxsend_notify_2$wxsend_notify_3$wxsend_notify_4$(cat /etc/storage/app_30.sh | grep -v '^#' | grep -v "^$")$(cat /etc/storage/app_31.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$wxsend_enable$wxsend_port$tmall_enable$wxsend_appid$wxsend_appsecret$wxsend_touser$wxsend_template_id$wxsend_cgi$wxsend_notify_1$wxsend_notify_2$wxsend_notify_3$wxsend_notify_4$wxsend_title$(cat /etc/storage/app_30.sh | grep -v '^#' | grep -v "^$")$(cat /etc/storage/app_31.sh | grep -v '^#' | grep -v "^$")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -320,9 +372,27 @@ resub=1
         #curl -L --user-agent "$user_agent" -s http://ddns.oray.com/checkip | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
     fi
     }
+    arIpAddress6 () {
+    # IPv6地址获取
+    # 因为一般ipv6没有nat ipv6的获得可以本机获得
+    #ifconfig $(nvram get wan0_ifname_t) | awk '/Global/{print $3}' | awk -F/ '{print $1}'
+    if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+        wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- "https://[2606:4700:4700::1002]/cdn-cgi/trace" | awk -F= '/ip/{print $2}'
+        #wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- "https://ipv6.icanhazip.com"
+    else
+        curl -6 -L --user-agent "$user_agent" -s "https://[2606:4700:4700::1002]/cdn-cgi/trace" | awk -F= '/ip/{print $2}'
+        #curl -6 -L --user-agent "$user_agent" -s "https://ipv6.icanhazip.com"
+    fi
+    }
 # 读取最近外网地址
     lastIPAddress() {
         inter="/etc/storage/wxsend_lastIPAddress"
+        touch $inter
+        cat $inter
+    }
+    lastIPAddress6() {
+        inter="/etc/storage/wxsend_lastIPAddress6"
+        touch $inter
         cat $inter
     }
 
@@ -345,7 +415,7 @@ if [ ! -z "$ping_time" ] ; then
 fi
 if [ ! -z "$ping_time" ] ; then
 echo "online"
-if [ "$wxsend_notify_1" = "1" ] ; then
+if [ "$wxsend_notify_1" = "1" ] || [ "$wxsend_notify_1" = "3" ] ; then
     hostIP=$(arIpAddress)
     hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`
     if [ "$hostIP"x = "x"  ] ; then
@@ -370,11 +440,23 @@ if [ "$wxsend_notify_1" = "1" ] ; then
         lastIP=$(lastIPAddress)
     fi
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
-        logger -t "【互联网 IP 变动】" "目前 IP: ${hostIP}"
-        logger -t "【互联网 IP 变动】" "上次 IP: ${lastIP}"
-        Sh45_wx_send.sh send_message "【PDCN_`nvram get computer_name`】互联网IP变动" "${hostIP}" &
-        logger -t "【wxsend推送】" "互联网IP变动:${hostIP}"
+        logger -t "【互联网 IPv4 变动】" "目前 IPv4: ${hostIP}"
+        logger -t "【互联网 IPv4 变动】" "上次 IPv4: ${lastIP}"
+        Sh45_wx_send.sh send_message "【""$wxsend_title""】互联网IP变动" "${hostIP}" &
+        logger -t "【wxsend推送】" "互联网IPv4变动:${hostIP}"
         echo -n $hostIP > /etc/storage/wxsend_lastIPAddress
+    fi
+fi
+if [ "$wxsend_notify_1" = "2" ] || [ "$wxsend_notify_1" = "3" ] ; then
+    hostIP6=$(arIpAddress6)
+    hostIP6=`echo $hostIP6 | head -n1 | cut -d' ' -f1`
+    lastIP6=$(lastIPAddress6)
+    if [ "$lastIP6" != "$hostIP6" ] && [ ! -z "$hostIP6" ] ; then
+        logger -t "【互联网 IPv6 变动】" "目前 IPv6: ${hostIP6}"
+        logger -t "【互联网 IPv6 变动】" "上次 IPv6: ${lastIP6}"
+        Sh45_wx_send.sh send_message "【""$wxsend_title""】互联网IP变动" "${hostIP6}" &
+        logger -t "【wxsend推送】" "互联网IPv6变动:${hostIP6}"
+        echo -n $hostIP6 > /etc/storage/wxsend_lastIPAddress6
     fi
 fi
 if [ "$wxsend_notify_2" = "1" ] ; then
@@ -391,7 +473,7 @@ if [ "$wxsend_notify_2" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/wxsend_newhostname相同行.txt /tmp/var/wxsend_newhostname.txt > /tmp/var/wxsend_newhostname不重复.txt
     if [ -s "/tmp/var/wxsend_newhostname不重复.txt" ] ; then
         content=`cat /tmp/var/wxsend_newhostname不重复.txt | grep -v "^$"`
-        Sh45_wx_send.sh send_message "【PDCN_`nvram get computer_name`】新设备加入" "${content}" &
+        Sh45_wx_send.sh send_message "【""$wxsend_title""】新设备加入" "${content}" &
         logger -t "【wxsend推送】" "PDCN新设备加入:${content}"
         cat /tmp/var/wxsend_newhostname不重复.txt | grep -v "^$" >> /etc/storage/wxsend_hostname.txt
     fi
@@ -411,7 +493,7 @@ if [ "$wxsend_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/wxsend_newhostname相同行_上线.txt /tmp/var/wxsend_newhostname.txt > /tmp/var/wxsend_newhostname不重复_上线.txt
     if [ -s "/tmp/var/wxsend_newhostname不重复_上线.txt" ] ; then
         content=`cat /tmp/var/wxsend_newhostname不重复_上线.txt | grep -v "^$"`
-        Sh45_wx_send.sh send_message "【PDCN_`nvram get computer_name`】设备【上线】Online" "${content}" &
+        Sh45_wx_send.sh send_message "【""$wxsend_title""】设备【上线】ON" "${content}" &
         logger -t "【wxsend推送】" "PDCN设备【上线】:${content}"
         cat /tmp/var/wxsend_newhostname不重复_上线.txt | grep -v "^$" >> /etc/storage/wxsend_hostname_上线.txt
     fi
@@ -419,7 +501,7 @@ if [ "$wxsend_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/wxsend_newhostname.txt /etc/storage/wxsend_hostname_上线.txt > /tmp/var/wxsend_newhostname不重复_下线.txt
     if [ -s "/tmp/var/wxsend_newhostname不重复_下线.txt" ] ; then
         content=`cat /tmp/var/wxsend_newhostname不重复_下线.txt | grep -v "^$"`
-        Sh45_wx_send.sh send_message "【PDCN_`nvram get computer_name`】设备【下线】offline" "${content}" &
+        Sh45_wx_send.sh send_message "【""$wxsend_title""】设备【下线】OFF" "${content}" &
         logger -t "【wxsend推送】" "PDCN设备【下线】:${content}"
         cat /tmp/var/wxsend_newhostname.txt | grep -v "^$" > /etc/storage/wxsend_hostname_上线.txt
     fi
@@ -435,7 +517,7 @@ if [ "$wxsend_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/wxsend_osub
         content="新的固件： `cat /tmp/var/wxsend_nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/wxsend_osub | grep -v "^$"` "
         logger -t "【wxsend推送】" "固件 新的更新：${content}"
-        Sh45_wx_send.sh send_message "【PDCN_`nvram get computer_name`】固件更新提醒" "${content}" &
+        Sh45_wx_send.sh send_message "【""$wxsend_title""】固件更新提醒" "${content}" &
         echo -n `cat /tmp/var/wxsend_nsub | grep -v "^$"` > /tmp/var/wxsend_osub
     fi
 fi
@@ -500,7 +582,7 @@ mount --bind /opt/app/wxsend/Advanced_Extensions_wxsend.asp /www/Advanced_Extens
 
 case $ACTION in
 send_message)
-	send_message "$2" "$3"
+	send_message " " "$2" "$3" "$4" "$5" "$6" "$7" "$8"
 	;;
 start)
 	wxsend_close

@@ -219,9 +219,27 @@ resub=1
         #curl -L --user-agent "$user_agent" -s http://ddns.oray.com/checkip | grep -E -o '([0-9]+\.){3}[0-9]+' | head -n1 | cut -d' ' -f1
     fi
     }
+    arIpAddress6 () {
+    # IPv6地址获取
+    # 因为一般ipv6没有nat ipv6的获得可以本机获得
+    #ifconfig $(nvram get wan0_ifname_t) | awk '/Global/{print $3}' | awk -F/ '{print $1}'
+    if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+        wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- "https://[2606:4700:4700::1002]/cdn-cgi/trace" | awk -F= '/ip/{print $2}'
+        #wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- "https://ipv6.icanhazip.com"
+    else
+        curl -6 -L --user-agent "$user_agent" -s "https://[2606:4700:4700::1002]/cdn-cgi/trace" | awk -F= '/ip/{print $2}'
+        #curl -6 -L --user-agent "$user_agent" -s "https://ipv6.icanhazip.com"
+    fi
+    }
 # 读取最近外网地址
     lastIPAddress() {
         inter="/etc/storage/tgbot_lastIPAddress"
+        touch $inter
+        cat $inter
+    }
+    lastIPAddress6() {
+        inter="/etc/storage/tgbot_lastIPAddress6"
+        touch $inter
         cat $inter
     }
 
@@ -246,7 +264,7 @@ if [ ! -z "$ping_time" ] ; then
 fi
 if [ ! -z "$ping_time" ] ; then
 echo "online"
-if [ "$tgbot_notify_1" = "1" ] ; then
+if [ "$tgbot_notify_1" = "1" ] || [ "$tgbot_notify_1" = "3" ] ; then
     hostIP=$(arIpAddress)
     hostIP=`echo $hostIP | head -n1 | cut -d' ' -f1`
     if [ "$hostIP"x = "x"  ] ; then
@@ -271,11 +289,23 @@ if [ "$tgbot_notify_1" = "1" ] ; then
         lastIP=$(lastIPAddress)
     fi
     if [ "$lastIP" != "$hostIP" ] && [ ! -z "$hostIP" ] ; then
-        logger -t "【互联网 IP 变动】" "目前 IP: ${hostIP}"
-        logger -t "【互联网 IP 变动】" "上次 IP: ${lastIP}"
+        logger -t "【互联网 IPv4 变动】" "目前 IPv4: ${hostIP}"
+        logger -t "【互联网 IPv4 变动】" "上次 IPv4: ${lastIP}"
         curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】互联网IP变动""`echo -e " \n "`""${hostIP}" &
-        logger -t "【tgbot推送】" "互联网IP变动:${hostIP}"
+        logger -t "【tgbot推送】" "互联网IPv4变动:${hostIP}"
         echo -n $hostIP > /etc/storage/tgbot_lastIPAddress
+    fi
+fi
+if [ "$tgbot_notify_1" = "2" ] || [ "$tgbot_notify_1" = "3" ] ; then
+    hostIP6=$(arIpAddress6)
+    hostIP6=`echo $hostIP6 | head -n1 | cut -d' ' -f1`
+    lastIP6=$(lastIPAddress6)
+    if [ "$lastIP6" != "$hostIP6" ] && [ ! -z "$hostIP6" ] ; then
+        logger -t "【互联网 IPv6 变动】" "目前 IPv6: ${hostIP6}"
+        logger -t "【互联网 IPv6 变动】" "上次 IPv6: ${lastIP6}"
+        curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】互联网IP变动""`echo -e " \n "`""${hostIP6}" &
+        logger -t "【tgbot推送】" "互联网IPv6变动:${hostIP6}"
+        echo -n $hostIP > /etc/storage/tgbot_lastIPAddress6
     fi
 fi
 if [ "$tgbot_notify_2" = "1" ] ; then
