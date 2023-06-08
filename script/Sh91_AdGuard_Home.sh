@@ -181,31 +181,34 @@ else
 	mkdir -p "/opt/AdGuardHome"
 	if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
 		logger -t "【AdGuardHome】" "找不到 $SVC_PATH ，安装 AdGuardHome 程序"
-		curltest=`which curl`
-		if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-			tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
-			[ -z "$tag" ] && tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
-		else
-			tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
-			[ -z "$tag" ] && tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
-		fi
-		if [ ! -z "$tag" ] ; then
-			logger -t "【AdGuardHome】" "自动下载最新版本 $tag"
-			wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "https://github.com/AdguardTeam/AdGuardHome/releases/download/$tag/AdGuardHome_linux_mipsle_softfloat.tar.gz"
-			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt
-		fi
-		if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
-			static_adguard="https://static.adtidy.org/adguardhome/beta/AdGuardHome_linux_mipsle_softfloat.tar.gz"
-			logger -t "【AdGuardHome】" "开始下载 $static_adguard"
-			wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "$static_adguard"
-			tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt ; cd /opt/AdGuardHome
-		fi
+		# curltest=`which curl`
+		# if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+			# tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
+			# [ -z "$tag" ] && tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
+		# else
+			# tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
+			# [ -z "$tag" ] && tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
+		# fi
+		# if [ ! -z "$tag" ] ; then
+			# logger -t "【AdGuardHome】" "自动下载最新版本 $tag"
+			# wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "https://github.com/AdguardTeam/AdGuardHome/releases/download/$tag/AdGuardHome_linux_mipsle_softfloat.tar.gz"
+			# tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt
+		# fi
+		logger -t "【AdGuardHome】" "自动下载 v0.107.29 版本（由于最新版会启动失败，暂时用旧版）"
+		wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "https://github.com/AdguardTeam/AdGuardHome/releases/download/v0.107.29/AdGuardHome_linux_mipsle_softfloat.tar.gz"
+		tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt
+		# if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
+			# static_adguard="https://static.adtidy.org/adguardhome/beta/AdGuardHome_linux_mipsle_softfloat.tar.gz"
+			# logger -t "【AdGuardHome】" "开始下载 $static_adguard"
+			# wgetcurl.sh "/opt/AdGuardHome/AdGuardHome.tar.gz" "$static_adguard"
+			# tar -xzvf /opt/AdGuardHome/AdGuardHome.tar.gz -C /opt ; cd /opt/AdGuardHome
+		# fi
 		 cd /opt/AdGuardHome ; rm -f ./AdGuardHome.tar.gz ./LICENSE.txt./README.md ./CHANGELOG.md ./AdGuardHome.sig
-		if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
-			logger -t "【AdGuardHome】" "最新版本获取失败！！！"
-			logger -t "【AdGuardHome】" "开始下载 $hiboyfile2/AdGuardHome"
-			wgetcurl.sh "/opt/AdGuardHome/AdGuardHome" "$hiboyfile/AdGuardHome" "$hiboyfile2/AdGuardHome"
-		fi
+		# if [ ! -s "$SVC_PATH" ] && [ -d "/opt/AdGuardHome" ] ; then
+			# logger -t "【AdGuardHome】" "最新版本获取失败！！！"
+			# logger -t "【AdGuardHome】" "开始下载 $hiboyfile2/AdGuardHome"
+			# wgetcurl.sh "/opt/AdGuardHome/AdGuardHome" "$hiboyfile/AdGuardHome" "$hiboyfile2/AdGuardHome"
+		# fi
 	fi
 	chmod 777 "$SVC_PATH"
 	# 更新 yq
