@@ -369,7 +369,7 @@ ln -sf /etc/storage/script/sh_ss_tproxy.sh /opt/bin/ss_tproxy
 Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 size_tmpfs=`nvram get size_tmpfs`
 if [ "$size_tmpfs" = "0" ] && [[ "$Available_A" -lt 15 ]] ; then
-mount -o remount,size=50% tmpfs /tmp
+mount -o remount,size=60% tmpfs /tmp
 Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
 fi
