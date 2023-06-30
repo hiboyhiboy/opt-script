@@ -174,7 +174,7 @@ for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
 wgetcurl_file "$SVC_PATH" "$hiboyfile/tailscaled" "$hiboyfile2/tailscaled"
 [[ "$($SVC_PATH2 -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH2 ] && rm -rf $SVC_PATH2
-wgetcurl_file "$SVC_PATH2" "$hiboyfile/tailscale" "$hiboyfile2/tailscale"
+ln -sf "$SVC_PATH" "$SVC_PATH2" 
 done
 tailscale_v=$($SVC_PATH -version | sed -n '1p')
 nvram set tailscale_v="$tailscale_v"

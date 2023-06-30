@@ -102,4 +102,8 @@ sw_mode=`nvram get sw_mode`
 [ "$sw_mode" == "3" ] && /etc/storage/crontabs_script.sh &
 rm -f /tmp/script.lock
 [ -f /tmp/www_asp_re ] && /etc/storage/script/sh_upscript.sh www_asp_re &
+aria_enable=`nvram get aria_enable`
+[ "$aria_enable" == "1" ] && aria.sh start
+trmd_enable=`nvram get trmd_enable`
+[ "$trmd_enable" == "1" ] && transmission.sh start
 logger -t "【自定义脚本】" "初始化脚本完成"
