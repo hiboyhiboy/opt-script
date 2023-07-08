@@ -17,12 +17,22 @@ ss_udp_enable=`nvram get ss_udp_enable` #udp转发  0、停用；1、启动
 [ -z $ss_udp_enable ] && ss_udp_enable=0 && nvram set ss_udp_enable=0
 app_114=`nvram get app_114` #0:代理本机流量; 1:跳过代理本机流量
 [ -z $app_114 ] && app_114=0 && nvram set app_114=0
-clash_ui=`nvram get app_94`
-[ -z $clash_ui ] && clash_ui="0.0.0.0:9090" && nvram set app_94="0.0.0.0:9090"
 lan_ipaddr=`nvram get lan_ipaddr`
+clash_ui=`nvram get app_94`
+if [ -z $clash_ui ] || [ ! -z "$(echo "$clash_ui" | grep "0.0.0.0")" ] || [ -z "$(echo $clash_ui | grep ":")" ] ; then
+	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+	RND_NUM=`echo $SEED 19090 49090|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	clash_ui="$lan_ipaddr:$RND_NUM" && nvram set app_94="$clash_ui"
+fi
 app_default_config=`nvram get app_115`
 [ -z $app_default_config ] && app_default_config=0 && nvram set app_115=0
 clash_secret=`nvram get app_119`
+if [ -z $clash_secret ] ; then
+	SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
+	RND_NUM=`echo $SEED 8 12|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
+	clash_secret="$(echo -n $SEED | md5sum | sed s/[[:space:]]//g | sed s/-//g | head -c $RND_NUM)"
+	nvram set app_119=$clash_secret
+fi
 app_120=`nvram get app_120`
 curltest=`which curl`
 secret=""
