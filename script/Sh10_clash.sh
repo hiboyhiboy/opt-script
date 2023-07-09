@@ -1098,6 +1098,10 @@ tar -xzvf /opt/app/clash/clash_webs_tmp/clash_webs.tgz -C /opt/app/clash ; cd /o
 fi
 rm -rf /opt/app/clash/clash_webs_tmp
 fi
+if [ ! -z "$(cat /opt/app/clash/Advanced_Extensions_clash.asp | grep 9090)" ] ; then
+sed -e 's@var port = .*@var port = document.querySelector("#app_94").value.split(":")[1];@' -i /opt/app/clash/Advanced_Extensions_clash.asp
+sed -e 's@0.0.0.0:9090@@' -i /opt/app/clash/Advanced_Extensions_clash.asp
+fi
 }
 
 urlencode() {
