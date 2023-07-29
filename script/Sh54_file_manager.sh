@@ -344,7 +344,7 @@ if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/filemanager/Advanced_Extensions_filemanager.asp
 	[ -f "$filemanager_upanPath/filemanager/filemanager" ] && rm -f $filemanager_upanPath/filemanager/filemanager
 	[ -f "$filemanager_upanPath/filemanager/caddy_filebrowser" ] && rm -f $filemanager_upanPath/filemanager/caddy_filebrowser
-	[ -f "/opt/bin/filebrowser" ] && rm -f /opt/bin/filebrowser
+	[ -f "/opt/bin/filebrowser" ] && rm -f /opt/bin/filebrowser /opt/opt_backup/bin/filebrowser
 fi
 
 initconfig
