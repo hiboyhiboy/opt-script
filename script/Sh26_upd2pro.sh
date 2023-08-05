@@ -75,7 +75,7 @@ upd2pro_get_status () {
 
 #lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get upd2pro_status`
-B_restart="$upd2pro_enable$upd2pro2_enable$upd2pro3_enable$upd2pro_path$upd2pro2_path$upd2pro3_path$(cat /etc/storage/app_3.sh /etc/storage/app_4.sh /etc/storage/app_6.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$upd2pro_enable$upd2pro2_enable$upd2pro3_enable$upd2pro_path$upd2pro2_path$upd2pro3_path$(cat /etc/storage/app_3.sh /etc/storage/app_4.sh /etc/storage/app_6.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

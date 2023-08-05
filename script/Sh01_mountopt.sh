@@ -417,7 +417,7 @@ if [ -s $cn2qq_name/up_name.md5 ] ; then
 cd $cn2qq_name
 md5sum -c $cn2qq_name/up_name.md5 | grep ": FAILED" | awk -F ':' '{print($1)}' | sed -e 's@^./@/@g' > $cn2qq_name/up_name.txt
 # 下载不匹配文件
-cat $cn2qq_name/up_name.txt | grep -v "^$" | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "https://opt.cn2qq.com/opt-script$update_addr" "https://raw.githubusercontent.com/hiboyhiboy/opt-script/master$update_addr" Y; done
+cat $cn2qq_name/up_name.txt | grep -v '^$' | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "https://opt.cn2qq.com/opt-script$update_addr" "https://raw.githubusercontent.com/hiboyhiboy/opt-script/master$update_addr" Y; done
 rm -f $cn2qq_name/up_name.txt
 logger -t "【opt】" "opt-script 匹配完成： $cn2qq_name"
 else
@@ -438,7 +438,7 @@ if [ -s $cn2qq_name/up_name.md5 ] ; then
 cd $cn2qq_name
 md5sum -c $cn2qq_name/up_name.md5 | grep ": FAILED" | awk -F ':' '{print($1)}' | sed -e 's@^./@/@g' > $cn2qq_name/up_name.txt
 # 下载不匹配文件
-cat $cn2qq_name/up_name.txt | grep -v "^$" | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "https://opt.cn2qq.com/opt-file$update_addr" "https://raw.githubusercontent.com/hiboyhiboy/opt-file/master$update_addr" Y; done
+cat $cn2qq_name/up_name.txt | grep -v '^$' | while read update_addr; do [ ! -z "$update_addr" ] &&  wgetcurl_checkmd5 "$cn2qq_name$update_addr" "https://opt.cn2qq.com/opt-file$update_addr" "https://raw.githubusercontent.com/hiboyhiboy/opt-file/master$update_addr" Y; done
 rm -f $cn2qq_name/up_name.txt
 logger -t "【opt】" "opt-file 匹配完成： $cn2qq_name"
 else

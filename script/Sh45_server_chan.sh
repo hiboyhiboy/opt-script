@@ -60,7 +60,7 @@ exit 0
 serverchan_get_status () {
 
 A_restart=`nvram get serverchan_status`
-B_restart="$serverchan_enable$serverchan_sckey$serverchan_notify_1$serverchan_notify_2$serverchan_notify_3$serverchan_notify_4$(cat /etc/storage/serverchan_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$serverchan_enable$serverchan_sckey$serverchan_notify_1$serverchan_notify_2$serverchan_notify_3$serverchan_notify_4$(cat /etc/storage/serverchan_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -176,7 +176,7 @@ serverchan_notify_1=`nvram get serverchan_notify_1`
 serverchan_notify_2=`nvram get serverchan_notify_2`
 serverchan_notify_3=`nvram get serverchan_notify_3`
 serverchan_notify_4=`nvram get serverchan_notify_4`
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
 mkdir -p /tmp/var
 resub=1
 # 获得外网地址
@@ -287,7 +287,7 @@ if [ "$serverchan_notify_2" = "1" ] ; then
     touch /tmp/var/newhostname.txt
     echo "接入设备名称" > /tmp/var/newhostname.txt
     #cat /tmp/syslog.log | grep 'Found new hostname' | awk '{print $7" "$8}' >> /tmp/var/newhostname.txt
-    cat /tmp/static_ip.inf | grep -v "^$" | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/newhostname.txt
+    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/newhostname.txt
     # 读取以往接入设备名称
     touch /etc/storage/hostname.txt
     [ ! -s /etc/storage/hostname.txt ] && echo "接入设备名称" > /etc/storage/hostname.txt
@@ -295,10 +295,10 @@ if [ "$serverchan_notify_2" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' /etc/storage/hostname.txt /tmp/var/newhostname.txt > /tmp/var/newhostname相同行.txt
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname相同行.txt /tmp/var/newhostname.txt > /tmp/var/newhostname不重复.txt
     if [ -s "/tmp/var/newhostname不重复.txt" ] ; then
-        content=`cat /tmp/var/newhostname不重复.txt | grep -v "^$"`
+        content=`cat /tmp/var/newhostname不重复.txt | grep -v '^$'`
         curl -L -s "http://sctapi.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】新设备加入：${content}" -d "&desp=${content}" &
         logger -t "【微信推送】" "PDCN新设备加入:${content}"
-        cat /tmp/var/newhostname不重复.txt | grep -v "^$" >> /etc/storage/hostname.txt
+        cat /tmp/var/newhostname不重复.txt | grep -v '^$' >> /etc/storage/hostname.txt
     fi
 fi
 if [ "$serverchan_notify_4" = "1" ] ; then
@@ -307,7 +307,7 @@ if [ "$serverchan_notify_4" = "1" ] ; then
     touch /tmp/var/newhostname.txt
     echo "接入设备名称" > /tmp/var/newhostname.txt
     #cat /tmp/syslog.log | grep 'Found new hostname' | awk '{print $7" "$8}' >> /tmp/var/newhostname.txt
-    cat /tmp/static_ip.inf | grep -v "^$" | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/newhostname.txt
+    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/newhostname.txt
     # 读取以往上线设备名称
     touch /etc/storage/hostname_上线.txt
     [ ! -s /etc/storage/hostname_上线.txt ] && echo "接入设备名称" > /etc/storage/hostname_上线.txt
@@ -315,18 +315,18 @@ if [ "$serverchan_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' /etc/storage/hostname_上线.txt /tmp/var/newhostname.txt > /tmp/var/newhostname相同行_上线.txt
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname相同行_上线.txt /tmp/var/newhostname.txt > /tmp/var/newhostname不重复_上线.txt
     if [ -s "/tmp/var/newhostname不重复_上线.txt" ] ; then
-        content=`cat /tmp/var/newhostname不重复_上线.txt | grep -v "^$"`
+        content=`cat /tmp/var/newhostname不重复_上线.txt | grep -v '^$'`
         curl -L -s "http://sctapi.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】设备【上线】Online：${content}" -d "&desp=${content}" &
         logger -t "【微信推送】" "PDCN设备【上线】:${content}"
-        cat /tmp/var/newhostname不重复_上线.txt | grep -v "^$" >> /etc/storage/hostname_上线.txt
+        cat /tmp/var/newhostname不重复_上线.txt | grep -v '^$' >> /etc/storage/hostname_上线.txt
     fi
     # 下线
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/newhostname.txt /etc/storage/hostname_上线.txt > /tmp/var/newhostname不重复_下线.txt
     if [ -s "/tmp/var/newhostname不重复_下线.txt" ] ; then
-        content=`cat /tmp/var/newhostname不重复_下线.txt | grep -v "^$"`
+        content=`cat /tmp/var/newhostname不重复_下线.txt | grep -v '^$'`
         curl -L -s "http://sctapi.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】设备【下线】offline：${content}" -d "&desp=${content}" &
         logger -t "【微信推送】" "PDCN设备【下线】:${content}"
-        cat /tmp/var/newhostname.txt | grep -v "^$" > /etc/storage/hostname_上线.txt
+        cat /tmp/var/newhostname.txt | grep -v '^$' > /etc/storage/hostname_上线.txt
     fi
 fi
 if [ "$serverchan_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
@@ -338,10 +338,10 @@ if [ "$serverchan_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     [ ! -z "$(cat /tmp/var/nsub | grep '<' | grep '>')" ] && echo "" > /tmp/var/nsub
     if [ "$(cat /tmp/var/osub |head -n1)"x != "$(cat /tmp/var/nsub |head -n1)"x ] && [ -f /tmp/var/nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/osub
-        content="新的固件： `cat /tmp/var/nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/osub | grep -v "^$"` "
+        content="新的固件： `cat /tmp/var/nsub | grep -v '^$'` ，目前旧固件： `cat /tmp/var/osub | grep -v '^$'` "
         logger -t "【微信推送】" "固件 新的更新：${content}"
         curl -L -s "http://sctapi.ftqq.com/$serverchan_sckey.send?text=【PDCN_"`nvram get computer_name`"】固件更新提醒：${content}" -d "&desp=${content}" &
-        echo -n `cat /tmp/var/nsub | grep -v "^$"` > /tmp/var/osub
+        echo -n `cat /tmp/var/nsub | grep -v '^$'` > /tmp/var/osub
     fi
 fi
     resub=`expr $resub + 1`

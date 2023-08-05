@@ -88,7 +88,7 @@ chinadns_ng_get_status () {
 
 #lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get chinadns_ng_status`
-B_restart="$chinadns_ng_enable$chinadns_ng_usage$smartdns_enable$smartdns_usage$(cat /etc/storage/app_23.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$chinadns_ng_enable$chinadns_ng_usage$smartdns_enable$smartdns_usage$(cat /etc/storage/app_23.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -319,13 +319,13 @@ exit 0
 
 update_chnlist () {
 nvram set app_111=4 && Sh99_ss_tproxy.sh
-cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sed -e 's@^cn$@com.cn@g' | sort -u | grep -v "^$" > /opt/app/chinadns_ng/chnlist.txt
+cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sed -e 's@^cn$@com.cn@g' | sort -u | grep -v '^$' > /opt/app/chinadns_ng/chnlist.txt
 
 }
 
 update_gfwlist () {
 nvram set app_111=3 && Sh99_ss_tproxy.sh
-cat /etc/storage/basedomain.txt | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/chinadns_ng/gfwlist.txt
+cat /etc/storage/basedomain.txt | grep -v '^#' | sort -u | grep -v '^$' > /opt/app/chinadns_ng/gfwlist.txt
 
 }
 
@@ -333,7 +333,7 @@ update_chnroute () {
 nvram set app_111=2 && Sh99_ss_tproxy.sh
 ipset -! -N chnroute hash:net family inet
 ipset -! create chnroute hash:net family inet
-cat /etc/storage/china_ip_list.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A chnroute &/g" | ipset -! restore
+cat /etc/storage/china_ip_list.txt | grep -v '^#' | sort -u | grep -v '^$' | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A chnroute &/g" | ipset -! restore
 
 
 }
@@ -342,7 +342,7 @@ update_chnroute6 () {
 nvram set app_111=26 && Sh99_ss_tproxy.sh
 ipset -! -N chnroute6 hash:net family inet6
 ipset -! create chnroute6 hash:net family inet6
-/opt/app/ss_tproxy/rule/chnroute6.txt | grep -v '^#' | sort -u | grep -v "^$" | sed -e "s/^/-A chnroute6 &/g" | ipset -! restore
+/opt/app/ss_tproxy/rule/chnroute6.txt | grep -v '^#' | sort -u | grep -v '^$' | sed -e "s/^/-A chnroute6 &/g" | ipset -! restore
 
 }
 

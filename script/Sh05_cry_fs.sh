@@ -76,7 +76,7 @@ exit 0
 cryfs_get_status () {
 
 A_restart=`nvram get cryfs_status`
-B_restart="$cryfs_enable$cryfs_key_enable$cryfs_pass$(cat /etc/storage/app_17.sh /etc/storage/app_18.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$cryfs_enable$cryfs_key_enable$cryfs_pass$(cat /etc/storage/app_17.sh /etc/storage/app_18.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -276,7 +276,7 @@ EEE
 
 fi
 
-cat /etc/storage/app_17.sh | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/cryfs_app_list.txt
+cat /etc/storage/app_17.sh | grep -v '^#' | sort -u | grep -v '^$' | sed s/！/!/g > /tmp/cryfs_app_list.txt
 
 }
 

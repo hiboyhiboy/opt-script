@@ -88,7 +88,7 @@ exit 0
 ipt2socks_get_status () {
 
 A_restart=`nvram get ipt2socks_status`
-B_restart="$ipt2socks_enable$transocks_mode_x$transocks_server$transocks_listen_address$transocks_listen_port$ss_udp_enable$app_114$(cat /etc/storage/app_22.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$ipt2socks_enable$transocks_mode_x$transocks_server$transocks_listen_address$transocks_listen_port$ss_udp_enable$app_114$(cat /etc/storage/app_22.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

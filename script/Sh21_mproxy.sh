@@ -62,7 +62,7 @@ exit 0
 mproxy_get_status () {
 
 A_restart=`nvram get mproxy_status`
-B_restart="$mproxy_enable$mproxy_port$(cat /etc/storage/mproxy_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$mproxy_enable$mproxy_port$(cat /etc/storage/mproxy_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -113,7 +113,7 @@ mproxy_close () {
 
 kill_ps "$scriptname keep"
 sed -Ei '/【mproxy】|^$/d' /tmp/script/_opt_script_check
-mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v "^#" | grep "mproxy_port=" | sed 's/mproxy_port=//'`)
+mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v '^#' | grep "mproxy_port=" | sed 's/mproxy_port=//'`)
 [ ! -z "$mproxyport" ] && iptables -t filter -D INPUT -p tcp --dport $mproxyport -j ACCEPT
 killall mproxy mproxy_script.sh
 killall -9 mproxy mproxy_script.sh
@@ -201,7 +201,7 @@ initconfig
 mproxy_port_dpt () {
 
 if [ "$mproxy_port" = "1" ] ; then
-	mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v "^#" | grep "mproxy_port=" | sed 's/mproxy_port=//'`)
+	mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v '^#' | grep "mproxy_port=" | sed 's/mproxy_port=//'`)
 	[ ! -z "$mproxyport" ] && port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$mproxyport | cut -d " " -f 1 | sort -nr | wc -l)
 	if [ ! -z "$mproxyport" ] && [ "$port" = 0 ] ; then
 		[ ! -z "$mproxyport" ] && logger -t "【mproxy】" "允许 $mproxyport 端口通过防火墙"

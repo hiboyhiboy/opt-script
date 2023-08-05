@@ -44,7 +44,7 @@ lan_ipaddr=`nvram get lan_ipaddr`
 #[ "$koolproxy_video" = "1" ] && mode_video=" -e " || mode_video=""
 
 if [ "$ss_enable" = "1" ] ; then
-	if [ ! -z "$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g)" ] ; then
+	if [ ! -z "$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v '^#' | sort -u | grep -v '^$' | sed s/！/!/g)" ] ; then
 		mode_video="$mode_video --mark "
 	fi
 fi
@@ -182,7 +182,7 @@ exit 0
 koolproxy_get_status () {
 
 A_restart=`nvram get koolproxy_status`
-B_restart="$koolproxy_enable$koolproxy_auto$koolproxy_video$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$koolproxy_enable$koolproxy_auto$koolproxy_video$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v '^$' | grep -v '^#')$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v '^$' | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -252,7 +252,7 @@ koolproxy_enable=`nvram get koolproxy_enable`
 if [ ! -f /tmp/cron_adb.lock ] ; then
 	ss_enable=`nvram get ss_enable`
 	if [ "$ss_enable" = "1" ] ; then
-		if [ ! -z "$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g)" ] ; then
+		if [ ! -z "$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v '^#' | sort -u | grep -v '^$' | sed s/！/!/g)" ] ; then
 			[ -z "$(ps -w | grep koolproxy | grep mark)" ] && logger -t "【koolproxy】" "mark！重新启动" && koolproxy_restart
 		fi
 	fi
@@ -398,7 +398,7 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 		sed -e 's@1|koolproxy.txt|https://kprule.com/koolproxy.txt|@0|koolproxy.txt|https://kprule.com/koolproxy.txt|@' -e 's@1|daily.txt|https://kprule.com/daily.txt|@0|daily.txt|https://kprule.com/daily.txt|@' -e 's@1|kp.dat|https://kprule.com/kp.dat|@0|kp.dat|https://kprule.com/kp.dat|@' -i $koolproxy_rules_list
 	fi
 	source_list="/tmp/7620koolproxy/data/source.list"
-	cat $koolproxy_rules_list | grep -v '#' | grep -v "^$" > $source_list
+	cat $koolproxy_rules_list | grep -v '#' | grep -v '^$' > $source_list
 	if [ "$koolproxy_video" = "1" ] ; then
 		logger -t "【koolproxy】" "仅加载视频规则"
 		sed -Ei "s@^1\|koolproxy.txt@0\|koolproxy.txt@" $source_list
@@ -420,15 +420,15 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 		if [ ! -z "$c_line" ] ; then
 			logger -t "【koolproxy】" "第三方规则:$line"
 			wgetcurl.sh /tmp/7620koolproxy/user2.txt $line $line N
-			cat /tmp/7620koolproxy/user2.txt | grep -v '^!' | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> /tmp/7620koolproxy/user3adblocks.txt
+			cat /tmp/7620koolproxy/user2.txt | grep -v '^!' | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v '^$' >> /tmp/7620koolproxy/user3adblocks.txt
 			rm -f /tmp/7620koolproxy/user2.txt
 		fi
 		done < /tmp/rule_DOMAIN.txt
 	fi
 
 	# 合并规则
-	cat /etc/storage/koolproxy_rules_script.sh | grep -v '^!' | grep -v "^$" > /tmp/7620koolproxy/user.txt
-	cat /tmp/7620koolproxy/user3adblocks.txt | grep -v '^!' | grep -v "^$" >> /tmp/7620koolproxy/user.txt
+	cat /etc/storage/koolproxy_rules_script.sh | grep -v '^!' | grep -v '^$' > /tmp/7620koolproxy/user.txt
+	cat /tmp/7620koolproxy/user3adblocks.txt | grep -v '^!' | grep -v '^$' >> /tmp/7620koolproxy/user.txt
 	rm -f /tmp/7620koolproxy/user3adblocks.txt
 	ln -sf /tmp/7620koolproxy/user.txt /tmp/7620koolproxy/data/user.txt
 	ln -sf /tmp/7620koolproxy/user.txt /tmp/7620koolproxy/data/rules/user.txt
@@ -507,7 +507,7 @@ krdl ./daily.txt
 sleep 2
 eval $(ls| grep txt.http| awk '{print "cat /tmp/7620koolproxy/data/rules/"$1" >> /tmp/7620koolproxy/domain.txt;";}')
 # 提取IP
-cat  /tmp/7620koolproxy/domain.txt /tmp/7620koolproxy/koolproxy_blockip.txt | grep -Eo '^[0-9\.]*$' | sort -u | grep -v "^$" > /tmp/7620koolproxy/ip.txt
+cat  /tmp/7620koolproxy/domain.txt /tmp/7620koolproxy/koolproxy_blockip.txt | grep -Eo '^[0-9\.]*$' | sort -u | grep -v '^$' > /tmp/7620koolproxy/ip.txt
 cat /tmp/7620koolproxy/ip.txt /tmp/7620koolproxy/koolproxy_blockip.txt | sort -u > /tmp/7620koolproxy/koolproxy_blockip.txt
 sed -Ei '/0.0.0.0/d' /tmp/7620koolproxy/koolproxy_blockip.txt
 # 提取Domain
@@ -590,7 +590,7 @@ if [ -n "$AD_LAN_AC_IP" ] ; then
 			;;
 	esac
 fi
-cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ad_spec_lan.txt
+cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v '^$' | sed s/！/!/g > /tmp/ad_spec_lan.txt
 while read line
 do
 for host in $line; do
@@ -759,7 +759,7 @@ EOF
 }
 
 include_ac_rules2 () {
-cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -v "\." | sed s/！/!/g > /tmp/ad_spec_lan.txt
+cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v '^$' | grep -v "\." | sed s/！/!/g > /tmp/ad_spec_lan.txt
 while read line
 do
 for host in $line; do

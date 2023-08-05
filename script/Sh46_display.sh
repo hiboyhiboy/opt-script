@@ -76,7 +76,7 @@ display_get_status () {
 
 [ ! -f /etc/storage/display_lcd4linux_script.sh ] && touch /etc/storage/display_lcd4linux_script.sh
 A_restart=`nvram get display_status`
-B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

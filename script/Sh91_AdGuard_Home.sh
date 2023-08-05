@@ -65,7 +65,7 @@ AdGuardHome_get_status () {
 
 A_restart=`nvram get AdGuardHome_status`
 B_restart="$AdGuardHome_enable$AdGuardHome_dns$AdGuardHome_2_server"
-[ "$(nvram get app_86)" = "1" ] && B_restart="$B_restart""$(cat /etc/storage/app_19.sh | grep -v '^#' | grep -v "^$")"
+[ "$(nvram get app_86)" = "1" ] && B_restart="$B_restart""$(cat /etc/storage/app_19.sh | grep -v '^#' | grep -v '^$')"
 [ "$(nvram get app_86)" = "1" ] && nvram set app_86=0
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re

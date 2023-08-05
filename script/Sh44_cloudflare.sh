@@ -100,7 +100,7 @@ exit 0
 cloudflare_get_status () {
 
 A_restart=`nvram get cloudflare_status`
-B_restart="$cloudflare_enable$cloudflare_token$cloudflare_Email$cloudflare_Key$cloudflare_domian$cloudflare_host$cloudflare_domian2$cloudflare_host2$cloudflare_domian6$cloudflare_host6$cloudflare_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$cloudflare_enable$cloudflare_token$cloudflare_Email$cloudflare_Key$cloudflare_domian$cloudflare_host$cloudflare_domian2$cloudflare_host2$cloudflare_domian6$cloudflare_host6$cloudflare_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -507,7 +507,7 @@ cat >/tmp/ip6_ddns.inf <<-\EOF
 
 
 EOF
-cat /tmp/ip6_ddns.inf | grep -v '^#'  | grep -v "^$" > /tmp/ip6_ddns_inf
+cat /tmp/ip6_ddns.inf | grep -v '^#'  | grep -v '^$' > /tmp/ip6_ddns_inf
 rm -f /tmp/ip6_ddns.inf
 EEE
 	chmod 755 "$ddns_script"

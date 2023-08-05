@@ -246,7 +246,7 @@ set_sysctl_option() {
 }
 
 resolve_hostname_by_hosts() {
-	cat /etc/hosts /etc/storage/dnsmasq/hosts | sed 's/#.*//g' | grep -v "^$" | grep -F "$1" | head -n1 | awk '{print $1}'
+	cat /etc/hosts /etc/storage/dnsmasq/hosts | sed 's/#.*//g' | grep -v '^$' | grep -F "$1" | head -n1 | awk '{print $1}'
 }
 
 resolve_hostname_by_doh() {
@@ -726,7 +726,7 @@ update_gfwlist_file() {
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub5 $ss_sub5 Y
 		if [ -s $tmp_down_file ] && [ ! -z "$(cat $tmp_down_file | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		echo ""  >> $tmp_down_file
-		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' | sort -u | grep -v "^$" >> $tmp_gfwlist
+		cat $tmp_down_file | sort -u | sed 's/^[[:space:]]*//g; /^$/d; /#/d' | sed 's/ipset=\/\.//g; s/\/gfwlist//g; /^server/d' | sort -u | grep -v '^$' >> $tmp_gfwlist
 		else
 		logger -t "【update_chnroute】" "错误！！！获取 GFW 自定义域名 列表 下载失败"
 		fi
@@ -780,7 +780,7 @@ update_gfwlist_file() {
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub6 $ss_sub6 Y
 		if [ -s $tmp_down_file ] && [ ! -z "$(cat $tmp_down_file | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		echo ""  >> $tmp_down_file
-		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
+		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v '^$' | grep -E -o '([0-9]+\.){3}[0-9/]+' > /opt/app/ss_tproxy/rule/gfwlist_ip.txt
 		else
 		logger -t "【update_chnroute】" "错误！！！获取 GFW IP 列表 下载失败"
 		fi
@@ -804,7 +804,7 @@ update_gfwlist_file() {
 	cat $file_wanlist_ext | grep -E "^@b" | cut -c4- > /opt/app/ss_tproxy/tmp/awk_del_list_tmp
 	awk_del_list /opt/app/ss_tproxy/tmp/awk_del_list_tmp $tmp_gfwlist
 	cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u >> $tmp_gfwlist
-	cat $tmp_gfwlist |grep -v '^#' | sort -u | grep -v "^$" > $file_gfwlist_txt
+	cat $tmp_gfwlist |grep -v '^#' | sort -u | grep -v '^$' > $file_gfwlist_txt
 	sed -e '/^$/d' -i $file_gfwlist_txt
 	dos2unix $file_gfwlist_txt
 	logger -t "【update_gfwlist】" "完成下载 gfwlist 文件"
@@ -982,7 +982,7 @@ update_chnlist_file() {
 	#删除忽略的域名
 	cat $file_wanlist_ext | grep -E "^@g" | cut -c4- > /opt/app/ss_tproxy/tmp/awk_del_list_tmp
 	awk_del_list /opt/app/ss_tproxy/tmp/awk_del_list_tmp $tmp_down_file
-	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > /opt/app/ss_tproxy/rule/$chnlist_txt
+	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v '^$' > /opt/app/ss_tproxy/rule/$chnlist_txt
 	sed -e '/^$/d' -i /opt/app/ss_tproxy/rule/$chnlist_txt
 	#删除gfwlist的域名
 	awk_del_list $file_gfwlist_txt /opt/app/ss_tproxy/rule/$chnlist_txt
@@ -1095,13 +1095,13 @@ update_chnroute_file() {
 	#wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 	#if [ -s $tmp_down_file ] ; then
 	#echo ""  >> $tmp_down_file
-	#cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+	#cat $tmp_down_file | grep -v '^#' | sort -u | grep -v '^$' >> $tmp_chnroute
 	#fi
 	#rm -f $tmp_down_file
 	wgetcurl_checkmd5 $tmp_down_file "$hiboyfile/chnroute.txt" "$hiboyfile2/chnroute.txt" N 5
 	if [ -s $tmp_down_file ] ; then
 	echo ""  >> $tmp_down_file
-	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+	cat $tmp_down_file | grep -v '^#' | sort -u | grep -v '^$' >> $tmp_chnroute
 	fi
 	rm -f $tmp_down_file
 	ss_sub7=`nvram get ss_sub7`
@@ -1110,7 +1110,7 @@ update_chnroute_file() {
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub7 $ss_sub7 Y
 		if [ -s $tmp_down_file ] && [ ! -z "$(cat $tmp_down_file | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		echo ""  >> $tmp_down_file
-		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v '^$' >> $tmp_chnroute
 		else
 		logger -t "【update_chnroute】" "错误！！！获取 ① 大陆白名单 IP 下载失败"
 		fi
@@ -1122,7 +1122,7 @@ update_chnroute_file() {
 		wgetcurl_checkmd5 $tmp_down_file $ss_sub8 $ss_sub8 Y
 		if [ -s $tmp_down_file ] && [ ! -z "$(cat $tmp_down_file | grep -Eo [^A-Za-z0-9+/=]+ | tr -d "\n")" ] ; then
 		echo ""  >> $tmp_down_file
-		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" >> $tmp_chnroute
+		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v '^$' >> $tmp_chnroute
 		else
 		logger -t "【update_chnroute】" "错误！！！获取 ② 大陆白名单 IP 下载失败"
 		fi
@@ -1135,7 +1135,7 @@ update_chnroute_file() {
 	fi
 	# 添加自定义白名单
 	cat $file_wanlist_ext | grep -E "^b" | cut -c3- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
-	cat $tmp_chnroute | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' > $file_chnroute_txt
+	cat $tmp_chnroute | grep -v '^#' | sort -u | grep -v '^$' | grep -E -o '([0-9]+\.){3}[0-9/]+' > $file_chnroute_txt
 	rm -f $tmp_chnroute
 	rm -f /etc/storage/china_ip_list.txt
 	ln -sf $file_chnroute_txt /etc/storage/china_ip_list.txt
@@ -1150,7 +1150,7 @@ update_chnroute_file() {
 		wgetcurl_checkmd5 $tmp_down_file "$url" "$url" N 5
 		# 添加自定义白名单
 		cat $file_wanlist_ext | grep -E "^~b" | cut -c4- | while read ip_addr; do echo "$ip_addr" >> $tmp_down_file; done 
-		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v "^$" > $file_chnroute6_txt
+		cat $tmp_down_file | grep -v '^#' | sort -u | grep -v '^$' > $file_chnroute6_txt
 		rm -f $tmp_down_file
 		dos2unix $file_chnroute6_txt
 		logger -t "【update_chnroute】" "完成下载 chnroute6 文件"
@@ -1176,7 +1176,7 @@ update_chnroute_ipset() {
 		if [ -s $file_chnroute_txt ] ; then
 		ipset -! create chnroute hash:net family inet
 		ipset flush chnroute &>/dev/null
-		cat $file_chnroute_txt | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A chnroute &/g" | ipset -! restore
+		cat $file_chnroute_txt | grep -v '^#' | sort -u | grep -v '^$' | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A chnroute &/g" | ipset -! restore
 		chnroute_list="chnroute规则`ipset list chnroute -t | awk -F: '/Number/{print $2}'` 行"
 		nvram set chnroute_list="$chnroute_list Update:$(date "+%m-%d %H:%M")"
 		echo "$chnroute_list" > /opt/app/ss_tproxy/tmp/chnroute_list_Number
@@ -1201,7 +1201,7 @@ update_chnroute_ipset() {
 		if [ -s $file_chnroute6_txt ] ; then
 		ipset -! create chnroute6 hash:net family inet6
 		ipset flush chnroute6 &>/dev/null
-		cat $file_chnroute6_txt | grep -v '^#' | sort -u | grep -v "^$" | sed -e "s/^/-A chnroute6 &/g" | ipset -! restore
+		cat $file_chnroute6_txt | grep -v '^#' | sort -u | grep -v '^$' | sed -e "s/^/-A chnroute6 &/g" | ipset -! restore
 		chnroute6_list="chnroute6规则`ipset list chnroute6 -t | awk -F: '/Number/{print $2}'` 行"
 		nvram set chnroute6_list="$chnroute6_list Update:$(date "+%m-%d %H:%M")"
 		echo "$chnroute6_list" > /opt/app/ss_tproxy/tmp/chnroute6_list_Number
@@ -1329,7 +1329,7 @@ G,185.76.151.0/24
 	fi
 	if [ -s /opt/app/ss_tproxy/rule/gfwlist_ip.txt ] ; then
 	if is_true "$ipv4"; then
-		cat /opt/app/ss_tproxy/rule/gfwlist_ip.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A $dst4_fw_type &/g" | ipset -! restore
+		cat /opt/app/ss_tproxy/rule/gfwlist_ip.txt | grep -v '^#' | sort -u | grep -v '^$' | grep -E -o '([0-9]+\.){3}[0-9/]+' | sed -e "s/^/-A $dst4_fw_type &/g" | ipset -! restore
 	fi
 	fi
 	# 添加自定义黑名单 (黑名单改走 sstp_dst_fw sstp_dst_dns_fw)
@@ -2213,7 +2213,7 @@ start_iptables_redirect_mode() {
 		if [ "$koolproxy_enable" != "0" ] ; then
 		# 加载 kp过滤方案 规则
 		logger -t "【SS】" "设置内网(LAN)访问控制【kp过滤方案】"
-		cat $file_lanlist_ext | sort -u | grep -v "^$" | grep -v '^@' | grep -v '^#' | while read ip_addr
+		cat $file_lanlist_ext | sort -u | grep -v '^$' | grep -v '^@' | grep -v '^#' | while read ip_addr
 		do
 		if [ ! -z "$ip_addr" ] ; then
 			case "${ip_addr:0:1}" in

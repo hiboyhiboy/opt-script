@@ -64,7 +64,7 @@ exit 0
 tinyproxy_get_status () {
 
 A_restart=`nvram get tinyproxy_status`
-B_restart="$tinyproxy_enable$tinyproxy_path$tinyproxy_port$(cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$tinyproxy_enable$tinyproxy_path$tinyproxy_port$(cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -120,7 +120,7 @@ tinyproxy_close () {
 
 kill_ps "$scriptname keep"
 sed -Ei '/【tinyproxy】|^$/d' /tmp/script/_opt_script_check
-tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
+tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 [ ! -z "$tinyproxyport" ] && iptables -t filter -D INPUT -p tcp --dport $tinyproxyport -j ACCEPT
 killall tinyproxy tinyproxy_script.sh
 killall -9 tinyproxy tinyproxy_script.sh
@@ -228,7 +228,7 @@ initconfig
 tinyproxy_port_dpt () {
 
 if [ "$tinyproxy_port" = "1" ] ; then
-	tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v "^#" | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
+	tinyproxyport=$(echo `cat /etc/storage/tinyproxy_script.sh | grep -v '^#' | grep -v "ConnectPort" | grep "Port" | sed 's/Port//'`)
 	[ ! -z "$tinyproxyport" ] && port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$tinyproxyport | cut -d " " -f 1 | sort -nr | wc -l)
 	if [ ! -z "$tinyproxyport" ] && [ "$port" = 0 ] ; then
 		[ ! -z "$tinyproxyport" ] && logger -t "【tinyproxy】" "允许 $tinyproxyport 端口通过防火墙"

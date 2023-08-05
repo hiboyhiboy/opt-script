@@ -76,7 +76,7 @@ exit 0
 gocryptfs_get_status () {
 
 A_restart=`nvram get gocryptfs_status`
-B_restart="$gocryptfs_enable$gocryptfs_key_enable$gocryptfs_pass$(cat /etc/storage/app_17.sh /etc/storage/app_32.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$gocryptfs_enable$gocryptfs_key_enable$gocryptfs_pass$(cat /etc/storage/app_17.sh /etc/storage/app_32.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set gocryptfs_status=$B_restart
@@ -279,7 +279,7 @@ EEE
 
 fi
 
-cat /etc/storage/app_17.sh | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/gocryptfs_app_list.txt
+cat /etc/storage/app_17.sh | grep -v '^#' | sort -u | grep -v '^$' | sed s/！/!/g > /tmp/gocryptfs_app_list.txt
 
 }
 

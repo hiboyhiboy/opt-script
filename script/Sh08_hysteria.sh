@@ -95,7 +95,7 @@ hysteria_get_status () {
 
 A_restart=`nvram get hysteria_status`
 B_restart="$hysteria_enable$ss_ip46$chinadns_enable$chinadns_ng_enable$hysteria_follow$transocks_mode_x$ss_udp_enable$app_114"
-B_restart="$B_restart""$(cat /etc/storage/app_34.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$B_restart""$(cat /etc/storage/app_34.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

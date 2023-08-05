@@ -81,7 +81,7 @@ exit 0
 tgbot_get_status () {
 
 A_restart=`nvram get tgbot_status`
-B_restart="$tgbot_enable$tgbot_api$tgbot_id$tgbot_sckey$tgbot_notify_1$tgbot_notify_2$tgbot_notify_3$tgbot_notify_4$(cat /etc/storage/app_10.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$tgbot_enable$tgbot_api$tgbot_id$tgbot_sckey$tgbot_notify_1$tgbot_notify_2$tgbot_notify_3$tgbot_notify_4$(cat /etc/storage/app_10.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -201,7 +201,7 @@ tgbot_notify_3=`nvram get app_51`
 tgbot_notify_4=`nvram get app_52`
 tgbot_api=`nvram get app_87`
 [ -z $tgbot_api ] && tgbot_api="https://api.telegram.org" && nvram set app_87="$tgbot_api"
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
 mkdir -p /tmp/var
 resub=1
 # 获得外网地址
@@ -313,7 +313,7 @@ if [ "$tgbot_notify_2" = "1" ] ; then
     touch /tmp/var/tgbot_newhostname.txt
     echo "接入设备名称" > /tmp/var/tgbot_newhostname.txt
     #cat /tmp/syslog.log | grep 'Found new hostname' | awk '{print $7" "$8}' >> /tmp/var/tgbot_newhostname.txt
-    cat /tmp/static_ip.inf | grep -v "^$" | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/tgbot_newhostname.txt
+    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/tgbot_newhostname.txt
     # 读取以往接入设备名称
     touch /etc/storage/tgbot_hostname.txt
     [ ! -s /etc/storage/tgbot_hostname.txt ] && echo "接入设备名称" > /etc/storage/tgbot_hostname.txt
@@ -321,10 +321,10 @@ if [ "$tgbot_notify_2" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' /etc/storage/tgbot_hostname.txt /tmp/var/tgbot_newhostname.txt > /tmp/var/tgbot_newhostname相同行.txt
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/tgbot_newhostname相同行.txt /tmp/var/tgbot_newhostname.txt > /tmp/var/tgbot_newhostname不重复.txt
     if [ -s "/tmp/var/tgbot_newhostname不重复.txt" ] ; then
-        content=`cat /tmp/var/tgbot_newhostname不重复.txt | grep -v "^$"`
+        content=`cat /tmp/var/tgbot_newhostname不重复.txt | grep -v '^$'`
         curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】新设备加入""`echo -e " \n "`""${content}" &
         logger -t "【tgbot推送】" "PDCN新设备加入:${content}"
-        cat /tmp/var/tgbot_newhostname不重复.txt | grep -v "^$" >> /etc/storage/tgbot_hostname.txt
+        cat /tmp/var/tgbot_newhostname不重复.txt | grep -v '^$' >> /etc/storage/tgbot_hostname.txt
     fi
 fi
 if [ "$tgbot_notify_4" = "1" ] ; then
@@ -333,7 +333,7 @@ if [ "$tgbot_notify_4" = "1" ] ; then
     touch /tmp/var/tgbot_newhostname.txt
     echo "接入设备名称" > /tmp/var/tgbot_newhostname.txt
     #cat /tmp/syslog.log | grep 'Found new hostname' | awk '{print $7" "$8}' >> /tmp/var/tgbot_newhostname.txt
-    cat /tmp/static_ip.inf | grep -v "^$" | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/tgbot_newhostname.txt
+    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/tgbot_newhostname.txt
     # 读取以往上线设备名称
     touch /etc/storage/tgbot_hostname_上线.txt
     [ ! -s /etc/storage/tgbot_hostname_上线.txt ] && echo "接入设备名称" > /etc/storage/tgbot_hostname_上线.txt
@@ -341,18 +341,18 @@ if [ "$tgbot_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' /etc/storage/tgbot_hostname_上线.txt /tmp/var/tgbot_newhostname.txt > /tmp/var/tgbot_newhostname相同行_上线.txt
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/tgbot_newhostname相同行_上线.txt /tmp/var/tgbot_newhostname.txt > /tmp/var/tgbot_newhostname不重复_上线.txt
     if [ -s "/tmp/var/tgbot_newhostname不重复_上线.txt" ] ; then
-        content=`cat /tmp/var/tgbot_newhostname不重复_上线.txt | grep -v "^$"`
+        content=`cat /tmp/var/tgbot_newhostname不重复_上线.txt | grep -v '^$'`
         curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】设备【上线】Online""`echo -e " \n "`""${content}" &
         logger -t "【tgbot推送】" "PDCN设备【上线】:${content}"
-        cat /tmp/var/tgbot_newhostname不重复_上线.txt | grep -v "^$" >> /etc/storage/tgbot_hostname_上线.txt
+        cat /tmp/var/tgbot_newhostname不重复_上线.txt | grep -v '^$' >> /etc/storage/tgbot_hostname_上线.txt
     fi
     # 下线
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/tgbot_newhostname.txt /etc/storage/tgbot_hostname_上线.txt > /tmp/var/tgbot_newhostname不重复_下线.txt
     if [ -s "/tmp/var/tgbot_newhostname不重复_下线.txt" ] ; then
-        content=`cat /tmp/var/tgbot_newhostname不重复_下线.txt | grep -v "^$"`
+        content=`cat /tmp/var/tgbot_newhostname不重复_下线.txt | grep -v '^$'`
         curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】设备【下线】offline""`echo -e " \n "`""${content}" &
         logger -t "【tgbot推送】" "PDCN设备【下线】:${content}"
-        cat /tmp/var/tgbot_newhostname.txt | grep -v "^$" > /etc/storage/tgbot_hostname_上线.txt
+        cat /tmp/var/tgbot_newhostname.txt | grep -v '^$' > /etc/storage/tgbot_hostname_上线.txt
     fi
 fi
 if [ "$tgbot_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
@@ -364,10 +364,10 @@ if [ "$tgbot_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     [ ! -z "$(cat /tmp/var/tgbot_nsub | grep '<' | grep '>')" ] && echo "" > /tmp/var/tgbot_nsub
     if [ "$(cat /tmp/var/tgbot_osub |head -n1)"x != "$(cat /tmp/var/tgbot_nsub |head -n1)"x ] && [ -f /tmp/var/tgbot_nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/tgbot_osub
-        content="新的固件： `cat /tmp/var/tgbot_nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/tgbot_osub | grep -v "^$"` "
+        content="新的固件： `cat /tmp/var/tgbot_nsub | grep -v '^$'` ，目前旧固件： `cat /tmp/var/tgbot_osub | grep -v '^$'` "
         logger -t "【tgbot推送】" "固件 新的更新：${content}"
         curl -L -s "$tgbot_api/bot$tgbot_sckey/sendMessage?chat_id=$tgbot_id" --data-binary "&text=【PDCN_"`nvram get computer_name`"】固件更新提醒""`echo -e " \n "`""${content}" &
-        echo -n `cat /tmp/var/tgbot_nsub | grep -v "^$"` > /tmp/var/tgbot_osub
+        echo -n `cat /tmp/var/tgbot_nsub | grep -v '^$'` > /tmp/var/tgbot_osub
     fi
 fi
     resub=`expr $resub + 1`

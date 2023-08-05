@@ -102,7 +102,7 @@ exit 0
 transocks_get_status () {
 
 A_restart=`nvram get transocks_status`
-B_restart="$transocks_enable$transocks_mode_x$transocks_server$transocks_listen_address$transocks_listen_port$transocks_proxy_mode$app_114$(cat /etc/storage/app_9.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$transocks_enable$transocks_mode_x$transocks_server$transocks_listen_address$transocks_listen_port$transocks_proxy_mode$app_114$(cat /etc/storage/app_9.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

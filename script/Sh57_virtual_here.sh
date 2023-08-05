@@ -62,7 +62,7 @@ exit 0
 virtualhere_get_status () {
 
 A_restart=`nvram get virtualhere_status`
-B_restart="$virtualhere_enable$virtualhere_wan$(cat /etc/storage/app_8.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$virtualhere_enable$virtualhere_wan$(cat /etc/storage/app_8.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

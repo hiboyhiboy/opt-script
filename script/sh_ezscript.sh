@@ -503,7 +503,7 @@ radio2_apcli=`nvram get radio2_apcli`
 [ -z $radio2_apcli ] && radio2_apcli="apcli0"
 radio5_apcli=`nvram get radio5_apcli`
 [ -z $radio5_apcli ] && radio5_apcli="apclii0"
-cat /tmp/ap2g5g.txt | grep -v '^#'  | grep -v "^$" > /tmp/ap2g5g
+cat /tmp/ap2g5g.txt | grep -v '^#'  | grep -v '^$' > /tmp/ap2g5g
 if [ ! -f /tmp/apc.lock ] && [ -s /tmp/ap2g5g ] ; then
 touch /tmp/apc.lock
 a2=`iwconfig $radio2_apcli | awk -F'"' '/ESSID/ {print $2}'`
@@ -538,7 +538,7 @@ if [ "$ap" = "1" ] || [ "$1" = "scan" ] ; then
 	# 【0】从第一行开始（第一行的是最优先信号）；
 	while read line
 	do
-		apc=`echo "$line" | grep -v '^#' | grep -v "^$"`
+		apc=`echo "$line" | grep -v '^#' | grep -v '^$'`
 		if [ ! -z "$apc" ] ; then
 		if [ "$ap_rule" = "1" ] ; then
 			# 只执行一次【1】不分顺序自动连接最强信号
@@ -546,7 +546,7 @@ if [ "$ap" = "1" ] || [ "$1" = "scan" ] ; then
 			echo "$wds_aplist2g" | while read i_a ; do 
 			if [ ! -z "$i_a" ] ; then
 			[ -s /tmp/ap2g5g_site_survey ] && continue #跳出当前循环
-			for i_b in `cat /tmp/ap2g5g  | grep -v '^#' | grep -v "^$" | grep "^2"` ; do
+			for i_b in `cat /tmp/ap2g5g  | grep -v '^#' | grep -v '^$' | grep "^2"` ; do
 			if [ ! -z "$i_b" ] ; then
 			[ -s /tmp/ap2g5g_apc ] && continue #跳出当前循环
 			site_survey=""
@@ -565,7 +565,7 @@ if [ "$ap" = "1" ] || [ "$1" = "scan" ] ; then
 			echo "$wds_aplist5g" | while read i_a ; do 
 			if [ ! -z "$i_a" ] ; then
 			[ -s /tmp/ap2g5g_site_survey ] && continue #跳出当前循环
-			for i_b in `cat /tmp/ap2g5g  | grep -v '^#' | grep -v "^$" | grep "^5"` ; do
+			for i_b in `cat /tmp/ap2g5g  | grep -v '^#' | grep -v '^$' | grep "^5"` ; do
 			if [ ! -z "$i_b" ] ; then
 			[ -s /tmp/ap2g5g_apc ] && continue #跳出当前循环
 			site_survey=""

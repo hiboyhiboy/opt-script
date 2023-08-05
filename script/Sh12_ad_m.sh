@@ -177,7 +177,7 @@ exit 0
 adm_get_status () {
 
 A_restart=`nvram get adm_status`
-B_restart="$adm_enable$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adm_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adm_enable$adm_update$adm_update_hour$adm_update_min$adbmfile$adbmfile2$lan_ipaddr$adm_https$adbyby_mode_x$adm_hookport$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v '^$' | grep -v '^#')$(cat /etc/storage/adm_rules_script.sh | grep -v '^$' | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -365,14 +365,14 @@ if [ -z "`pidof adm`" ] && [ "$adm_enable" = "1" ] && [ ! -f /tmp/cron_adb.lock 
 		if [ ! -z "$c_line" ] ; then
 			logger -t "【ADM】" "下载规则:$line"
 			wgetcurl.sh /tmp/7620adm/user2.txt $line $line N
-			cat /tmp/7620adm/user2.txt | grep -v '^!' | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> /tmp/7620adm/user3adblocks.txt
+			cat /tmp/7620adm/user2.txt | grep -v '^!' | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v '^$' >> /tmp/7620adm/user3adblocks.txt
 			rm -f /tmp/7620adm/user2.txt
 		fi
 		done < /tmp/rule_DOMAIN.txt
 	fi
 	# 合并规则
-	cat /etc/storage/adm_rules_script.sh | grep -v '^!' | grep -v "^$" > /tmp/7620adm/user.txt
-	cat /tmp/7620adm/user3adblocks.txt | grep -v '^!' | grep -v "^$" >> /tmp/7620adm/user.txt
+	cat /etc/storage/adm_rules_script.sh | grep -v '^!' | grep -v '^$' > /tmp/7620adm/user.txt
+	cat /tmp/7620adm/user3adblocks.txt | grep -v '^!' | grep -v '^$' >> /tmp/7620adm/user.txt
 	logger -t "【ADM】" "启动 adm 程序"
 	cd /tmp/7620adm
 	export PATH='/tmp/7620adm:/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
@@ -483,7 +483,7 @@ if [ -n "$AD_LAN_AC_IP" ] ; then
 			;;
 	esac
 fi
-cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ad_spec_lan.txt
+cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v '^$' | sed s/！/!/g > /tmp/ad_spec_lan.txt
 while read line
 do
 for host in $line; do
@@ -652,7 +652,7 @@ EOF
 }
 
 include_ac_rules2 () {
-cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -v "\." | sed s/！/!/g > /tmp/ad_spec_lan.txt
+cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v '^$' | grep -v "\." | sed s/！/!/g > /tmp/ad_spec_lan.txt
 while read line
 do
 for host in $line; do

@@ -147,7 +147,7 @@ exit 0
 v2ray_get_status () {
 
 A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_enable$chinadns_ng_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$app_74$ss_ip46$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v "^#" | grep -v "^$")"
+B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_enable$chinadns_ng_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$app_74$ss_ip46$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -800,10 +800,10 @@ mkdir -p /tmp/vmess
 if [ ! -s "/tmp/vmess/r.gfwlist.conf" ] ; then
 touch /etc/storage/shadowsocks_mydomain_script.sh /tmp/vmess/gfwlist_domain.txt
 cat /etc/storage/shadowsocks_mydomain_script.sh | sed '/^$\|#/d' | sed "s/http://g" | sed "s/https://g" | sed "s/\///g" | sort -u > /tmp/vmess/gfwlist_0.txt
-cat /opt/app/ss_tproxy/rule/gfwlist.txt | sort -u | grep -v "^$" | grep '\.' | grep -v '\-\-\-' >> /tmp/vmess/gfwlist_0.txt
+cat /opt/app/ss_tproxy/rule/gfwlist.txt | sort -u | grep -v '^$' | grep '\.' | grep -v '\-\-\-' >> /tmp/vmess/gfwlist_0.txt
 cat /etc/storage/basedomain.txt /tmp/vmess/gfwlist_0.txt /tmp/vmess/gfwlist_domain.txt | 
 	sort -u > /tmp/vmess/gfwall_domain.txt
-cat /tmp/vmess/gfwall_domain.txt | sort -u | grep -v "^$" | grep '\.' | grep -v '\-\-\-' > /tmp/vmess/all_domain.txt
+cat /tmp/vmess/gfwall_domain.txt | sort -u | grep -v '^$' | grep '\.' | grep -v '\-\-\-' > /tmp/vmess/all_domain.txt
 rm -f /tmp/vmess/gfw*
 awk '{printf("\,\"%s\"", $1, $1 )}' /tmp/vmess/all_domain.txt > /tmp/vmess/r.gfwlist.conf
 rm -f /tmp/vmess/all_domain.txt
@@ -1794,7 +1794,7 @@ i_ping="0"
 while read line
 do
 line="$(echo $line)"
-if [ ! -z "$line" ] && [ -z "$(echo $line | grep "^#")" ] ; then
+if [ ! -z "$line" ] && [ -z "$(echo $line | grep '^#')" ] ; then
 	i_ping=`expr $i_ping + 1`
 	x_ping_x "$i_ping" &
 	usleep 100000
@@ -2088,7 +2088,7 @@ fi
 done < /tmp/link/matching/link_v2_matching_0.txt
 if [ -f /tmp/link/matching/link_v2_matching_1.txt ] && [ -s /tmp/link/matching/link_v2_matching_1.txt ] ; then
 sed -Ei '/^$/d' /tmp/link/matching/link_v2_matching_1.txt
-cat /tmp/link/matching/link_v2_matching_1.txt | sort | grep -v "^$" > /tmp/link/matching/link_v2_matching.txt
+cat /tmp/link/matching/link_v2_matching_1.txt | sort | grep -v '^$' > /tmp/link/matching/link_v2_matching.txt
 rm -f /tmp/link/matching/link_v2_matching_1.txt
 logger -t "【自动选用节点】" "重新生成自动选用节点列表： /tmp/link/matching/link_v2_matching.txt"
 fi

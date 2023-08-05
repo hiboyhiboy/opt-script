@@ -47,7 +47,7 @@ fi
 dns_com_pod_get_status () {
 
 A_restart=`nvram get dns_com_pod_status`
-B_restart="$dns_com_pod_enable$dns_com_pod_username$dns_com_pod_password$dns_com_pod_user_token$dns_com_pod_domian$dns_com_pod_host$dns_com_pod_domian2$dns_com_pod_host2$dns_com_pod_domian6$dns_com_pod_host6$dns_com_pod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$dns_com_pod_enable$dns_com_pod_username$dns_com_pod_password$dns_com_pod_user_token$dns_com_pod_domian$dns_com_pod_host$dns_com_pod_domian2$dns_com_pod_host2$dns_com_pod_domian6$dns_com_pod_host6$dns_com_pod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -433,7 +433,7 @@ cat >/tmp/ip6_ddns.inf <<-\EOF
 
 
 EOF
-cat /tmp/ip6_ddns.inf | grep -v '^#'  | grep -v "^$" > /tmp/ip6_ddns_inf
+cat /tmp/ip6_ddns.inf | grep -v '^#'  | grep -v '^$' > /tmp/ip6_ddns_inf
 rm -f /tmp/ip6_ddns.inf
 EEE
 	chmod 755 "$ddns_script"

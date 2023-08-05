@@ -176,7 +176,7 @@ exit 0
 adbyby_get_status () {
 
 A_restart=`nvram get adbyby_status`
-B_restart="$adbyby_enable$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$adbyby_whitehost_x$adbyby_whitehost$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v "^$" | grep -v "^#")$(cat /etc/storage/adbyby_rules_script.sh | grep -v "^$" | grep -v "^!")"
+B_restart="$adbyby_enable$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$adbyby_whitehost_x$adbyby_whitehost$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v '^$' | grep -v '^#')$(cat /etc/storage/adbyby_rules_script.sh | grep -v '^$' | grep -v "^!")"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -429,12 +429,12 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		if [ ! -z "$c_line" ] ; then
 			logger -t "【Adbyby】" "下载规则:$line"
 			wgetcurl.sh /tmp/bin/data/user2.txt $line $line N
-			cat /tmp/bin/data/user2.txt | grep -v '^!' | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v "^$" >> /tmp/bin/data/user3adblocks.txt
+			cat /tmp/bin/data/user2.txt | grep -v '^!' | grep -E '^(@@\||\||[[:alnum:]])' | sort -u | grep -v '^$' >> /tmp/bin/data/user3adblocks.txt
 			rm -f /tmp/bin/data/user2.txt
 		fi
 		done < /tmp/rule_DOMAIN.txt
 	fi
-	cat /etc/storage/adbyby_rules_script.sh | grep -v '^!' | grep -v "^$" > /tmp/bin/data/user_rules.txt
+	cat /etc/storage/adbyby_rules_script.sh | grep -v '^!' | grep -v '^$' > /tmp/bin/data/user_rules.txt
 	# 添加过滤白名单地址
 	if [ "$adbyby_whitehost_x" = "1" ] ; then
 		logger -t "【Adbyby】" "添加过滤白名单地址"
@@ -457,12 +457,12 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		sed -Ei '/ad_byby|sh_adb8118.sh|restart_dhcpd/d' /tmp/bin/adbybyfirst.sh /tmp/bin/adbybyupdate.sh
 	fi
 	# 合并规则
-	cat /tmp/bin/data/user_rules.txt | grep -v '^!' | grep -v "^$" > /tmp/bin/data/user.txt
-	cat /tmp/bin/data/user3adblocks.txt | grep -v '^!' | grep -v "^$" >> /tmp/bin/data/user.txt
+	cat /tmp/bin/data/user_rules.txt | grep -v '^!' | grep -v '^$' > /tmp/bin/data/user.txt
+	cat /tmp/bin/data/user3adblocks.txt | grep -v '^!' | grep -v '^$' >> /tmp/bin/data/user.txt
 	if [ -f "/tmp/bin/data/lazy_B.txt" ] ; then
 		logger -t "【Adbyby】" "加载手动同步更新规则"
-		cat /tmp/bin/data/video_B.txt | grep -v '^!' | grep -v "^$" >> /tmp/bin/data/user.txt
-		cat /tmp/bin/data/lazy_B.txt |grep -v '^!' | grep -v "^$" >> /tmp/bin/data/user.txt
+		cat /tmp/bin/data/video_B.txt | grep -v '^!' | grep -v '^$' >> /tmp/bin/data/user.txt
+		cat /tmp/bin/data/lazy_B.txt |grep -v '^!' | grep -v '^$' >> /tmp/bin/data/user.txt
 		[ -s /tmp/bin/data/lazy_B.txt ] && mv -f /tmp/bin/data/lazy_B.txt /tmp/bin/data/lazy.txt
 		[ -s /tmp/bin/data/video_B.txt ] && mv -f /tmp/bin/data/video_B.txt /tmp/bin/data/video.txt
 	fi
@@ -600,7 +600,7 @@ if [ -n "$AD_LAN_AC_IP" ] ; then
 			;;
 	esac
 fi
-cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v "^$" | sed s/！/!/g > /tmp/ad_spec_lan.txt
+cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v '^$' | sed s/！/!/g > /tmp/ad_spec_lan.txt
 while read line
 do
 for host in $line; do
@@ -738,7 +738,7 @@ EOF
 }
 
 include_ac_rules2 () {
-cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v "^$" | grep -v "\." | sed s/！/!/g > /tmp/ad_spec_lan.txt
+cat /tmp/ad_spec_lan_DOMAIN.txt | grep -v '^#' | sort -u | grep -v '^$' | grep -v "\." | sed s/！/!/g > /tmp/ad_spec_lan.txt
 while read line
 do
 for host in $line; do

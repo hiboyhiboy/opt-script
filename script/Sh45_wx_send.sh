@@ -198,7 +198,7 @@ exit 0
 wxsend_get_status () {
 
 A_restart=`nvram get wxsend_status`
-B_restart="$wxsend_enable$wxsend_port$tmall_enable$wxsend_appid$wxsend_appsecret$wxsend_touser$wxsend_template_id$wxsend_cgi$wxsend_notify_1$wxsend_notify_2$wxsend_notify_3$wxsend_notify_4$wxsend_title$(cat /etc/storage/app_30.sh | grep -v '^#' | grep -v "^$")$(cat /etc/storage/app_31.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$wxsend_enable$wxsend_port$tmall_enable$wxsend_appid$wxsend_appsecret$wxsend_touser$wxsend_template_id$wxsend_cgi$wxsend_notify_1$wxsend_notify_2$wxsend_notify_3$wxsend_notify_4$wxsend_title$(cat /etc/storage/app_30.sh | grep -v '^#' | grep -v '^$')$(cat /etc/storage/app_31.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -464,7 +464,7 @@ if [ "$wxsend_notify_2" = "1" ] ; then
     touch /tmp/var/wxsend_newhostname.txt
     echo "接入设备名称" > /tmp/var/wxsend_newhostname.txt
     #cat /tmp/syslog.log | grep 'Found new hostname' | awk '{print $7" "$8}' >> /tmp/var/wxsend_newhostname.txt
-    cat /tmp/static_ip.inf | grep -v "^$" | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/wxsend_newhostname.txt
+    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/wxsend_newhostname.txt
     # 读取以往接入设备名称
     touch /etc/storage/wxsend_hostname.txt
     [ ! -s /etc/storage/wxsend_hostname.txt ] && echo "接入设备名称" > /etc/storage/wxsend_hostname.txt
@@ -472,10 +472,10 @@ if [ "$wxsend_notify_2" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' /etc/storage/wxsend_hostname.txt /tmp/var/wxsend_newhostname.txt > /tmp/var/wxsend_newhostname相同行.txt
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/wxsend_newhostname相同行.txt /tmp/var/wxsend_newhostname.txt > /tmp/var/wxsend_newhostname不重复.txt
     if [ -s "/tmp/var/wxsend_newhostname不重复.txt" ] ; then
-        content=`cat /tmp/var/wxsend_newhostname不重复.txt | grep -v "^$"`
+        content=`cat /tmp/var/wxsend_newhostname不重复.txt | grep -v '^$'`
         Sh45_wx_send.sh send_message "【""$wxsend_title""】新设备加入" "${content}" &
         logger -t "【wxsend推送】" "PDCN新设备加入:${content}"
-        cat /tmp/var/wxsend_newhostname不重复.txt | grep -v "^$" >> /etc/storage/wxsend_hostname.txt
+        cat /tmp/var/wxsend_newhostname不重复.txt | grep -v '^$' >> /etc/storage/wxsend_hostname.txt
     fi
 fi
 if [ "$wxsend_notify_4" = "1" ] ; then
@@ -484,7 +484,7 @@ if [ "$wxsend_notify_4" = "1" ] ; then
     touch /tmp/var/wxsend_newhostname.txt
     echo "接入设备名称" > /tmp/var/wxsend_newhostname.txt
     #cat /tmp/syslog.log | grep 'Found new hostname' | awk '{print $7" "$8}' >> /tmp/var/wxsend_newhostname.txt
-    cat /tmp/static_ip.inf | grep -v "^$" | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/wxsend_newhostname.txt
+    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/wxsend_newhostname.txt
     # 读取以往上线设备名称
     touch /etc/storage/wxsend_hostname_上线.txt
     [ ! -s /etc/storage/wxsend_hostname_上线.txt ] && echo "接入设备名称" > /etc/storage/wxsend_hostname_上线.txt
@@ -492,18 +492,18 @@ if [ "$wxsend_notify_4" = "1" ] ; then
     awk 'NR==FNR{a[$0]++} NR>FNR&&a[$0]' /etc/storage/wxsend_hostname_上线.txt /tmp/var/wxsend_newhostname.txt > /tmp/var/wxsend_newhostname相同行_上线.txt
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/wxsend_newhostname相同行_上线.txt /tmp/var/wxsend_newhostname.txt > /tmp/var/wxsend_newhostname不重复_上线.txt
     if [ -s "/tmp/var/wxsend_newhostname不重复_上线.txt" ] ; then
-        content=`cat /tmp/var/wxsend_newhostname不重复_上线.txt | grep -v "^$"`
+        content=`cat /tmp/var/wxsend_newhostname不重复_上线.txt | grep -v '^$'`
         Sh45_wx_send.sh send_message "【""$wxsend_title""】设备【上线】ON" "${content}" &
         logger -t "【wxsend推送】" "PDCN设备【上线】:${content}"
-        cat /tmp/var/wxsend_newhostname不重复_上线.txt | grep -v "^$" >> /etc/storage/wxsend_hostname_上线.txt
+        cat /tmp/var/wxsend_newhostname不重复_上线.txt | grep -v '^$' >> /etc/storage/wxsend_hostname_上线.txt
     fi
     # 下线
     awk 'NR==FNR{a[$0]++} NR>FNR&&!a[$0]' /tmp/var/wxsend_newhostname.txt /etc/storage/wxsend_hostname_上线.txt > /tmp/var/wxsend_newhostname不重复_下线.txt
     if [ -s "/tmp/var/wxsend_newhostname不重复_下线.txt" ] ; then
-        content=`cat /tmp/var/wxsend_newhostname不重复_下线.txt | grep -v "^$"`
+        content=`cat /tmp/var/wxsend_newhostname不重复_下线.txt | grep -v '^$'`
         Sh45_wx_send.sh send_message "【""$wxsend_title""】设备【下线】OFF" "${content}" &
         logger -t "【wxsend推送】" "PDCN设备【下线】:${content}"
-        cat /tmp/var/wxsend_newhostname.txt | grep -v "^$" > /etc/storage/wxsend_hostname_上线.txt
+        cat /tmp/var/wxsend_newhostname.txt | grep -v '^$' > /etc/storage/wxsend_hostname_上线.txt
     fi
 fi
 if [ "$wxsend_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
@@ -515,10 +515,10 @@ if [ "$wxsend_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     [ ! -z "$(cat /tmp/var/wxsend_nsub | grep '<' | grep '>')" ] && echo "" > /tmp/var/wxsend_nsub
     if [ "$(cat /tmp/var/wxsend_osub |head -n1)"x != "$(cat /tmp/var/wxsend_nsub |head -n1)"x ] && [ -f /tmp/var/wxsend_nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/wxsend_osub
-        content="新的固件： `cat /tmp/var/wxsend_nsub | grep -v "^$"` ，目前旧固件： `cat /tmp/var/wxsend_osub | grep -v "^$"` "
+        content="新的固件： `cat /tmp/var/wxsend_nsub | grep -v '^$'` ，目前旧固件： `cat /tmp/var/wxsend_osub | grep -v '^$'` "
         logger -t "【wxsend推送】" "固件 新的更新：${content}"
         Sh45_wx_send.sh send_message "【""$wxsend_title""】固件更新提醒" "${content}" &
-        echo -n `cat /tmp/var/wxsend_nsub | grep -v "^$"` > /tmp/var/wxsend_osub
+        echo -n `cat /tmp/var/wxsend_nsub | grep -v '^$'` > /tmp/var/wxsend_osub
     fi
 fi
     resub=`expr $resub + 1`

@@ -919,7 +919,7 @@ exit 0
 ss_get_status () {
 
 A_restart=`nvram get ss_status`
-B_restart="$ss_enable$ss_ip46$chinadns_enable$chinadns_ng_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$ss_enable$ss_ip46$chinadns_enable$chinadns_ng_enable$ss_threads$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_type$ss_run_ss_local$ss_s1_local_address$ss_s1_local_port$ss_pdnsd_wo_redir$ss_mode_x$ss_multiport$ss_upd_rules$ss_tochina_enable$ss_udp_enable$LAN_AC_IP$ss_pdnsd_all$kcptun_server$(nvram get wan0_dns |cut -d ' ' -f1)$(cat /etc/storage/shadowsocks_ss_spec_lan.sh /etc/storage/shadowsocks_ss_spec_wan.sh /etc/storage/shadowsocks_mydomain_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -1263,7 +1263,7 @@ ping_ss_link () {
 	while read line
 	do
 	line="$(echo $line)"
-	if [ ! -z "$line" ] && [ -z "$(echo $line | grep "^#")" ] ; then
+	if [ ! -z "$line" ] && [ -z "$(echo $line | grep '^#')" ] ; then
 		i_ping=`expr $i_ping + 1`
 		x_ping_x "$i_ping" &
 		usleep 100000
@@ -1544,7 +1544,7 @@ fi
 done < /tmp/link/matching/link_ss_matching_0.txt
 if [ -f /tmp/link/matching/link_ss_matching_1.txt ] && [ -s /tmp/link/matching/link_ss_matching_1.txt ] ; then
 sed -Ei '/^$/d' /tmp/link/matching/link_ss_matching_1.txt
-cat /tmp/link/matching/link_ss_matching_1.txt | sort | grep -v "^$" > /tmp/link/matching/link_ss_matching.txt
+cat /tmp/link/matching/link_ss_matching_1.txt | sort | grep -v '^$' > /tmp/link/matching/link_ss_matching.txt
 rm -f /tmp/link/matching/link_ss_matching_1.txt
 logger -t "【自动选用节点】" "重新生成自动选用节点列表： /tmp/link/matching/link_ss_matching.txt"
 fi

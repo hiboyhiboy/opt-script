@@ -132,9 +132,9 @@ clash_get_status () {
 
 A_restart=`nvram get clash_status`
 B_restart="$clash_enable$chinadns_enable$chinadns_ng_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114$app_78$ss_ip46"
-B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v "^$")""$(cat /etc/storage/app_33.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v '^$')""$(cat /etc/storage/app_33.sh | grep -v '^#' | grep -v '^$')"
 if [ -z "$curltest" ] || [ "$app_120" == "2" ] ; then
-B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v '^$')"
 fi
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
 [ "$(nvram get app_86)" = "clash_wget_geoip" ] && update_geoip
@@ -166,7 +166,7 @@ fi
 
 clash_get_2_status () {
 D_restart=`nvram get clash_2_status`
-C_restart="$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v "^$")"
+C_restart="$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v '^$')"
 C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_C_re
 if [ "$D_restart" != "$C_restart" ] ; then

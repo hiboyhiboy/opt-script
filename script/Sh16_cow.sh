@@ -71,7 +71,7 @@ cow_get_status () {
 
 lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get cow_status`
-B_restart="$cow_enable$cow_path$lan_ipaddr$ss_s1_local_port$ss_mode_x$(cat /etc/storage/cow_script.sh /etc/storage/cow_config_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$cow_enable$cow_path$lan_ipaddr$ss_s1_local_port$ss_mode_x$(cat /etc/storage/cow_script.sh /etc/storage/cow_config_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

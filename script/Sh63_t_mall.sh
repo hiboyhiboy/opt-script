@@ -87,7 +87,7 @@ exit 0
 tmall_get_status () {
 
 A_restart=`nvram get tmall_status`
-B_restart="$tmall_enable$wxsend_enable$wxsend_port$tmall_id$demoui_enable$app_117$app_118$(cat /etc/storage/app_13.sh /etc/storage/app_14.sh /etc/storage/app_29.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$tmall_enable$wxsend_enable$wxsend_port$tmall_id$demoui_enable$app_117$app_118$(cat /etc/storage/app_13.sh /etc/storage/app_14.sh /etc/storage/app_29.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then

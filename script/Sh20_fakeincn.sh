@@ -70,7 +70,7 @@ fakeincn_get_status () {
 
 #lan_ipaddr=`nvram get lan_ipaddr`
 A_restart=`nvram get fakeincn_status`
-B_restart="$fakeincn_enable$fakeincn_path$(cat /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$fakeincn_enable$fakeincn_path$(cat /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -271,7 +271,7 @@ server3=xxx3.dynu.com
 ss_router_port=1234   #服务器端口
 ss_passwd=xxxxxxxxx   #密码
 method=chacha20       #加密方式
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
 
 index=1
 ln -sf `which ss-redir` /opt/app/fakeincn/fakeincn

@@ -87,7 +87,7 @@ exit 0
 huaweidns_get_status () {
 
 A_restart=`nvram get huaweidns_status`
-B_restart="$huaweidns_enable$huaweidns_username$huaweidns_password$huaweidns_domian$huaweidns_host$huaweidns_domian2$huaweidns_host2huaweidns_domian6$huaweidns_host6$huaweidns_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v "^$")"
+B_restart="$huaweidns_enable$huaweidns_username$huaweidns_password$huaweidns_domian$huaweidns_host$huaweidns_domian2$huaweidns_host2huaweidns_domian6$huaweidns_host6$huaweidns_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
@@ -539,7 +539,7 @@ cat >/tmp/ip6_ddns.inf <<-\EOF
 
 
 EOF
-cat /tmp/ip6_ddns.inf | grep -v '^#'  | grep -v "^$" > /tmp/ip6_ddns_inf
+cat /tmp/ip6_ddns.inf | grep -v '^#'  | grep -v '^$' > /tmp/ip6_ddns_inf
 rm -f /tmp/ip6_ddns.inf
 EEE
 	chmod 755 "$ddns_script"
