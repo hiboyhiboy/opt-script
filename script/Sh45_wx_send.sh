@@ -113,15 +113,16 @@ logger -t "【wxsend推送】" "获取 Access token 错误，请看看哪里问�
 fi
 }
 
-if [ ! -z "$PATH_INFO" ] && [ ! -z "$GATEWAY_INTERFACE" ] ; then
+if [ ! -z "$PATH_INFO" ] && [ ! -z "$GATEWAY_INTERFACE" ] && [ -z "$1" ] ; then
 #source /etc/storage/script/init.sh
-wxsend_title="$(echo -n "$PATH_INFO" | awk -F "/" '{print $2}')"
-wxsend_content="$(echo -n "$PATH_INFO" | awk -F "/" '{print $3}')"
-wxsend_content2="$(echo -n "$PATH_INFO" | awk -F "/" '{print $4}')"
-wxsend_content3="$(echo -n "$PATH_INFO" | awk -F "/" '{print $5}')"
-wxsend_content4="$(echo -n "$PATH_INFO" | awk -F "/" '{print $6}')"
-wxsend_content5="$(echo -n "$PATH_INFO" | awk -F "/" '{print $7}')"
-wxsend_content6="$(echo -n "$PATH_INFO" | awk -F "/" '{print $8}')"
+logger -t "【wxsend推送】" "API PATH_INFO: $PATH_INFO"
+wxsend_title="$(echo -n "$PATH_INFO" | awk -F "/" '{print $3}')"
+wxsend_content="$(echo -n "$PATH_INFO" | awk -F "/" '{print $4}')"
+wxsend_content2="$(echo -n "$PATH_INFO" | awk -F "/" '{print $5}')"
+wxsend_content3="$(echo -n "$PATH_INFO" | awk -F "/" '{print $6}')"
+wxsend_content4="$(echo -n "$PATH_INFO" | awk -F "/" '{print $7}')"
+wxsend_content5="$(echo -n "$PATH_INFO" | awk -F "/" '{print $8}')"
+wxsend_content6="$(echo -n "$PATH_INFO" | awk -F "/" '{print $9}')"
 PATH_INFO=""
 GATEWAY_INTERFACE=""
 logger -t "【wxsend推送】" "API 消息标记: $wxsend_title"
@@ -297,8 +298,8 @@ if [ "$wxsend_port" != "0" ] ; then
 logger -t "【wxsend推送】" "部署 api 提供外部程序使用消息推送"
 # 生成配置文件 /etc/storage/app_31.sh
 sed -e "s@^:.\+\({\)@:$wxsend_port {@g" -i /etc/storage/app_31.sh
-sed -e "s@^.\+cgi /.\+\(\#\)@ cgi /$wxsend_cgi /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
-sed -e "s@^cgi /.\+\(\#\)@ cgi /$wxsend_cgi /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
+sed -e "s@^.\+cgi /.\+\(\#\)@ cgi /$wxsend_cgi/\* /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
+sed -e "s@^cgi /.\+\(\#\)@ cgi /$wxsend_cgi/\* /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
 if [ "$tmall_enable" == "0" ] ; then
 SVC_PATH="/opt/tmall/caddy_tmall"
 if [ ! -s "$SVC_PATH" ] ; then
@@ -553,7 +554,7 @@ admin off # 关闭 API 端口 # 全局配置
 :0 {
  root * /opt/tmall/www
  # cgi触发 /key
- #cgi /111111111111 /etc/storage/script/Sh45_wx_send.sh # 脚本自动生成/key
+ #cgi /111111111111/* /etc/storage/script/Sh45_wx_send.sh # 脚本自动生成/key
  log {
   output file /opt/tmall/requests_wxsend.log {
    roll_size     1MiB

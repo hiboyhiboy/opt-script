@@ -185,8 +185,8 @@ if [ "$wxsend_enable" != "0" ] && [ "$wxsend_port" != "0" ] ; then
 	logger -t "【天猫精灵】" "导入 wxsend推送 Caddyfile cgi 配置: /etc/storage/app_31.sh"
 	# 生成配置文件 /etc/storage/app_31.sh
 	sed -e "s@^:.\+\({\)@:$wxsend_port {@g" -i /etc/storage/app_31.sh
-	sed -e "s@^.\+cgi /.\+\(\#\)@ cgi /$wxsend_cgi /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
-	sed -e "s@^cgi /.\+\(\#\)@ cgi /$wxsend_cgi /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
+	sed -e "s@^.\+cgi /.\+\(\#\)@ cgi /$wxsend_cgi/\* /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
+	sed -e "s@^cgi /.\+\(\#\)@ cgi /$wxsend_cgi/\* /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
 	cat /etc/storage/app_31.sh | grep -v 全局配置 >> /opt/tmall/Caddyfile
 fi
 echo "" >> /opt/tmall/Caddyfile
@@ -425,7 +425,7 @@ admin off # 关闭 API 端口 # 全局配置
 :0 {
  root * /opt/tmall/www
  # cgi触发 /key
- #cgi /111111111111 /etc/storage/script/Sh45_wx_send.sh # 脚本自动生成/key
+ #cgi /111111111111/* /etc/storage/script/Sh45_wx_send.sh # 脚本自动生成/key
  log {
   output file /opt/tmall/requests_wxsend.log {
    roll_size     1MiB

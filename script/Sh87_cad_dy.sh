@@ -78,7 +78,7 @@ caddy_check () {
 
 caddy_get_status
 if [ "$caddy_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps -w | grep "caddy" | grep -v grep )" ] && logger -t "【caddy】" "停止 caddy" && caddy_close
+	[ ! -z "`pidof caddy`" ] && logger -t "【caddy】" "停止 caddy" && caddy_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$caddy_enable" = "1" ] ; then
@@ -86,7 +86,7 @@ if [ "$caddy_enable" = "1" ] ; then
 		caddy_close
 		caddy_start
 	else
-		[ "$caddy_enable" = "1" ] && [ -z "$(ps -w | grep "caddy" | grep -v grep )" ] && caddy_restart
+		[ "$caddy_enable" = "1" ] && [ -z "`pidof caddy`" ] && caddy_restart
 	fi
 fi
 }
