@@ -213,7 +213,7 @@ wxsend_check () {
 
 wxsend_get_status
 if [ "$wxsend_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ "$wxsend_port" != "0" ] && [ "$tmall_enable" == "0" ] && [ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "停止 caddy"
+	[ "$wxsend_port" != "0" ] && [ "$tmall_enable" == "0" ] && [ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "停止 caddy_tmall"
 	[ ! -z "$(ps -w | grep "app_30" | grep -v grep )" ] && logger -t "【wxsend推送】" "停止 wxsend" && wxsend_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
@@ -292,7 +292,7 @@ logger -t "【wxsend推送】" "运行 /etc/storage/app_30.sh"
 sleep 3
 [ ! -z "$(ps -w | grep "app_30" | grep -v grep )" ] && logger -t "【wxsend推送】" "启动成功" && wxsend_restart o
 [ -z "$(ps -w | grep "app_30" | grep -v grep )" ] && logger -t "【wxsend推送】" "启动失败, 注意检app_30.sh脚本和curl是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && wxsend_restart x
-# caddy1
+# caddy2
 if [ "$wxsend_port" != "0" ] ; then
 logger -t "【wxsend推送】" "部署 api 提供外部程序使用消息推送"
 # 生成配置文件 /etc/storage/app_31.sh
@@ -307,16 +307,16 @@ if [ ! -s "$SVC_PATH" ] ; then
 	initopt
 fi
 mkdir -p "/opt/tmall/www"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy1" "$hiboyfile2/caddy1"
-[ -z "$($SVC_PATH -plugins 2>&1 | grep http.cgi)" ] && rm -rf $SVC_PATH ;
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy1" "$hiboyfile2/caddy1"
+wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
+[ -z "$($SVC_PATH list-modules 2>&1 | grep http.handlers.cgi)" ] && rm -rf $SVC_PATH ;
+wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【wxsend推送】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【wxsend推送】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && wxsend_restart x
 fi
 rm -f /opt/tmall/Caddyfile
 cat /etc/storage/app_31.sh >> /opt/tmall/Caddyfile
-eval "/opt/tmall/caddy_tmall -conf /opt/tmall/Caddyfile $cmd_log" &
+eval "/opt/tmall/caddy_tmall run --watch --config /opt/tmall/Caddyfile --adapter caddyfile $cmd_log" &
 sleep 3
 [ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "部署 api 启动成功" && wxsend_restart o
 [ -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "部署 api 启动失败, 注意检caddy_tmall是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && wxsend_restart x
@@ -537,16 +537,30 @@ fi
 
 
 app_31="/etc/storage/app_31.sh"
+if [ ! -z "$(cat "$app_31" | grep rotate_size)" ] ; then
+	logger -t "【wxsend推送】" "/etc/storage/app_31.old 备份旧配置，升级Caddy 2 不向后兼容 Caddy 1"
+	cp -f "$app_31" /etc/storage/app_31.old
+	rm -f "$app_31"
+fi
 if [ ! -f "$app_31" ] || [ ! -s "$app_31" ] ; then
 	cat > "$app_31" <<-\EEE
 # 此脚本路径：/etc/storage/app_31.sh
+{ # 全局配置
+order cgi before respond # 启动 cgi 模块 # 全局配置
+admin off # 关闭 API 端口 # 全局配置
+} # 全局配置
+
 :0 {
- root /opt/tmall/www
+ root * /opt/tmall/www
  # cgi触发 /key
  #cgi /111111111111 /etc/storage/script/Sh45_wx_send.sh # 脚本自动生成/key
- log /opt/tmall/requests_wxsend.log {
- rotate_size 1
- }
+ log {
+  output file /opt/tmall/requests_wxsend.log {
+   roll_size     1MiB
+   roll_local_time
+   roll_keep     5
+   roll_keep_for 120h
+  }
 }
 
 EEE

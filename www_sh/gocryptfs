@@ -50,7 +50,7 @@ if [ ! -f "/etc/storage/script/Sh05_go_cryptfs.sh" ] || [ ! -s "/etc/storage/scr
 	wgetcurl.sh /etc/storage/script/Sh05_go_cryptfs.sh "$hiboyscript/script/Sh05_go_cryptfs.sh" "$hiboyscript/script/Sh05_go_cryptfs.sh"
 fi
 chmod 777 /etc/storage/script -R
-if [ ! -f "/etc/storage/app_15.sh" ] || [ ! -s "/etc/storage/app_15.sh" ] || [ ! -f "/etc/storage/app_16.sh" ] || [ ! -s "/etc/storage/app_16.sh" ] ; then
+if [ ! -f "/etc/storage/app_17.sh" ] || [ ! -s "/etc/storage/app_17.sh" ] || [ ! -f "/etc/storage/app_32.sh" ] || [ ! -s "/etc/storage/app_32.sh" ] ; then
 /etc/storage/script/Sh05_go_cryptfs.sh update_app
 fi
 

@@ -154,11 +154,10 @@ if [ ! -s "$SVC_PATH" ] ; then
 	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
-mkdir -p "/opt/tmall"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy1" "$hiboyfile2/caddy1"
-[ "$demoui_enable" == "0" ] || [ "$demoui_enable" == "1" ] && { [ -z "$($SVC_PATH -plugins 2>&1 | grep http.cgi)" ] && rm -rf $SVC_PATH ; }
-[ "$demoui_enable" == "2" ] || [ "$demoui_enable" == "1" ] && { [ -z "$($SVC_PATH -plugins 2>&1 | grep http.filter)" ] && rm -rf $SVC_PATH ; }
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy1" "$hiboyfile2/caddy1"
+mkdir -p "/opt/tmall/www"
+wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
+[ -z "$($SVC_PATH list-modules 2>&1 | grep http.handlers.cgi)" ] && rm -rf $SVC_PATH ;
+wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【天猫精灵】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【天猫精灵】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && tmall_restart x
@@ -188,23 +187,18 @@ if [ "$wxsend_enable" != "0" ] && [ "$wxsend_port" != "0" ] ; then
 	sed -e "s@^:.\+\({\)@:$wxsend_port {@g" -i /etc/storage/app_31.sh
 	sed -e "s@^.\+cgi /.\+\(\#\)@ cgi /$wxsend_cgi /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
 	sed -e "s@^cgi /.\+\(\#\)@ cgi /$wxsend_cgi /etc/storage/script/Sh45_wx_send.sh \#@g" -i /etc/storage/app_31.sh
-	cat /etc/storage/app_31.sh >> /opt/tmall/Caddyfile
+	cat /etc/storage/app_31.sh | grep -v 全局配置 >> /opt/tmall/Caddyfile
 fi
 echo "" >> /opt/tmall/Caddyfile
 if [ "$demoui_enable" == "2" ] || [ "$demoui_enable" == "1" ] ; then
-cat /etc/storage/app_29.sh >> /opt/tmall/Caddyfile
-[ "$demoui_enable" == "1" ] && logger -t "【demoui】" "启用 demoui + 启用 tmall 功能"
-[ "$demoui_enable" == "2" ] && logger -t "【demoui】" "只启用 demoui ，停止 tmall 功能"
-logger -t "【demoui】" "替换 demoui 网页内容"
-lan_ipaddr=`nvram get lan_ipaddr`
-sed -Ei 's@replacement.+#内网地址@replacement '"$lan_ipaddr"' #内网地址@g' /opt/tmall/Caddyfile
-wan0_ipaddr=`nvram get wan0_ipaddr`
-sed -Ei 's@replacement.+#外网地址@replacement '"$wan0_ipaddr"' #外网地址@g' /opt/tmall/Caddyfile
-wan0_gateway=`nvram get wan0_gateway`
-sed -Ei 's@replacement.+#外网网关@replacement '"$wan0_gateway"' #外网网关@g' /opt/tmall/Caddyfile
-wl_ssid=`nvram get wl_ssid`
-sed -Ei 's@replacement.+#无线名称SSID@replacement '"$wl_ssid"' #无线名称SSID@g' /opt/tmall/Caddyfile
-http_lanport=`nvram get http_lanport`
+if [ "$demoui_enable" == "1" ] ; then
+	logger -t "【demoui】" "启用 demoui + 启用 tmall 功能"
+	cat /etc/storage/app_29.sh | grep -v 全局配置 >> /opt/tmall/Caddyfile
+fi
+if [ "$demoui_enable" == "2" ] ; then
+	logger -t "【demoui】" "只启用 demoui ，停止 tmall 功能"
+	cat /etc/storage/app_29.sh >> /opt/tmall/Caddyfile
+fi
 if [ "$app_118" != "$http_lanport" ] ; then
 	logger -t "【demoui】" "变更真实 Web 服务访问端口 $lan_ipaddr:$app_118 ，需等待15秒"
 	logger -t "【demoui】" "变更源地址由于网页有缓存导致显示异常，请按 ctrl+F5 强制刷新或清除缓存"
@@ -224,7 +218,7 @@ echo -n $(echo "$tmall_id" | awk -F \  '{print $2}') > ./$(echo "$(echo "$tmall_
 chmod 444 /opt/tmall/www/aligenie/*
 
 logger -t "【天猫精灵】" "运行 /opt/tmall/caddy_tmall"
-eval "/opt/tmall/caddy_tmall -conf /opt/tmall/Caddyfile $cmd_log" &
+eval "/opt/tmall/caddy_tmall run --watch --config /opt/tmall/Caddyfile --adapter caddyfile $cmd_log" &
 sleep 3
 [ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【天猫精灵】" "启动成功" && tmall_restart o
 [ -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【天猫精灵】" "启动失败, 注意检caddy_tmall是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tmall_restart x
@@ -245,16 +239,31 @@ fi
 initconfig () {
 
 app_13="/etc/storage/app_13.sh"
+if [ ! -z "$(cat "$app_13" | grep rotate_size)" ] ; then
+	logger -t "【天猫精灵】" "/etc/storage/app_13.old 备份旧配置，升级Caddy 2 不向后兼容 Caddy 1"
+	cp -f "$app_13" /etc/storage/app_13.old
+	rm -f "$app_13"
+fi
 if [ ! -f "$app_13" ] || [ ! -s "$app_13" ] ; then
 	cat > "$app_13" <<-\EEE
 # 此脚本路径：/etc/storage/app_13.sh
+{ # 全局配置
+order cgi before respond # 启动 cgi 模块 # 全局配置
+admin off # 关闭 API 端口 # 全局配置
+} # 全局配置
+
 # 默认端口9321
 :9321 {
- root /opt/tmall/www
+ root * /opt/tmall/www
  # 默认cgi触发/abc123
  cgi /abc123 /opt/tmall/app_14.sh
- log /opt/tmall/requests.log {
- rotate_size 1
+ log {
+  output file /opt/tmall/requests.log {
+   roll_size     1MiB
+   roll_local_time
+   roll_keep     5
+   roll_keep_for 120h
+  }
  }
 }
 EEE
@@ -379,51 +388,55 @@ EEE
 fi
 
 app_29="/etc/storage/app_29.sh"
+if [ ! -z "$(cat "$app_29" | grep transparent)" ] ; then
+	logger -t "【天猫精灵】" "/etc/storage/app_29.old 备份旧配置，升级Caddy 2 不向后兼容 Caddy 1"
+	cp -f "$app_29" /etc/storage/app_29.old
+	rm -f "$app_29"
+fi
 if [ ! -f "$app_29" ] || [ ! -s "$app_29" ] ; then
 	cat > "$app_29" <<-\EEE
-:80 {
-redir 301 {
-if {path} is "/"
-/  /index.asp
-}
+# 此脚本路径：/etc/storage/app_29.sh
+{ # 全局配置
+admin off # 关闭 API 端口 # 全局配置
+} # 全局配置
 
-proxy / ec2-54-202-251-7.us-west-2.compute.amazonaws.com:8082 {
-transparent
-}
-filter rule {
-content_type .*
-search_pattern 192.168.50.1|ec2-54-202-251-7.us-west-2.compute.amazonaws.com
-replacement 192.168.123.1 #内网地址
-}
-filter rule {
-content_type .*
-search_pattern 192.168.66.46
-replacement 192.168.1.2 #外网地址
-}
-filter rule {
-content_type .*
-search_pattern 192.168.66.1
-replacement 192.168.1.1 #外网网关
-}
-filter rule {
-content_type .*
-search_pattern ASUS_XT8
-replacement ASUS #无线名称SSID
-}
-filter rule {
-content_type .*
-search_pattern "display:flex;justify-content:center;font-size:14px;"
-replacement "display:none;"
-}
-filter rule {
-content_type .*
-search_pattern ":8[0-9][0-9][0-9]"
-replacement ""
-}
+:80 {
+  reverse_proxy * demoui.asus.com 
 }
 
 EEE
 	chmod 755 "$app_29"
+fi
+
+app_31="/etc/storage/app_31.sh"
+if [ ! -z "$(cat "$app_31" | grep rotate_size)" ] ; then
+	logger -t "【wxsend推送】" "/etc/storage/app_31.old 备份旧配置，升级Caddy 2 不向后兼容 Caddy 1"
+	cp -f "$app_31" /etc/storage/app_31.old
+	rm -f "$app_31"
+fi
+if [ ! -f "$app_31" ] || [ ! -s "$app_31" ] ; then
+	cat > "$app_31" <<-\EEE
+# 此脚本路径：/etc/storage/app_31.sh
+{ # 全局配置
+order cgi before respond # 启动 cgi 模块 # 全局配置
+admin off # 关闭 API 端口 # 全局配置
+} # 全局配置
+
+:0 {
+ root * /opt/tmall/www
+ # cgi触发 /key
+ #cgi /111111111111 /etc/storage/script/Sh45_wx_send.sh # 脚本自动生成/key
+ log {
+  output file /opt/tmall/requests_wxsend.log {
+   roll_size     1MiB
+   roll_local_time
+   roll_keep     5
+   roll_keep_for 120h
+  }
+}
+
+EEE
+	chmod 755 "$app_31"
 fi
 
 }

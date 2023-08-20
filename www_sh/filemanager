@@ -51,7 +51,7 @@ if [ ! -f "/etc/storage/script/Sh54_file_manager.sh" ] || [ ! -s "/etc/storage/s
 fi
 chmod 777 /etc/storage/script -R
 # 初始配置脚本
-if [ ! -f "/etc/storage/app_5.sh" ] || [ ! -s "/etc/storage/app_5.sh" ] || [ ! -f "/etc/storage/app_11.sh" ] || [ ! -s "/etc/storage/app_11.sh" ] ; then
+if [ ! -f "/etc/storage/app_5.sh" ] || [ ! -s "/etc/storage/app_5.sh" ] ; then
 	/etc/storage/script/Sh54_file_manager.sh update_app
 fi
 
