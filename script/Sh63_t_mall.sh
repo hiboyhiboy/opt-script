@@ -218,7 +218,7 @@ echo -n $(echo "$tmall_id" | awk -F \  '{print $2}') > ./$(echo "$(echo "$tmall_
 chmod 444 /opt/tmall/www/aligenie/*
 
 logger -t "【天猫精灵】" "运行 /opt/tmall/caddy_tmall"
-eval "/opt/tmall/caddy_tmall run --watch --config /opt/tmall/Caddyfile --adapter caddyfile $cmd_log" &
+eval "/opt/tmall/caddy_tmall run --config /opt/tmall/Caddyfile --adapter caddyfile $cmd_log" &
 sleep 3
 [ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【天猫精灵】" "启动成功" && tmall_restart o
 [ -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【天猫精灵】" "启动失败, 注意检caddy_tmall是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tmall_restart x

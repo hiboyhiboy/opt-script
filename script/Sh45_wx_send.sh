@@ -317,7 +317,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 rm -f /opt/tmall/Caddyfile
 cat /etc/storage/app_31.sh >> /opt/tmall/Caddyfile
-eval "/opt/tmall/caddy_tmall run --watch --config /opt/tmall/Caddyfile --adapter caddyfile $cmd_log" &
+eval "/opt/tmall/caddy_tmall run --config /opt/tmall/Caddyfile --adapter caddyfile $cmd_log" &
 sleep 3
 [ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "部署 api 启动成功" && wxsend_restart o
 [ -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "部署 api 启动失败, 注意检caddy_tmall是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && wxsend_restart x

@@ -147,7 +147,7 @@ rm -f /opt/caddy/Caddyfile
 cat /etc/storage/app_11.sh >> /opt/caddy/Caddyfile
 echo "" >> /opt/caddy/Caddyfile
 logger -t "【caddy】" "运行 $SVC_PATH"
-eval "/opt/caddy/caddy run --watch --config /opt/caddy/Caddyfile --adapter caddyfile $cmd_log" &
+eval "/opt/caddy/caddy run --config /opt/caddy/Caddyfile --adapter caddyfile $cmd_log" &
 sleep 3
 [ ! -z "`pidof caddy`" ] && logger -t "【caddy】" "启动成功" && caddy_restart o
 [ -z "`pidof caddy`" ] && logger -t "【caddy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && caddy_restart x
