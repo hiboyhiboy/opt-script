@@ -465,7 +465,7 @@ if [ "$wxsend_notify_2" = "1" ] ; then
     touch /tmp/var/wxsend_newhostname.txt
     echo "接入设备名称" > /tmp/var/wxsend_newhostname.txt
     #cat /tmp/syslog.log | grep 'Found new hostname' | awk '{print $7" "$8}' >> /tmp/var/wxsend_newhostname.txt
-    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/wxsend_newhostname.txt
+    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "内网IP："$1"|ＭＡＣ："$2"|名称："$3}' >> /tmp/var/wxsend_newhostname.txt
     # 读取以往接入设备名称
     touch /etc/storage/wxsend_hostname.txt
     [ ! -s /etc/storage/wxsend_hostname.txt ] && echo "接入设备名称" > /etc/storage/wxsend_hostname.txt
@@ -485,7 +485,7 @@ if [ "$wxsend_notify_4" = "1" ] ; then
     touch /tmp/var/wxsend_newhostname.txt
     echo "接入设备名称" > /tmp/var/wxsend_newhostname.txt
     #cat /tmp/syslog.log | grep 'Found new hostname' | awk '{print $7" "$8}' >> /tmp/var/wxsend_newhostname.txt
-    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "【内网IP："$1"，ＭＡＣ："$2"，名称："$3"】  "}' >> /tmp/var/wxsend_newhostname.txt
+    cat /tmp/static_ip.inf | grep -v '^$' | awk -F "," '{ if ( $6 == 0 ) print "内网IP："$1"|ＭＡＣ："$2"|名称："$3}' >> /tmp/var/wxsend_newhostname.txt
     # 读取以往上线设备名称
     touch /etc/storage/wxsend_hostname_上线.txt
     [ ! -s /etc/storage/wxsend_hostname_上线.txt ] && echo "接入设备名称" > /etc/storage/wxsend_hostname_上线.txt
@@ -516,7 +516,7 @@ if [ "$wxsend_notify_3" = "1" ] && [ "$resub" = "1" ] ; then
     [ ! -z "$(cat /tmp/var/wxsend_nsub | grep '<' | grep '>')" ] && echo "" > /tmp/var/wxsend_nsub
     if [ "$(cat /tmp/var/wxsend_osub |head -n1)"x != "$(cat /tmp/var/wxsend_nsub |head -n1)"x ] && [ -f /tmp/var/wxsend_nsub ] ; then
         echo -n `nvram get firmver_sub` > /tmp/var/wxsend_osub
-        content="新的固件： `cat /tmp/var/wxsend_nsub | grep -v '^$'` ，目前旧固件： `cat /tmp/var/wxsend_osub | grep -v '^$'` "
+        content="新的固件： `cat /tmp/var/wxsend_nsub | grep -v '^$'` ，|目前旧固件： `cat /tmp/var/wxsend_osub | grep -v '^$'` "
         logger -t "【wxsend推送】" "固件 新的更新：${content}"
         Sh45_wx_send.sh send_message "【""$wxsend_title""】固件更新提醒" "${content}" &
         echo -n `cat /tmp/var/wxsend_nsub | grep -v '^$'` > /tmp/var/wxsend_osub

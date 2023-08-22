@@ -26,3 +26,4 @@ nvram set app23_ver_n=2021-07-28
 nvram set app24_ver_n=2023-02-16
 nvram set app25_ver_n=2023-07-30
 nvram set app26_ver_n=2023-08-20
+nvram set app27_ver_n=2023-08-23
