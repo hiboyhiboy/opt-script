@@ -226,38 +226,62 @@ else
 		logger -t "【AdGuardHome】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
 	fi
 	fi
-	AdGuardHome_v=$($SVC_PATH -c /etc/storage/app_19.sh -w /opt/AdGuardHome --check-config --verbose 2>&1 | grep version | sed -n '1p' | awk -F 'version' '{print $2;}'| awk -F ',' '{print $1;}')
-	nvram set AdGuardHome_v="$AdGuardHome_v"
-	[ -z "$AdGuardHome_v" ] && { eval "$SVC_PATH -c /etc/storage/app_19.sh -w /opt/AdGuardHome --check-config --verbose $cmd_log2" ; rm -rf $SVC_PATH ; }
+	app_19="/etc/storage/app_19.sh"
+	# 检测配置，若错误则恢复默认
+	AdGuardHome_check=$($SVC_PATH -c $app_19 -w /opt/AdGuardHome --check-config --verbose 2>&1 | grep fatal)
+	if [ ! -z "$AdGuardHome_check" ] ; then
+		eval "$SVC_PATH -c $app_19 -w /opt/AdGuardHome --check-config --verbose $cmd_log2"
+		logger -t "【AdGuardHome】" "检测配置，配置出现错误，现在恢复默认配置"
+		logger -t "【AdGuardHome】" "旧配置备份为： /etc/storage/app_19.old"
+		cp -f "$app_19" /etc/storage/app_19.old
+		rm -f "$app_19"
+		logger -t "【AdGuardHome】" "恢复默认配置"
+		initconfig
+		users_name="$(yq r /etc/storage/app_19.old users[0].name)"
+		users_password="$(yq r /etc/storage/app_19.old users[0].password)"
+		if [ ! -z "$users_name" ] && [ ! -z "$users_password" ] ; then
+			logger -t "【AdGuardHome】" "从旧配置备恢复 登录账号 $users_name 和 password"
+			yq d -i "$app_19" "auth_name"
+			yq d -i "$app_19" "auth_pass"
+			yq w -i "$app_19" "users[0].name" "$users_name"
+			yq w -i "$app_19" "users[0].password" "$users_password"
+		fi
+	fi
+	# 获取版本
+	AdGuardHome_v=$($SVC_PATH -c $app_19 -w /opt/AdGuardHome --check-config --verbose 2>&1 | grep version | sed -n '1p' | awk -F 'version' '{print $2;}')
+	nvram set AdGuardHome_v="$(echo $AdGuardHome_v)"
+	[ -z "$AdGuardHome_v" ] && { eval "$SVC_PATH -c $app_19 -w /opt/AdGuardHome --check-config --verbose $cmd_log2" ; rm -rf $SVC_PATH ; }
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【AdGuardHome】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 		logger -t "【AdGuardHome】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
 	fi
+	# 不使用本路由系统提供的主机。
+	yq w -i "$app_19" clients.runtime_sources.hosts false
 	logger -t "【AdGuardHome】" "启用本机 AdGuardHome 服务"
 	AdGuardHome_server='server=127.0.0.1#5353'
 	# 生成配置文件
 	if [ "$AdGuardHome_dns" != "0" ] ; then
 		AdGuardHome_server='server=127.0.0.1#53'
-		yq w -i /etc/storage/app_19.sh dns.port 53
+		yq w -i "$app_19" dns.port 53
 		logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:12353"
-		#yq w -i /etc/storage/app_19.sh dns.upstream_dns "[]"
-		[ ! -z "$(yq r /etc/storage/app_19.sh dns.upstream_dns | grep 1.0.0.1)" ] && yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==1.0.0.1)"
-		[ ! -z "$(yq r /etc/storage/app_19.sh dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==127.0.0.1:8053)"
-		[ -z "$(yq r /etc/storage/app_19.sh dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq w -i /etc/storage/app_19.sh dns.upstream_dns[+] "127.0.0.1:12353"
+		#yq w -i "$app_19" dns.upstream_dns "[]"
+		[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 1.0.0.1)" ] && yq d -i "$app_19" "dns.upstream_dns(.==1.0.0.1)"
+		[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8053)"
+		[ -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq w -i "$app_19" dns.upstream_dns[+] "127.0.0.1:12353"
 	else
 		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 		if [ "$port" != 0 ] ; then
 			logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:8053"
-			#yq w -i /etc/storage/app_19.sh dns.upstream_dns "[]"
-			[ ! -z "$(yq r /etc/storage/app_19.sh dns.upstream_dns | grep 1.0.0.1)" ] && yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==1.0.0.1)"
-			[ ! -z "$(yq r /etc/storage/app_19.sh dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==127.0.0.1:12353)"
-			[ -z "$(yq r /etc/storage/app_19.sh dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq w -i /etc/storage/app_19.sh dns.upstream_dns[+] "127.0.0.1:8053"
+			#yq w -i "$app_19" dns.upstream_dns "[]"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 1.0.0.1)" ] && yq d -i "$app_19" "dns.upstream_dns(.==1.0.0.1)"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:12353)"
+			[ -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq w -i "$app_19" dns.upstream_dns[+] "127.0.0.1:8053"
 		else
-			[ ! -z "$(yq r /etc/storage/app_19.sh dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==127.0.0.1:8053)"
-			[ ! -z "$(yq r /etc/storage/app_19.sh dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq d -i /etc/storage/app_19.sh "dns.upstream_dns(.==127.0.0.1:12353)"
-			[ "$(yq r /etc/storage/app_19.sh dns.upstream_dns)" == '[]' ] && yq w -i /etc/storage/app_19.sh dns.upstream_dns[+] "1.0.0.1"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8053)"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:12353)"
+			[ "$(yq r $app_19 dns.upstream_dns)" == '[]' ] && yq w -i "$app_19" dns.upstream_dns[+] "1.0.0.1"
 		fi
-		yq w -i /etc/storage/app_19.sh dns.port 5353
+		yq w -i "$app_19" dns.port 5353
 	fi
 	if [ "$AdGuardHome_dns" != "0" ] ; then
 		logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
@@ -267,7 +291,7 @@ else
 	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	cd /opt/AdGuardHome
-	eval "/opt/AdGuardHome/AdGuardHome --no-etc-hosts -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
+	eval "/opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
 	sleep 3
 	[ ! -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动成功" && AdGuardHome_restart o
 	[ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动失败, 注意检AdGuardHome是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
@@ -308,71 +332,21 @@ initconfig () {
 app_19="/etc/storage/app_19.sh"
 if [ ! -f "$app_19" ] || [ ! -s "$app_19" ] ; then
 	cat > "$app_19" <<-\EEE
-bind_host: 0.0.0.0
-bind_port: 3000
+http:
+  address: 0.0.0.0:3000
 auth_name: admin
 auth_pass: admin
 language: zh-cn
-rlimit_nofile: 0
 dns:
   bind_host: 0.0.0.0
   port: 5353
-  protection_enabled: true
-  filtering_enabled: true
-  blocking_mode: nxdomain
-  blocked_response_ttl: 10
-  querylog_enabled: true
-  ratelimit: 20
-  ratelimit_whitelist: []
-  refuse_any: true
-  bootstrap_dns:
-  - 1.1.1.1
-  all_servers: true
-  allowed_clients: []
-  disallowed_clients: []
-  blocked_hosts: []
-  parental_sensitivity: 0
-  parental_enabled: false
-  safesearch_enabled: false
-  safebrowsing_enabled: false
-  resolveraddress: ""
+  ratelimit: 0
   upstream_dns:
-  - 1.1.1.1
+  - 1.0.0.1
+  bootstrap_dns: 1.0.0.1
+  all_servers: true
 tls:
   enabled: false
-  server_name: ""
-  force_https: false
-  port_https: 443
-  port_dns_over_tls: 853
-  certificate_chain: ""
-  private_key: ""
-filters:
-- enabled: true
-  url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
-  name: AdGuard Simplified Domain Names filter
-  id: 1
-- enabled: true
-  url: https://adaway.org/hosts.txt
-  name: AdAway
-  id: 2
-- enabled: true
-  url: https://www.malwaredomainlist.com/hostslist/hosts.txt
-  name: MalwareDomainList.com Hosts List
-  id: 3
-user_rules: []
-dhcp:
-  enabled: false
-  interface_name: ""
-  gateway_ip: ""
-  subnet_mask: ""
-  range_start: ""
-  range_end: ""
-  lease_duration: 86400
-  icmp_timeout_msec: 1000
-clients: []
-log_file: ""
-verbose: false
-schema_version: 3
 
 EEE
 	chmod 755 "$app_19"
