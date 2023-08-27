@@ -32,7 +32,7 @@ mkdir -p /tmp/script
 { echo '#!/bin/bash' ; echo /etc/storage/script/Sh01_mountopt.sh '"$@"' ; } > /tmp/script/_mountopt
 chmod 777 /tmp/script/_mountopt
 nvram set ss_internet="0"
-/etc/storage/script/sh_ezscript.sh connAPSite_scan
+/etc/storage/script/sh_ezscript.sh connAPSite
 /etc/storage/script/Sh??_mento_hust.sh &
 ping_text=`ping -4 223.5.5.5 -c 1 -w 4 -q`
 ping_time=`echo $ping_text | awk -F '/' '{print $4}'| awk -F '.' '{print $1}'`
