@@ -473,9 +473,9 @@ hash su 2>/dev/null && su_x="1"
 hash su 2>/dev/null || su_x="0"
 if [ "$NUM" -ge "3" ] && [ "$su_x" = "1" ] ; then
 	addgroup -g 1321 ‍✈️
-	adduser -G ‍✈️ -u 1321 ‍✈️ -D -S -H -s /bin/sh
+	adduser -G ‍✈️ -u 1321 ‍✈️ -D -S -H -s /bin/false
 	sed -Ei s/1321:1321/0:1321/g /etc/passwd
-	su_cmd="su ‍✈️ -c "
+	su_cmd="su ‍✈️ -s /bin/sh -c "
 	gid_owner="1321"
 fi
 nvram set gid_owner="$gid_owner"

@@ -1,0 +1,59 @@
+#!/bin/sh
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app28.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_145=0 #maddy_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set maddy_L2="$(($3 + 10))"
+nvram set maddy_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "maddy_L2"); %>,<% nvram_get_x("", "maddy_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/maddy
+if [ ! -f "/opt/app/maddy/Advanced_Extensions_maddy.asp" ] || [ ! -s "/opt/app/maddy/Advanced_Extensions_maddy.asp" ] ; then
+	wgetcurl.sh /opt/app/maddy/Advanced_Extensions_maddy.asp "$hiboyfile/Advanced_Extensions_maddyasp" "$hiboyfile2/Advanced_Extensions_maddyasp"
+fi
+umount /www/Advanced_Extensions_app28.asp
+if [ -f "/opt/app/maddy/Advanced_Extensions_maddy.asp" ] ; then
+	mount --bind /opt/app/maddy/Advanced_Extensions_maddy.asp /www/Advanced_Extensions_app28.asp
+	app28_ver=$(grep 'app28_ver=' /opt/app/maddy/Advanced_Extensions_maddy.asp | awk -F '=' '{print $2;}')
+	nvram set app28_ver=${app28_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh85_mad_dy.sh
+if [ ! -f "/etc/storage/script/Sh85_mad_dy.sh" ] || [ ! -s "/etc/storage/script/Sh85_mad_dy.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh85_mad_dy.sh "$hiboyscript/script/Sh85_mad_dy.sh" "$hiboyscript/script/Sh85_mad_dy.sh"
+fi
+chmod 777 /etc/storage/script -R
+if [ ! -f "/etc/storage/app_37.sh" ] || [ ! -s "/etc/storage/app_37.sh" ] ; then
+/etc/storage/script/Sh85_mad_dy.sh update_app
+fi
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+

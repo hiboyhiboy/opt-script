@@ -5,7 +5,7 @@ source /etc/storage/script/init.sh
 link="Advanced_Extensions_app26.asp"
 echo $1
 if [ "$1"x = "stop"x ] ; then
-    nvram set app_45=0 #caddy_enable
+    nvram set app_139=0 #caddy_enable
     exit
 fi
 

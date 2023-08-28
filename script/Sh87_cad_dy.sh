@@ -63,8 +63,8 @@ exit 0
 
 caddy_get_status () {
 
-A_restart=`nvram get caddy_status$(cat /etc/storage/app_11.sh | grep -v '^#' | grep -v '^$')`
-B_restart="$caddy_enable"
+A_restart=`nvram get caddy_status`
+B_restart="$caddy_enable$(cat /etc/storage/app_11.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set caddy_status=$B_restart
