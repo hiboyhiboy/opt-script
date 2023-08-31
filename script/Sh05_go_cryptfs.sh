@@ -78,6 +78,7 @@ gocryptfs_get_status () {
 A_restart=`nvram get gocryptfs_status`
 B_restart="$gocryptfs_enable$gocryptfs_key_enable$gocryptfs_pass$(cat /etc/storage/app_17.sh /etc/storage/app_32.sh | grep -v '^#' | grep -v '^$')"
 B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
+cut_B_re
 if [ "$A_restart" != "$B_restart" ] ; then
 	nvram set gocryptfs_status=$B_restart
 	needed_restart=1

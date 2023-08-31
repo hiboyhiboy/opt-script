@@ -333,44 +333,6 @@ nvram set time_system=""
 fi
 }
 
-serverchan () {
-
-# 在线发送微信推送
-serverchan_sckey=`nvram get serverchan_sckey`
-if [ ! -z "$serverchan_sckey" ] ; then
-serverchan_text=`nvram get serverchan_text`
-serverchan_desp=`nvram get serverchan_desp`
-if [ ! -z "$serverchan_text" ] ; then
-curltest=`which curl`
-if [ -z "$curltest" ] ; then
-/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
-fi
-curltest=`which curl`
-if [ -z "$curltest" ] ; then
-	logger -t "【微信推送】" "未找到 curl 程序，停止 微信推送。需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
-	nvram set serverchan_text=""
-	nvram set serverchan_desp=""
-fi
-if [ ! -z "$serverchan_text" ] ; then
-curl -s "http://sctapi.ftqq.com/$serverchan_sckey.send?text=$serverchan_text" -d "&desp=$serverchan_desp" 
-logger -t "【微信推送】" "消息标题:$serverchan_text"
-logger -t "【微信推送】" "消息内容:$serverchan_desp"
-nvram set serverchan_text=""
-nvram set serverchan_desp=""
-fi
-fi
-fi
-}
-
-serverchan_clean () {
-
-# 清空以往接入设备名称
-touch /etc/storage/hostname.txt
-logger -t "【微信推送】" "清空以往接入设备名称：/etc/storage/hostname.txt"
-rm -f /etc/storage/hostname.txt
-echo "接入设备名称" > /etc/storage/hostname.txt
-}
-
 relnmp () {
 logger -t "【按钮】" "重启 LNMP 服务"
 nvram set lnmp_status="relnmp"
@@ -802,12 +764,6 @@ case "$1" in
   ;;
 timesystem)
   timesystem
-  ;;
-serverchan)
-  serverchan
-  ;;
-serverchan_clean)
-  serverchan_clean
   ;;
 relnmp)
   relnmp
