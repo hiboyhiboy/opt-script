@@ -382,7 +382,7 @@ link_tmp=""
 de_trojan_link () {
 
 # 未配置 trojan 客户端，待完成
-# trojan://321a@1.1.1.1:123?peer=abc.com#test.%2B
+# trojan://321a@1.0.0.1:123?peer=abc.com#test.%2B
 # https://github.com/p4gefau1t/trojan-go/issues/132
 [ -z "$link_tmp" ] && link_tmp="$1"
 link_tmp=$(echo $link_tmp)

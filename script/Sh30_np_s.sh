@@ -318,7 +318,7 @@ app_15="/etc/storage/app_15.sh"
 if [ ! -f "$app_15" ] || [ ! -s "$app_15" ] ; then
 	cat > "$app_15" <<-\EEE
 [common]
-server_addr=1.1.1.1:8284
+server_addr=1.0.0.1:8284
 conn_type=tcp
 vkey=web界面中显示的密钥
 auto_reconnection=true

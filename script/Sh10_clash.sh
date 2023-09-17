@@ -374,19 +374,24 @@ clash_get_clash_webs
 # 下载clash_webs
 if [ ! -f "/opt/app/clash/clash_webs/index.html" ] ; then
 	if [ "$app_79" == "clash" ] || [ "$app_79" == "clash_1" ] ; then
-		logger -t "【clash】" " 下载 clash 面板 : http://clash.razord.top/"
+		logger -t "【clash】" " 下载 clash 面板 : https://github.com/Dreamacro/clash-dashboard/tree/gh-pages"
 		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs2.tgz" "$hiboyfile2/clash_webs2.tgz" N
 		[ "$app_79" != "clash_1" ] && nvram set app_79="clash_1" && app_79="clash_1"
 	fi
 	if [ "$app_79" == "yacd" ] || [ "$app_79" == "yacd_1" ] ; then
-		logger -t "【clash】" "下载 yacd 面板 Source: https://github.com/haishanh/yacd"
+		logger -t "【clash】" "下载 yacd 面板 : https://github.com/MetaCubeX/Yacd-meta/tree/gh-pages"
 		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs.tgz" "$hiboyfile2/clash_webs.tgz" N
 		[ "$app_79" != "yacd_1" ] && nvram set app_79="yacd_1" && app_79="yacd_1"
 	fi
 	if [ "$app_79" == "meta" ] || [ "$app_79" == "meta_1" ] ; then
-		logger -t "【clash】" "下载 Meta 面板 Source: https://github.com/Clash-Mini/Dashboard/"
+		logger -t "【clash】" "下载 Meta 面板 : https://github.com/MetaCubeX/Razord-meta/tree/gh-pages"
 		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs3.tgz" "$hiboyfile2/clash_webs3.tgz" N
 		[ "$app_79" != "meta_1" ] && nvram set app_79="meta_1" && app_79="meta_1"
+	fi
+	if [ "$app_79" == "xd" ] || [ "$app_79" == "xd_1" ] ; then
+		logger -t "【clash】" "下载 xd 面板 : https://github.com/metacubex/metacubexd/tree/gh-pages"
+		wgetcurl_checkmd5 /opt/app/clash/clash_webs.tgz "$hiboyfile/clash_webs4.tgz" "$hiboyfile2/clash_webs4.tgz" N
+		[ "$app_79" != "xd_1" ] && nvram set app_79="xd_1" && app_79="xd_1"
 	fi
 	tar -xzvf /opt/app/clash/clash_webs.tgz -C /opt/app/clash ; cd /opt
 	rm -f /opt/app/clash/clash_webs.tgz
@@ -683,7 +688,7 @@ dns:
   fallback:
     # 与 nameserver 内的服务器列表同时发起请求，当规则符合 GEOIP 在 CN 以外时，fallback 列表内的域名服务器生效。
     - https://dns.google/dns-query
-    - https://1.1.1.1/dns-query
+    - https://1.0.0.1/dns-query
     - tcp://8.8.8.8:53
     - tcp://8.8.4.4:53
     - tcp://208.67.222.222:443
@@ -866,12 +871,14 @@ echo '- command: delete
   path: dns.fallback(.==https://dns.google/dns-query)
 - command: delete
   path: dns.fallback(.==https://1.1.1.1/dns-query)
+- command: delete
+  path: dns.fallback(.==https://1.0.0.1/dns-query)
 - command: update 
   path: dns.fallback[+]
   value: https://dns.google/dns-query
 - command: update 
   path: dns.fallback[+]
-  value: https://1.1.1.1/dns-query
+  value: https://1.0.0.1/dns-query
 ' | yq w -i -s - $config_dns_yml
 config_dns_yml_txt=`yq r $config_dns_yml --stripComments`
 echo "$config_dns_yml_txt"  >  $config_dns_yml
@@ -1071,17 +1078,22 @@ link_get=""
 if [ "$app_79" == "yacd" ] ; then
 link_get="clash_webs.tgz"
 nvram set app_79="yacd_1" ; app_79="yacd_1"
-logger -t "【clash】" "更换 yacd 面板 Source: https://github.com/haishanh/yacd"
+logger -t "【clash】" "更换 yacd 面板 : https://github.com/MetaCubeX/Yacd-meta/tree/gh-pages"
 fi
 if [ "$app_79" == "clash" ] ; then
 link_get="clash_webs2.tgz"
 nvram set app_79="clash_1" ; app_79="clash_1"
-logger -t "【clash】" " 更换 clash 面板 : http://clash.razord.top/"
+logger -t "【clash】" " 更换 clash 面板 : https://github.com/Dreamacro/clash-dashboard/tree/gh-pages"
 fi
 if [ "$app_79" == "meta" ] ; then
 link_get="clash_webs3.tgz"
 nvram set app_79="meta_1" ; app_79="meta_1"
-logger -t "【clash】" " 更换 Meta 面板 : https://github.com/Clash-Mini/Dashboard/"
+logger -t "【clash】" " 更换 Meta 面板 : https://github.com/MetaCubeX/Razord-meta/tree/gh-pages"
+fi
+if [ "$app_79" == "xd" ] ; then
+link_get="clash_webs4.tgz"
+nvram set app_79="xd_1" ; app_79="xd_1"
+logger -t "【clash】" " 更换 xd 面板 : https://github.com/metacubex/metacubexd/tree/gh-pages"
 fi
 if [ ! -z "$link_get" ] ; then
 # 下载clash_webs

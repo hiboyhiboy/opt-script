@@ -408,10 +408,10 @@ server-https https://dns.google/dns-query -group office
 server-tcp 8.8.8.8 -group office
 server-tls 8.8.8.8 -group office
 # Cloudflare DNS
-server 1.1.1.1 -group office
+server 1.0.0.1 -group office
 #server 2606:4700:4700::1111 -group office
 server-https https://dns.cloudflare.com/dns-query -group office
-server-tls 1.1.1.1 -group office
+server-tls 1.0.0.1 -group office
 # adguard
 #server 176.103.130.130 -group office
 #server 2a00:5a60::ad1:0ff -group office
