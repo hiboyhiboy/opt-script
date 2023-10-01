@@ -337,10 +337,10 @@ cat > "/tmp/frp/myfrps.ini" <<-\EOF
 # ==========服务端配置：==========
 [common]
 bind_port = 7000
-dashboard_port = 7500
+# dashboard_port = 7500
 # dashboard 用户名密码，默认都为 admin
-dashboard_user = admin
-dashboard_pwd = admin
+# dashboard_user = admin
+# dashboard_pwd = admin
 vhost_http_port = 88
 token = 12345
 subdomain_host = frps.com
