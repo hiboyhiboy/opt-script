@@ -113,7 +113,7 @@ gotify_check () {
 
 gotify_get_status
 if [ "$gotify_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "`pidof gotifyserver`" ] && logger -t "【gotify推送】" "停止 gotifyserver" && gotify_close
+	[ ! -z "`pidof gotifyserver`" ] && [ ! -z "$(echo "$gotify_url" | grep "$(nvram get lan_ipaddr):")" ] && logger -t "【gotify推送】" "停止 gotifyserver" && gotify_close
 	[ ! -z "$(ps -w | grep "app_36" | grep -v grep )" ] && logger -t "【gotify推送】" "停止 gotify" && gotify_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
@@ -122,7 +122,7 @@ if [ "$gotify_enable" = "1" ] ; then
 		gotify_close
 		gotify_start
 	else
-		[ -z "`pidof gotifyserver`" ] || [ ! -s "/opt/gotify/gotifyserver" ] && gotify_restart
+		[ -z "`pidof gotifyserver`" ] || [ ! -s "/opt/gotify/gotifyserver" ] && [ ! -z "$(echo "$gotify_url" | grep "$(nvram get lan_ipaddr):")" ] && gotify_restart
 		[ -z "$(ps -w | grep "app_36" | grep -v grep )" ] || [ ! -s "`which curl`" ] && gotify_restart
 	fi
 fi
@@ -153,13 +153,19 @@ if [ -s /tmp/script/_opt_script_check ]; then
 sed -Ei '/【gotify推送】|^$/d' /tmp/script/_opt_script_check
 cat >> "/tmp/script/_opt_script_check" <<-OSC
 NUM=\`grep "/etc/storage/app_36.sh" /tmp/ps | grep -v grep |wc -l\` # 【gotify推送】
-[ "\$NUM" -lt "1" ] || [ -z "\`pidof gotifyserver\`" ] && nvram set gotify_status=00 && logger -t "【gotify推送】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【gotify推送】|^$/d' /tmp/script/_opt_script_check # 【gotify推送】
+[ "\$NUM" -lt "1" ] && nvram set gotify_status=00 && logger -t "【gotify推送】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【gotify推送】|^$/d' /tmp/script/_opt_script_check # 【gotify推送】
 OSC
+
+if [ ! -z "$(echo "$gotify_url" | grep "$(nvram get lan_ipaddr):")" ] ; then
+cat >> "/tmp/script/_opt_script_check" <<-OSC
+[ -z "\`pidof gotifyserver\`" ] && nvram set gotify_status=00 && logger -t "【gotify推送】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【gotify推送】|^$/d' /tmp/script/_opt_script_check # 【gotify推送】
+OSC
+fi
 return
 fi
 
 while true; do
-	if [ -z "`pidof gotifyserver`" ] ; then
+	if [ -z "`pidof gotifyserver`" ] && [ ! -z "$(echo "$gotify_url" | grep "$(nvram get lan_ipaddr):")" ] ; then
 		logger -t "【gotify推送】" "重新启动"
 		gotify_restart
 	fi
@@ -189,6 +195,7 @@ kill_ps "$scriptname"
 
 gotify_start () {
 check_webui_yes
+if [ ! -z "$(echo "$gotify_url" | grep "$(nvram get lan_ipaddr):")" ] ; then
 SVC_PATH="/opt/gotify/gotifyserver"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【gotify推送】" "找不到 $SVC_PATH，安装 opt 程序"
@@ -201,7 +208,6 @@ if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【gotify推送】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【gotify推送】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && gotify_restart x
 fi
-[ -z "$gotify_url" ] && gotify_url="http://$(nvram get lan_ipaddr):8385" && nvram set app_142="$gotify_url"
 logger -t "【gotify推送】" "运行 /opt/gotify/gotifyserver"
 logger -t "【gotify推送】" "配置文件 /opt/gotify/config.yml"
 initconfig
@@ -210,6 +216,7 @@ cd /opt/gotify/
 sleep 3
 [ ! -z "`pidof gotifyserver`" ] && logger -t "【gotify推送】" "启动成功" && gotify_restart o
 [ -z "`pidof gotifyserver`" ] && logger -t "【gotify推送】" "启动失败, 注意检 /opt/gotify/gotifyserver 是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && gotify_restart x
+fi
 gotify_get_status2
 gotify_close2
 eval "$scriptfilepath keep &"
