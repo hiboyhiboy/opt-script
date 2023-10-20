@@ -227,7 +227,7 @@ fi
 fi
 logger -t "【hysteria】" "运行 $SVC_PATH"
 /etc/storage/app_34.sh
-su_cmd2="$SVC_PATH -config /tmp/hysteria.json"
+su_cmd2="$SVC_PATH -c /tmp/hysteria.json"
 eval "$su_cmd" '"cmd_name=hysteria && '"$su_cmd2"' $cmd_log"' &
 sleep 4
 [ ! -z "`pidof hysteria`" ] && logger -t "【hysteria】" "启动成功" && hysteria_restart o
@@ -377,63 +377,57 @@ fi
 initconfig () {
 
 app_34="/etc/storage/app_34.sh"
-if [ ! -f "$app_34" ] || [ ! -s "$app_34" ] || [ -z "$(cat $app_34 | grep "ss_ip46" )" ] ; then
+if [ -z "$(cat $app_34 | grep "tcpRedirect" )" ] && [ -z "$(cat $app_34 | grep "tcpTProxy" )" ] && [ -z "$(cat $app_34 | grep "udpTProxy" )" ] && [ -z "$(cat $app_34 | grep "hysteria 2 配置" )" ] ; then
+ rm -rf "$app_34"
+fi
+if [ ! -f "$app_34" ] || [ ! -s "$app_34" ] ; then
 	cat > "$app_34" <<-\EEE
 #!/bin/bash
-ss_ip46=`nvram get ss_ip46` ; tp_set="4" ;
-[ "$ss_ip46" = "1" ] && tp_set="6" ; [ "$ss_ip46" = "2" ] && tp_set="46" ;
 
-
-# hysteria 配置
+# hysteria 2 配置
 cat > "/tmp/hysteria.json" <<-EEFF
 {
   "server": "example.com:36712",
-  "obfs": "password",
-  "protocol": "udp",
-  "up_mbps": 10,
-  "down_mbps": 50,
-  "retry": -1,
-  "retry_interval": 10,
-  "quit_on_disconnect": false,
-  "handshake_timeout": 10,
-  "idle_timeout": 100,
-  "hop_interval": 180,
+  "auth": "some_password",
+  "transport": {
+    "type": "udp",
+    "udp": {
+      "hopInterval": "30s"
+    }
+  },
+  "bandwidth": {
+    "up": "10 mbps",
+    "down": "50 mbps"
+  },
   "socks5": {
     "listen": "0.0.0.0:1089",
-    "timeout": 300,
-    "disable_udp": false,
-    "user": "",
-    "password": ""
+    "username": "",
+    "password": "",
+    "disableUDP": false
   },
-  "relay_tcps": [
+  "tcpForwarding": [
     {
-      "listen": ":8053",
-      "remote": "8.8.8.8:53",
-      "timeout": 300
+      "listen": "0.0.0.0:8053",
+      "remote": "8.8.8.8:53"
     }
   ],
-  "relay_udps": [
+  "udpForwarding": [
     {
-      "listen": ":8053",
+      "listen": "0.0.0.0:8053",
       "remote": "8.8.8.8:53",
-      "timeout": 60
+      "timeout": "60s"
     }
   ],
-  "redirect_tcp": {
-    "listen": "127.0.0.1:18000",
-    "timeout": 300
+  "tcpRedirect": {
+    "listen": "127.0.0.1:18000"
   },
-  "tproxy_tcp": {
-    "listen": ":18001",
-    "timeout": 300
+  "tcpTProxy": {
+    "listen": ":18001"
   },
-  "tproxy_udp": {
+  "udpTProxy": {
     "listen": ":18002",
-    "timeout": 60
-  },
-  "disable_mtu_discovery": true,
-  "resolver": "udp://8.8.8.8:53",
-  "resolve_preference": "$tp_set"
+    "timeout": "60s"
+  }
 }
 
 EEFF
