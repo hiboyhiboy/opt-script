@@ -178,7 +178,7 @@ for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
 wgetcurl_file "$SVC_PATH" "$hiboyfile/hysteria" "$hiboyfile2/hysteria"
 done
-hysteria_v=$($SVC_PATH -v | grep Hysteria | awk -F ' ' '{print $3;}')
+hysteria_v=$($SVC_PATH version | grep Version | awk -F ' ' '{print $2;}')
 [ -z "$hysteria_v" ] && hysteria_v=$($SVC_PATH -v)
 nvram set hysteria_v="$hysteria_v"
 if [ ! -s "$SVC_PATH" ] ; then
