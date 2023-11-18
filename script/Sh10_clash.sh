@@ -831,7 +831,7 @@ logger -t "【clash】" "更新下载 GeoIP2国家数据库 数据库文件"
 mkdir -p /opt/app/clash/config
 rm -f /opt/app/clash/config/Country_mmdb
 if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
-wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb" "https://github.com/Dreamacro/maxmind-geoip/releases/latest/download/Country.mmdb" N
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb" "$hiboyfile/Country.mmdb" N
 [ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
 fi
 reload_api
