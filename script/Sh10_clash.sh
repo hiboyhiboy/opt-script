@@ -266,8 +266,9 @@ else
 fi
 done
 clash_v=$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $2;}')
+[ -z "$clash_v" ] && clash_v=$($SVC_PATH -v | grep Meta | awk -F ' ' '{print $2;}')
 [ -z "$clash_v" ] && clash_v=$($SVC_PATH -v)
-[ "$clash_v" == "Meta" ] && clash_v="$clash_v""_""$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $3;}')"
+[ "$clash_v" == "Meta" ] && clash_v="$clash_v""_""$($SVC_PATH -v | grep Meta | awk -F ' ' '{print $3;}')"
 nvram set clash_v="$clash_v"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【clash】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
