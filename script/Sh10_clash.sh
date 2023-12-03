@@ -292,7 +292,16 @@ if [ ! -s /opt/app/clash/config/Country.mmdb ] ; then
 logger -t "【clash】" "初次启动会自动下载 geoip 数据库文件：/opt/app/clash/config/Country.mmdb"
 logger -t "【clash】" "备注：如果缺少 geoip 数据库文件会启动失败，需 v0.17.1 或以上版本才能自动下载 geoip 数据库文件"
 if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
-wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb" "$hiboyfile/Country.mmdb" N
+Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
+[ "$Mem_total" -lt 1024 ] && Mem_total="1024" || { [ "$Mem_total" -ge 1024 ] || Mem_total="1024" ; }
+Mem_M=$(($Mem_total / 1024 ))
+if [ "$Mem_M" -lt "200" ] ; then
+logger -t "【clash】" "内存 $Mem_M ，下载使用 Country-only-cn-private.mmdb"
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country-only-cn-private.mmdb" "$hiboyfile/Country-only-cn-private.mmdb" N
+else
+logger -t "【clash】" "内存 $Mem_M ，下载使用 Country.mmdb"
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country.mmdb" "$hiboyfile/Country.mmdb" N
+fi
 [ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
 fi
 fi
@@ -831,7 +840,7 @@ logger -t "【clash】" "更新下载 GeoIP2国家数据库 数据库文件"
 mkdir -p /opt/app/clash/config
 rm -f /opt/app/clash/config/Country_mmdb
 if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
-wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb" "$hiboyfile/Country.mmdb" N
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country.mmdb" "$hiboyfile/Country.mmdb" N
 [ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
 fi
 reload_api

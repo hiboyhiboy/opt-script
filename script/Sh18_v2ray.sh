@@ -397,11 +397,11 @@ killall v2ray v2ray_script.sh
 killall -9 v2ray v2ray_script.sh
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
-Mem_lt=100000
-[ "$Mem_total" -lt 66 ] && Mem_total="66" || { [ "$Mem_total" -ge 66 ] || Mem_total="66" ; }
-if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
+[ "$Mem_total" -lt 1024 ] && Mem_total="1024" || { [ "$Mem_total" -ge 1024 ] || Mem_total="1024" ; }
+Mem_M=$(($Mem_total / 1024 ))
+if [ ! -z "$optPath" ] || [ "$Mem_M" -lt "100" ] ; then
 	[ ! -z "$optPath" ] && logger -t "【v2ray】" " /opt/ 在内存储存"
-	if [ "$Mem_total" -lt "$Mem_lt" ] ; then
+	if [ "$Mem_M" -lt "100" ] ; then
 		logger -t "【v2ray】" "内存不足100M"
 		if [ "$mk_mode_routing" == "1" ] ; then
 			rm -f $geoip_path $geosite_path
@@ -414,11 +414,12 @@ fi
 if [ "$mk_mode_routing" == "1" ] ; then
 	logger -t "【v2ray】" "使用 ss_tproxy 分流(降低负载，适合低配路由)"
 else
-	[ ! -s $geoip_path ] && wgetcurl_checkmd5 $geoip_path "$hiboyfile/geoip.dat" "$hiboyfile2/geoip.dat" N
-	if [ "$Mem_total" -lt "200000" ] ; then
-	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "$hiboyfile/geosite.dat" "$hiboyfile2/geosite.dat" N
+	if [ "$Mem_M" -lt "200" ] ; then
+	[ ! -s $geoip_path ] && wgetcurl_checkmd5 $geoip_path "https://gcore.jsdelivr.net/gh/Loyalsoldier/geoip@release/geoip-only-cn-private.dat" "$hiboyfile/geoip.dat" N
+	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "https://gcore.jsdelivr.net/gh/v2fly/domain-list-community@release/dlc.dat" "$hiboyfile/geosite.dat" N
 	else
-	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "$hiboyfile/geosite_s.dat" "$hiboyfile2/geosite_s.dat" N
+	[ ! -s $geoip_path ] && wgetcurl_checkmd5 $geoip_path "https://gcore.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat" "$hiboyfile/geoip_s.dat" N
+	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "https://gcore.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat" "$hiboyfile/geosite_s.dat" N
 	fi
 fi
 if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
