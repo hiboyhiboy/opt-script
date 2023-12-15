@@ -125,7 +125,7 @@ fi
 
 onlinetest
 while [ $online -le 0 ]; do
-	sleep 66
+	sleep 33
 	onlinetest
 	logger -t "【花生壳内网版】" "$online"
 done
@@ -133,18 +133,30 @@ logger -t "【花生壳内网版】" "ONLINE"
 nvram set phddns_sn="$SN"
 nvram set phddns_st="$STATUS"
 nvram set phddns_szUID="$szUID"
+re_phddns=1
 while true; do
-	onlinetest
 	NUM=`ps -w | grep "oraynewph -s 0.0.0.0" | grep -v grep |wc -l`
+	if [ "$NUM" -lt "1" ] ; then
+		logger -t "【花生壳内网版】" "找不到 oraynewph 进程 $NUM, 重启花生壳."
+		re_phddns=11
+	fi
 	NUM2=`ps -w | grep "oraysl -a 127.0.0.1" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ "$NUM2" -lt "1" ] || [ $online -le 0 ] || [ ! -s "$SVC_PATH" ] ; then
+	if  [ "$NUM2" -lt "1" ] ; then
+		logger -t "【花生壳内网版】" "找不到 oraysl 进程 $NUM2, 重启花生壳."
+		re_phddns=11
+	fi
+	onlinetest
+	if [ $online -le 0 ] ; then
+		re_phddns=`expr $re_phddns + 1`
+	fi
+	if [ "$re_phddns" -ge 4 ] || [ ! -s "$SVC_PATH" ] ; then
+		re_phddns=1
 		logger -t "【花生壳内网版】" "网络状态:【$orayslstatus 】，重新启动($NUM , $NUM2 , $online)"
 		killall oraynewph oraysl
 		killall -9 oraynewph oraysl
 		phddns_restart
 	fi
-	
-sleep 231
+	sleep 66
 done
 }
 
@@ -152,6 +164,7 @@ phddns_close () {
 kill_ps "$scriptname keep"
 killall oraynewph oraysl
 killall -9 oraynewph oraysl
+nvram set phddns_st=""
 kill_ps "/tmp/script/_orayd"
 kill_ps "_orayd.sh"
 kill_ps "$scriptname"
@@ -188,7 +201,7 @@ ln -sf "/etc/storage/init.status" "/etc/init.status"
 cmd_name="花生壳内网版oraynewph"
 eval "oraynewph -s 0.0.0.0 $cmd_log" &
 cmd_name="花生壳内网版oraysl"
-eval "oraysl -a 127.0.0.1 -p 16062 -s phsle01.oray.net:80 -d $cmd_log" &
+eval "oraysl -a 127.0.0.1 -p 16062 -s phsle01.oray.net:6061 -d $cmd_log" &
 sleep 4
 [ ! -z "`pidof oraysl`" ] && logger -t "【花生壳内网版】" "启动成功" && phddns_restart o
 [ -z "`pidof oraysl`" ] && logger -t "【花生壳内网版】" "启动失败, 注意检查oraysl、oraynewph是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { rm -rf /opt/bin/oraysl /opt/bin/oraynewph ; phddns_restart x ; }

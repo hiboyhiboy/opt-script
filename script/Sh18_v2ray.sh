@@ -415,11 +415,11 @@ if [ "$mk_mode_routing" == "1" ] ; then
 	logger -t "【v2ray】" "使用 ss_tproxy 分流(降低负载，适合低配路由)"
 else
 	if [ "$Mem_M" -lt "200" ] ; then
-	[ ! -s $geoip_path ] && wgetcurl_checkmd5 $geoip_path "https://gcore.jsdelivr.net/gh/Loyalsoldier/geoip@release/geoip-only-cn-private.dat" "$hiboyfile/geoip.dat" N
-	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "https://gcore.jsdelivr.net/gh/v2fly/domain-list-community@release/dlc.dat" "$hiboyfile/geosite.dat" N
+	[ ! -s $geoip_path ] && wgetcurl_checkmd5 $geoip_path "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip-lite.dat" "$hiboyfile/geoip.dat" N
+	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite-lite.dat" "$hiboyfile/geosite.dat" N
 	else
-	[ ! -s $geoip_path ] && wgetcurl_checkmd5 $geoip_path "https://gcore.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat" "$hiboyfile/geoip_s.dat" N
-	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "https://gcore.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat" "$hiboyfile/geosite_s.dat" N
+	[ ! -s $geoip_path ] && wgetcurl_checkmd5 $geoip_path "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat" "$hiboyfile/geoip_s.dat" N
+	[ ! -s $geosite_path ] && wgetcurl_checkmd5 $geosite_path "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat" "$hiboyfile/geosite_s.dat" N
 	fi
 fi
 if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then

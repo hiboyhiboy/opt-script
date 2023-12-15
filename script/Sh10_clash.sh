@@ -298,10 +298,10 @@ Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
 Mem_M=$(($Mem_total / 1024 ))
 if [ "$Mem_M" -lt "200" ] ; then
 logger -t "【clash】" "内存 $Mem_M ，下载使用 Country-only-cn-private.mmdb"
-wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country-only-cn-private.mmdb" "$hiboyfile/Country-only-cn-private.mmdb" N
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country-lite.mmdb" "$hiboyfile/Country-only-cn-private.mmdb" N
 else
 logger -t "【clash】" "内存 $Mem_M ，下载使用 Country.mmdb"
-wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country.mmdb" "$hiboyfile/Country.mmdb" N
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb" "$hiboyfile/Country.mmdb" N
 fi
 [ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
 fi
