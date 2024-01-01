@@ -220,7 +220,7 @@ token=""
 get_token() {
 
 versions="$(curl -L    -s -X  GET \
-https://dns.myhuaweicloud.com/ \
+https://apiexplorer.cn-north-1.myhuaweicloud.com/v1/mock/DNS/ShowApiInfo?status_code=200&number=1&region_id=cn-north-1 \
   -H 'content-type: application/json' \
    | grep -Eo '"id":"[^"]*"' | awk -F 'id":"' '{print $2}' | tr -d '"' |head -n1)"
 [ "$versions" != "v2" ] && logger -t "【huaweidns动态域名】" "错误！API的版本不是【v2】，请更新脚本后尝试重新启动" && sleep 10 && huaweidns_restart x
@@ -287,7 +287,7 @@ esac
 		domain_type="A"
 	fi
 	Record_re="$(curl -L    -s -X GET \
-      https://dns.myhuaweicloud.com/v2.1/recordsets?name=$HOST2.$DOMAIN.\&type=$domain_type \
+      https://dns.myhuaweicloud.com/v2/recordsets?name=$HOST2.$DOMAIN.\&type=$domain_type \
       -H 'content-type: application/json' \
       -H 'X-Auth-Token: '$token)"
 	sleep 1
@@ -299,7 +299,7 @@ esac
         do
         logger -t "【huaweidns动态域名】" "$HOST.$DOMAIN 删除名称重复的子域名！ID: $Delete_RECORD_ID"
         RRecord_re="$(curl -L    -s -X DELETE \
-          https://dns.myhuaweicloud.com/v2.1/zones/$Zone_ID/recordsets/$Delete_RECORD_ID \
+          https://dns.myhuaweicloud.com/v2/zones/$Zone_ID/recordsets/$Delete_RECORD_ID \
           -H 'content-type: application/json' \
           -H 'X-Auth-Token: '$token)"
         sleep 1
@@ -354,7 +354,7 @@ while [ -z "$Record_ID" ] ; do
     I=$(($I - 1))
     [ $I -lt 0 ] && break    # 获得记录ID
     Record_re="$(curl -L    -s -X GET \
-      https://dns.myhuaweicloud.com/v2.1/recordsets?name=$HOST2.$DOMAIN.\&type=$domain_type \
+      https://dns.myhuaweicloud.com/v2/recordsets?name=$HOST2.$DOMAIN.\&type=$domain_type \
       -H 'content-type: application/json' \
       -H 'X-Auth-Token: '$token)"
     sleep 1
@@ -366,7 +366,7 @@ done
         logger -t "【huaweidns动态域名】" "添加子域名 $HOST 记录IP"
         IP=$hostIP
         eval 'RESULT="$(curl -L    -s -X POST \
-          https://dns.myhuaweicloud.com/v2.1/zones/'$Zone_ID'/recordsets \
+          https://dns.myhuaweicloud.com/v2/zones/'$Zone_ID'/recordsets \
           -H '"'"'content-type: application/json'"'"' \
           -H '"'"'X-Auth-Token: '$token''"'"' \
           -d '"'"'{
@@ -383,10 +383,12 @@ done
         # 更新记录IP
         IP=$hostIP
         eval 'RESULT="$(curl -L    -s -X PUT \
-          https://dns.myhuaweicloud.com/v2.1/zones/'$Zone_ID'/recordsets/'$Record_ID' \
+          https://dns.myhuaweicloud.com/v2/zones/'$Zone_ID'/recordsets/'$Record_ID' \
           -H '"'"'content-type: application/json'"'"' \
           -H '"'"'X-Auth-Token: '$token''"'"' \
           -d '"'"'{
+            "name": "'$HOST2'.'$DOMAIN'.",
+            "type": "'$domain_type'",
             "ttl": '$huaweidns_interval',
             "records": [
                 "'$IP'"

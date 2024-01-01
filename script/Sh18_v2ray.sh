@@ -1068,7 +1068,6 @@ mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["outbounds",0,"protocol"];"
 fi
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"listen"];"0.0.0.0")')
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["inbounds",0,"settings","ip"];"127.0.0.1")')
-#[ ! -z "$ss_s1_ip" ] && mk_vmess=$(echo $mk_vmess| jq --raw-output 'setpath(["routing","rules",4,"ip",0];"'$ss_s1_ip'")')
 mk_mode_x="`nvram get app_69`"
 if [ "$mk_mode_x" = "0" ] ; then
 logger -t "【v2ray】" "方案一chnroutes，国外IP走代理"
@@ -1116,7 +1115,7 @@ else
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",6]])')
 fi
 if [ "$mk_mode_b" = "0" ] ; then
-mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",5]])')
+mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["routing","rules",3]])')
 fi
 if [ "$mk_mode_dns" = "0" ] ; then
 mk_vmess=$(echo $mk_vmess| jq --raw-output 'delpaths([["inbounds",2]])')
@@ -1669,13 +1668,8 @@ echo '{
       },
       {
         "type": "field",
-        "ip": [
-          "8.8.8.8",
-          "8.8.4.4",
-          "208.67.222.222",
-          "208.67.220.220",
-          "1.1.1.1",
-          "1.0.0.1"
+        "inboundTag": [
+          "local_1088"
         ],
         "outboundTag": "outbound_1"
       },
@@ -1695,8 +1689,13 @@ echo '{
       },
       {
         "type": "field",
-        "inboundTag": [
-          "local_1088"
+        "ip": [
+          "8.8.8.8",
+          "8.8.4.4",
+          "208.67.222.222",
+          "208.67.220.220",
+          "1.1.1.1",
+          "1.0.0.1"
         ],
         "outboundTag": "outbound_1"
       },
