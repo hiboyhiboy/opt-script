@@ -143,6 +143,7 @@ fi
 for h_i in $(seq 1 2) ; do
 [[ "$(ddnsto -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ddnsto
 wgetcurl_file "$SVC_PATH" "$hiboyfile/ddnsto" "$hiboyfile2/ddnsto"
+wgetcurl_file "$SVC_PATH" "https://fw0.koolcenter.com/binary/ddnsto/linux/mipsel/ddnsto"
 done
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【ddnsto】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"

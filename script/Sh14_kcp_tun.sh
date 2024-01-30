@@ -273,13 +273,6 @@ export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt
 export LD_LIBRARY_PATH=/lib:/opt/lib
 # Kcptun 项目地址：https://github.com/xtaci/kcptun
 # 参数填写教程例子：https://github.com/xtaci/kcptun
-# Kcptun Server一键安装脚本:https://blog.kuoruan.com/110.html
-# kcptun服务端部署教程
-# https://blog.kuoruan.com/102.html
-# http://www.cmsky.com/kcptun/
-# kcptun服务端主程序下载：
-# 32位系统：wget https://opt.cn2qq.com/opt-file/server_linux_386 && chmod 755 server_linux_*
-# 64位系统：wget https://opt.cn2qq.com/opt-file/server_linux_amd64 && chmod 755 server_linux_*
 # 注意！！由于路由参数默认加上--nocomp，服务端也要加上--nocomp，在两端同时设定以关闭压缩。
 # 两端参数必须一致的有:
 # datashard
