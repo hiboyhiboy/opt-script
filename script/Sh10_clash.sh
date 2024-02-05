@@ -254,15 +254,12 @@ if [ ! -s "$SVC_PATH" ] ; then
 fi
 for h_i in $(seq 1 2) ; do
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
-if [ "$app_78" == "experimental" ] || [ "$app_78" == "experimental_1" ] ; then
-	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载支持Vless+XTLS的CDN核心 experimental 主程序: https://github.com/ClashDotNetFramework/experimental-clash" && [ "$app_78" != "experimental_1" ] && nvram set app_78="experimental_1" && app_78="experimental_1"
-	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash" "$hiboyfile2/clash"
-elif [ "$app_78" == "meta" ] || [ "$app_78" == "meta_1" ] ; then
-	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 Clash.Meta 主程序: https://github.com/Clash-Mini/Clash.Meta" && [ "$app_78" != "meta_1" ] && nvram set app_78="meta_1" && app_78="meta_1"
-	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash-meta" "$hiboyfile2/clash-meta"
-else
+if [ "$app_78" == "premium" ] || [ "$app_78" == "premium_1" ] ; then
 	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 premium (闭源版) 主程序: https://github.com/Dreamacro/clash/releases/tag/premium" && [ "$app_78" != "premium_1" ] && nvram set app_78="premium_1" && app_78="premium_1"
 	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash-premium" "$hiboyfile2/clash-premium"
+else
+	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 Clash.Meta 主程序: https://github.com/Clash-Mini/Clash.Meta" && [ "$app_78" != "meta_1" ] && nvram set app_78="meta_1" && app_78="meta_1"
+	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash-meta" "$hiboyfile2/clash-meta"
 fi
 done
 clash_v=$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $2;}')
@@ -1058,11 +1055,6 @@ if [ "$app_78" == "premium" ] ; then
 link_get="clash-premium"
 nvram set app_78="premium_1" ; app_78="premium_1"
 logger -t "【clash】" "更换 premium (闭源版) 主程序: https://github.com/Dreamacro/clash/releases/tag/premium"
-fi
-if [ "$app_78" == "experimental" ] ; then
-link_get="clash"
-nvram set app_78="experimental_1" ; app_78="experimental_1"
-logger -t "【clash】" "更换支持Vless+XTLS的CDN核心 experimental 主程序: https://github.com/ClashDotNetFramework/experimental-clash"
 fi
 if [ "$app_78" == "meta" ] ; then
 link_get="clash-meta"

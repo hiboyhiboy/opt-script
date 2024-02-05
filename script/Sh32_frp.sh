@@ -311,43 +311,43 @@ mkdir -p /tmp/frp
 #请自行修改 token 用于对客户端连接进行身份验证
 # IP查询： http://119.29.29.29/d?dn=github.com
 
-cat > "/tmp/frp/myfrpc.ini" <<-\EOF
+cat > "/tmp/frp/myfrpc.toml" <<-\EOF
 # ==========客户端配置：==========
-[common]
-server_addr = 远端frp服务器ip或域名
-server_port = 7000
-token = 12345
+serverAddr = "frps.com" # 远端frp服务器ip或域名
+serverPort = 7000
+auth.token = "12345"
+loginFailExit = false
+#log.to = "/dev/null"
+#log.level = "info"
+#log.maxDays = 3
 
-#log_file = /dev/null
-#log_level = info
-#log_max_days = 3
-
-[web]
-remote_port = 6000
-type = http
-local_ip = 192.168.123.1
-local_port = 80
-subdomain = test
-#host_header_rewrite = 实际你内网访问的域名，可以供公网的域名不一致，如果一致可以不写
+[[proxies]]
+name = "web"
+type = "http"
+localIP = "192.168.123.1"
+localPort = 80
+subdomain = "test"
+#hostHeaderRewrite = "test.frps.com" #实际你内网访问的域名，可以供公网的域名不一致，如果一致可以不写
 # ====================
 EOF
 
 #请手动配置【外部网络 (WAN) - 端口转发 (UPnP)】开启 WAN 外网端口
-cat > "/tmp/frp/myfrps.ini" <<-\EOF
+cat > "/tmp/frp/myfrps.toml" <<-\EOF
 # ==========服务端配置：==========
-[common]
-bind_port = 7000
-# dashboard_port = 7500
-# dashboard 用户名密码，默认都为 admin
-# dashboard_user = admin
-# dashboard_pwd = admin
-vhost_http_port = 88
-token = 12345
-subdomain_host = frps.com
-max_pool_count = 50
-#log_file = /dev/null
-#log_level = info
-#log_max_days = 3
+bindAddr = "0.0.0.0"
+bindPort = 7000
+auth.token = "12345"
+# webServer.addr = "127.0.0.1"
+# webServer.port = 7500
+# Dashboard 控制面板用户名密码，默认都为 admin
+# webServer.user = "admin"
+# webServer.password = "admin"
+vhostHTTPPort = 88
+subDomainHost = "frps.com"
+transport.maxPoolCount = 50
+#log.to = "/dev/null"
+#log.level = "info"
+#log.maxDays = 3
 # ====================
 EOF
 
@@ -357,11 +357,11 @@ frpc_enable=${frpc_enable:-"0"}
 frps_enable=`nvram get frps_enable`
 frps_enable=${frps_enable:-"0"}
 if [ "$frps_enable" = "1" ] ; then
-    frps -c /tmp/frp/myfrps.ini 2>&1 &
+    frps -c /tmp/frp/myfrps.toml 2>&1 &
 fi
 if [ "$frpc_enable" = "1" ] ; then
     [ "$frps_enable" = "1" ] && sleep 60
-    frpc -c /tmp/frp/myfrpc.ini 2>&1 &
+    frpc -c /tmp/frp/myfrpc.toml 2>&1 &
 fi
 
 EEE
