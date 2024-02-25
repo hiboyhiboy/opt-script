@@ -19,9 +19,9 @@ cloudflare_interval=`nvram get cloudflare_interval`
 
 if [ ! -z "$cloudflare_token" ] ; then
 account_key_1="Authorization: Bearer $cloudflare_token"
-account_key_2=""
+account_key_2="-s" # 预留位置，传入可用参数
 account_key_a1=" -H "
-account_key_a2=""
+account_key_a2="-s"
 fi
 if [ -z "$cloudflare_token" ] && [ ! -z "$cloudflare_Email" ] && [ ! -z "$cloudflare_Key" ] ; then
 account_key_1="X-Auth-Email: $cloudflare_Email"
