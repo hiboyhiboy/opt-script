@@ -364,8 +364,10 @@ if [ ! -z "$upanPath" ] ; then
 	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
 	mount -o bind "$upanPath" /tmp/AiDisk_opt
 	[ "$(cat  /proc/mounts | grep " /tmp/AiDisk_opt " | awk '{print $3}')" = "ext4" ] && ext4_check=1 || ext4_check=0
+	[ "$ext4_check" = "0" ] && [ "$(cat  /proc/mounts | grep " /tmp/AiDisk_opt " | awk '{print $3}')" = "ubifs" ] && ext4_check=1 || ext4_check=0
 	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
 	[ -z "$(ls -l /tmp/AiDisk_opt)" ] && rm -rf /tmp/AiDisk_opt
+	[ "$ext4_check" = "1" ] && [ -f "$upanPath/opt/o_p_t.img" ] && ext4_check=0
 	if [ "$(losetup -h 2>&1 | wc -l)" -gt 2 ] && [ "$ext4_check" = "0" ] ; then
 		# 不是ext4磁盘时用镜像生成opt
 		mkoptimg "$upanPath"
