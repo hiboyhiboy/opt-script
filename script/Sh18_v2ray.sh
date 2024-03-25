@@ -1312,6 +1312,7 @@ fi
 # grpc star
 if [ "$vless_link_type" = "grpc" ] ; then
 [ ! -z "$vless_link_serviceName" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["grpcSettings","serviceName"];"'$vless_link_serviceName'")')
+[ ! -z "$vless_link_authority" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["grpcSettings","authority"];"'$vless_link_authority'")')
 if [ "$vless_link_mode" == "mutil" ] ; then
 	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["grpcSettings","multiMode"];"true")')
 else
@@ -1319,6 +1320,13 @@ else
 fi
 fi
 # grpc end
+# HTTPUpgrade star
+if [ "$vless_link_type" = "httpupgrade" ] ; then
+[ -z "$vless_link_path" ] && vless_link_path="/"
+[ ! -z "$vless_link_path" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["httpupgradeSettings","path"];"'$vless_link_path'")')
+[ ! -z "$vless_link_host" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["httpupgradeSettings","host"];"'$vless_link_host'")')
+fi
+# HTTPUpgrade end
 vmess_streamSettings=$mk_vmess
 
 }
@@ -1396,7 +1404,12 @@ echo '{
     }
   },
   "grpcSettings": {
+    "authority": "",
     "serviceName": ""
+  },
+  "httpupgradeSettings": {
+    "path": "/",
+    "host": ""
   },
   "sockopt": {
     "mark": 255
@@ -1570,6 +1583,7 @@ echo '{
         "dsSettings": {},
         "quicSettings": {},
         "grpcSettings": {},
+        "httpupgradeSettings ": {},
         "sockopt": {
           "mark": 255
         }
