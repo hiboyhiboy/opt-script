@@ -227,7 +227,7 @@ fi
 fi
 logger -t "【hysteria】" "运行 $SVC_PATH"
 /etc/storage/app_34.sh
-su_cmd2="QUIC_GO_DISABLE_ECN=true $SVC_PATH -c /tmp/hysteria.json"
+su_cmd2="export QUIC_GO_DISABLE_ECN=true; $SVC_PATH -c /tmp/hysteria.json"
 eval "$su_cmd" '"cmd_name=hysteria && '"$su_cmd2"' $cmd_log"' &
 sleep 4
 [ ! -z "`pidof hysteria`" ] && logger -t "【hysteria】" "启动成功" && hysteria_restart o

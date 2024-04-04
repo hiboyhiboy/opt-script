@@ -348,7 +348,7 @@ chmod 644 /etc/ssl/certs -R
 chmod 777 /etc/ssl/certs
 $SVC_PATH -t -d /opt/app/clash/config >/dev/null
 if [ "$?" = 0 ];then
-su_cmd2="$SVC_PATH -d /opt/app/clash/config"
+su_cmd2="export QUIC_GO_DISABLE_ECN=true; $SVC_PATH -d /opt/app/clash/config"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
 sleep 5
 fi

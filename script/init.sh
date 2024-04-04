@@ -2,6 +2,8 @@
 #copyright by hiboy
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
+#export QUIC_GO_DISABLE_ECN=true;
+#export QUIC_GO_DISABLE_GSO=true;
 init_ver=2
 #set -x
 #hiboyfile="https://bitbucket.org/hiboyhiboy/opt-file/raw/master"
