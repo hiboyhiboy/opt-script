@@ -125,7 +125,6 @@ kill_ps "$scriptname"
 chinadns_ng_start () {
 check_webui_yes
 i_app_get_cmd_file -name="chinadns_ng" -cmd="chinadns_ng" -cpath="/opt/bin/chinadns_ng" -down1="$hiboyfile/chinadns_ng" -down2="$hiboyfile2/chinadns_ng"
-ln -sf /opt/bin/chinadns_ng /opt/bin/chinadns-ng
 if [ "$smartdns_enable" == "1" ] ; then
 i_app_get_cmd_file -name="chinadns_ng" -cmd="smartdns" -cpath="/opt/bin/smartdns" -down1="$hiboyfile/smartdns" -down2="$hiboyfile2/smartdns"
 logger -t "【chinadns_ng】" "运行 /opt/bin/smartdns"
@@ -164,7 +163,7 @@ killall pdnsd && killall -9 pdnsd 2>/dev/null
 killall chinadns && killall -9 chinadns 2>/dev/null
 logger -t "【chinadns_ng】" "运行 $SVC_PATH"
 cmd_name="chinadns_ng"
-eval "/opt/bin/chinadns_ng $usage $cmd_log" &
+eval "chinadns_ng $usage $cmd_log" &
 sleep 2
 if [ "$smartdns_enable" == "1" ] ; then
 
@@ -441,6 +440,7 @@ if [ "$1" = "update_asp" ] ; then
 fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/bin/dns2tcp /opt/opt_backup/bin/dns2tcp /opt/bin/smartdns /opt/opt_backup/bin/smartdns /opt/bin/chinadns_ng /opt/opt_backup/bin/chinadns_ng /opt/app/chinadns_ng/Advanced_Extensions_chinadns_ng.asp /opt/app/chinadns_ng/gfwlist.txt /opt/app/chinadns_ng/chnroute6.ipset /opt/app/chinadns_ng/chnroute.ipset
+	wgetcurl_file /opt/bin/chinadns_ng "$hiboyfile/chinadns_ng" "$hiboyfile2/chinadns_ng"
 fi
 # 加载程序配置页面
 mkdir -p /opt/app/chinadns_ng
