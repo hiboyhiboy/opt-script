@@ -20,7 +20,6 @@ wxsend_title=`nvram get app_130`
 tmall_enable=`nvram get app_55`
 [ -z $tmall_enable ] && tmall_enable=0 && nvram set app_55=0
 if [ "$wxsend_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep wxsend | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 wxsend_notify_1=`nvram get app_49`
 wxsend_notify_2=`nvram get app_50`
@@ -29,185 +28,22 @@ wxsend_notify_4=`nvram get app_52`
 wxsend_renum=`nvram get wxsend_renum`
 
 fi
-get_token () {
-touch /tmp/wx_access_token
-access_token="$(cat /tmp/wx_access_token)"
-http_type="$(curl -L -s "https://api.weixin.qq.com/cgi-bin/get_api_domain_ip?access_token=$access_token")"
-get_api_domain="$(echo $http_type | grep ip_list)"
-if [ ! -z "$get_api_domain" ] ; then
-echo "Access token 有效"
-else
-http_type="$(curl -L -s "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=$wxsend_appid&secret=$wxsend_appsecret")"
-access_token="$(echo $http_type | grep -o "\"access_token\":\"[^\,\"\}]*" | awk -F 'access_token":"' '{print $2}')"
-if [ ! -z "$access_token" ] ; then
-expires_in="$(echo $http_type | grep -o "\"expires_in\":[^\,\"\}]*" | awk -F 'expires_in":' '{print $2}')"
-logger -t "【wxsend推送】" "获取 Access token 成功，凭证有效时间，单位： $expires_in 秒"
-echo -n "$access_token" > /tmp/wx_access_token
-else
-errcode="$(echo $http_type | grep -o "\"errcode\":[^\,\"\}]*" | awk -F ':' '{print $2}')"
-if [ ! -z "$errcode" ] ; then
-errmsg="$(echo $http_type | grep -o "\"errmsg\":\"[^\,\"\}]*" | awk -F 'errmsg":"' '{print $2}')"
-logger -t "【wxsend推送】" "获取 Access token 返回错误码: $errcode"
-logger -t "【wxsend推送】" "错误信息: $errmsg"
-access_token=""
-echo -n "" > /tmp/wx_access_token
-fi
-fi
-fi
-}
 
-send_message () {
-get_token
-access_token="$(cat /tmp/wx_access_token)"
-if [ ! -z "$access_token" ] ; then
-new_time=$(date +%Y年%m月%d日\ %X)
-# 删除首个参数
-shift
-content1=${1:-"$new_time"}
-content2=${2:-"$new_time"}
-content3=${3:-"$new_time"}
-content4=${4:-"$new_time"}
-content5=${5:-"$new_time"}
-content6=${6:-"$new_time"}
-content7=${7:-"$new_time"}
-
-[ "$content7" == "$content6" ] && content7=""
-[ "$content6" == "$content5" ] && content6=""
-[ "$content5" == "$content4" ] && content5=""
-[ "$content4" == "$content3" ] && content4=""
-[ "$content3" == "$content2" ] && content3=""
-[ "$content2" == "$content1" ] && content2=""
-[ "$content1" == "" ] && content1="$new_time"
-
-# 空格分割消息：最多 7 段字符
-content_value="$(echo "$content1
-$content2
-$content3
-$content4
-$content5
-$content6
-$content7" | awk -F '|' 'BEGIN{h=0;}{ \
-for(i=1;i<=NF;++i) { \
-    ARGV[h]=$i; \
-    ++h;
-} \
-}END{ \
-  for(i=1;i<=7;++i) { \
-    if(i==1){ \
-      sum=sum "\"content\":{\"value\":\"" ARGV[i-1] "\"}";
-    }else{ \
-      sum=sum "\"content" i "\":{\"value\":\"" ARGV[i-1] "\"}";
-    } \
-    if(i<7){ \
-      sum=sum ",";
-    } \
-  } \
-  printf(sum); \
-}')"
-
-
-curl -L -s -H "Content-type: application/json;charset=UTF-8" -H "Accept: application/json" -H "Cache-Control: no-cache" -H "Pragma: no-cache" -X POST -d '{"touser":"'"$wxsend_touser"'","template_id":"'"$wxsend_template_id"'","data":{"title":{"value":"'" "'"},'"$content_value"'}}' "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=$access_token"
-
-else
-logger -t "【wxsend推送】" "获取 Access token 错误，请看看哪里问题？"
-fi
-}
-
-if [ ! -z "$PATH_INFO" ] && [ ! -z "$GATEWAY_INTERFACE" ] && [ -z "$1" ] ; then
-#source /etc/storage/script/init.sh
-logger -t "【wxsend推送】" "API PATH_INFO: $PATH_INFO"
-wxsend_title="$(echo -n "$PATH_INFO" | awk -F "/" '{print $3}')"
-wxsend_content="$(echo -n "$PATH_INFO" | awk -F "/" '{print $4}')"
-wxsend_content2="$(echo -n "$PATH_INFO" | awk -F "/" '{print $5}')"
-wxsend_content3="$(echo -n "$PATH_INFO" | awk -F "/" '{print $6}')"
-wxsend_content4="$(echo -n "$PATH_INFO" | awk -F "/" '{print $7}')"
-wxsend_content5="$(echo -n "$PATH_INFO" | awk -F "/" '{print $8}')"
-wxsend_content6="$(echo -n "$PATH_INFO" | awk -F "/" '{print $9}')"
-PATH_INFO=""
-GATEWAY_INTERFACE=""
-logger -t "【wxsend推送】" "API 消息标记: $wxsend_title"
-logger -t "【wxsend推送】" "API 消息内容: $wxsend_content""$wxsend_content2""$wxsend_content3""$wxsend_content4" "$wxsend_content5""$wxsend_content6"
-send_message " " "【""$wxsend_title""】" "$wxsend_content" "$wxsend_content2" "$wxsend_content3" "$wxsend_content4" "$wxsend_content5" "$wxsend_content6"
-exit 0
-fi
-
-wxsend_title="$wxsend_title"
-wxsend_content="$(nvram get app_131)"
-# 在线发送wxsend推送
-if [ ! -z "$wxsend_content" ] ; then
-if [ ! -z "$wxsend_appid" ] && [ ! -z "$wxsend_appsecret" ] && [ ! -z "$wxsend_touser" ] && [ ! -z "$wxsend_template_id" ] ; then
-	curltest=`which curl`
-	if [ -z "$curltest" ] ; then
-		/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
-	fi
-	curltest=`which curl`
-	if [ -z "$curltest" ] ; then
-		logger -t "【wxsend推送】" "未找到 curl 程序，停止 wxsend推送。需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
-		nvram set app_131=""
-	else
-		send_message "$wxsend_title" "【""$wxsend_title""】" "$wxsend_content"
-		logger -t "【wxsend推送】" "消息内容: $wxsend_content"
-		nvram set app_131=""
-	fi
-else
-logger -t "【wxsend推送】" "发送失败, 注意检[测试号信息]是否完填写整!!!"
-fi
-fi
-
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wx_send)" ]  && [ ! -s /tmp/script/_app22 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep wx_send)" ] && [ ! -s /tmp/script/_app22 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app22
 	chmod 777 /tmp/script/_app22
 fi
 
 wxsend_restart () {
-
-relock="/var/lock/wxsend_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set wxsend_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【wxsend】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	wxsend_renum=${wxsend_renum:-"0"}
-	wxsend_renum=`expr $wxsend_renum + 1`
-	nvram set wxsend_renum="$wxsend_renum"
-	if [ "$wxsend_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【wxsend】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get wxsend_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set wxsend_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set wxsend_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="wxsend"
 }
 
 wxsend_get_status () {
 
-A_restart=`nvram get wxsend_status`
 B_restart="$wxsend_enable$wxsend_port$tmall_enable$wxsend_appid$wxsend_appsecret$wxsend_touser$wxsend_template_id$wxsend_cgi$wxsend_notify_1$wxsend_notify_2$wxsend_notify_3$wxsend_notify_4$wxsend_title$(cat /etc/storage/app_30.sh | grep -v '^#' | grep -v '^$')$(cat /etc/storage/app_31.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set wxsend_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="wxsend" -valb="$B_restart"
 }
 
 wxsend_check () {
@@ -215,7 +51,7 @@ wxsend_check () {
 wxsend_get_status
 if [ "$wxsend_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ "$wxsend_port" != "0" ] && [ "$tmall_enable" == "0" ] && [ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "停止 caddy_tmall"
-	[ ! -z "$(ps -w | grep "app_30" | grep -v grep )" ] && logger -t "【wxsend推送】" "停止 wxsend" && wxsend_close
+	[ ! -z "$(ps -w | grep "app_30.sh" | grep -v grep )" ] && logger -t "【wxsend推送】" "停止 wxsend" && wxsend_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$wxsend_enable" = "1" ] ; then
@@ -224,37 +60,18 @@ if [ "$wxsend_enable" = "1" ] ; then
 		wxsend_start
 	else
 		[ "$wxsend_port" != "0" ] && [ "$tmall_enable" == "0" ] && [ -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && wxsend_restart
-		[ -z "$(ps -w | grep "app_30" | grep -v grep )" ] || [ ! -s "`which curl`" ] && wxsend_restart
+		[ -z "$(ps -w | grep "app_30.sh" | grep -v grep )" ] || [ ! -s "`which curl`" ] && wxsend_restart
 	fi
 fi
 }
 
 wxsend_keep () {
-logger -t "【wxsend推送】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【wxsend推送】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "/etc/storage/app_30.sh" /tmp/ps | grep -v grep |wc -l\` # 【wxsend推送】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/etc/storage/app_30.sh" ] || [ ! -s "`which curl`" ] ; then # 【wxsend推送】
-		logger -t "【wxsend推送】" "重新启动\$NUM" # 【wxsend推送】
-		nvram set wxsend_status=04 && eval "$scriptfilepath &" && sed -Ei '/【wxsend推送】|^$/d' /tmp/script/_opt_script_check # 【wxsend推送】
-	fi # 【wxsend推送】
-OSC
+i_app_keep -name="wxsend" -pidof="app_30.sh" -cpath="$(which curl)" &
 if [ "$wxsend_port" != "0" ] && [ "$tmall_enable" == "0" ] ; then
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof caddy_tmall\`" ] || [ ! -s "/opt/tmall/caddy_tmall" ] && nvram set wxsend_status=00 && logger -t "【wxsend推送】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【wxsend推送】|^$/d' /tmp/script/_opt_script_check # 【wxsend推送】
-OSC
-fi
-#return
+i_app_keep -name="wxsend" -pidof="caddy_tmall" -cpath="/opt/tmall/caddy_tmall" &
 fi
 sleep 60
 while true; do
-	[ ! -s "`which curl`" ] && { logger -t "【wxsend推送】" "重新启动"; wxsend_restart ; }
-	if [ -z "$(ps -w | grep "app_30" | grep -v grep )" ] ; then
-		logger -t "【wxsend推送】" "重新启动"
-		wxsend_restart
-	fi
-	
 sleep 3600
 killall app_30.sh
 killall -9 app_30.sh
@@ -291,8 +108,8 @@ fi
 logger -t "【wxsend推送】" "运行 /etc/storage/app_30.sh"
 /etc/storage/app_30.sh &
 sleep 3
-[ ! -z "$(ps -w | grep "app_30" | grep -v grep )" ] && logger -t "【wxsend推送】" "启动成功" && wxsend_restart o
-[ -z "$(ps -w | grep "app_30" | grep -v grep )" ] && logger -t "【wxsend推送】" "启动失败, 注意检app_30.sh脚本和curl是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && wxsend_restart x
+[ ! -z "$(ps -w | grep "app_30.sh" | grep -v grep )" ] && logger -t "【wxsend推送】" "启动成功" && wxsend_restart o
+[ -z "$(ps -w | grep "app_30.sh" | grep -v grep )" ] && logger -t "【wxsend推送】" "启动失败, 注意检app_30.sh脚本和curl是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && wxsend_restart x
 # caddy2
 if [ "$wxsend_port" != "0" ] ; then
 logger -t "【wxsend推送】" "部署 api 提供外部程序使用消息推送"
@@ -319,8 +136,7 @@ rm -f /opt/tmall/Caddyfile
 cat /etc/storage/app_31.sh >> /opt/tmall/Caddyfile
 eval "/opt/tmall/caddy_tmall run --config /opt/tmall/Caddyfile --adapter caddyfile $cmd_log" &
 sleep 3
-[ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "部署 api 启动成功" && wxsend_restart o
-[ -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【wxsend推送】" "部署 api 启动失败, 注意检caddy_tmall是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && wxsend_restart x
+i_app_keep -t -name="wxsend" -pidof="caddy_tmall" -cpath="/opt/tmall/caddy_tmall"
 else
 logger -t "【wxsend推送】" "由于已经启动 tmall ，自定义 Caddyfile cgi 配置待 tmall 脚本导入启动。"
 fi
@@ -328,15 +144,6 @@ fi
 wxsend_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
@@ -594,6 +401,131 @@ mount --bind /opt/app/wxsend/Advanced_Extensions_wxsend.asp /www/Advanced_Extens
 
 [ "$1" = "del" ] && /etc/storage/www_sh/自建微信推送 del &
 }
+
+get_token () {
+touch /tmp/wx_access_token
+access_token="$(cat /tmp/wx_access_token)"
+http_type="$(curl -L -s "https://api.weixin.qq.com/cgi-bin/get_api_domain_ip?access_token=$access_token")"
+get_api_domain="$(echo $http_type | grep ip_list)"
+if [ ! -z "$get_api_domain" ] ; then
+echo "Access token 有效"
+else
+http_type="$(curl -L -s "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=$wxsend_appid&secret=$wxsend_appsecret")"
+access_token="$(echo $http_type | grep -o "\"access_token\":\"[^\,\"\}]*" | awk -F 'access_token":"' '{print $2}')"
+if [ ! -z "$access_token" ] ; then
+expires_in="$(echo $http_type | grep -o "\"expires_in\":[^\,\"\}]*" | awk -F 'expires_in":' '{print $2}')"
+logger -t "【wxsend推送】" "获取 Access token 成功，凭证有效时间，单位： $expires_in 秒"
+echo -n "$access_token" > /tmp/wx_access_token
+else
+errcode="$(echo $http_type | grep -o "\"errcode\":[^\,\"\}]*" | awk -F ':' '{print $2}')"
+if [ ! -z "$errcode" ] ; then
+errmsg="$(echo $http_type | grep -o "\"errmsg\":\"[^\,\"\}]*" | awk -F 'errmsg":"' '{print $2}')"
+logger -t "【wxsend推送】" "获取 Access token 返回错误码: $errcode"
+logger -t "【wxsend推送】" "错误信息: $errmsg"
+access_token=""
+echo -n "" > /tmp/wx_access_token
+fi
+fi
+fi
+}
+
+send_message () {
+get_token
+access_token="$(cat /tmp/wx_access_token)"
+if [ ! -z "$access_token" ] ; then
+new_time=$(date +%Y年%m月%d日\ %X)
+# 删除首个参数
+shift
+content1=${1:-"$new_time"}
+content2=${2:-"$new_time"}
+content3=${3:-"$new_time"}
+content4=${4:-"$new_time"}
+content5=${5:-"$new_time"}
+content6=${6:-"$new_time"}
+content7=${7:-"$new_time"}
+
+[ "$content7" == "$content6" ] && content7=""
+[ "$content6" == "$content5" ] && content6=""
+[ "$content5" == "$content4" ] && content5=""
+[ "$content4" == "$content3" ] && content4=""
+[ "$content3" == "$content2" ] && content3=""
+[ "$content2" == "$content1" ] && content2=""
+[ "$content1" == "" ] && content1="$new_time"
+
+# 空格分割消息：最多 7 段字符
+content_value="$(echo "$content1
+$content2
+$content3
+$content4
+$content5
+$content6
+$content7" | awk -F '|' 'BEGIN{h=0;}{ \
+for(i=1;i<=NF;++i) { \
+    ARGV[h]=$i; \
+    ++h;
+} \
+}END{ \
+  for(i=1;i<=7;++i) { \
+    if(i==1){ \
+      sum=sum "\"content\":{\"value\":\"" ARGV[i-1] "\"}";
+    }else{ \
+      sum=sum "\"content" i "\":{\"value\":\"" ARGV[i-1] "\"}";
+    } \
+    if(i<7){ \
+      sum=sum ",";
+    } \
+  } \
+  printf(sum); \
+}')"
+
+
+curl -L -s -H "Content-type: application/json;charset=UTF-8" -H "Accept: application/json" -H "Cache-Control: no-cache" -H "Pragma: no-cache" -X POST -d '{"touser":"'"$wxsend_touser"'","template_id":"'"$wxsend_template_id"'","data":{"title":{"value":"'" "'"},'"$content_value"'}}' "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=$access_token"
+
+else
+logger -t "【wxsend推送】" "获取 Access token 错误，请看看哪里问题？"
+fi
+}
+
+if [ ! -z "$PATH_INFO" ] && [ ! -z "$GATEWAY_INTERFACE" ] && [ -z "$1" ] ; then
+#source /etc/storage/script/init.sh
+logger -t "【wxsend推送】" "API PATH_INFO: $PATH_INFO"
+wxsend_title="$(echo -n "$PATH_INFO" | awk -F "/" '{print $3}')"
+wxsend_content="$(echo -n "$PATH_INFO" | awk -F "/" '{print $4}')"
+wxsend_content2="$(echo -n "$PATH_INFO" | awk -F "/" '{print $5}')"
+wxsend_content3="$(echo -n "$PATH_INFO" | awk -F "/" '{print $6}')"
+wxsend_content4="$(echo -n "$PATH_INFO" | awk -F "/" '{print $7}')"
+wxsend_content5="$(echo -n "$PATH_INFO" | awk -F "/" '{print $8}')"
+wxsend_content6="$(echo -n "$PATH_INFO" | awk -F "/" '{print $9}')"
+PATH_INFO=""
+GATEWAY_INTERFACE=""
+logger -t "【wxsend推送】" "API 消息标记: $wxsend_title"
+logger -t "【wxsend推送】" "API 消息内容: $wxsend_content""$wxsend_content2""$wxsend_content3""$wxsend_content4" "$wxsend_content5""$wxsend_content6"
+send_message " " "【""$wxsend_title""】" "$wxsend_content" "$wxsend_content2" "$wxsend_content3" "$wxsend_content4" "$wxsend_content5" "$wxsend_content6"
+exit 0
+fi
+
+wxsend_title="$wxsend_title"
+wxsend_content="$(nvram get app_131)"
+# 在线发送wxsend推送
+if [ ! -z "$wxsend_content" ] ; then
+if [ ! -z "$wxsend_appid" ] && [ ! -z "$wxsend_appsecret" ] && [ ! -z "$wxsend_touser" ] && [ ! -z "$wxsend_template_id" ] ; then
+	curltest=`which curl`
+	if [ -z "$curltest" ] ; then
+		/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
+	fi
+	curltest=`which curl`
+	if [ -z "$curltest" ] ; then
+		logger -t "【wxsend推送】" "未找到 curl 程序，停止 wxsend推送。需要手动安装 opt 后输入[opkg update; opkg install curl]安装"
+		nvram set app_131=""
+	else
+		send_message "$wxsend_title" "【""$wxsend_title""】" "$wxsend_content"
+		logger -t "【wxsend推送】" "消息内容: $wxsend_content"
+		nvram set app_131=""
+	fi
+else
+logger -t "【wxsend推送】" "发送失败, 注意检[测试号信息]是否完填写整!!!"
+fi
+fi
 
 case $ACTION in
 send_message)

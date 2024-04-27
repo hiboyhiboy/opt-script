@@ -53,20 +53,19 @@ ss_tproxy_auser=`nvram get ss_tproxy_auser`
 	fi
 fi
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-#nvramshow=`nvram showall | grep '=' | grep clash | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 clash_input="$(nvram get app_93)"
 [ -z $clash_input ] && clash_input=0 && nvram set clash_input=0
 clash_mixed="$(nvram get app_101)"
 [ -z $clash_mixed ] && clash_mixed=0 && nvram set clash_mixed=0
-chinadns_enable=`nvram get app_1`
-[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_ng_enable=`nvram get app_102`
 [ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
-if [ "$chinadns_port" != "8053" ] ; then
-chinadns_enable=0
+if [ "$chinadns_port" != "8053" ] && [ "$chinadns_ng_enable" = "3" ] ; then
+chinadns_ng_enable=2
+fi
+if [ "$chinadns_ng_enable" = "1" ] ; then
 chinadns_ng_enable=0
 fi
 ss_ip46=`nvram get ss_ip46`
@@ -86,67 +85,29 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep clash)" ]  && [ ! -s /tmp/script/_app18 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep clash)" ] && [ ! -s /tmp/script/_app18 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app18
 	chmod 777 /tmp/script/_app18
 fi
 
 clash_restart () {
-
-relock="/var/lock/clash_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set clash_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【clash】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	clash_renum=${clash_renum:-"0"}
-	clash_renum=`expr $clash_renum + 1`
-	nvram set clash_renum="$clash_renum"
-	if [ "$clash_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【clash】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get clash_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set clash_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set clash_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="clash"
 }
 
 clash_get_status () {
 
-A_restart=`nvram get clash_status`
-B_restart="$clash_enable$chinadns_enable$chinadns_ng_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114$app_78$ss_ip46"
+B_restart="$clash_enable$chinadns_ng_enable$clash_http_enable$clash_socks_enable$clash_wget_yml$clash_follow$clash_ui$clash_input$clash_mixed$app_default_config$clash_secret$app_120$log_level$clash_mode_x$ss_udp_enable$app_114$app_78$ss_ip46"
 B_restart="$B_restart""$(cat /etc/storage/app_21.sh | grep -v '^#' | grep -v '^$')""$(cat /etc/storage/app_33.sh | grep -v '^#' | grep -v '^$')"
 if [ -z "$curltest" ] || [ "$app_120" == "2" ] ; then
 B_restart="$B_restart""$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v '^$')"
 fi
 [ "$(nvram get app_86)" = "wget_yml" ] && wget_yml
 [ "$(nvram get app_86)" = "clash_wget_geoip" ] && update_geoip
-if [ "$(nvram get app_86)" = "clash_save_yml" ] ; then
-#api热重载
-reload_api
-fi
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set clash_status=$B_restart
-	needed_restart=1
+
+i_app_get_status -name="clash" -valb="$B_restart"
+
+if [ "$needed_restart" = "1" ] ; then
 	if [ -z "$clash_wget_yml" ] ; then
 		cru.sh d clash_link_update
 		logger -t "【clash】" "停止 clash 服务器订阅"
@@ -158,22 +119,6 @@ if [ "$A_restart" != "$B_restart" ] ; then
 			cru.sh d clash_link_update
 		fi
 	fi
-else
-	needed_restart=0
-fi
-[ ! -z "$curltest" ] && [ "$app_120" != "2" ] && clash_get_2_status
-}
-
-clash_get_2_status () {
-D_restart=`nvram get clash_2_status`
-C_restart="$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v '^$')"
-C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_C_re
-if [ "$D_restart" != "$C_restart" ] ; then
-	nvram set clash_2_status=$C_restart
-	needed_2_restart=1
-else
-	needed_2_restart=0
 fi
 }
 
@@ -196,40 +141,27 @@ if [ "$clash_enable" = "1" ] ; then
 			echo clash_follow
 		fi
 	fi
-	if [ "$needed_2_restart" = "1" ] ; then
+	[ ! -z "$curltest" ] && [ "$app_120" != "2" ] && i_app_get_status "$@" -name="clash_2" -valb="$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v '^$')"
+	if [ "$needed_restart" = "1" ] || [ "$(nvram get app_86)" = "clash_save_yml" ] ; then
 		#api热重载
 		reload_api
 	fi
 fi
+
 }
 
 clash_keep () {
-logger -t "【clash】" "守护进程启动"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-if [ -s /tmp/script/_opt_script_check ]; then
-SVC_PATH="$(which clash)"
-sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof clash\`" ] || [ ! -s "$SVC_PATH" ] && nvram set clash_status=00 && logger -t "【clash】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check # 【clash】
-OSC
-#return
-fi
-clash_enable=`nvram get app_88`
-while [ "$clash_enable" = "1" ]; do
+i_app_keep -name="clash" -pidof="clash" &
+while true; do
 [ "$(grep "</textarea>"  /etc/storage/app_20.sh | wc -l)" != 0 ] && sed -Ei s@\<\/textarea\>@@g /etc/storage/app_20.sh
-	clash_follow=`nvram get app_92`
-	if [ "$clash_follow" = "1" ] ; then
-		ss_internet="$(nvram get ss_internet)"
-		[ "$ss_internet" != "1" ] && nvram set ss_internet="1"
-	fi
 sleep 68
-clash_enable=`nvram get app_88`
 done
 }
 
 clash_close () {
 kill_ps "$scriptname keep"
-nvram set ss_internet="0"
+[ "$(nvram get ss_internet)" != "0" ] && nvram set ss_internet="0"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
 killall clash
@@ -243,41 +175,25 @@ kill_ps "$scriptname"
 
 clash_start () {
 check_webui_yes
-ss_internet="$(nvram get ss_internet)"
-[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
 SVC_PATH="$(which clash)"
-[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/clash"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【clash】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-	initopt
-fi
-for h_i in $(seq 1 2) ; do
-[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
+[ "$(nvram get ss_internet)" != "2" ] && nvram set ss_internet="2"
 if [ "$app_78" == "premium" ] || [ "$app_78" == "premium_1" ] ; then
-	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 premium (闭源版) 主程序: https://github.com/Dreamacro/clash/releases/tag/premium" && [ "$app_78" != "premium_1" ] && nvram set app_78="premium_1" && app_78="premium_1"
-	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash-premium" "$hiboyfile2/clash-premium"
+	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 premium (闭源版) 主程序: https://github.com/Dreamacro/clash/releases/tag/premium"
+	[ "$app_78" != "premium_1" ] && nvram set app_78="premium_1" && app_78="premium_1"
+	i_app_get_cmd_file -name="clash" -cmd="clash" -cpath="/opt/bin/clash" -down1="$hiboyfile/clash-premium" -down2="$hiboyfile2/clash-premium"
 else
-	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 Clash.Meta 主程序: https://github.com/Clash-Mini/Clash.Meta" && [ "$app_78" != "meta_1" ] && nvram set app_78="meta_1" && app_78="meta_1"
-	wgetcurl_file "$SVC_PATH" "$hiboyfile/clash-meta" "$hiboyfile2/clash-meta"
+	[ ! -s "$SVC_PATH" ] && logger -t "【clash】" "下载 mihomo.Meta 主程序: https://github.com/MetaCubeX/mihomo"
+	[ "$app_78" != "meta_1" ] && nvram set app_78="meta_1" && app_78="meta_1"
+	i_app_get_cmd_file -name="clash" -cmd="clash" -cpath="/opt/bin/clash" -down1="$hiboyfile/clash-meta" -down2="$hiboyfile2/clash-meta"
 fi
-done
 clash_v=$($SVC_PATH -v | grep Clash | awk -F ' ' '{print $2;}')
 [ -z "$clash_v" ] && clash_v=$($SVC_PATH -v | grep Meta | awk -F ' ' '{print $2;}')
 [ -z "$clash_v" ] && clash_v=$($SVC_PATH -v)
 [ "$clash_v" == "Meta" ] && clash_v="$clash_v""_""$($SVC_PATH -v | grep Meta | awk -F ' ' '{print $3;}')"
 nvram set clash_v="$clash_v"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【clash】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【clash】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
-fi
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	yq_check
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 /opt/bin/yq ，需要手动安装 /opt/bin/yq"
-	logger -t "【clash】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
-fi
-fi
+clash_path="$SVC_PATH"
+i_app_get_cmd_file -name="clash" -cmd="yq" -cpath="/opt/bin/yq" -down1="$hiboyfile/yq" -down2="$hiboyfile2/yq"
+SVC_PATH="$clash_path"
 Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 size_tmpfs=`nvram get size_tmpfs`
 if [ "$size_tmpfs" = "0" ] && [[ "$Available_A" -lt 15 ]] ; then
@@ -348,13 +264,13 @@ chmod 644 /etc/ssl/certs -R
 chmod 777 /etc/ssl/certs
 $SVC_PATH -t -d /opt/app/clash/config >/dev/null
 if [ "$?" = 0 ];then
-su_cmd2="export QUIC_GO_DISABLE_ECN=true; $SVC_PATH -d /opt/app/clash/config"
+su_cmd2="$SVC_PATH -d /opt/app/clash/config"
 eval "$su_cmd" '"cmd_name=clash && '"$su_cmd2"' $cmd_log"' &
-sleep 5
+sleep 4
 fi
-[ ! -z "`pidof clash`" ] && logger -t "【clash】" "启动成功" && clash_restart o
-[ -z "`pidof clash`" ] && logger -t "【clash】" "启动失败, 注意检clash是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && clash_restart x
+i_app_keep -t -name="clash" -pidof="clash"
 clash_get_status
+i_app_get_status -name="clash_2" -valb="$(cat /etc/storage/app_20.sh | grep -v '^#' | grep -v '^$')"
 
 if [ "$clash_follow" = "1" ] ; then
 Sh99_ss_tproxy.sh auser_check "Sh10_clash.sh"
@@ -365,18 +281,13 @@ if [ "$app_114" = 0 ] ; then
 logger -t "【clash】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
 fi
 logger -t "【clash】" "完成 透明代理 转发规则设置"
-if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
-logger -t "【clash】" "已经启动 chinadns 防止域名污染"
-else
-logger -t "【clash】" "启动 clash DNS 防止域名污染【端口 ::1#8053】"
-fi
 restart_on_dhcpd
 logger -t "【clash】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
 logger -t "【clash】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
 logger -t "【clash】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
 # 透明代理
 fi
-nvram set ss_internet="1"
+[ "$(nvram get ss_internet)" != "1" ] && nvram set ss_internet="1"
 clash_get_clash_webs
 # 下载clash_webs
 if [ ! -f "/opt/app/clash/clash_webs/index.html" ] ; then
@@ -448,7 +359,9 @@ sstp_set proxy_udpport='7892'
 sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
-DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
+[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
@@ -517,27 +430,13 @@ ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【clash】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
 }
 
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
-}
-
-
 wget_yml () {
 [ "$(nvram get app_86)" = "wget_yml" ] && nvram set app_86=0
 clash_wget_yml="$(echo $clash_wget_yml)"
 [ -z "$clash_wget_yml" ] && logger -t "【clash】" "找不到 【订阅链接】，需要手动填写" && return
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	yq_check
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 /opt/bin/yq ，需要手动安装 /opt/bin/yq"
-	return
-fi
-fi
+clash_path="$SVC_PATH"
+i_app_get_cmd_file -name="clash" -cmd="yq" -cpath="/opt/bin/yq" -down1="$hiboyfile/yq" -down2="$hiboyfile2/yq"
+SVC_PATH="$clash_path"
 mkdir -p /tmp/clash
 logger -t "【clash】" "服务器订阅：开始更新"
 yml_tmp="/tmp/clash/app_20.sh"
@@ -546,7 +445,7 @@ if [ ! -z "$(echo "$clash_wget_yml" | grep '^/')" ] ; then
 [ -f "$clash_wget_yml" ] && cp -f "$clash_wget_yml" "$yml_tmp"
 [ ! -f "$clash_wget_yml" ] && logger -t "【clash】" "错误！！ $clash_wget_yml 文件不存在！"
 else
-if [ -z  "$(echo "$clash_wget_yml" | grep 'http:\/\/')""$(echo "$clash_wget_yml" | grep 'https:\/\/')" ]  ; then
+if [ -z "$(echo "$clash_wget_yml" | grep 'http:\/\/')""$(echo "$clash_wget_yml" | grep 'https:\/\/')" ] ; then
 	logger -t "【clash】" "$clash_wget_yml"
 	logger -t "【clash】" "错误！！clash 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
 	return
@@ -583,33 +482,6 @@ nvram set clash_status=wget_yml
 fi
 logger -t "【clash】" "服务器订阅：更新完成"
 logger -t "【clash】" "请按F5或刷新 web 页面刷新配置"
-}
-
-yq_check () {
-
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 yq，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	for h_i in $(seq 1 2) ; do
-	[[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
-	wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
-	done
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 yq，安装 opt 程序"
-	rm -f /opt/bin/yq
-	/etc/storage/script/Sh01_mountopt.sh start
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	#opkg update
-	#opkg install yq
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 yq，需要手动安装 opt 后输入[opkg update; opkg install yq]安装"
-	return 1
-fi
-fi
-fi
-fi
-fi
 }
 
 merge_dns_ip () {
@@ -722,7 +594,10 @@ dns:
       - '+.blogger.com'
       - '+.gmail.com'
       - '+.gvt1.com'
-
+experimental:
+  quic-go-disable-gso: true
+  quic-go-disable-ecn: true
+  dialer-ip4p-convert: false
 EEE
 	chmod 755 "$app_21"
 fi
@@ -838,7 +713,7 @@ logger -t "【clash】" "更新下载 GeoIP2国家数据库 数据库文件"
 mkdir -p /opt/app/clash/config
 rm -f /opt/app/clash/config/Country_mmdb
 if [ ! -f /opt/app/clash/config/Country_mmdb ] ; then
-wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://gcore.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country.mmdb" "$hiboyfile/Country.mmdb" N
+wgetcurl_checkmd5 /opt/app/clash/config/Country.mmdb "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb" "$hiboyfile/Country.mmdb" N
 [ -s /opt/app/clash/config/Country.mmdb ] && touch /opt/app/clash/config/Country_mmdb
 fi
 reload_api
@@ -900,7 +775,7 @@ yq w -i $config_dns_yml dns.ipv6 false
 else
 yq w -i $config_dns_yml dns.ipv6 true
 fi
-if [ "$chinadns_enable" != "0" ] || [ "$clash_follow" == 0 ] ; then
+if [ "$chinadns_ng_enable" = "3" ] || [ "$clash_follow" == 0 ] ; then
 logger -t "【clash】" "变更 clash dns 端口 listen 0.0.0.0:8054 自动开启第三方 DNS 程序"
 yq w -i $config_dns_yml dns.listen 0.0.0.0:8054
 rm_temp
@@ -1036,13 +911,13 @@ mkdir -p /etc/storage/clash
 secret="$(yq r /opt/app/clash/config/config.yaml secret)"
 rm_temp
 [ -z "$secret" ] && secret="$clash_secret"
-api_port="$(yq r /opt/app/clash/config/config.yaml external-controller | awk -F ':' '{print $2}')"
+api_port="$(yq r /opt/app/clash/config/config.yaml external-controller)"
 rm_temp
-[ -z "$api_port" ] && api_port="$(echo $clash_ui | awk -F':' '{print $2}')"
+[ -z "$api_port" ] && api_port="$clash_ui"
 fi
 if [ "$1" == "reload" ] ; then
 logger -t "【clash】" "api热重载配置"
-curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config/config.yaml"}' 'http://127.0.0.1:'"$api_port"'/configs?force=true'
+curl -X PUT -w "%{http_code}" -H "Authorization: Bearer $secret" -H "Content-Type: application/json" -d '{"path": "/opt/app/clash/config/config.yaml"}' 'http://'"$api_port"'/configs?force=true'
 logger -t "【clash】" "api热重载配置，完成！"
 fi
 
@@ -1059,7 +934,7 @@ fi
 if [ "$app_78" == "meta" ] ; then
 link_get="clash-meta"
 nvram set app_78="meta_1" ; app_78="meta_1"
-logger -t "【clash】" "更换 Clash.Meta 主程序: https://github.com/Clash-Mini/Clash.Meta"
+logger -t "【clash】" "更换 mihomo.Meta 主程序: https://github.com/MetaCubeX/mihomo"
 fi
 if [ ! -z "$link_get" ] ; then
 SVC_PATH="$(which clash)"
@@ -1069,7 +944,7 @@ wgetcurl_file "$SVC_PATH""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_g
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 killall clash
 killall -9 clash
-rm -rf "$SVC_PATH" /opt/opt_backup/bin/clash
+rm -rf "$SVC_PATH"
 mv -f "$SVC_PATH""_file" "$SVC_PATH"
 fi
 }

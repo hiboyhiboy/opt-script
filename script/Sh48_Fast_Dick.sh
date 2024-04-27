@@ -4,7 +4,6 @@ source /etc/storage/script/init.sh
 FastDick_enable=`nvram get FastDick_enable`
 [ -z $FastDick_enable ] && FastDick_enable=0 && nvram set FastDick_enable=0
 if [ "$FastDick_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep FastDick | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 FastDick_uid=`nvram get FastDick_uid`
 FastDick_pwd=`nvram get FastDick_pwd`
@@ -20,60 +19,21 @@ if [ "$cmd_log_enable" = "1" ] || [ "$FastDicks_renum" -gt "0" ] ; then
 fi
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ]  && [ ! -s /tmp/script/_Fast_Dick ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ] && [ ! -s /tmp/script/_Fast_Dick ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_Fast_Dick
 	chmod 777 /tmp/script/_Fast_Dick
 fi
 
 FastDicks_restart () {
-
-relock="/var/lock/FastDicks_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set FastDicks_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【FastDicks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	FastDicks_renum=${FastDicks_renum:-"0"}
-	FastDicks_renum=`expr $FastDicks_renum + 1`
-	nvram set FastDicks_renum="$FastDicks_renum"
-	if [ "$FastDicks_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【FastDicks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get FastDicks_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set FastDicks_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set FastDicks_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="FastDicks"
 }
 
 FastDick_get_status () {
 
-A_restart=`nvram get FastDicks_status`
 B_restart="$FastDick_uid$FastDick_pwd$FastDick_enable$FastDicks"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set FastDicks_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="FastDicks" -valb="$B_restart"
 }
 
 FastDick_check () {
@@ -239,15 +199,6 @@ fi
 }
 
 initconfig
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
-}
 
 case $ACTION in
 start)

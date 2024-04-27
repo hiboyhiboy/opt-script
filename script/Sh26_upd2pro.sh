@@ -9,7 +9,6 @@ upd2pro2_enable=`nvram get app_9`
 upd2pro3_enable=`nvram get app_18`
 [ -z $upd2pro3_enable ] && upd2pro3_enable=0 && nvram set app_18=0
 if [ "$upd2pro_enable" != "0" ] || [ "$upd2pro2_enable" != "0" ] || [ "$upd2pro3_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep upd2pro | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 upd2pro_enable=`nvram get app_8`
 [ -z $upd2pro_enable ] && upd2pro_enable=0 && nvram set app_8=0
 upd2pro2_enable=`nvram get app_9`
@@ -36,54 +35,14 @@ if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep upd2pro)" ] &&
 fi
 
 upd2pro_restart () {
-
-relock="/var/lock/upd2pro_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set upd2pro_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【upd2pro】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	upd2pro_renum=${upd2pro_renum:-"0"}
-	upd2pro_renum=`expr $upd2pro_renum + 1`
-	nvram set upd2pro_renum="$upd2pro_renum"
-	if [ "$upd2pro_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【upd2pro】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get upd2pro_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set upd2pro_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set upd2pro_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="upd2pro"
 }
 
 upd2pro_get_status () {
 
-#lan_ipaddr=`nvram get lan_ipaddr`
-A_restart=`nvram get upd2pro_status`
 B_restart="$upd2pro_enable$upd2pro2_enable$upd2pro3_enable$upd2pro_path$upd2pro2_path$upd2pro3_path$(cat /etc/storage/app_3.sh /etc/storage/app_4.sh /etc/storage/app_6.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set upd2pro_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="upd2pro" -valb="$B_restart"
 }
 
 upd2pro_check () {
@@ -108,72 +67,15 @@ fi
 }
 
 upd2pro_keep () {
-logger -t "【upd2pro】" "守护进程启动"
-if [ "$upd2pro_enable" = "1" ] && [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "/opt/bin/udp2raw" /tmp/ps | grep -v grep |wc -l\` # 【upd2pro】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/udp2raw" ] ; then # 【upd2pro】
-		logger -t "【upd2pro】" "重新启动 udp2raw \$NUM" # 【upd2pro】
-		nvram set upd2pro_status=00 && eval "$scriptfilepath &" && sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check # 【upd2pro】
-	fi # 【upd2pro】
-OSC
-#return
-fi
-if [ "$upd2pro2_enable" = "1" ] && [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "/opt/bin/speeder" /tmp/ps | grep -v grep |wc -l\` # 【upd2pro】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/speeder" ] ; then # 【upd2pro】
-		logger -t "【upd2pro】" "重新启动 speeder \$NUM" # 【upd2pro】
-		nvram set upd2pro_status=00 && eval "$scriptfilepath &" && sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check # 【upd2pro】
-	fi # 【upd2pro】
-OSC
-#return
-fi
-if [ "$upd2pro3_enable" = "1" ] && [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "/opt/bin/speederv2" /tmp/ps | grep -v grep |wc -l\` # 【upd2pro】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/speederv2" ] ; then # 【upd2pro】
-		logger -t "【upd2pro】" "重新启动 speederv2 \$NUM" # 【upd2pro】
-		nvram set upd2pro_status=00 && eval "$scriptfilepath &" && sed -Ei '/【upd2pro】|^$/d' /tmp/script/_opt_script_check # 【upd2pro】
-	fi # 【upd2pro】
-OSC
-#return
-fi
-
-
-upd2pro_enable=`nvram get app_8` #upd2pro_enable
-upd2pro2_enable=`nvram get app_9` #upd2pro2_enable
-upd2pro3_enable=`nvram get app_18` #upd2pro3_enable
-while [ "$upd2pro_enable" = "1" ] || [ "$upd2pro2_enable" = "1" ] || [ "$upd2pro3_enable" = "1" ]; do
 if [ "$upd2pro_enable" = "1" ] ; then
-	NUM=`ps -w | grep "/opt/bin/udp2raw" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ ! -s "/opt/bin/udp2raw" ] ; then
-		logger -t "【upd2pro】" "重新启动 udp2raw $NUM"
-		upd2pro_restart
-	fi
+i_app_keep -name="upd2pro" -pidof="udp2raw" &
 fi
 if [ "$upd2pro2_enable" = "1" ] ; then
-	NUM=`ps -w | grep "/opt/bin/speeder" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ ! -s "/opt/bin/speeder" ] ; then
-		logger -t "【upd2pro】" "重新启动 speeder $NUM"
-		upd2pro_restart
-	fi
+i_app_keep -name="upd2pro" -pidof="speeder" &
 fi
 if [ "$upd2pro3_enable" = "1" ] ; then
-	NUM=`ps -w | grep "/opt/bin/speederv2" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ ! -s "/opt/bin/speederv2" ] ; then
-		logger -t "【upd2pro】" "重新启动 speederv2 $NUM"
-		upd2pro_restart
-	fi
+i_app_keep -name="upd2pro" -pidof="speederv2" &
 fi
-sleep 69
-upd2pro_enable=`nvram get app_8` #upd2pro_enable
-upd2pro2_enable=`nvram get app_9` #upd2pro_enable
-upd2pro3_enable=`nvram get app_18` #upd2pro3_enable
-done
 }
 
 upd2pro_close () {
@@ -190,45 +92,15 @@ kill_ps "$scriptname"
 upd2pro_start () {
 
 check_webui_yes
-optupd2pro="0"
-[ "$upd2pro_enable" = "1" ] && { hash udp2raw 2>/dev/null || optupd2pro="1" ; }
-[ "$upd2pro2_enable" = "1" ] && { hash speeder 2>/dev/null || optupd2pro="2" ; }
-[ "$upd2pro3_enable" = "1" ] && { hash speederv2 2>/dev/null || optupd2pro="3" ; }
-if [ "$optupd2pro" != "0" ] ; then
-	# 找不到 udp2raw 、speeder 或 speederv2，安装opt
-	logger -t "【upd2pro】" "找不到 udp2raw 、speeder 或 speederv2，挂载opt"
-	/etc/storage/script/Sh01_mountopt.sh start
-	initopt
-fi
-optupd2pro="0"
 if [ "$upd2pro_enable" = "1" ] ; then
-chmod 777 "/opt/bin/udp2raw"
-[[ "$(udp2raw -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/udp2raw
-hash udp2raw 2>/dev/null || optupd2pro="1"
-if [ "$optupd2pro" = "1" ] ; then
-	[ ! -s /opt/bin/udp2raw ] && wgetcurl_file "/opt/bin/udp2raw" "$hiboyfile/udp2raw" "$hiboyfile2/udp2raw"
-hash udp2raw 2>/dev/null || { logger -t "【upd2pro】" "找不到 udp2raw, 请检查系统"; upd2pro_restart x ; }
-fi
+	i_app_get_cmd_file -name="upd2pro" -cmd="udp2raw" -cpath="/opt/bin/udp2raw" -down1="$hiboyfile/udp2raw" -down2="$hiboyfile2/udp2raw"
 fi
 optupd2pro="0"
 if [ "$upd2pro2_enable" = "1" ] ; then
-chmod 777 "/opt/bin/speeder"
-[[ "$(speeder -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/speeder
-hash speeder 2>/dev/null || optupd2pro="2"
-if [ "$optupd2pro" = "2" ] ; then
-	[ ! -s /opt/bin/speeder ] && wgetcurl_file "/opt/bin/speeder" "$hiboyfile/speeder" "$hiboyfile2/speeder"
-hash speeder 2>/dev/null || { logger -t "【upd2pro】" "找不到 speeder, 请检查系统"; upd2pro_restart x ; }
+	i_app_get_cmd_file -name="upd2pro" -cmd="speeder" -cpath="/opt/bin/speeder" -down1="$hiboyfile/speeder" -down2="$hiboyfile2/speeder"
 fi
-fi
-optupd2pro="0"
 if [ "$upd2pro3_enable" = "1" ] ; then
-chmod 777 "/opt/bin/speederv2"
-[[ "$(speederv2 -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/speederv2
-hash speederv2 2>/dev/null || optupd2pro="3"
-if [ "$optupd2pro" = "3" ] ; then
-	[ ! -s /opt/bin/speederv2 ] && wgetcurl_file "/opt/bin/speederv2" "$hiboyfile/speederv2" "$hiboyfile2/speederv2"
-hash speederv2 2>/dev/null || { logger -t "【upd2pro】" "找不到 speederv2, 请检查系统"; upd2pro_restart x ; }
-fi
+	i_app_get_cmd_file -name="upd2pro" -cmd="speederv2" -cpath="/opt/bin/speederv2" -down1="$hiboyfile/speederv2" -down2="$hiboyfile2/speederv2"
 fi
 
 update_app
@@ -240,8 +112,7 @@ logger -t "【upd2pro】" "运行 $upd2pro_path"
 cmd_name="udp2raw"
 eval "$upd2pro_path $cmd_log" &
 sleep 4
-[ ! -z "$(ps -w | grep "/opt/bin/udp2raw" | grep -v grep )" ] && logger -t "【upd2pro】" "启动成功 udp2raw $upd2pro_v " && upd2pro_restart o
-[ -z "$(ps -w | grep "/opt/bin/udp2raw" | grep -v grep )" ] && logger -t "【upd2pro】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && upd2pro_restart x
+i_app_keep -t -name="upd2pro" -pidof="udp2raw"
 fi
 
 if [ "$upd2pro2_enable" = "1" ] ; then
@@ -251,8 +122,7 @@ logger -t "【upd2pro】" "运行 $upd2pro2_path"
 cmd_name="speeder"
 eval "$upd2pro2_path $cmd_log" &
 sleep 4
-[ ! -z "$(ps -w | grep "/opt/bin/speeder" | grep -v grep )" ] && logger -t "【upd2pro】" "启动成功 speeder $upd2pro2_v " && upd2pro_restart o
-[ -z "$(ps -w | grep "/opt/bin/speeder" | grep -v grep )" ] && logger -t "【upd2pro】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && upd2pro_restart x
+i_app_keep -t -name="upd2pro" -pidof="speeder"
 fi
 
 if [ "$upd2pro3_enable" = "1" ] ; then
@@ -262,21 +132,11 @@ logger -t "【upd2pro】" "运行 $upd2pro3_path"
 cmd_name="speederv2"
 eval "$upd2pro3_path $cmd_log" &
 sleep 4
-[ ! -z "$(ps -w | grep "/opt/bin/speederv2" | grep -v grep )" ] && logger -t "【upd2pro】" "启动成功 speederv2 $upd2pro3_v " && upd2pro_restart o
-[ -z "$(ps -w | grep "/opt/bin/speederv2" | grep -v grep )" ] && logger -t "【upd2pro】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && upd2pro_restart x
+i_app_keep -t -name="upd2pro" -pidof="speederv2"
 fi
 upd2pro_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

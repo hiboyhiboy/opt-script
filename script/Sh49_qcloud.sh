@@ -4,7 +4,6 @@ source /etc/storage/script/init.sh
 qcloud_enable=`nvram get qcloud_enable`
 [ -z $qcloud_enable ] && qcloud_enable=0 && nvram set qcloud_enable=0
 if [ "$qcloud_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep qcloud | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 qcloud_interval=`nvram get qcloud_interval`
 qcloud_ak=`nvram get qcloud_ak`
@@ -43,60 +42,21 @@ qcloud_renum=`nvram get qcloud_renum`
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep qcloud)" ]  && [ ! -s /tmp/script/_qcloud ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep qcloud)" ] && [ ! -s /tmp/script/_qcloud ] ; then
     mkdir -p /tmp/script
     { echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_qcloud
     chmod 777 /tmp/script/_qcloud
 fi
 
 qcloud_restart () {
-
-relock="/var/lock/qcloud_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set qcloud_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【qcloud】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	qcloud_renum=${qcloud_renum:-"0"}
-	qcloud_renum=`expr $qcloud_renum + 1`
-	nvram set qcloud_renum="$qcloud_renum"
-	if [ "$qcloud_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【qcloud】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get qcloud_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set qcloud_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set qcloud_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="qcloud"
 }
 
 qcloud_get_status () {
 
-A_restart=`nvram get qcloud_status`
 B_restart="$qcloud_enable$qcloud_interval$qcloud_ak$qcloud_sk$qcloud_domain$qcloud_name$qcloud_domain2$qcloud_name2$qcloud_domain6$qcloud_name6$qcloud_ttl$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set qcloud_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="qcloud" -valb="$B_restart"
 }
 
 qcloud_check () {
@@ -119,17 +79,11 @@ fi
 
 qcloud_keep () {
 qcloud_start
-logger -t "【qcloud动态域名】" "守护进程启动"
+i_app_keep -name="qcloud" -pidof="Sh49_qcloud.sh" -cpath="$(which curl)" &
 while true; do
 sleep 43
 sleep $qcloud_interval
-[ ! -s "`which curl`" ] && qcloud_restart
-#nvramshow=`nvram showall | grep '=' | grep qcloud | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-qcloud_enable=`nvram get qcloud_enable`
-[ "$qcloud_enable" = "0" ] && qcloud_close && exit 0;
-if [ "$qcloud_enable" = "1" ] ; then
-	qcloud_start
-fi
+qcloud_start
 done
 }
 
@@ -273,7 +227,7 @@ add_record() {
 arDdnsInfo() {
 name1=$name
 
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 		domain_type="AAAA"
 	else
 		domain_type="A"
@@ -282,7 +236,7 @@ name1=$name
 	# 获得最后更新IP
 	recordIP=`query_recordid | get_recordIP`
 	
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 	echo $recordIP
 	return 0
 	else
@@ -306,7 +260,7 @@ name1=$name
 # 参数: 主域名 子域名
 arDdnsUpdate() {
 name1="$name"
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 		domain_type="AAAA"
 	else
 		domain_type="A"
@@ -378,7 +332,7 @@ arDdnsCheck() {
 	echo "Updating Domain: $name.$domain"
 	echo "hostIP: $hostIP"
 	lastIP=$(arDdnsInfo)
-	if [ $? -eq 1 ]; then
+	if [ $? -eq 1 ] ; then
 		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$name.$domain")
 		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$name.$domain")
 	fi
@@ -390,7 +344,7 @@ arDdnsCheck() {
 		qcloud_record_id=""
 		sleep 1
 		postRS=$(arDdnsUpdate)
-		if [ $? -eq 0 ]; then
+		if [ $? -eq 0 ] ; then
 			echo "postRS: $postRS"
 			logger -t "【qcloud动态域名】" "更新动态DNS记录成功！"
 			return 0
@@ -408,15 +362,6 @@ arDdnsCheck() {
 	echo $lastIP
 	echo "Last IP is the same as current IP!"
 	return 1
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

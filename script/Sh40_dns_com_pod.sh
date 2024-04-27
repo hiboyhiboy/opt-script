@@ -4,7 +4,6 @@ source /etc/storage/script/init.sh
 dns_com_pod_enable=`nvram get dns_com_pod_enable`
 [ -z $dns_com_pod_enable ] && dns_com_pod_enable=0 && nvram set dns_com_pod_enable=0
 if [ "$dns_com_pod_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep dns_com_pod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 dns_com_pod_username=`nvram get dns_com_pod_username`
 dns_com_pod_password=`nvram get dns_com_pod_password`
@@ -38,7 +37,7 @@ myIP=""
 [ -z $dns_com_pod_interval ] && dns_com_pod_interval=600 && nvram set dns_com_pod_interval=$dns_com_pod_interval
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep dns_com_pod)" ]  && [ ! -s /tmp/script/_dns_com_pod ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep dns_com_pod)" ] && [ ! -s /tmp/script/_dns_com_pod ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_dns_com_pod
 	chmod 777 /tmp/script/_dns_com_pod
@@ -46,27 +45,18 @@ fi
 
 dns_com_pod_get_status () {
 
-A_restart=`nvram get dns_com_pod_status`
 B_restart="$dns_com_pod_enable$dns_com_pod_username$dns_com_pod_password$dns_com_pod_user_token$dns_com_pod_domian$dns_com_pod_host$dns_com_pod_domian2$dns_com_pod_host2$dns_com_pod_domian6$dns_com_pod_host6$dns_com_pod_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set dns_com_pod_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="dns_com_pod" -valb="$B_restart"
 }
 
-dns_com_pod_get_status2 () {
+dns_com_pod_get_token () {
 
 [ "x$dns_com_pod_username" = "x" ] && [ "x$dns_com_pod_password" = "x" ] && return 0
-A_restart=`nvram get dns_com_pod_status2`
 B_restart="$dns_com_pod_username$dns_com_pod_password"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set dns_com_pod_status2=$B_restart
+
+i_app_get_status -name="dns_com_pod_2" -valb="$B_restart"
+if [ "$needed_restart" = "1" ] ; then
 	dns_com_pod_user_token=""
 fi
 if [ "x$dns_com_pod_user_token" = "x" ] ; then # undefine token
@@ -84,8 +74,8 @@ fi
 
 dns_com_pod_check () {
 
+dns_com_pod_get_token
 dns_com_pod_get_status
-dns_com_pod_get_status2
 if [ "$dns_com_pod_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	[ ! -z "$(ps -w | grep "$scriptname keep" | grep -v grep )" ] && logger -t "【dns_com_pod动态域名】" "停止 dns_com_pod" && dns_com_pod_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
@@ -105,14 +95,10 @@ fi
 
 dns_com_pod_keep () {
 dns_com_pod_start
-logger -t "【dns_com_pod动态域名】" "守护进程启动"
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof Sh40_dns_com_pod.sh\`" ] && nvram set dns_com_pod_status=00 && logger -t "【dns_com_pod】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【dns_com_pod】|^$/d' /tmp/script/_opt_script_check # 【dns_com_pod】
-OSC
+i_app_keep -name="dns_com_pod" -pidof="Sh40_dns_com_pod.sh" &
 while true; do
 sleep 41
 sleep $dns_com_pod_interval
-#nvramshow=`nvram showall | grep '=' | grep dns_com_pod | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 dns_com_pod_enable=`nvram get dns_com_pod_enable`
 [ "$dns_com_pod_enable" = "0" ] && dns_com_pod_close && exit 0;
 if [ "$dns_com_pod_enable" = "1" ] ; then
@@ -192,7 +178,7 @@ done < /tmp/ip6_ddns_inf
 
 arDdnsInfo() {
 	#local domainID recordID recordIP
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 		domain_type="AAAA"
 		post_type="Record.Modify"
 	else
@@ -212,7 +198,7 @@ arDdnsInfo() {
 	recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"' |head -n1)
 
 	# Output IP
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 	echo $recordIP
 	return 0
 	else
@@ -255,7 +241,7 @@ arDdnsUpdate() {
 	#local domainID recordID recordRS recordCD recordIP
 I=3
 recordID=""
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 		domain_type="AAAA"
 		post_type="Record.Modify"
 	else
@@ -297,7 +283,7 @@ done
 		recordIP=$(arApiPost "Record.Info" "domain_id=$domainID&record_id=$recordID")
 		recordIP=$(echo $recordIP | grep -Eo '"value":"[^"]*"' | awk -F ':"' '{print $2}' | tr -d '"' |head -n1)
 	fi
-	if [ "$recordIP" = "$myIP" ]; then
+	if [ "$recordIP" = "$myIP" ] ; then
 		if [ "$recordCD" = "1" ] ; then
 			echo $recordIP
 			logger -t "【dns_com_pod动态域名】" "`echo $recordRS | grep -Eo '"message":"[^"]*"' | cut -d':' -f2 | tr -d '"'`"
@@ -348,7 +334,7 @@ arDdnsCheck() {
 	echo "Updating Domain: $HOST.$DOMAIN"
 	echo "hostIP: $hostIP"
 	lastIP=$(arDdnsInfo "$DOMAIN" "$HOST")
-	if [ $? -eq 1 ]; then
+	if [ $? -eq 1 ] ; then
 		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$HOST.$DOMAIN")
 		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$HOST.$DOMAIN")
 	fi
@@ -362,7 +348,7 @@ arDdnsCheck() {
 		recordIP=""
 		sleep 1
 		postRS=$(arDdnsUpdate "$DOMAIN" "$HOST")
-		if [ $? -eq 0 ]; then
+		if [ $? -eq 0 ] ; then
 			echo "postRS: $postRS"
 			logger -t "【dns_com_pod动态域名】" "更新动态DNS记录成功！提交的IP: $postRS"
 			return 0

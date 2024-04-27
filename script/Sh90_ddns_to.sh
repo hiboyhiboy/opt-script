@@ -5,7 +5,6 @@ ddnsto_enable=`nvram get app_64`
 [ -z $ddnsto_enable ] && ddnsto_enable=0 && nvram set app_64=0
 ddnsto_token=`nvram get app_65`
 if [ "$ddnsto_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep ddnsto | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 ddnsto_renum=`nvram get ddnsto_renum`
 ddnsto_renum=${ddnsto_renum:-"0"}
@@ -21,60 +20,21 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ddns_to)" ]  && [ ! -s /tmp/script/_app16 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ddns_to)" ] && [ ! -s /tmp/script/_app16 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app16
 	chmod 777 /tmp/script/_app16
 fi
 
 ddnsto_restart () {
-
-relock="/var/lock/ddnsto_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set ddnsto_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【ddnsto】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	ddnsto_renum=${ddnsto_renum:-"0"}
-	ddnsto_renum=`expr $ddnsto_renum + 1`
-	nvram set ddnsto_renum="$ddnsto_renum"
-	if [ "$ddnsto_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【ddnsto】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get ddnsto_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set ddnsto_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set ddnsto_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="ddnsto"
 }
 
 ddnsto_get_status () {
 
-A_restart=`nvram get ddnsto_status`
 B_restart="$ddnsto_enable$ddnsto_token"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set ddnsto_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="ddnsto" -valb="$B_restart"
 }
 
 ddnsto_check () {
@@ -95,26 +55,7 @@ fi
 }
 
 ddnsto_keep () {
-logger -t "【ddnsto】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【ddnsto】|^$/d' /tmp/script/_opt_script_check
-if [ "$ddnsto_enable" = "1" ] ; then
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof ddnsto\`" ] || [ ! -s "/opt/bin/ddnsto" ] && nvram set ddnsto_status=00 && logger -t "【ddnsto】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【ddnsto】|^$/d' /tmp/script/_opt_script_check # 【ddnsto】
-OSC
-fi
-return
-fi
-
-while true; do
-if [ "$ddnsto_enable" = "1" ] ; then
-	if [ -z "`pidof ddnsto`" ] || [ ! -s "`which ddnsto`" ] ; then
-		logger -t "【ddnsto】" "ddnsto重新启动"
-		ddnsto_restart
-	fi
-fi
-	sleep 205
-done
+i_app_keep -name="ddnsto" -pidof="ddnsto" &
 }
 
 ddnsto_close () {
@@ -130,28 +71,8 @@ kill_ps "$scriptname"
 ddnsto_start () {
 
 check_webui_yes
-SVC_PATH="$(which ddnsto)"
-[ ! -s "$SVC_PATH" ] && SVC_PATH=/opt/bin/ddnsto
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ddnsto】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-	initopt
-fi
-if [ -f /etc_ro/ddnsto ] && [ ! -s "$SVC_PATH" ] && [ ! -f /tmp/ddnsto_ro ] ; then
-	cp -f /etc_ro/ddnsto /opt/bin/ddnsto
-fi
-for h_i in $(seq 1 2) ; do
-[[ "$(ddnsto -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ddnsto
-wgetcurl_file "$SVC_PATH" "$hiboyfile/ddnsto" "$hiboyfile2/ddnsto"
-wgetcurl_file "$SVC_PATH" "https://fw0.koolcenter.com/binary/ddnsto/linux/mipsel/ddnsto"
-done
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ddnsto】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【ddnsto】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ddnsto_restart x
-else
-	logger -t "【ddnsto】" "找到 $SVC_PATH"
-	chmod 755 "$SVC_PATH"
-fi
+i_app_get_cmd_file -name="ddnsto" -cmd="ddnsto" -cpath="/opt/bin/ddnsto" -down1="$hiboyfile/ddnsto" -down2="$hiboyfile2/ddnsto"
+[ ! -s "$SVC_PATH" ] && wgetcurl_file "$SVC_PATH" "https://fw0.koolcenter.com/binary/ddnsto/linux/mipsel/ddnsto"
 ddnsto_route_id=$(ddnsto -w | awk '{print $2}')
 nvram set ddnsto_route_id="$ddnsto_route_id"
 [ ! -z $ddnsto_route_id ] && logger -t "【ddnsto】" "路由器ID：【$ddnsto_route_id】；管理控制台 https://www.ddnsto.com/"
@@ -161,8 +82,7 @@ nvram set ddnsto_version="$ddnsto_version"
 logger -t "【ddnsto】" "运行 ddnsto 版本：$ddnsto_version"
 eval "ddnsto -u $ddnsto_token -d $cmd_log" &
 sleep 3
-[ -z "`pidof ddnsto`" ] && logger -t "【ddnsto】" "启动失败, 注意检查密码是否有错误,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ddnsto_restart x
-[ ! -z "`pidof ddnsto`" ] && logger -t "【ddnsto】" "启动成功" && ddnsto_restart o
+i_app_keep -t -name="ddnsto" -pidof="ddnsto"
 sleep 2
 ddnsto_route_id=$(ddnsto -w | awk '{print $2}')
 nvram set ddnsto_route_id="$ddnsto_route_id"
@@ -170,15 +90,6 @@ nvram set ddnsto_route_id="$ddnsto_route_id"
 [ -z $ddnsto_route_id ] && logger -t "【ddnsto】" "路由器ID：【$ddnsto_route_id】不能为空,启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ddnsto_restart x
 eval "$scriptfilepath keep &"
 exit 0
-
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
 
 }
 

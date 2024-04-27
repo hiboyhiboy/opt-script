@@ -19,9 +19,6 @@ filebrowser_usage=`nvram get app_80`
 [ -z "$(echo "$filebrowser_usage" | grep filebrowser)" ] && filebrowser_usage="filebrowser -a 0.0.0.0 --disable-preview-resize --disable-type-detection-by-header" && nvram set app_80="$filebrowser_usage"
 
 filemanager_upanPath=`nvram get filemanager_upanPath`
-#if [ "$filemanager_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep filemanager | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#fi
 
 filemanager_renum=`nvram get filemanager_renum`
 filemanager_renum=${filemanager_renum:-"0"}
@@ -31,7 +28,7 @@ cmd_log=""
 if [ "$cmd_log_enable" = "1" ] || [ "$filemanager_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep file_manager)" ]  && [ ! -s /tmp/script/_app5 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep file_manager)" ] && [ ! -s /tmp/script/_app5 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app5
 	chmod 777 /tmp/script/_app5
@@ -40,53 +37,14 @@ fi
 upanPath=""
 
 filemanager_restart () {
-
-relock="/var/lock/filemanager_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set filemanager_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【filemanager】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	filemanager_renum=${filemanager_renum:-"0"}
-	filemanager_renum=`expr $filemanager_renum + 1`
-	nvram set filemanager_renum="$filemanager_renum"
-	if [ "$filemanager_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【filemanager】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get filemanager_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set filemanager_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set filemanager_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="filemanager"
 }
 
 filemanager_get_status () {
 
-A_restart=`nvram get filemanager_status`
 B_restart="$filemanager_enable$enable_version$filemanager_wan$filemanager_wan_port$(cat /etc/storage/app_5.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set filemanager_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="filemanager" -valb="$B_restart"
 }
 
 filemanager_check () {
@@ -110,22 +68,7 @@ fi
 }
 
 filemanager_keep () {
-logger -t "【filemanager】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof $filemanager_exe\`" ] && nvram set filemanager_status=00 && logger -t "【filemanager】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check # 【filemanager】
-OSC
-return
-fi
-
-while true; do
-	if [ -z "`pidof $filemanager_exe`" ] ; then
-		logger -t "【filemanager】" "重新启动"
-		filemanager_restart
-	fi
-sleep 252
-done
+i_app_keep -name="filemanager" -pidof="$filemanager_exe" &
 }
 
 filemanager_close () {
@@ -175,29 +118,15 @@ if [ -z "$upanPath" ] ; then
 	exit 0
 fi
 if [ "$enable_version" = "2" ] ; then
-SVC_PATH="$(which filebrowser)"
 mkdir -p "$upanPath/filebrowser/"
-[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/filebrowser"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【filemanager】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-fi
-for h_i in $(seq 1 2) ; do
-[[ "$($SVC_PATH help 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
-wgetcurl_file "$SVC_PATH" "$hiboyfile/filebrowser" "$hiboyfile2/filebrowser"
-done
+i_app_get_cmd_file -name="filemanager" -cmd="filebrowser" -cpath="/opt/bin/filebrowser" -down1="$hiboyfile/filebrowser" -down2="$hiboyfile2/filebrowser" -runh="help"
 fi
 if [ "$enable_version" = "0" ] ; then
-SVC_PATH="$upanPath/filemanager/$filemanager_exe"
+i_app_get_cmd_file -name="filemanager" -cmd="$upanPath/filemanager/$filemanager_exe" -cpath="$upanPath/filemanager/$filemanager_exe" -down1="$hiboyfile/filemanager" -down2="$hiboyfile2/filemanager" -runh="help"
 mkdir -p "$upanPath/filemanager/"
 wgetcurl_file "$SVC_PATH" "$hiboyfile/filemanager" "$hiboyfile2/filemanager"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【filemanager】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【filemanager】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
-fi
-chmod 777 "$SVC_PATH"
 if [ "$enable_version" = "2" ] ; then
 	filebrowser2_start
 fi
@@ -205,9 +134,7 @@ if [ "$enable_version" = "0" ] ; then
 	filebrowser_start
 fi
 sleep 7
-[ ! -z "$(ps -w | grep "$filemanager_exe" | grep -v grep )" ] && logger -t "【filemanager】" "启动成功" && filemanager_restart o
-[ -z "$(ps -w | grep "$filemanager_exe" | grep -v grep )" ] && logger -t "【filemanager】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && filemanager_restart x
-initopt
+i_app_keep -t -name="filemanager" -pidof="$filemanager_exe"
 filemanager_port_dpt
 #filemanager_get_status
 eval "$scriptfilepath keep &"
@@ -240,15 +167,6 @@ nvram set filemanager_upanPath="$upanPath"
 rm -f /tmp/filemanager.json
 ln -sf /etc/storage/app_5.sh /tmp/filemanager.json
 eval "$upanPath/filemanager/filemanager -c /tmp/filemanager.json $cmd_log" &
-
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
 
 }
 

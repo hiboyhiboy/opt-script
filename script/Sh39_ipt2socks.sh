@@ -21,7 +21,7 @@ LAN_AC_IP=`nvram get LAN_AC_IP`
 ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
 ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
-if [ "$ipt2socks_enable" != "0" ]  ; then
+if [ "$ipt2socks_enable" != "0" ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
 if [ "Sh39_ipt2socks.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" ] ; then
 	logger -t "【ipt2socks】" "错误！！！由于已启用 $ss_tproxy_auser 透明代理，停止启用 ipt2socks 透明代理！"
@@ -35,68 +35,26 @@ if [ "$cmd_log_enable" = "1" ] || [ "$ipt2socks_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
 fi
-#if [ "$ipt2socks_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep ipt2socks | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#fi
 
 if [ "$ipt2socks_enable" == "1" ] ; then
 [ "$transocks_enable" == "0" ] && logger -t "【transocks】" "注意！！！需要关闭 ipt2socks 后才能关闭 transocks"
 [ "$transocks_enable" == "0" ] && transocks_enable=1 && nvram set app_27=1
 fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ipt2socks)" ]  && [ ! -s /tmp/script/_app20 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ipt2socks)" ] && [ ! -s /tmp/script/_app20 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app20
 	chmod 777 /tmp/script/_app20
 fi
 
 ipt2socks_restart () {
-
-relock="/var/lock/ipt2socks_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set ipt2socks_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【ipt2socks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	ipt2socks_renum=${ipt2socks_renum:-"0"}
-	ipt2socks_renum=`expr $ipt2socks_renum + 1`
-	nvram set ipt2socks_renum="$ipt2socks_renum"
-	if [ "$ipt2socks_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【ipt2socks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get ipt2socks_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set ipt2socks_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set ipt2socks_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="ipt2socks"
 }
 
 ipt2socks_get_status () {
 
-A_restart=`nvram get ipt2socks_status`
 B_restart="$ipt2socks_enable$transocks_mode_x$transocks_server$transocks_listen_address$transocks_listen_port$ss_udp_enable$app_114$(cat /etc/storage/app_22.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set ipt2socks_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="ipt2socks" -valb="$B_restart"
 }
 
 ipt2socks_check () {
@@ -125,23 +83,8 @@ fi
 }
 
 ipt2socks_keep () {
-logger -t "【ipt2socks】" "守护进程启动"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【ipt2socks】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof ipt2socks\`" ] && nvram set ipt2socks_status=00 && logger -t "【ipt2socks】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【ipt2socks】|^$/d' /tmp/script/_opt_script_check # 【ipt2socks】
-OSC
-#return
-fi
-sleep 30
-while true; do
-	if [ -z "`pidof ipt2socks`" ] ; then
-		logger -t "【ipt2socks】" "重新启动"
-		ipt2socks_restart
-	fi
-sleep 30
-done
+i_app_keep -name="ipt2socks" -pidof="ipt2socks" &
 }
 
 ipt2socks_close () {
@@ -161,21 +104,7 @@ kill_ps "$scriptname"
 ipt2socks_start () {
 
 check_webui_yes
-SVC_PATH="$(which ipt2socks)"
-[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/ipt2socks"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ipt2socks】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-fi
-for h_i in $(seq 1 2) ; do
-[[ "$(ipt2socks -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ipt2socks
-wgetcurl_file "$SVC_PATH" "$hiboyfile/ipt2socks" "$hiboyfile2/ipt2socks"
-done
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ipt2socks】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【ipt2socks】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ipt2socks_restart x
-fi
-chmod 777 "$SVC_PATH"
+i_app_get_cmd_file -name="ipt2socks" -cmd="ipt2socks" -cpath="/opt/bin/ipt2socks" -down1="$hiboyfile/ipt2socks" -down2="$hiboyfile2/ipt2socks"
 tcponly='true'
 gid_owner="0"
 su_cmd="eval"
@@ -215,9 +144,7 @@ su_cmd2="/etc/storage/app_22.sh"
 eval "$su_cmd" '"cmd_name=ipt2socks && '"$su_cmd2"' $cmd_log"' &
 
 sleep 2
-[ ! -z "$(ps -w | grep "ipt2socks" | grep -v grep )" ] && logger -t "【ipt2socks】" "启动成功" && ipt2socks_restart o
-[ -z "$(ps -w | grep "ipt2socks" | grep -v grep )" ] && logger -t "【ipt2socks】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ipt2socks_restart x
-initopt
+i_app_keep -t -name="ipt2socks" -pidof="ipt2socks"
 Sh99_ss_tproxy.sh auser_check "Sh39_ipt2socks.sh"
 ss_tproxy_set "Sh39_ipt2socks.sh"
 Sh99_ss_tproxy.sh on_start "Sh39_ipt2socks.sh"
@@ -264,7 +191,9 @@ sstp_set proxy_udpport='1098'
 sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
-DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
+[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
@@ -333,15 +262,6 @@ ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 [ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 [ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【ipt2socks】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

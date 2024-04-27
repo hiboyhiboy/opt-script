@@ -6,8 +6,13 @@ AdGuardHome_enable=`nvram get app_84`
 AdGuardHome_dns=`nvram get app_132`
 [ -z $AdGuardHome_dns ] && AdGuardHome_dns=0 && nvram set app_132=0
 AdGuardHome_2_server=`nvram get app_85`
+if [ "$AdGuardHome_dns" = "1" ] ; then
+	AdGuardHome_server='server=127.0.0.1#53'
+else
+	AdGuardHome_server='server=127.0.0.1#5353'
+	[ ! -z "$AdGuardHome_2_server" ] && AdGuardHome_server="server=$(echo $AdGuardHome_2_server | sed 's@:\|：@#@g')"
+fi
 if [ "$AdGuardHome_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep AdGuardHome | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 AdGuardHome_renum=`nvram get AdGuardHome_renum`
 cmd_log_enable=`nvram get cmd_log_enable`
@@ -19,62 +24,23 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep AdGuard_Home)" ]  && [ ! -s /tmp/script/_app17 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep AdGuard_Home)" ] && [ ! -s /tmp/script/_app17 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app17
 	chmod 777 /tmp/script/_app17
 fi
 
 AdGuardHome_restart () {
-
-relock="/var/lock/AdGuardHome_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set AdGuardHome_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【AdGuardHome】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	AdGuardHome_renum=${AdGuardHome_renum:-"0"}
-	AdGuardHome_renum=`expr $AdGuardHome_renum + 1`
-	nvram set AdGuardHome_renum="$AdGuardHome_renum"
-	if [ "$AdGuardHome_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【AdGuardHome】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get AdGuardHome_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set AdGuardHome_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set AdGuardHome_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="AdGuardHome"
 }
 
 AdGuardHome_get_status () {
 
-A_restart=`nvram get AdGuardHome_status`
 B_restart="$AdGuardHome_enable$AdGuardHome_dns$AdGuardHome_2_server"
 [ "$(nvram get app_86)" = "1" ] && B_restart="$B_restart""$(cat /etc/storage/app_19.sh | grep -v '^#' | grep -v '^$')"
 [ "$(nvram get app_86)" = "1" ] && nvram set app_86=0
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set AdGuardHome_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="AdGuardHome" -valb="$B_restart"
 }
 
 AdGuardHome_check () {
@@ -88,74 +54,98 @@ if [ "$AdGuardHome_enable" = "1" ] ; then
 		AdGuardHome_close
 		AdGuardHome_start
 	else
-		if [ "$AdGuardHome_dns" != "0" ] ; then
-			[ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
-			if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-				sleep 10 
-				if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-					logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 变更侦听端口规则 port=12353 , 自动尝试重新启动"
-					AdGuardHome_restart
-				fi
-			fi
-		else
-			[ -z "$AdGuardHome_2_server" ] && [ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
-			if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-				sleep 10 
-				if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-					logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 自动尝试重新启动"
-					AdGuardHome_restart
-				fi
-			fi
-		fi
+		AdGuardHome_set_dnsmasq
 	fi
 fi
 }
 
-AdGuardHome_keep () {
-logger -t "【AdGuardHome】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【AdGuardHome】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof AdGuardHome\`" ] || [ ! -s "/opt/AdGuardHome/AdGuardHome" ] && nvram set AdGuardHome_status=00 && logger -t "【AdGuardHome】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【AdGuardHome】|^$/d' /tmp/script/_opt_script_check # 【AdGuardHome】
-OSC
-#return
-fi
-while true; do
-if [ "$AdGuardHome_dns" != "0" ] ; then
+AdGuardHome_set_dnsmasq () {
+
+if [ "$AdGuardHome_dns" = "1" ] ; then
+	[ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
 	if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-		sleep 10 
+		sleep 5
 		if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-			logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 变更侦听端口规则 port=12353 , 自动尝试重新启动"
-			AdGuardHome_restart
-		fi
-	fi
-else
-	if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-		sleep 10
-		if [ "$(grep "server=127.0.0.1#5353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
-			logger -t "【AdGuardHome】" "检测:找不到 dnsmasq 转发规则 server=127.0.0.1#5353 , 自动尝试重新启动"
-			AdGuardHome_restart
+			logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
+			sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
+			echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+			sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
+			restart_on_dhcpd
 		fi
 	fi
 fi
+if [ "$AdGuardHome_dns" = "0" ] ; then
+	[ -z "$AdGuardHome_2_server" ] && [ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && AdGuardHome_restart
+	port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	port2=$(grep "server=127.0.0.1#8953"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	if [ ! -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] ; then
+	if [ "$port" = 1 ] ; then
+		[ -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && AdGuardHome_restart
+	fi
+	if [ "$port2" = 1 ] ; then
+		[ -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8953)" ] && AdGuardHome_restart
+	fi
+	if [ "$port" == 0 ] && [ "$port2" == 0 ] ; then
+		[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] || [ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8953)" ] && AdGuardHome_restart
+	fi
+	fi
+	port3=$(grep "$AdGuardHome_server"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	if [ "$port3" = 0 ] ; then
+		sleep 5
+		port3=$(grep "$AdGuardHome_server"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+		if [ "$port3" = 0 ] ; then
+		if [ "$port" != 0 ] ; then
+			logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 删除 server=127.0.0.1#8053"
+			sed -Ei '/server=/d' /etc/storage/dnsmasq/dnsmasq.conf
+			echo '#server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
+		fi
+		if [ "$port2" != 0 ] ; then
+			logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 删除 server=127.0.0.1#8953"
+			sed -Ei '/server=/d' /etc/storage/dnsmasq/dnsmasq.conf
+			echo '#server=127.0.0.1#8953' >> /etc/storage/dnsmasq/dnsmasq.conf
+		fi
+		logger -t "【AdGuardHome】" "添加 AdGuardHome 的 dnsmasq 转发规则 $AdGuardHome_server"
+		# 写入dnsmasq配置
+		sed -Ei '/no-resolv|^server=|dns-forward-max=1000|min-cache-ttl=1800|domain-needed|AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
+		cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
+no-resolv #AdGuardHome
+$AdGuardHome_server #AdGuardHome
+dns-forward-max=1000 #AdGuardHome
+EOF
+		sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
+		restart_on_dhcpd
+		fi
+	fi
+fi
+
+}
+
+AdGuardHome_keep () {
+i_app_keep -name="AdGuardHome" -pidof="AdGuardHome" -cpath="/opt/AdGuardHome/AdGuardHome" &
+while true; do
 [ "$(grep "</textarea>"  /etc/storage/app_19.sh | wc -l)" != 0 ] && sed -Ei s@\<\/textarea\>@@g /etc/storage/app_19.sh
 sleep 61
+AdGuardHome_set_dnsmasq
 done
 }
 
 AdGuardHome_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【AdGuardHome】|^$/d' /tmp/script/_opt_script_check
-port=$(grep "#server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-sed -Ei '/server=127.0.0.1#5353/d' /etc/storage/dnsmasq/dnsmasq.conf
 sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed -Ei 's/^#dns-forward-max/dns-forward-max/g' /etc/storage/dnsmasq/dnsmasq.conf
-if [ "$port" != 0 ] ; then
+port2=$(grep "#server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+if [ "$port2" != 0 ] ; then
 	sed -Ei '/server=127.0.0.1#8053/d' /etc/storage/dnsmasq/dnsmasq.conf
 	echo 'server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
 	logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 恢复 server=127.0.0.1#8053"
 fi
+port2=$(grep "#server=127.0.0.1#8953"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+if [ "$port2" != 0 ] ; then
+	sed -Ei '/server=127.0.0.1#8953/d' /etc/storage/dnsmasq/dnsmasq.conf
+	echo 'server=127.0.0.1#8953' >> /etc/storage/dnsmasq/dnsmasq.conf
+	logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 恢复 server=127.0.0.1#8953"
+fi
+sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 restart_on_dhcpd
 killall AdGuardHome
 killall -9 AdGuardHome
@@ -167,10 +157,10 @@ kill_ps "$scriptname"
 AdGuardHome_start () {
 check_webui_yes
 port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-if [ ! -z "$AdGuardHome_2_server" ] && [ "$AdGuardHome_dns" == "0" ] ; then
+if [ ! -z "$AdGuardHome_2_server" ] && [ "$AdGuardHome_dns" = "0" ] ; then
 	logger -t "【AdGuardHome】" "使用外置 AdGuardHome 服务器： $AdGuardHome_2_server"
 	logger -t "【AdGuardHome】" "建议外置 AdGuardHome 服务器的上游 DNS 是无污染的"
-	AdGuardHome_server="server=$(echo $AdGuardHome_2_server | sed 's@:\|：@#@g')"
+	AdGuardHome_set_dnsmasq
 else
 	SVC_PATH="/opt/AdGuardHome/AdGuardHome"
 	if [ ! -s "$SVC_PATH" ] ; then
@@ -219,13 +209,7 @@ else
 	chmod 777 "$SVC_PATH"
 	# 更新 yq
 	[ -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && rm -rf /opt/bin/yq /opt/opt_backup/bin/yq
-	if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-		yq_check
-	if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-		logger -t "【AdGuardHome】" "找不到 /opt/bin/yq ，需要手动安装 /opt/bin/yq"
-		logger -t "【AdGuardHome】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
-	fi
-	fi
+	i_app_get_cmd_file -name="AdGuardHome" -cmd="yq" -cpath="/opt/bin/yq" -down1="$hiboyfile/yq" -down2="$hiboyfile2/yq"
 	app_19="/etc/storage/app_19.sh"
 	# 检测配置，若错误则恢复默认
 	AdGuardHome_check=$($SVC_PATH -c $app_19 -w /opt/AdGuardHome --check-config --verbose 2>&1 | grep fatal)
@@ -258,73 +242,58 @@ else
 	# 不使用本路由系统提供的主机。
 	yq w -i "$app_19" clients.runtime_sources.hosts false
 	logger -t "【AdGuardHome】" "启用本机 AdGuardHome 服务"
-	AdGuardHome_server='server=127.0.0.1#5353'
 	# 生成配置文件
-	if [ "$AdGuardHome_dns" != "0" ] ; then
-		AdGuardHome_server='server=127.0.0.1#53'
+	if [ "$AdGuardHome_dns" = "1" ] ; then
+		logger -t "【AdGuardHome】" "代替 dnsmasq 侦听 53 端口"
 		yq w -i "$app_19" dns.port 53
 		logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:12353"
 		#yq w -i "$app_19" dns.upstream_dns "[]"
+		[ ! -z "$(yq r $app_19 dns.upstream_dns | grep tcp://1.0.0.1)" ] && yq d -i "$app_19" "dns.upstream_dns(.==tcp://1.0.0.1)"
 		[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 1.0.0.1)" ] && yq d -i "$app_19" "dns.upstream_dns(.==1.0.0.1)"
 		[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8053)"
+		[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8953)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8953)"
 		[ -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq w -i "$app_19" dns.upstream_dns[+] "127.0.0.1:12353"
 	else
 		port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 		if [ "$port" != 0 ] ; then
 			logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:8053"
 			#yq w -i "$app_19" dns.upstream_dns "[]"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep tcp://1.0.0.1)" ] && yq d -i "$app_19" "dns.upstream_dns(.==tcp://1.0.0.1)"
 			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 1.0.0.1)" ] && yq d -i "$app_19" "dns.upstream_dns(.==1.0.0.1)"
 			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:12353)"
 			[ -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq w -i "$app_19" dns.upstream_dns[+] "127.0.0.1:8053"
-		else
-			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8053)"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8953)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8953)"
+		fi
+		port2=$(grep "server=127.0.0.1#8953"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+		if [ "$port2" != 0 ] ; then
+			logger -t "【AdGuardHome】" "修改本机 AdGuardHome 服务器的上游 DNS: 127.0.0.1:8953"
+			#yq w -i "$app_19" dns.upstream_dns "[]"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep tcp://1.0.0.1)" ] && yq d -i "$app_19" "dns.upstream_dns(.==tcp://1.0.0.1)"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 1.0.0.1)" ] && yq d -i "$app_19" "dns.upstream_dns(.==1.0.0.1)"
 			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:12353)"
-			[ "$(yq r $app_19 dns.upstream_dns)" == '[]' ] && yq w -i "$app_19" dns.upstream_dns[+] "1.0.0.1"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8053)"
+			[ -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8953)" ] && yq w -i "$app_19" dns.upstream_dns[+] "127.0.0.1:8953"
+		fi
+		if [ "$port" == 0 ] && [ "$port2" == 0 ] ; then
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8053)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8053)"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:8953)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:8953)"
+			[ ! -z "$(yq r $app_19 dns.upstream_dns | grep 127.0.0.1:12353)" ] && yq d -i "$app_19" "dns.upstream_dns(.==127.0.0.1:12353)"
+			[ "$(yq r $app_19 dns.upstream_dns)" == '[]' ] && yq w -i "$app_19" dns.upstream_dns[+] "tcp://1.0.0.1"
 		fi
 		yq w -i "$app_19" dns.port 5353
 	fi
-	if [ "$AdGuardHome_dns" != "0" ] ; then
-		logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
-		sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
-		echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-		restart_on_dhcpd
-	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	cd /opt/AdGuardHome
-	eval "export QUIC_GO_DISABLE_ECN=true; /opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
-	sleep 3
-	[ ! -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动成功" && AdGuardHome_restart o
-	[ -z "$(ps -w | grep "AdGuardHome" | grep -v grep )" ] && logger -t "【AdGuardHome】" "启动失败, 注意检AdGuardHome是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
+	eval "/opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
+	sleep 4
+	AdGuardHome_set_dnsmasq
+	i_app_keep -t -name="AdGuardHome" -pidof="AdGuardHome" -cpath="/opt/AdGuardHome/AdGuardHome"
 	restart_on_dhcpd
 	AdGuardHome_get_status
 	eval "$scriptfilepath keep &"
 fi
-if [ "$AdGuardHome_dns" == "0" ] ; then
-	port=$(grep "server=127.0.0.1#8053"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-	if [ "$port" != 0 ] ; then
-		logger -t "【AdGuardHome】" "检测到 dnsmasq 转发规则, 删除 server=127.0.0.1#8053"
-		sed -Ei '/server=/d' /etc/storage/dnsmasq/dnsmasq.conf
-		echo '#server=127.0.0.1#8053' >> /etc/storage/dnsmasq/dnsmasq.conf
-	fi
-	logger -t "【AdGuardHome】" "添加 AdGuardHome 的 dnsmasq 转发规则 $AdGuardHome_server"
-	sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
-	echo "$AdGuardHome_server #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-	echo "no-resolv #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-	sed -Ei 's/^dns-forward-max/#dns-forward-max/g' /etc/storage/dnsmasq/dnsmasq.conf
-	echo "dns-forward-max=1000 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
-fi
-sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-restart_on_dhcpd
+sleep 5
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
@@ -342,8 +311,8 @@ dns:
   port: 5353
   ratelimit: 0
   upstream_dns:
-  - 1.0.0.1
-  bootstrap_dns: 1.0.0.1
+  - tcp://1.0.0.1
+  bootstrap_dns: tcp://1.0.0.1
   all_servers: true
 tls:
   enabled: false
@@ -352,33 +321,6 @@ EEE
 	chmod 755 "$app_19"
 fi
 
-}
-
-yq_check () {
-
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 yq，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	for h_i in $(seq 1 2) ; do
-	[[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/yq
-	wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
-	done
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 yq，安装 opt 程序"
-	rm -f /opt/bin/yq
-	/etc/storage/script/Sh01_mountopt.sh start
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	#opkg update
-	#opkg install yq
-if [[ "$(yq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【clash】" "找不到 yq，需要手动安装 opt 后输入[opkg update; opkg install yq]安装"
-	return 1
-fi
-fi
-fi
-fi
-fi
 }
 
 initconfig

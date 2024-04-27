@@ -3,11 +3,11 @@
 # 一级菜单显示标题：空格隔开
 menu0_title="配置扩展环境  ShadowSocks 内网穿透 广告屏蔽功能 搭建Web环境"
 # 菜单页面排序：空格隔开
-menu_title1="配置扩展环境 锐捷认证 Wifidog   网页终端   相框设置 goflyway virtualhere 自建微信推送 gotify推送"
+menu_title1="配置扩展环境 锐捷认证 Wifidog   网页终端   相框设置 goflyway virtualhere gotify推送 自建微信推送"
 menu_title2="SS配置 SS节点 ss_tproxy Kcptun  SS_Server  COW  MEOW  SoftEtherVPN hysteria tailscale"
 menu_title3="花生壳内网版 Ngrok frp  DNSPod  huaweidns  Aliddns cloudflare qcloud nps ddnsto ddnsgo"
 menu_title4="koolproxy    ADM    guestkit transocks ipt2socks tgbot tmall cryfs gocryptfs AdGuardHome"
-menu_title5="搭建Web环境 caddy maddy v2ray  chinadns chinadns_ng 假装在中国 upd2pro 连接打印机 filemanager verysync clash"
+menu_title5="搭建Web环境 caddy maddy v2ray  v2raya  chinadns_ng 假装在中国 upd2pro 连接打印机 filemanager verysync clash"
 ################################
 menu_title_all="$menu_title1 $menu_title2 $menu_title3 $menu_title4 $menu_title5"
 source /etc/storage/script/init.sh
@@ -126,12 +126,12 @@ for ii in 1 2 3 4 5
 do
     for i in 1 2 3 4 5 6 7 8 9 10 11 12
     do
-        echo 'menu'$i'_title'$ii
+        echo 'menu'${i}'_title'${ii}
         nvramrun=`eval 'nvram get menu'$i'_title'$ii`
         if [ ! -z "$nvramrun" ] && [ ! -z "$(echo "$menu_title_all" | grep "$nvramrun")" ] && [ -s "/etc/storage/www_sh/$nvramrun" ] ; then
         #dos2unix "./$nvramrun"
         eval $(ps -w | grep "/etc/storage/www_sh/$nvramrun" | grep -v grep | awk '{print "kill "$1";";}')
-        eval /etc/storage/www_sh/$nvramrun "$i$ii" "$i" "$ii"
+        eval /etc/storage/www_sh/$nvramrun "${i}${ii}" "${i}" "${ii}"
         #echo "/etc/storage/www_sh/$nvramrun $i$ii $i $ii"
         fi
     done
@@ -174,6 +174,7 @@ wgetcurl.sh "/tmp/www_shsh.txt" "$hiboyscript/www_shsh.txt" "$hiboyscript2/www_s
 
 mkdir -p /tmp/www_sh
 if [ -s /tmp/www_shsh.txt ] && [ ! -z "$(cat /tmp/www_shsh.txt | grep "menu_title")" ] ; then
+sed -Ei '/\s/d' /tmp/www_shsh.txt
 while read line
 do
 c_line=`echo $line |grep -v "#" |grep -v 'www_sht='`
@@ -199,9 +200,7 @@ chmod 777 /etc/storage/www_sh -R
 
 }
 
-
 www_upver () {
-
 # 当前 www_sh 文件
 touch /etc/storage/www_sh/menu_title.txt
 www_ver=`cat /etc/storage/www_sh/menu_title.txt | sed -n '1p'`
@@ -211,6 +210,7 @@ wgetcurl.sh "/tmp/menu_title.txt" "$hiboyscript/www_sh/menu_title.txt" "$hiboysc
 touch /tmp/menu_title.txt
 [[ "$(cat /tmp/menu_title.txt | wc -c)" -ge 11 ]] && echo "" /tmp/menu_title.txt
 [ ! -z "$(cat /tmp/menu_title.txt | grep '<' | grep '>')" ] && echo "" > /tmp/menu_title.txt
+sed -Ei "s@[^0-9\\-]@@g" /tmp/menu_title.txt
 www_ver_n=`cat /tmp/menu_title.txt | sed -n '1p'`
 nvram set www_ver_n=$www_ver_n
 if [ "$www_ver"x != "$www_ver_n"x ] ; then
@@ -218,7 +218,9 @@ logger -t "【www_sh】" "当前自定义菜单标题【 $www_ver 】需要更�
 fi
 # 最新 app_ver_n.txt 文件
 wgetcurl.sh "/tmp/app_ver_n.txt" "$hiboyscript/app_ver_n.txt" "$hiboyscript2/app_ver_n.txt"
-[ -z "$(cat /tmp/app_ver_n.txt | grep "app1_ver_n")" ] && echo "nvram set lnmpt=" /tmp/app_ver_n.txt
+[ -z "$(cat /tmp/app_ver_n.txt | grep "app1_ver_n")" ] && echo "nvram set lnmpt=" > /tmp/app_ver_n.txt
+sed -Ei "s@[^a-z0-9_=\\-]@@g" /tmp/app_ver_n.txt
+sed -Ei "s@nvramset@nvram\ set\ @g" /tmp/app_ver_n.txt
 source /tmp/app_ver_n.txt
 }
 

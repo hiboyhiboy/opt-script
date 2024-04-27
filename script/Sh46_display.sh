@@ -4,7 +4,6 @@ source /etc/storage/script/init.sh
 display_enable=`nvram get display_enable`
 [ -z $display_enable ] && display_enable=0 && nvram set display_enable=0
 if [ "$display_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep display | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 display_weather=`nvram get display_weather`
 display_aqidata=`nvram get display_aqidata`
@@ -30,61 +29,22 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ]  && [ ! -s /tmp/script/_display ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep display)" ] && [ ! -s /tmp/script/_display ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_display
 	chmod 777 /tmp/script/_display
 fi
 
 display_restart () {
-
-relock="/var/lock/display_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set display_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【display】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	display_renum=${display_renum:-"0"}
-	display_renum=`expr $display_renum + 1`
-	nvram set display_renum="$display_renum"
-	if [ "$display_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【display】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get display_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set display_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set display_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="display"
 }
 
 display_get_status () {
 
 [ ! -f /etc/storage/display_lcd4linux_script.sh ] && touch /etc/storage/display_lcd4linux_script.sh
-A_restart=`nvram get display_status`
 B_restart="$display_enable$display_weather$display_aqidata$(cat /etc/storage/display_lcd4linux_script.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set display_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="display" -valb="$B_restart"
 }
 
 display_check () {
@@ -109,20 +69,12 @@ eval $(ps -w | grep "$scriptfilepath getweather" | grep -v grep | awk '{print "k
 eval "$scriptfilepath getweather &"
 eval $(ps -w | grep "$scriptfilepath getaqidata" | grep -v grep | awk '{print "kill "$1";";}')
 eval "$scriptfilepath getaqidata &"
-logger -t "【相框显示】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof lcd4linux\`" ] || [ ! -s "`which lcd4linux`" ] && nvram set display_status=00 && logger -t "【相框显示】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check # 【相框显示】
-OSC
-
-fi
-
+i_app_keep -name="display" -pidof="lcd4linux" &
 runx="1"
 while true; do
 display_enable=`nvram get display_enable`
 [ "$display_enable" != "1" ] && exit
-	if [ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && [ ! -s /tmp/script/_opt_script_check ]; then
+	if [ -z "`pidof lcd4linux`" ] || [ ! -s "`which lcd4linux`" ] && [ ! -s /tmp/script/_opt_script_check ] ; then
 		logger -t "【相框显示】" "重新启动"
 		display_restart
 	fi
@@ -257,8 +209,7 @@ eval "lcd4linux -f /tmp/lcd4linux.conf $cmd_log" &
 export LD_LIBRARY_PATH=/lib:/opt/lib
 logger -t "【相框显示】" "开始显示数据"
 sleep 4
-[ ! -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动成功" && display_restart o
-[ -z "$(ps -w | grep "lcd4linux" | grep -v grep )" ] && logger -t "【相框显示】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && display_restart x
+i_app_keep -t -name="display" -pidof="lcd4linux"
 initopt
 display_get_status
 eval "$scriptfilepath keep &"
@@ -288,14 +239,14 @@ echo $yahooweb
 rm -f /opt/lcd4linux/tmp/weatherweb
 #wget -O /opt/lcd4linux/tmp/weatherweb $yahooweb
 wgetcurl.sh /opt/lcd4linux/tmp/weatherweb "$yahooweb" "$yahooweb" N
-if [ -s /opt/lcd4linux/tmp/weatherweb ]; then
+if [ -s /opt/lcd4linux/tmp/weatherweb ] ; then
 	cat /opt/lcd4linux/tmp/weatherweb | grep '<yweather' | awk -F'<yweather' '{ \
 		{L1="<yweather"$3; L2="<yweather"$2; L3="<yweather"$4; L4="<yweather"$5; L5="<yweather"$6; L6="<yweather"$7; L7="<yweather"$8; L8="<yweather"$9}} \
 		END \
 		{ printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n", \
 		L1,L2,L3,L4,L5,L6,L7,L8}' \
 		> /opt/lcd4linux/tmp/weather
-	if [ ! -s /opt/lcd4linux/tmp/weather ]; then
+	if [ ! -s /opt/lcd4linux/tmp/weather ] ; then
 		logger -t "【相框显示】" "获取天气信息错误！请检查链接："
 		logger -t "【相框显示】" "$yahooweb"
 		return 1
@@ -336,7 +287,7 @@ rm -f /opt/lcd4linux/tmp/aqicn
 aqicnorg="http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json"
 #wget -c -O /opt/lcd4linux/tmp/aqicn "http://feed.aqicn.org/feed/$display_aqidata/en/feed.v1.json" --user-agent "$user_agent"
 wgetcurl.sh /opt/lcd4linux/tmp/aqicn "$aqicnorg" "$aqicnorg" N
-if [ ! -s /opt/lcd4linux/tmp/aqicn ]; then
+if [ ! -s /opt/lcd4linux/tmp/aqicn ] ; then
 	logger -t "【相框显示】" "获取AQI数据错误！请检查链接："
 	logger -t "【相框显示】" "$aqicnorg"
 	return 1
@@ -348,37 +299,37 @@ mkdir -p /opt/lcd4linux/tmp/aqii
 #记录小于24个需要补零
 touch /opt/lcd4linux/tmp/aqii/apm25
 FFS=`cat /opt/lcd4linux/tmp/aqii/apm25 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/apm25 ]; then
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/apm25 ] ; then
 echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/apm25
 fi
 touch /opt/lcd4linux/tmp/aqii/apm10
 FFS=`cat /opt/lcd4linux/tmp/aqii/apm10 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/apm10 ]; then
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/apm10 ] ; then
 echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/apm10
 fi
 touch /opt/lcd4linux/tmp/aqii/aso2
 FFS=`cat /opt/lcd4linux/tmp/aqii/aso2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/aso2 ]; then
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/aso2 ] ; then
 echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/aso2
 fi
 touch /opt/lcd4linux/tmp/aqii/ano2
 FFS=`cat /opt/lcd4linux/tmp/aqii/ano2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/ano2 ]; then
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/ano2 ] ; then
 echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/ano2
 fi
 touch /opt/lcd4linux/tmp/aqii/ao3
 FFS=`cat /opt/lcd4linux/tmp/aqii/ao3 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/ao3 ]; then
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/ao3 ] ; then
 echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/ao3
 fi
 touch /opt/lcd4linux/tmp/aqii/aco
 FFS=`cat /opt/lcd4linux/tmp/aqii/aco |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/aco ]; then
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/aco ] ; then
 echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/aco
 fi
 touch /opt/lcd4linux/tmp/aqii/atime
 FFS=`cat /opt/lcd4linux/tmp/aqii/atime |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/atime ]; then
+if [ "$FFS" -lt 24 ] || [ ! -s /opt/lcd4linux/tmp/aqii/atime ] ; then
 echo -ne ";;;;;;;;;;;;;;;;;;;;;;;;"> /opt/lcd4linux/tmp/aqii/atime
 fi
 
@@ -388,7 +339,7 @@ aqicn=`echo ${aqicn#*pm25\"\:\{\"val\"\:}`
 #重新构建AQI记录
 echo -ne ${aqicn%%,\"date*}";">> /opt/lcd4linux/tmp/aqii/apm25;
 FFS=`cat /opt/lcd4linux/tmp/aqii/apm25 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -gt 25 ]; then
+if [ "$FFS" -gt 25 ] ; then
 #大于24个记录时删除旧记录
 aqicn=`cat /opt/lcd4linux/tmp/aqii/apm25`
 echo ${aqicn#*;}> /opt/lcd4linux/tmp/aqii/apm25
@@ -400,7 +351,7 @@ aqicn=`echo ${aqicn#*pm10\"\:\{\"val\"\:}`
 #重新构建AQI记录
 echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/apm10;
 FFS=`cat /opt/lcd4linux/tmp/aqii/apm10 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -gt 25 ]; then
+if [ "$FFS" -gt 25 ] ; then
 #大于24个记录时删除旧记录
 aqicn=`cat /opt/lcd4linux/tmp/aqii/apm10`
 echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/apm10
@@ -412,7 +363,7 @@ aqicn=`echo ${aqicn#*so2\"\:\{\"val\"\:}`
 #重新构建AQI记录
 echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/aso2;
 FFS=`cat /opt/lcd4linux/tmp/aqii/aso2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -gt 25 ]; then
+if [ "$FFS" -gt 25 ] ; then
 #大于24个记录时删除旧记录
 aqicn=`cat /opt/lcd4linux/tmp/aqii/aso2`
 echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/aso2
@@ -424,7 +375,7 @@ aqicn=`echo ${aqicn#*no2\"\:\{\"val\"\:}`
 #重新构建AQI记录
 echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/ano2;
 FFS=`cat /opt/lcd4linux/tmp/aqii/ano2 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -gt 25 ]; then
+if [ "$FFS" -gt 25 ] ; then
 #大于24个记录时删除旧记录
 aqicn=`cat /opt/lcd4linux/tmp/aqii/ano2`
 echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/ano2
@@ -436,7 +387,7 @@ aqicn=`echo ${aqicn#*o3\"\:\{\"val\"\:}`
 #重新构建AQI记录
 echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/ao3;
 FFS=`cat /opt/lcd4linux/tmp/aqii/ao3 |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -gt 25 ]; then
+if [ "$FFS" -gt 25 ] ; then
 #大于24个记录时删除旧记录
 aqicn=`cat /opt/lcd4linux/tmp/aqii/ao3`
 echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/ao3
@@ -448,7 +399,7 @@ aqicn=`echo ${aqicn#*co\"\:\{\"val\"\:}`
 #重新构建AQI记录
 echo -ne ${aqicn%%,\"date*}";" >> /opt/lcd4linux/tmp/aqii/aco;
 FFS=`cat /opt/lcd4linux/tmp/aqii/aco |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -gt 25 ]; then
+if [ "$FFS" -gt 25 ] ; then
 #大于24个记录时删除旧记录
 aqicn=`cat /opt/lcd4linux/tmp/aqii/aco`
 echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/aco
@@ -459,7 +410,7 @@ aqicn="`date "+%Y-%m-%d %H:%M:%S"`"
 #重新构建AQI记录
 echo -ne $aqicn";" >> /opt/lcd4linux/tmp/aqii/atime;
 FFS=`cat /opt/lcd4linux/tmp/aqii/atime |grep ";" |awk -F "" '{for(i=1;i<=NF;++i) if($i==";") ++sum}END{print sum}'`
-if [ "$FFS" -gt 25 ]; then
+if [ "$FFS" -gt 25 ] ; then
 #大于24个记录时删除旧记录
 aqicn=`cat /opt/lcd4linux/tmp/aqii/atime`
 echo ${aqicn#*;} > /opt/lcd4linux/tmp/aqii/atime
@@ -528,19 +479,6 @@ cat /opt/lcd4linux/tmp/aqi| awk -F";" '{for (i=2;i<=NF;i++) \
 
 #python绘图
 python /opt/lcd4linux/scripts/drawchart2.py &
-
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-optw_enable=`nvram get optw_enable`
-if [ "$optw_enable" != "2" ] ; then
-	nvram set optw_enable=2
-fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
 
 }
 

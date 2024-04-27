@@ -6,53 +6,21 @@ if [ "$tailscale_enable" != "0" ] && [ "$tailscale_enable" != "1" ] && [ "$tails
 	tailscale_enable=""
 fi
 [ -z $tailscale_enable ] && tailscale_enable=0 && nvram set app_82=0
-tailscale_cmd=`nvram get app_44`
+tailscale_cmd="$(nvram get app_44)"
 if [ -z "$(echo $tailscale_cmd | grep tailscale)" ] ; then
 	tailscale_cmd=""
 fi
-[ -z $tailscale_cmd ] && tailscale_cmd="tailscale up" && nvram set app_44="$tailscale_cmd"
+[ -z "$tailscale_cmd" ] && tailscale_cmd="tailscale up" && nvram set app_44="$tailscale_cmd"
 tailscale_renum=`nvram get tailscale_renum`
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tailscale)" ]  && [ ! -s /tmp/script/_app11 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tailscale)" ] && [ ! -s /tmp/script/_app11 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app11
 	chmod 777 /tmp/script/_app11
 fi
 
 tailscale_restart () {
-
-relock="/var/lock/tailscale_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set tailscale_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【tailscale】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	tailscale_renum=${tailscale_renum:-"0"}
-	tailscale_renum=`expr $tailscale_renum + 1`
-	nvram set tailscale_renum="$tailscale_renum"
-	if [ "$tailscale_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【tailscale】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get tailscale_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set tailscale_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set tailscale_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="tailscale"
 }
 
 tailscale_get_status () {
@@ -66,19 +34,12 @@ rm -rf /opt/app/tailscale/lib/*
 rm -rf /etc/storage/tailscale/lib/*
 tailscale_enable=0 && nvram set app_82=0
 fi
-A_restart=`nvram get tailscale_status`
 if [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] || [ "$tailscale_enable" = "4" ] ; then
 B_restart="1"
 fi
 B_restart="$B_restart$tailscale_cmd"
-#B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set tailscale_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="tailscale" -valb="$B_restart"
 }
 
 tailscale_check () {
@@ -110,15 +71,7 @@ fi
 }
 
 tailscale_keep () {
-logger -t "【tailscale】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-SVC_PATH="/opt/bin/tailscaled"
-sed -Ei '/【tailscale】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof tailscaled\`" ] || [ ! -s "$SVC_PATH" ] && nvram set tailscale_status=00 && logger -t "【tailscale】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【tailscale】|^$/d' /tmp/script/_opt_script_check # 【tailscale】
-OSC
-#return
-fi
+i_app_keep -name="tailscale" -pidof="tailscaled" &
 tailscale_enable=`nvram get app_82`
 offweb=1
 while [ "$tailscale_enable" = "1" ] || [ "$tailscale_enable" = "2" ] || [ "$tailscale_enable" = "4" ] ; do
@@ -158,26 +111,16 @@ kill_ps "$scriptname"
 
 tailscale_start () {
 check_webui_yes
-SVC_PATH="$(which tailscaled)"
-[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/tailscaled"
+i_app_get_cmd_file -name="tailscale" -cmd="tailscaled" -cpath="/opt/bin/tailscaled" -down1="$hiboyfile/tailscaled" -down2="$hiboyfile2/tailscaled"
 SVC_PATH2="$(which tailscale)"
 [ ! -s "$SVC_PATH2" ] && SVC_PATH2="/opt/bin/tailscale"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【tailscale】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-	initopt
-fi
 mkdir -p /etc/storage/tailscale/lib
 mkdir -p /opt/app/tailscale/lib
 tailscale_backup rebackup
-for h_i in $(seq 1 2) ; do
-[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
-wgetcurl_file "$SVC_PATH" "$hiboyfile/tailscaled" "$hiboyfile2/tailscaled"
 [[ "$($SVC_PATH2 -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH2 ] && rm -rf $SVC_PATH2
 [ ! -f "$SVC_PATH2" ] && ln -sf "$SVC_PATH" "$SVC_PATH2" 
-done
 tailscale_v=$($SVC_PATH -version | sed -n '1p')
-nvram set tailscale_v="$tailscale_v"
+[ "$(nvram get tailscale_v)" != "$tailscale_v" ] && nvram set tailscale_v="$tailscale_v"
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【tailscale】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【tailscale】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && tailscale_restart x
@@ -187,8 +130,7 @@ su_cmd2="$SVC_PATH --state=/opt/app/tailscale/lib/tailscaled.state --socket=/var
 logger -t "【tailscaled】" "运行主程序 $su_cmd2"
 eval "$su_cmd2" &
 sleep 4
-[ ! -z "`pidof tailscaled`" ] && logger -t "【tailscaled】" "主程序启动成功" && tailscale_restart o
-[ -z "`pidof tailscaled`" ] && logger -t "【tailscaled】" "主程序启动失败, 注意检tailscale是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tailscale_restart x
+i_app_keep -t -name="tailscale" -pidof="tailscaled"
 iptables -C INPUT -i tailscale0 -j ACCEPT
 if [ "$?" != 0 ] ; then
 	iptables -A INPUT -i tailscale0 -j ACCEPT
@@ -247,15 +189,6 @@ do
 	fi
 done
 fi
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 update_app () {

@@ -4,7 +4,6 @@ source /etc/storage/script/init.sh
 huaweidns_enable=`nvram get huaweidns_enable`
 [ -z $huaweidns_enable ] && huaweidns_enable=0 && nvram set huaweidns_enable=0
 if [ "$huaweidns_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep huaweidns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 huaweidns_username=`nvram get huaweidns_username`
 huaweidns_password=`nvram get huaweidns_password`
@@ -42,60 +41,21 @@ huaweidns_renum=`nvram get huaweidns_renum`
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep huaweidns)" ]  && [ ! -s /tmp/script/_huaweidns ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep huaweidns)" ] && [ ! -s /tmp/script/_huaweidns ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_huaweidns
 	chmod 777 /tmp/script/_huaweidns
 fi
 
 huaweidns_restart () {
-
-relock="/var/lock/huaweidns_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set huaweidns_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【huaweidns】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	huaweidns_renum=${huaweidns_renum:-"0"}
-	huaweidns_renum=`expr $huaweidns_renum + 1`
-	nvram set huaweidns_renum="$huaweidns_renum"
-	if [ "$huaweidns_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【huaweidns】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get huaweidns_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set huaweidns_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set huaweidns_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="huaweidns"
 }
 
 huaweidns_get_status () {
 
-A_restart=`nvram get huaweidns_status`
 B_restart="$huaweidns_enable$huaweidns_username$huaweidns_password$huaweidns_domian$huaweidns_host$huaweidns_domian2$huaweidns_host2huaweidns_domian6$huaweidns_host6$huaweidns_interval$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set huaweidns_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="huaweidns" -valb="$B_restart"
 }
 
 huaweidns_check () {
@@ -120,10 +80,7 @@ huaweidns_keep () {
 get_token
 get_Zone_ID
 huaweidns_start
-logger -t "【huaweidns动态域名】" "守护进程启动"
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof Sh43_huaweidns.sh\`" ] && nvram set huaweidns_status=00 && logger -t "【huaweidns】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【huaweidns】|^$/d' /tmp/script/_opt_script_check # 【huaweidns】
-OSC
+i_app_keep -name="huaweidns" -pidof="Sh43_huaweidns.sh" &
 expires_time=1
 while true; do
 sleep 43
@@ -131,7 +88,6 @@ sleep $huaweidns_interval
 expires_time=$(($expires_time + $huaweidns_interval +43))
 [ $expires_time -gt 80000 ] && { expires_time=1; get_token;}
 [ ! -s "`which curl`" ] && huaweidns_restart
-#nvramshow=`nvram showall | grep '=' | grep huaweidns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 huaweidns_enable=`nvram get huaweidns_enable`
 [ "$huaweidns_enable" = "0" ] && huaweidns_close && exit 0;
 if [ "$huaweidns_enable" = "1" ] ; then
@@ -220,7 +176,7 @@ token=""
 get_token() {
 
 versions="$(curl -L    -s -X  GET \
-https://apiexplorer.cn-north-1.myhuaweicloud.com/v1/mock/DNS/ShowApiInfo?status_code=200&number=1&region_id=cn-north-1 \
+"https://apiexplorer.cn-north-1.myhuaweicloud.com/v1/mock/DNS/ShowApiInfo?status_code=200&number=1&region_id=cn-north-1" \
   -H 'content-type: application/json' \
    | grep -Eo '"id":"[^"]*"' | awk -F 'id":"' '{print $2}' | tr -d '"' |head -n1)"
 [ "$versions" != "v2" ] && logger -t "【huaweidns动态域名】" "错误！API的版本不是【v2】，请更新脚本后尝试重新启动" && sleep 10 && huaweidns_restart x
@@ -281,7 +237,7 @@ case  $HOST  in
 		;;
 esac
 
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 		domain_type="AAAA"
 	else
 		domain_type="A"
@@ -310,7 +266,7 @@ esac
 	fi
 	Record_IP="$(echo $Record_re |grep -Eo "\"records\":\[\"[^\"]+" | tr -d '"' | awk -F [ '{print $2}' |head -n1)"
 	# Output IP
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 	echo $Record_IP
 	return 0
 	else
@@ -343,7 +299,7 @@ case  $HOST  in
 		HOST2="$HOST"
 		;;
 esac
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 		domain_type="AAAA"
 	else
 		domain_type="A"
@@ -449,7 +405,7 @@ arDdnsCheck() {
 	echo "Updating Domain: $HOST.$DOMAIN"
 	echo "hostIP: $hostIP"
 	lastIP=$(arDdnsInfo "$DOMAIN" "$HOST")
-	if [ $? -eq 1 ]; then
+	if [ $? -eq 1 ] ; then
 		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$HOST.$DOMAIN")
 		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$HOST.$DOMAIN")
 	fi
@@ -461,7 +417,7 @@ arDdnsCheck() {
 		Record_ID=""
 		sleep 1
 		postRS=$(arDdnsUpdate "$DOMAIN" "$HOST")
-		if [ $? -eq 0 ]; then
+		if [ $? -eq 0 ] ; then
 			echo "postRS: $postRS"
 			logger -t "【huaweidns动态域名】" "更新动态DNS记录成功！"
 			return 0
@@ -479,15 +435,6 @@ arDdnsCheck() {
 	echo $lastIP
 	echo "Last IP is the same as current IP!"
 	return 1
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

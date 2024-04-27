@@ -39,7 +39,7 @@ LAN_AC_IP=`nvram get LAN_AC_IP`
 ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
 ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
-if [ "$transocks_enable" != "0" ]  ; then
+if [ "$transocks_enable" != "0" ] ; then
 ss_tproxy_auser=`nvram get ss_tproxy_auser`
 if [ "Sh58_tran_socks.sh" != "$ss_tproxy_auser" ] && [ "" != "$ss_tproxy_auser" ] ; then
 	logger -t "【$tran_c_socks】" "错误！！！由于已启用 $ss_tproxy_auser 透明代理，停止启用 transocks 透明代理！"
@@ -53,64 +53,22 @@ if [ "$cmd_log_enable" = "1" ] || [ "$ipt2socks_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
 fi
-#if [ "$transocks_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep transocks | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tran_socks)" ]  && [ ! -s /tmp/script/_app10 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tran_socks)" ] && [ ! -s /tmp/script/_app10 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app10
 	chmod 777 /tmp/script/_app10
 fi
 
 transocks_restart () {
-
-relock="/var/lock/transocks_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set transocks_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【$tran_c_socks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	transocks_renum=${transocks_renum:-"0"}
-	transocks_renum=`expr $transocks_renum + 1`
-	nvram set transocks_renum="$transocks_renum"
-	if [ "$transocks_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【$tran_c_socks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get transocks_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set transocks_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set transocks_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="transocks"
 }
 
 transocks_get_status () {
 
-A_restart=`nvram get transocks_status`
 B_restart="$transocks_enable$transocks_mode_x$transocks_server$transocks_listen_address$transocks_listen_port$transocks_proxy_mode$app_114$(cat /etc/storage/app_9.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set transocks_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="transocks" -valb="$B_restart"
 }
 
 transocks_check () {
@@ -139,23 +97,7 @@ fi
 }
 
 transocks_keep () {
-logger -t "【$tran_c_socks】" "守护进程启动"
-/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【transocks】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof $tran_c_socks\`" ] && nvram set transocks_status=00 && logger -t "【transocks】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【transocks】|^$/d' /tmp/script/_opt_script_check # 【transocks】
-OSC
-#return
-fi
-
-while true; do
-	if [ -z "`pidof $tran_c_socks`" ] ; then
-		logger -t "【$tran_c_socks】" "重新启动"
-		transocks_restart
-	fi
-sleep 30
-done
+i_app_keep -name="transocks" -pidof="$tran_c_socks" &
 }
 
 transocks_close () {
@@ -180,19 +122,7 @@ tran_c_socks="kumasocks"
 else
 tran_c_socks="transocks"
 fi
-SVC_PATH="$(which $tran_c_socks)"
-[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/$tran_c_socks"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【$tran_c_socks】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-fi
-wgetcurl_file "$SVC_PATH" "$hiboyfile/$tran_c_socks" "$hiboyfile2/$tran_c_socks"
-[[ "$($tran_c_socks -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf "$SVC_PATH"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【$tran_c_socks】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【$tran_c_socks】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && transocks_restart x
-fi
-chmod 777 "$SVC_PATH"
+i_app_get_cmd_file -name="transocks" -cmd="$tran_c_socks" -cpath="/opt/bin/$tran_c_socks" -down1="$hiboyfile/$tran_c_socks" -down2="$hiboyfile2/$tran_c_socks"
 gid_owner="0"
 su_cmd="eval"
 NUM=`iptables -m owner -h 2>&1 | grep owner | wc -l`
@@ -234,9 +164,7 @@ fi
 eval "$su_cmd" '"cmd_name='"$tran_c_socks"' && '"$su_cmd2"' $cmd_log"' &
 
 sleep 2
-[ ! -z "$(ps -w | grep "$tran_c_socks" | grep -v grep )" ] && logger -t "【$tran_c_socks】" "启动成功" && transocks_restart o
-[ -z "$(ps -w | grep "$tran_c_socks" | grep -v grep )" ] && logger -t "【$tran_c_socks】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && transocks_restart x
-initopt
+i_app_keep -t -name="transocks" -pidof="$tran_c_socks"
 Sh99_ss_tproxy.sh auser_check "Sh58_tran_socks.sh"
 ss_tproxy_set "Sh58_tran_socks.sh"
 Sh99_ss_tproxy.sh on_start "Sh58_tran_socks.sh"
@@ -282,7 +210,9 @@ sstp_set proxy_udpport='1098'
 sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
-DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
+[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
@@ -351,15 +281,6 @@ ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 [ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 [ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【$tran_c_socks】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

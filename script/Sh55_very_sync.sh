@@ -8,9 +8,6 @@ verysync_wan_port=`nvram get app_21`
 verysync_wan=`nvram get app_22`
 [ -z $verysync_wan ] && verysync_wan=0 && nvram set app_22=0
 verysync_upanPath=`nvram get verysync_upanPath`
-#if [ "$verysync_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep verysync | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#fi
 
 verysync_renum=`nvram get verysync_renum`
 verysync_renum=${verysync_renum:-"0"}
@@ -20,7 +17,7 @@ cmd_log=""
 if [ "$cmd_log_enable" = "1" ] || [ "$verysync_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep very_sync)" ]  && [ ! -s /tmp/script/_app6 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep very_sync)" ] && [ ! -s /tmp/script/_app6 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app6
 	chmod 777 /tmp/script/_app6
@@ -29,53 +26,14 @@ fi
 upanPath=""
 
 verysync_restart () {
-
-relock="/var/lock/verysync_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set verysync_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【verysync】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	verysync_renum=${verysync_renum:-"0"}
-	verysync_renum=`expr $verysync_renum + 1`
-	nvram set verysync_renum="$verysync_renum"
-	if [ "$verysync_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【verysync】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get verysync_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set verysync_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set verysync_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="verysync"
 }
 
 verysync_get_status () {
 
-A_restart=`nvram get verysync_status`
 B_restart="$verysync_enable$verysync_wan$verysync_wan_port"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set verysync_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="verysync" -valb="$B_restart"
 }
 
 verysync_check () {
@@ -97,22 +55,7 @@ fi
 }
 
 verysync_keep () {
-logger -t "【verysync】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【verysync】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof verysync\`" ] || [ ! -s "$verysync_upanPath/verysync/verysync" ] && nvram set verysync_status=00 && logger -t "【verysync】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【verysync】|^$/d' /tmp/script/_opt_script_check # 【verysync】
-OSC
-return
-fi
-
-while true; do
-	if [ -z "`pidof verysync`" ] || [ ! -s "$verysync_upanPath/verysync/verysync" ] ; then
-		logger -t "【verysync】" "重新启动"
-		verysync_restart
-	fi
-sleep 252
-done
+i_app_keep -name="verysync" -pidof="verysync" -cpath="${verysync_upanPath}/verysync/verysync" &
 }
 
 verysync_close () {
@@ -214,23 +157,12 @@ nvram set verysync_upanPath="$upanPath"
 eval "$upanPath/verysync/verysync -no-restart -home $upanPath/verysync/.config -gui-address 0.0.0.0:$verysync_wan_port $cmd_log" &
 
 sleep 4
-[ ! -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动成功" && verysync_restart o
-[ -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && verysync_restart x
-initopt
+i_app_keep -t -name="verysync" -pidof="verysync" -cpath="${verysync_upanPath}/verysync/verysync"
 verysync_port_dpt
 
 #verysync_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 verysync_port_dpt () {

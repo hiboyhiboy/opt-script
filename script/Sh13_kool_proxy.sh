@@ -5,10 +5,6 @@ TAG="AD_BYBY"		  # iptables tag
 koolproxy_enable=`nvram get koolproxy_enable`
 [ -z $koolproxy_enable ] && koolproxy_enable=0 && nvram set koolproxy_enable=0
 if [ "$koolproxy_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#nvramshow=`nvram showall | grep '=' | grep adbyby | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#nvramshow=`nvram showall | grep '=' | grep adm | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#nvramshow=`nvram showall | grep '=' | grep koolproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 adbyby_mode_x=`nvram get adbyby_mode_x`
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 koolproxy_auto=`nvram get koolproxy_auto`
@@ -75,7 +71,7 @@ confdir_x="$(echo -e $confdir | sed -e "s/\//"'\\'"\//g")"
 gfwlist="/r.gfwlist.conf"
 gfw_black_list="gfwlist"
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kool_proxy)" ]  && [ ! -s /tmp/script/_kool_proxy ] ; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kool_proxy)" ] && [ ! -s /tmp/script/_kool_proxy ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kool_proxy
 	chmod 777 /tmp/script/_kool_proxy
@@ -143,54 +139,14 @@ mkdir -p /tmp/7620koolproxy/data/
 }
 
 koolproxy_restart () {
-
-relock="/var/lock/koolproxy_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set koolproxy_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	rm -rf /tmp/7620koolproxy/*
-	if [ -f $relock ] ; then
-		logger -t "【koolproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	koolproxy_renum=${koolproxy_renum:-"0"}
-	koolproxy_renum=`expr $koolproxy_renum + 1`
-	nvram set koolproxy_renum="$koolproxy_renum"
-	if [ "$koolproxy_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【koolproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get koolproxy_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set koolproxy_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set koolproxy_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="koolproxy"
 }
 
 koolproxy_get_status () {
 
-A_restart=`nvram get koolproxy_status`
 B_restart="$koolproxy_enable$koolproxy_auto$koolproxy_video$koolproxyfile$koolproxyfile2$koolproxyfile3$lan_ipaddr$koolproxy_https$adbyby_mode_x$adm_hookport$koolproxy_adblock$adbyby_CPUAverages$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v '^$' | grep -v '^#')$(cat /etc/storage/koolproxy_rules_script.sh /etc/storage/koolproxy_rules_list.sh | grep -v '^$' | grep -v "^!")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set koolproxy_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="koolproxy" -valb="$B_restart"
 }
 
 koolproxy_check () {
@@ -227,57 +183,12 @@ nvram set koolproxy_rules_nu_local="`cat /tmp/7620koolproxy/data/rules/koolproxy
 nvram set koolproxy_video_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/rules/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/rules/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+|201?.{1}' | sed -n '2p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g' | sed -n '1p'`"
 nvram set koolproxy_h="`/tmp/7620koolproxy/koolproxy -h | awk 'NR==1{print}'`】【`sed -n '1,10p' /tmp/7620koolproxy/data/rules/daily.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/rules/daily.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+|201?.{1}' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g' | sed -n '1p'`"
 fi
-cat > "/tmp/sh_ad_kp_keey_k.sh" <<-ADMK
-#!/bin/bash
-source /etc/storage/script/init.sh
-sleep 919
-koolproxy_enable=\`nvram get koolproxy_enable\`
-if [ ! -f /tmp/cron_adb.lock ] && [ "\$koolproxy_enable" = "1" ] ; then
-kill_ps "$scriptname"
-eval "$scriptfilepath keep &"
-exit 0
-fi
-ADMK
-chmod 777 "/tmp/sh_ad_kp_keey_k.sh"
-killall sh_ad_kp_keey_k.sh
-killall -9 sh_ad_kp_keey_k.sh
-/tmp/sh_ad_kp_keey_k.sh &
-
 rm -f /tmp/cron_adb.lock
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+i_app_keep -name="koolproxy" -pidof="koolproxy" &
 while true; do
-koolproxy_enable=`nvram get koolproxy_enable`
-[ "$koolproxy_enable" != "1" ] && exit
-[ ! -s "/tmp/7620koolproxy/koolproxy" ] && logger -t "【koolproxy】" "重新启动" && koolproxy_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
-	ss_enable=`nvram get ss_enable`
-	if [ "$ss_enable" = "1" ] ; then
-		if [ ! -z "$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v '^#' | sort -u | grep -v '^$' | sed s/！/!/g)" ] ; then
-			[ -z "$(ps -w | grep koolproxy | grep mark)" ] && logger -t "【koolproxy】" "mark！重新启动" && koolproxy_restart
-		fi
-	fi
 	if [ ! -f /tmp/cron_adb.lock ] ; then
-		PIDS=$(ps -w | grep "/tmp/7620koolproxy/koolproxy" | grep -v "grep" | wc -l)
-		if [ "$PIDS" = 0 ] ; then 
-			logger -t "【koolproxy】" "找不到进程, 重启 koolproxy"
-			koolproxy_flush_rules
-			killall -15 koolproxy
-			killall -9 koolproxy
-			sleep 3
-			cd /tmp/7620koolproxy/
-			/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
-			sleep 20
-		fi
-		if [ "$PIDS" -gt 2 ] ; then 
-			logger -t "【koolproxy】" "进程重复, 重启 koolproxy"
-			koolproxy_flush_rules
-			killall -15 koolproxy
-			killall -9 koolproxy
-			sleep 3
-			cd /tmp/7620koolproxy/
-			/tmp/7620koolproxy/koolproxy $mode_video -d # >/dev/null 2>&1 &
-			sleep 20
-		fi
 		port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
 			if [ "$port" -gt 1 ] && [ ! -f /tmp/cron_adb.lock ] ; then
 				logger -t "【koolproxy】" "有多个3000转发规则, 删除多余"
@@ -336,11 +247,11 @@ port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
 [ "$adbyby_enable" != "1" ] && killall -9 adbyby sh_ad_byby_keey_k.sh
 [ "$adm_enable" != "1" ] && killall -15 adm sh_ad_m_keey_k.sh
 [ "$adm_enable" != "1" ] && killall -9 adm sh_ad_m_keey_k.sh
-killall -15 koolproxy sh_ad_kp_keey_k.sh
-killall -9 koolproxy sh_ad_kp_keey_k.sh
+killall -15 koolproxy
+killall -9 koolproxy
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 rm -f /tmp/adbyby_host.conf
-rm -f /tmp/7620koolproxy.tgz /tmp/cron_adb.lock /tmp/sh_ad_kp_keey_k.sh /tmp/cp_rules.lock
+rm -f /tmp/7620koolproxy.tgz /tmp/cron_adb.lock /tmp/cp_rules.lock
 kill_ps "/tmp/script/_kool_proxy"
 kill_ps "_kool_proxy.sh"
 kill_ps "$scriptname"
@@ -447,13 +358,9 @@ if [ -z "`pidof koolproxy`" ] && [ "$koolproxy_enable" = "1" ] && [ ! -f /tmp/cr
 	rm -f /tmp/adbyby_host.conf
 	sleep 10
 	[ -z "`pidof koolproxy`" ] && sleep 4
-	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动成功" && koolproxy_restart o
-	[ -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && koolproxy_restart x
-	#[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "等待规则下载，请等待40秒！" && sleep 10
-	#[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "等待规则下载，请等待30秒！" && sleep 10
+	i_app_keep -t -name="koolproxy" -pidof="koolproxy"
 	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "等待规则下载，请等待20秒！" && sleep 10
 	[ ! -z "`pidof koolproxy`" ] && logger -t "【koolproxy】" "等待规则下载，请等待10秒！" && sleep 10
-	hash krdl 2>/dev/null && krdl_ipset
 fi
 if [ -s /tmp/7620koolproxy/data/rules/koolproxy.txt ] ; then
 nvram set koolproxy_rules_date_local="`sed -n '1,10p' /tmp/7620koolproxy/data/rules/koolproxy.txt | grep "$(sed -n '1,10p' /tmp/7620koolproxy/data/rules/koolproxy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+|201?.{1}' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g' | sed -n '1p'`"
@@ -477,46 +384,6 @@ for setname in $(ipset -n list | grep -i "ad_spec"); do
 	ipset destroy $setname 2>/dev/null
 done
 [ -n "$FWI" ] && echo '#!/bin/bash' >$FWI
-}
-
-krdl_ipset () {
-
-[ ! -f /tmp/7620koolproxy/data/rules/koolproxy.txt ] && return 0
-# Koolproxy Rules to Domain List
-rm -f /tmp/7620koolproxy/domain.txt /tmp/7620koolproxy/domain2.txt /tmp/7620koolproxy/ip.txt
-cd /tmp/7620koolproxy/data/rules
-# while read line
-# do
-# c_line=`echo $line |grep -v "#" |grep '*'`
-# file_name=${line##*/}
-# if [ ! -z $file_name ] && [ ! -z "$c_line" ] ; then
-	# [ -f ./$file_name ] && rm -f ./$file_name*
-# fi
-# c_line=`echo $line |grep -v "#" |grep -v '*'`
-# file_name=${line##*/}
-# if [ ! -z $file_name ] && [ ! -z "$c_line" ] ; then
-	# [ -f ./$file_name ] && krdl ./$file_name
-# fi
-# done < /etc/storage/koolproxy_rules_list.sh
-# krdl ./user.txt
-krdl ./1.dat
-krdl ./kp.dat
-krdl ./koolproxy.txt
-krdl ./user.txt
-krdl ./daily.txt
-sleep 2
-eval $(ls| grep txt.http| awk '{print "cat /tmp/7620koolproxy/data/rules/"$1" >> /tmp/7620koolproxy/domain.txt;";}')
-# 提取IP
-cat  /tmp/7620koolproxy/domain.txt /tmp/7620koolproxy/koolproxy_blockip.txt | grep -Eo '^[0-9\.]*$' | sort -u | grep -v '^$' > /tmp/7620koolproxy/ip.txt
-cat /tmp/7620koolproxy/ip.txt /tmp/7620koolproxy/koolproxy_blockip.txt | sort -u > /tmp/7620koolproxy/koolproxy_blockip.txt
-sed -Ei '/0.0.0.0/d' /tmp/7620koolproxy/koolproxy_blockip.txt
-# 提取Domain
-cat  /tmp/7620koolproxy/domain.txt | grep  -Ev '^[0-9\.]*$' | sort -u > /tmp/7620koolproxy/domain2.txt
-sed -e "s/^/ipset=\/\./" -e "s/$/\/black_koolproxy/" -i /tmp/7620koolproxy/domain2.txt
-cat /tmp/7620koolproxy/domain2.txt /tmp/7620koolproxy/data/koolproxy_ipset.conf | sort -u > /tmp/adbyby_host.conf
-# 删tmp
-rm -f "/tmp/7620koolproxy/data/rules/*.txt.http" "/tmp/7620koolproxy/data/rules/*.txt.https"
-rm -f /tmp/7620koolproxy/domain.txt /tmp/7620koolproxy/domain2.txt /tmp/7620koolproxy/ip.txt
 }
 
 koolproxy_cp_rules() {
@@ -820,15 +687,6 @@ EOF
 		iptables -t nat -A PREROUTING -s $lan_ipaddr/24 -p udp --dport 53 -j AD_BYBY_DNS_LAN_DG
 		iptables -t nat -A AD_BYBY_DNS_WAN_FW -j DNAT --to $ss_DNS_Redirect_IP
 	fi
-
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
 
 }
 

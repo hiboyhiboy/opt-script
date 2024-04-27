@@ -28,24 +28,16 @@ ss_sub5=`nvram get ss_sub5`
 ss_sub6=`nvram get ss_sub6`
 ss_sub7=`nvram get ss_sub7`
 ss_sub8=`nvram get ss_sub8`
-chinadns_enable=`nvram get app_1`
-[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_ng_enable=`nvram get app_102`
 [ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
-if [ "$chinadns_port" != "8053" ] ; then
-chinadns_enable=0
-chinadns_ng_enable=0
+if [ "$chinadns_port" != "8053" ] && [ "$chinadns_ng_enable" = "3" ] ; then
+chinadns_ng_enable=2 && nvram set app_102=2
 fi
 ss_all_udp=`nvram get app_81`
 if [ "$ss_all_udp" != "0" ] && [ "$ss_all_udp" != "1" ] ; then
 	ss_all_udp=0 ; nvram set app_81=0
-fi
-if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
-	ss_dnsproxy_x=2 ; nvram set ss_dnsproxy_x=2
-else
-	[ "$ss_dnsproxy_x" = "2" ] && ss_dnsproxy_x=0 && nvram set ss_dnsproxy_x=0
 fi
 koolproxy_enable=`nvram get koolproxy_enable`
 
@@ -54,24 +46,7 @@ LAN_AC_IP=`nvram get LAN_AC_IP`
 ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
 ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 
-# if [ "$ss_tproxy_enable" = "1" ] ; then
-# [ "$LAN_AC_IP" != "$(sstp_get "LAN_AC_IP")" ] && sstp_set LAN_AC_IP="$LAN_AC_IP"
-# optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
-# Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
-# Mem_lt=200000
-# [ "$Mem_total" -lt 66 ] && Mem_total="66" || { [ "$Mem_total" -ge 66 ] || Mem_total="66" ; }
-# if [ ! -z "$optPath" ] || [ "$Mem_total" -lt "$Mem_lt" ] ; then
-	# if [ "$Mem_total" -lt "$Mem_lt" ] ; then
-		# if [ "$ss_pdnsd_cn_all" != "1" ] ; then
-			# logger -t "【ss_tproxy】" " /opt/ 在内存储存"
-			# logger -t "【ss_tproxy】" "内存不足200M，停止 China 域名加速查询 DNS"
-			# ss_pdnsd_cn_all=1 && nvram set app_113=1
-		# fi
-	# fi
-# fi
-# fi
-
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss_tproxy)" ] && [ ! -s /tmp/script/_app21 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ss_tproxy)" ] && [ ! -s /tmp/script/_app21 ] ; then
 	nvram set ss_tproxy_auser=""
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app21
@@ -97,57 +72,20 @@ exit
 }
 
 ss_tproxy_restart () {
-
-relock="/var/lock/ss_tproxy_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set ss_tproxy_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【ss_tproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	ss_tproxy_renum=${ss_tproxy_renum:-"0"}
-	ss_tproxy_renum=`expr $ss_tproxy_renum + 1`
-	nvram set ss_tproxy_renum="$ss_tproxy_renum"
-	if [ "$ss_tproxy_renum" -gt "3" ] ; then
-		I=1
-		echo $I > $relock
-		logger -t "【ss_tproxy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get ss_tproxy_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set ss_tproxy_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set ss_tproxy_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="ss_tproxy"
 }
 
 ss_tproxy_get_status () {
 
-A_restart=`nvram get ss_tproxy_status`
-C_restart="$chinadns_enable$chinadns_ng_enable$chinadns_port$dns_start_dnsproxy$koolproxy_enable$LAN_AC_IP$output_return$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_dnsproxy_x$ss_pdnsd_all$ss_pdnsd_cn_all$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_tproxy_enable$ss_tproxy_mode_x$ss_udp_enable$ss_all_udp$(cat /etc/storage/app_26.sh | grep -v '^#' | grep -v '^$')$(cat /etc/storage/shadowsocks_ss_spec_wan.sh | grep -v '^#' | grep -v '^$')$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v '^#' | grep -v '^$')"
+C_restart="$chinadns_ng_enable$chinadns_port$dns_start_dnsproxy$koolproxy_enable$LAN_AC_IP$output_return$ss_3p_enable$ss_3p_gfwlist$ss_3p_kool$ss_DNS_Redirect$ss_DNS_Redirect_IP$ss_dnsproxy_x$ss_pdnsd_all$ss_pdnsd_cn_all$ss_sub1$ss_sub2$ss_sub3$ss_sub4$ss_sub5$ss_sub6$ss_sub7$ss_sub8$ss_tproxy_enable$ss_tproxy_mode_x$ss_udp_enable$ss_all_udp$(cat /etc/storage/app_26.sh | grep -v '^#' | grep -v '^$')$(cat /etc/storage/shadowsocks_ss_spec_wan.sh | grep -v '^#' | grep -v '^$')$(cat /etc/storage/shadowsocks_ss_spec_lan.sh | grep -v '^#' | grep -v '^$')"
 C_restart=`echo -n "$C_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
 C_restart="$(echo $C_restart)"
-[ "$C_restart" != "$(sstp_get "ss_tproxy_status")" ] && sstp_set ss_tproxy_status="$C_restart"
-B_restart="$(cat /etc/storage/app_27.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set ss_tproxy_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="ss_tproxy_2" -valb="$C_restart"
+
+[ "$needed_restart" = "1" ] && sstp_set ss_tproxy_status="$(nvram get ss_tproxy_2_status)"
+
+i_app_get_status -name="ss_tproxy" -valb="$(cat /etc/storage/app_27.sh | grep -v '^#' | grep -v '^$')"
 }
 
 ss_tproxy_check () {
@@ -166,7 +104,7 @@ if [ "$ss_tproxy_enable" = "1" ] ; then
 		ss_tproxy_start
 	else
 		if [ "$dns_start_dnsproxy" != "1" ] && [ "$ss_dnsproxy_x" != "2" ] && [ "$mode" != "chnlist" ] ; then
-			[ -z "`pidof dnsproxy`" ] && [ -z "`pidof pdnsd`" ] && logger -t "【ss_tproxy】" "检测1:找不到 dnsproxy , 重新添加" && ss_tproxy_restart
+			[ -z "`pidof dnsproxy`" ]    && logger -t "【ss_tproxy】" "检测1:找不到 dnsproxy , 重新添加" && ss_tproxy_restart
 		fi
 		port=$(iptables -t nat -L | grep 'SSTP' | wc -l)
 		[ "$port"x == 0x ] && port=$(iptables -t mangle -L | grep 'SSTP' | wc -l)
@@ -174,6 +112,7 @@ if [ "$ss_tproxy_enable" = "1" ] ; then
 			logger -t "【ss_tproxy】" "检测2:找不到 SSTP 转发规则, 重新添加"
 			ss_tproxy_run "start_iptables"
 		fi
+		if [ "$chinadns_ng_enable" != "1" ] ; then
 		if [ "$mode" == "chnlist" ] ; then
 			# 回国模式 检测远程 DNS 转发规则
 			port=$(grep "server=$dns_remote"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
@@ -197,33 +136,22 @@ if [ "$ss_tproxy_enable" = "1" ] ; then
 				ss_tproxy start_dnsserver_confset
 			fi
 		fi
-		port=$(grep "$dnsmasq_string_arg"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-		if [ "$port" = 0 ] ; then
-			sleep 10
-			port=$(grep "$dnsmasq_string_arg"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-		fi
-		if [ "$port" = 0 ] ; then
-			logger -t "【ss_tproxy】" "$mode 检测3:找不到 dnsmasq [$dnsmasq_string_arg] 转发规则, 重新添加"
-			ss_tproxy start_dnsserver_confset
 		fi
 	fi
 fi
 }
 
 ss_tproxy_keep () {
-logger -t "【ss_tproxy】" "守护进程启动"
+i_app_keep -name="ss_tproxy" -pidof="Sh99_ss_tproxy.sh" &
 sleep 20
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【ss_tproxy】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof Sh99_ss_tproxy.sh\`" ] && nvram set ss_tproxy_status=00 && logger -t "【ss_tproxy】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【ss_tproxy】|^$/d' /tmp/script/_opt_script_check # 【ss_tproxy】
-OSC
-#return
-fi
-
 while true; do
 	ss_dnsproxy_x=`nvram get ss_dnsproxy_x`
+	if [ "$ss_dnsproxy_x" = "2" ] && [ -z "`pidof chinadns_ng`" ] ; then
+		logger -t "【sh_ss_tproxy.sh】" "错误！！！ chinadns_ng 没启动！"
+		chinadns_ng_status=0 && nvram set chinadns_ng_status=0
+		ss_dnsproxy_x=0 ; nvram set ss_dnsproxy_x=0 && ss_tproxy_restart
+	fi
 	if [ "$dns_start_dnsproxy" != "1" ] && [ "$ss_dnsproxy_x" != "2" ] && [ "$mode" != "chnlist" ] ; then
 		[ -z "`pidof dnsproxy`" ] && [ -z "`pidof pdnsd`" ] && logger -t "【ss_tproxy】" "检测1:找不到 dnsproxy , 重新添加" && ss_tproxy_restart
 	fi
@@ -233,6 +161,7 @@ while true; do
 		logger -t "【ss_tproxy】" "检测2:找不到 SSTP 转发规则, 重新添加"
 		ss_tproxy_run "start_iptables"
 	fi
+	if [ "$chinadns_ng_enable" != "1" ] ; then
 	if [ "$mode" == "chnlist" ] ; then
 		# 回国模式 检测远程 DNS 转发规则
 		port=$(grep "server=$dns_remote"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
@@ -256,18 +185,10 @@ while true; do
 			ss_tproxy start_dnsserver_confset
 		fi
 	fi
-	port=$(grep "$dnsmasq_string_arg"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-	if [ "$port" = 0 ] ; then
-		sleep 10
-		port=$(grep "$dnsmasq_string_arg"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-	fi
-	if [ "$port" = 0 ] ; then
-		logger -t "【ss_tproxy】" "$mode 检测3:找不到 dnsmasq [$dnsmasq_string_arg] 转发规则, 重新添加"
-		ss_tproxy start_dnsserver_confset
 	fi
 	dnsmasq_file="`ls -p /tmp/ss_tproxy/dnsmasq.d | grep -v tmp | grep -v /`"
 [ ! -z "$dnsmasq_file" ] && echo "$dnsmasq_file" | while read conf_file; do [ "$(cat /tmp/ss_tproxy/dnsmasq.d/$conf_file | grep -c "server=\|ipset=")" == "0" ] &&  rm -f /tmp/ss_tproxy/dnsmasq.d/$conf_file ; done
-	ifconfig -a | grep inet | grep -v inet6 | awk '{print $2}' | tr -d "addr:"​ | while read ip_addr; do echo "-A localaddr $ip_addr"; done | ipset -! restore &>/dev/null
+	ifconfig -a | grep inet | grep -v inet6 | awk '{print $2}' | tr -d "addr:" | while read ip_addr; do echo "-A localaddr $ip_addr"; done | ipset -! restore &>/dev/null
 	ifconfig -a | grep inet6 | awk '{print $3}' | while read ip_addr; do echo "-A localaddr6 $ip_addr"; done | ipset -! restore &>/dev/null
 sleep 60
 done
@@ -276,7 +197,7 @@ done
 ss_tproxy_close () {
 kill_ps "Sh99_ss_tproxy.sh keep"
 sed -Ei '/【ss_tproxy】|^$/d' /tmp/script/_opt_script_check
-ss_tproxy_run "flush_postrule"
+ss_tproxy_run "flush-postrule"
 ss_tproxy_run "stop"
 nvram set ss_tproxy_auser="$auser_a"
 restart_on_dhcpd
@@ -390,15 +311,6 @@ eval "$scriptfilepath keep &"
 exit 0
 }
 
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
-}
-
 initconfig () {
 	if [ ! -f "/etc/storage/app_26.sh" ] || [ ! -s "/etc/storage/app_26.sh" ] ; then
 cat > "/etc/storage/app_26.sh" <<-\VVR
@@ -447,8 +359,9 @@ tcponly='false' # true:仅代理TCP流量; false:代理TCP和UDP流量
 selfonly='false' # true:仅代理本机流量; false:代理本机及"内网"流量
 
 ## ss_tproxy 配置文件的配置参数覆盖 web 的配置参数
+ext_chinadns_ng_usage='' #指定的 chinadns_ng 启动参数
 ext_dns_start_dnsproxy='' #app_112 0:自动开启第三方 DNS 程序(dnsproxy) ; 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
-ext_ss_dnsproxy_x=''      #DNS程序选择，0:dnsproxy ; 1:pdnsd ; 2:dnsmasq
+ext_ss_dnsproxy_x=''      #DNS程序选择，0:dnsproxy ; 1:pdnsd ; 2:chinadns_ng
 ext_ss_pdnsd_all=''       # 0使用[本地DNS] + [GFW规则]查询DNS ; 1 使用 8053 端口查询全部 DNS
 ext_ss_pdnsd_cn_all=''    #app_113 0:使用 8053 端口查询全部 DNS 时进行 China 域名加速 ; 1:不进行 China 域名加速
 ## iptables -t nat -I SSTP_OUTPUT -j RETURN

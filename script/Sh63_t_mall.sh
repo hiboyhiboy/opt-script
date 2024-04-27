@@ -18,7 +18,7 @@ fi
 app_118=`nvram get app_118`
 [ -z $app_118 ] && app_118=8080 && nvram set app_118=8080
 http_tmp_lanport=`nvram get http_tmp_lanport`
-if [ "$demoui_enable" == "0" ] && [ ! -z "$http_tmp_lanport" ]  ; then
+if [ "$demoui_enable" == "0" ] && [ ! -z "$http_tmp_lanport" ] ; then
 	logger -t "【demoui】" "恢复真实 Web 服务访问端口 $lan_ipaddr:$http_tmp_lanport ，需等待15秒"
 	logger -t "【demoui】" "变更源地址由于网页有缓存导致显示异常，请按 ctrl+F5 强制刷新或清除缓存"
 	logger -t "【demoui】" "变更源地址由于网页有缓存导致显示异常，请按 ctrl+F5 强制刷新或清除缓存 "
@@ -29,7 +29,6 @@ if [ "$demoui_enable" == "0" ] && [ ! -z "$http_tmp_lanport" ]  ; then
 	killall -9 httpd
 fi
 if [ "$tmall_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep tmall | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 tmall_renum=`nvram get tmall_renum`
 
@@ -42,60 +41,21 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep t_mall)" ]  && [ ! -s /tmp/script/_app13 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep t_mall)" ] && [ ! -s /tmp/script/_app13 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app13
 	chmod 777 /tmp/script/_app13
 fi
 
 tmall_restart () {
-
-relock="/var/lock/tmall_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set tmall_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【tmall】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	tmall_renum=${tmall_renum:-"0"}
-	tmall_renum=`expr $tmall_renum + 1`
-	nvram set tmall_renum="$tmall_renum"
-	if [ "$tmall_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【tmall】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get tmall_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set tmall_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set tmall_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="tmall"
 }
 
 tmall_get_status () {
 
-A_restart=`nvram get tmall_status`
 B_restart="$tmall_enable$wxsend_enable$wxsend_port$tmall_id$demoui_enable$app_117$app_118$(cat /etc/storage/app_13.sh /etc/storage/app_14.sh /etc/storage/app_29.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set tmall_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="tmall" -valb="$B_restart"
 }
 
 tmall_check () {
@@ -116,15 +76,7 @@ fi
 }
 
 tmall_keep () {
-logger -t "【天猫精灵】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【天猫精灵】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof caddy_tmall\`" ] || [ ! -s "/opt/tmall/caddy_tmall" ] && nvram set tmall_status=00 && logger -t "【天猫精灵】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【天猫精灵】|^$/d' /tmp/script/_opt_script_check # 【天猫精灵】
-OSC
-#return
-fi
-
+i_app_keep -name="tmall" -pidof="caddy_tmall" -cpath="/opt/tmall/caddy_tmall" &
 while true; do
 	if [ -f "/tmp/tmall/RUN" ] ; then
 		logger -t "【天猫精灵】" "运行远程命令"
@@ -147,21 +99,11 @@ kill_ps "$scriptname"
 
 tmall_start () {
 check_webui_yes
-SVC_PATH="/opt/tmall/caddy_tmall"
+i_app_get_cmd_file -name="tmall" -cmd="/opt/tmall/caddy_tmall" -cpath="/opt/tmall/caddy_tmall" -down1="$hiboyfile/caddy2" -down2="$hiboyfile2/caddy2" -runh="help"
 mkdir -p "/tmp/tmall"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【天猫精灵】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-	initopt
-fi
 mkdir -p "/opt/tmall/www"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
 [ -z "$($SVC_PATH list-modules 2>&1 | grep http.handlers.cgi)" ] && rm -rf $SVC_PATH ;
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【天猫精灵】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【天猫精灵】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && tmall_restart x
-fi
+[ ! -s "$SVC_PATH" ] && wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
 [ -z "$tmall_id" ] && { logger -t "【天猫精灵】" "启动失败, 注意检[认证配置]是否填写,10 秒后自动尝试重新启动" && sleep 10 && tmall_restart x ; }
 # 生成配置文件
 rm -f /opt/tmall/app_13.sh
@@ -220,20 +162,10 @@ chmod 444 /opt/tmall/www/aligenie/*
 logger -t "【天猫精灵】" "运行 /opt/tmall/caddy_tmall"
 eval "/opt/tmall/caddy_tmall run --config /opt/tmall/Caddyfile --adapter caddyfile $cmd_log" &
 sleep 3
-[ ! -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【天猫精灵】" "启动成功" && tmall_restart o
-[ -z "$(ps -w | grep "caddy_tmall" | grep -v grep )" ] && logger -t "【天猫精灵】" "启动失败, 注意检caddy_tmall是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tmall_restart x
+i_app_keep -t -name="tmall" -pidof="caddy_tmall" -cpath="/opt/tmall/caddy_tmall"
 #tmall_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
@@ -280,25 +212,25 @@ POST_DATA2=$(echo "$POST_DATA" | sed "s/\///g" | sed "s/[[:space:]]//g" | grep -
 REPLY_DATA="好的"
 RUN_DATA="/tmp/tmall/RUN"
 # 更多自定义命令请自行参考添加修改
-if [ "$POST_DATA2" = "打开网络" ]; then
+if [ "$POST_DATA2" = "打开网络" ] ; then
   radio2_guest_enable
   radio5_guest_enable
   REPLY_DATA="打开网络"
 fi
 
-if [ "$POST_DATA2" = "停用网络" ]; then
+if [ "$POST_DATA2" = "停用网络" ] ; then
   radio2_guest_disable
   radio5_guest_disable
   REPLY_DATA="停用网络"
 fi
 
-if [ "$POST_DATA2" = "打开电脑" ]; then
+if [ "$POST_DATA2" = "打开电脑" ] ; then
   # 下面的00:00:00:00:00:00改为电脑网卡地址即可唤醒
   ether-wake -b -i br0 00:00:00:00:00:00
   REPLY_DATA="打开电脑"
 fi
 
-if [ "$POST_DATA2" = "打开代理" ]; then
+if [ "$POST_DATA2" = "打开代理" ] ; then
   cat > "$RUN_DATA" <<-\RRR
   nvram set ss_status=0
   nvram set ss_enable=1
@@ -308,7 +240,7 @@ RRR
   REPLY_DATA="打开代理"
 fi
 
-if [ "$POST_DATA2" = "关闭代理" ]; then
+if [ "$POST_DATA2" = "关闭代理" ] ; then
   cat > "$RUN_DATA" <<-\RRR
   nvram set ss_status=1
   nvram set ss_enable=0
@@ -318,7 +250,7 @@ RRR
   REPLY_DATA="关闭代理"
 fi
 
-if [ "$POST_DATA2" = "重启路由" ]; then
+if [ "$POST_DATA2" = "重启路由" ] ; then
   cat > "$RUN_DATA" <<-\RRR
   nvram commit
   /sbin/mtd_storage.sh save
@@ -328,7 +260,7 @@ RRR
   REPLY_DATA="重启路由"
 fi
 
-if [ "$POST_DATA2" = "打开路由" ]; then
+if [ "$POST_DATA2" = "打开路由" ] ; then
   cat > "$RUN_DATA" <<-\RRR
   nvram set app_117=1
   nvram commit
@@ -337,7 +269,7 @@ RRR
   REPLY_DATA="打开路由"
 fi
 
-if [ "$POST_DATA2" = "关闭路由" ]; then
+if [ "$POST_DATA2" = "关闭路由" ] ; then
   cat > "$RUN_DATA" <<-\RRR
   nvram set app_117=0
   nvram commit
@@ -346,7 +278,7 @@ RRR
   REPLY_DATA="关闭路由"
 fi
 
-if [ "$POST_DATA2" = "重置路由" ]; then
+if [ "$POST_DATA2" = "重置路由" ] ; then
   cat > "$RUN_DATA" <<-\RRR
   /sbin/mtd_storage.sh reset
   nvram set restore_defaults=1

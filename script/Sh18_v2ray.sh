@@ -42,20 +42,19 @@ ss_tproxy_auser=`nvram get ss_tproxy_auser`
 fi
 [ "$v2ray_follow" == 0 ] && mk_mode_routing=0
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-#nvramshow=`nvram showall | grep '=' | grep v2ray | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 ss_udp_enable=`nvram get ss_udp_enable` #udp转发  0、停用；1、启动
 [ -z $ss_udp_enable ] && ss_udp_enable=0 && nvram set ss_udp_enable=0
 app_114=`nvram get app_114` #0:代理本机流量; 1:跳过代理本机流量
 [ -z $app_114 ] && app_114=0 && nvram set app_114=0
 
-chinadns_enable=`nvram get app_1`
-[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 chinadns_ng_enable=`nvram get app_102`
 [ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
 chinadns_port=`nvram get app_6`
 [ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
-if [ "$chinadns_port" != "8053" ] ; then
-chinadns_enable=0
+if [ "$chinadns_port" != "8053" ] && [ "$chinadns_ng_enable" = "3" ] ; then
+chinadns_ng_enable=2
+fi
+if [ "$chinadns_ng_enable" = "1" ] ; then
 chinadns_ng_enable=0
 fi
 # v2ray_port=`nvram get v2ray_port`
@@ -95,67 +94,21 @@ ss_DNS_Redirect=`nvram get ss_DNS_Redirect`
 ss_DNS_Redirect_IP=`nvram get ss_DNS_Redirect_IP`
 [ -z "$ss_DNS_Redirect_IP" ] && ss_DNS_Redirect_IP=$lan_ipaddr
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep v2ray)" ]  && [ ! -s /tmp/script/_v2ray ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep v2ray)" ] && [ ! -s /tmp/script/_v2ray ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_v2ray
 	chmod 777 /tmp/script/_v2ray
 fi
 
 v2ray_restart () {
-
-relock="/var/lock/v2ray_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set v2ray_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ "$ss_matching_enable" == "0" ] ; then
-		[ -f $relock ] && rm -f $relock
-		logger -t "【v2ray_restart】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_v2_matching.txt"
-		eval "$scriptfilepath v2ray_link_v2_matching &"
-		sleep 10
-		exit 0
-	fi
-	if [ -f $relock ] ; then
-		logger -t "【v2ray】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	v2ray_renum=${v2ray_renum:-"0"}
-	v2ray_renum=`expr $v2ray_renum + 1`
-	nvram set v2ray_renum="$v2ray_renum"
-	if [ "$v2ray_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【v2ray】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get v2ray_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set v2ray_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set v2ray_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="v2ray"
 }
 
 v2ray_get_status () {
 
-A_restart=`nvram get v2ray_status`
-B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_enable$chinadns_ng_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$app_74$ss_ip46$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set v2ray_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+B_restart="$v2ray_enable$ss_udp_enable$app_114$chinadns_ng_enable$ss_link_1$ss_link_2$ss_rebss_n$ss_rebss_a$transocks_mode_x$v2ray_path$v2ray_follow$lan_ipaddr$v2ray_door$v2ray_http_enable$v2ray_http_format$v2ray_http_config$mk_mode_routing$app_default_config$app_74$ss_ip46$(cat /etc/storage/v2ray_script.sh /etc/storage/v2ray_config_script.sh | grep -v '^#' | grep -v '^$')"
+
+i_app_get_status -name="v2ray" -valb="$B_restart"
 }
 
 v2ray_check () {
@@ -183,23 +136,8 @@ fi
 }
 
 v2ray_keep () {
-logger -t "【v2ray】" "守护进程启动"
+i_app_keep -name="v2ray" -pidof="$(basename $v2ray_path)" -cpath="$v2ray_path" -ps=v2raykeep &
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "Sh18_v2ray.sh v2raykeep" /tmp/ps | grep -v grep |wc -l\` # 【v2ray】
-	if [ "\$NUM" -lt "1" ] ; then # 【v2ray】
-	ps -w > /tmp/ps # 【v2ray】
-	NUM=\`grep "v2raykeep" /tmp/ps | grep -v grep |wc -l\` # 【v2ray】
-	fi # 【v2ray】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "$v2ray_path" ] ; then # 【v2ray】
-		logger -t "【v2ray】" "重新启动\$NUM" # 【v2ray】
-		nvram set v2ray_status=00 && eval "$scriptfilepath &" && sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check # 【v2ray】
-	fi # 【v2ray】
-OSC
-#return
-fi
 sleep 20
 ss_link_2=`nvram get ss_link_2`
 ss_link_1=`nvram get ss_link_1`
@@ -290,8 +228,7 @@ fi
 if [ "$check2" == "200" ] ; then
 #200
 	echo "[v2ray_keep] $app_98 have no problem."
-	ss_internet="$(nvram get ss_internet)"
-	[ "$ss_internet" != "1" ] && nvram set ss_internet="1"
+	[ "$(nvram get ss_internet)" != "1" ] && nvram set ss_internet="1"
 	if [ "$rebss" != "0" ] ; then
 	logger -t "【v2ray】" " v2ray 服务器 【$app_98】 恢复正常"
 	rebss="0"
@@ -304,8 +241,7 @@ if [ "$check2" == "200" ] ; then
 fi
 
 #404
-ss_internet="$(nvram get ss_internet)"
-[ "$ss_internet" != "0" ] && nvram set ss_internet="0"
+[ "$(nvram get ss_internet)" != "0" ] && nvram set ss_internet="0"
 [ -z "$rebss" ] && rebss=0
 rebss=`expr $rebss + 1`
 nvram set ss_rebss_b="$rebss"
@@ -318,8 +254,7 @@ if [ "$ss_matching_enable" == "0" ] ; then
 	logger -t "【v2ray】" " v2ray 已启用自动故障转移(透明代理时生效)，若检测 3 次断线则更换节点，当值为 $rebss"
 if [ "$rebss" -ge "3" ] ; then
 	nvram set ss_rebss_b=0
-	ss_internet="$(nvram get ss_internet)"
-	[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
+	[ "$(nvram get ss_internet)" != "2" ] && nvram set ss_internet="2"
 	logger -t "【v2ray】" "匹配关键词自动选用节点故障转移 /tmp/link/matching/link_v2_matching.txt"
 	eval "$scriptfilepath v2ray_link_v2_matching &"
 	sleep 10
@@ -336,7 +271,7 @@ done
 }
 
 v2ray_close () {
-nvram set ss_internet="0"
+[ "$(nvram get ss_internet)" != "0" ] && nvram set ss_internet="0"
 kill_ps "$scriptname v2raykeep"
 kill_ps "$scriptname"
 kill_ps "Sh18_v2ray.sh"
@@ -382,7 +317,7 @@ fi
 fi
 fi
 fi
-nvram set ss_internet="2"
+[ "$(nvram get ss_internet)" != "2" ] && nvram set ss_internet="2"
 if [ ! -s "$v2ray_path" ] ; then
 	v2ray_path="/opt/bin/v2ray"
 fi
@@ -427,7 +362,7 @@ if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
 	mkdir -p /opt/etc/ssl/certs
 	rm -f /etc/ssl/certs
 	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
-	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ]; then
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ] ; then
 		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/ ; cd /opt
 	fi
 	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
@@ -459,26 +394,19 @@ Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 logger -t "【ss_tproxy】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
 fi
 v2ray_get_releases
-for h_i in $(seq 1 2) ; do
 if [ "$app_74" == "5" ] || [ "$app_74" == "6" ] ; then
-	[[ "$(v2ray help 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+	[[ "$($v2ray_path help 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 V2ray-core v5 主程序"
 	[ "$app_74" != "6" ] && nvram set app_74="6" && app_74="6"
-	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray5" "$hiboyfile2/v2ray-v2ray5"
+	i_app_get_cmd_file -name="v2ray" -cmd="$v2ray_path" -cpath="/opt/bin/v2ray" -down1="$hiboyfile/v2ray-v2ray5" -down2="$hiboyfile2/v2ray-v2ray5" -runh="help"
 else
-if [ "$app_74" == "1" ] || [ "$app_74" == "3" ] ; then
-	[[ "$(v2ray -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
-	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 V2ray-core 主程序"
-	[ "$app_74" != "3" ] && nvram set app_74="3" && app_74="3"
-	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray-v2ray" "$hiboyfile2/v2ray-v2ray"
-else
-	[[ "$(v2ray help 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
+	[[ "$($v2ray_path help 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
 	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "自动下载 Xray-core 主程序"
 	[ "$app_74" != "4" ] && nvram set app_74="4" && app_74="4"
-	wgetcurl_file "$v2ray_path" "$hiboyfile/v2ray" "$hiboyfile2/v2ray"
+	i_app_get_cmd_file -name="v2ray" -cmd="$v2ray_path" -cpath="/opt/bin/v2ray" -down1="$hiboyfile/v2ray" -down2="$hiboyfile2/v2ray" -runh="help"
 fi
-fi
-done
+v2ray_path="$SVC_PATH"
+[ "$(nvram get v2ray_path)" != "$v2ray_path" ] && nvram set v2ray_path=$v2ray_path
 if [ -s "$v2ray_path" ] ; then
 	logger -t "【v2ray】" "找到 $v2ray_path"
 	chmod 777 "$(dirname "$v2ray_path")"
@@ -486,14 +414,6 @@ if [ -s "$v2ray_path" ] ; then
 	[ -f $geoip_path ] && chmod 777 $geoip_path
 	[ -f $geosite_path ] && chmod 777 $geosite_path
 fi
-if [ ! -s "$v2ray_path" ] ; then
-	[ ! -s "$v2ray_path" ] && logger -t "【v2ray】" "找不到 $v2ray_path ，需要手动安装 $v2ray_path"
-	logger -t "【v2ray】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
-fi
-if [ -s "$v2ray_path" ] ; then
-	nvram set v2ray_path="$v2ray_path"
-fi
-v2ray_path="$v2ray_path"
 logger -t "【v2ray】" "运行 v2ray_script"
 chmod 777 /etc/storage/v2ray_script.sh
 chmod 644 /opt/etc/ssl/certs -R
@@ -545,7 +465,7 @@ else
 	cp -f /etc/storage/v2ray_config_script.sh /tmp/vmess/mk_vmess.json
 	else
 	# 改写配置适配脚本
-	if [ "$mk_mode_routing" != "0" ]  ; then
+	if [ "$mk_mode_routing" != "0" ] ; then
 	json_mk_ss_tproxy
 	else
 	echo "" > /tmp/vmess/mk_vmess.json
@@ -574,9 +494,9 @@ else
 	[ "$app_74" == "4" ] && su_cmd2="$v2ray_path run -c /tmp/vmess/mk_vmess.json"
 	[ "$app_74" == "6" ] && su_cmd2="$v2ray_path run -c /tmp/vmess/mk_vmess.json"
 fi
-[ "$app_74" == "3" ] && v2ray_v_tmp=`v2ray -version`
-[ "$app_74" == "4" ] && v2ray_v_tmp=`v2ray version`
-[ "$app_74" == "6" ] && v2ray_v_tmp=`v2ray version`
+[ "$app_74" == "3" ] && v2ray_v_tmp=`$v2ray_path -version`
+[ "$app_74" == "4" ] && v2ray_v_tmp=`$v2ray_path version`
+[ "$app_74" == "6" ] && v2ray_v_tmp=`$v2ray_path version`
 v2ray_v=`echo "$v2ray_v_tmp" | grep -Eo "^[^(]+" | sed -n '1p'`
 nvram set v2ray_v="$v2ray_v"
 cd "$(dirname "$v2ray_path")"
@@ -584,11 +504,7 @@ eval "$su_cmd" '"export V2RAY_CONF_GEOLOADER=memconservative;cmd_name=v2ray;'"$s
 #eval "$su_cmd2 $cmd_log" &
 sleep 4
 #restart_on_dhcpd
-[ ! -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动成功 $v2ray_v " && v2ray_restart o
-[ -z "$(ps -w | grep "$v2ray_path" | grep -v grep )" ] && logger -t "【v2ray】" "启动失败,10 秒后自动尝试重新启动" && sleep 10 && v2ray_restart x
-
-initopt
-
+i_app_keep -t -name="v2ray" -pidof="$(basename $v2ray_path)" -cpath="$v2ray_path"
 
 if [ "$v2ray_follow" = "1" ] ; then
 
@@ -596,25 +512,17 @@ if [ "$v2ray_follow" = "1" ] ; then
 logger -t "【v2ray】" "启动 透明代理"
 logger -t "【v2ray】" "备注：默认配置的透明代理会导致广告过滤失效，需要手动改造配置前置代理过滤软件"
 if [ ! -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] && [ "$mk_mode_routing" == "0" ] ; then
+	if [ "$chinadns_ng_enable" = "3" ] ; then
 	logger -t "【v2ray】" "配置含内置 DNS outbound 功能，让 V2Ray 充当 DNS 服务。"
-	chinadns_enable=0
-	chinadns_ng_enable=0
-	nvram set app_102=0
-	nvram set app_1=0
-	nvram set chinadns_status=""
+	chinadns_ng_enable=0 && nvram set app_102=0
 	nvram set chinadns_ng_status=""
 	Sh09_chinadns_ng.sh stop &
-	Sh19_chinadns.sh stop &
 	dns_start_dnsproxy='1' # 1:跳过自动开启第三方 DNS 程序但是继续把DNS绑定到 8053 端口的程序
+	else
+	dns_start_dnsproxy='0' # 0:自动开启第三方 DNS 程序(dnsproxy) ;
+	fi
 else
 	dns_start_dnsproxy='0' # 0:自动开启第三方 DNS 程序(dnsproxy) ;
-fi
-if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
-logger -t "【v2ray】" "chinadns 已经启动 防止域名污染"
-else
-if [ -z "$(cat /etc/storage/v2ray_config_script.sh | grep '"port": 8053')" ] ; then
-logger -t "【v2ray】" "启动 dnsproxy 防止域名污染"
-fi
 fi
 
 Sh99_ss_tproxy.sh auser_check "Sh18_v2ray.sh"
@@ -634,7 +542,7 @@ logger -t "【v2ray】" "①电脑设置 DNS 自动获取路由 ip。检查 host
 logger -t "【v2ray】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
 # 透明代理
 fi
-nvram set ss_internet="1"
+[ "$(nvram get ss_internet)" != "1" ] && nvram set ss_internet="1"
 
 v2ray_get_status
 eval "$scriptfilepath v2raykeep &"
@@ -680,7 +588,9 @@ sstp_set proxy_udpport="$v2ray_door"
 sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
-DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
+[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
@@ -752,8 +662,7 @@ logger -t "【v2ray】" "【自动】设置 ss_tproxy 配置文件，完成配�
 sleep_rnd () {
 #随机延时
 ss_link_1=`nvram get ss_link_1`
-ss_internet="$(nvram get ss_internet)"
-if [ "$ss_internet" = "1" ] ; then
+if [ "$(nvram get ss_internet)" = "1" ] ; then
 SEED=`tr -cd 0-9 </dev/urandom | head -c 8`
 RND_NUM=`echo $SEED 50 80|awk '{srand($1);printf "%d",rand()*10000%($3-$2)+$2}'`
 [ "$RND_NUM" -lt 1 ] && RND_NUM="1" || { [ "$RND_NUM" -ge 1 ] || RND_NUM="1" ; }
@@ -761,15 +670,6 @@ sleep $RND_NUM
 sleep $ss_link_1
 fi
 #/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
@@ -814,30 +714,7 @@ fi
 }
 
 json_jq_check () {
-
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	for h_i in $(seq 1 2) ; do
-	wgetcurl_file /opt/bin/jq "$hiboyfile/jq" "$hiboyfile2/jq"
-	[[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/jq
-	done
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【v2ray】" "找不到 jq，安装 opt 程序"
-	rm -f /opt/bin/jq
-	/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	#opkg update
-	#opkg install jq
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	logger -t "【v2ray】" "找不到 jq，需要手动安装 opt 后输入[opkg update; opkg install jq]安装"
-	return 1
-fi
-fi
-fi
-fi
-fi
+i_app_get_cmd_file -name="v2ray" -cmd="jq" -cpath="/opt/bin/jq" -down1="$hiboyfile/jq" -down2="$hiboyfile2/jq"
 }
 
 json_int_ss_tproxy () {
@@ -956,12 +833,7 @@ echo "" > /tmp/vmess/mk_vmess.json
 if [ "$mk_mode_routing" != "1" ] ; then
 	return
 fi
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	return 1
-fi
-fi
 logger -t "【v2ray】" "开始生成 ss_tproxy 配置"
 mk_ss_tproxy=$(json_int_ss_tproxy)
 [ "$ss_ip46" != "0" ] && mk_ss_tproxy=$(echo $mk_ss_tproxy| jq --raw-output 'setpath(["inbounds",1,"streamSettings","sockopt","tproxy"];"tproxy")')
@@ -1018,12 +890,7 @@ fi
 nvram set app_71=""
 
 
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	return 1
-fi
-fi
 
 # 解码获取信息
 link_de_protocol "$link_tmp" "0vmess0vless0ss0trojan0"
@@ -1955,12 +1822,7 @@ if [ "$vmess_x_tmp" != "up_link" ] ; then
 	return
 fi
 
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	return 1
-fi
-fi
 logger -t "【v2ray】" "服务器订阅：开始更新"
 
 vmess_link="$(echo "$vmess_link" | tr , \  | sed 's@  @ @g' | sed 's@  @ @g' | sed 's@^ @@g' | sed 's@ $@@g' )"
@@ -2001,7 +1863,7 @@ if [ ! -z "$(echo "$http_link" | grep '^/')" ] ; then
 [ -f "$http_link" ] && cp -f "$http_link" /tmp/link/vmess/0_link.txt
 [ ! -f "$http_link" ] && logger -t "【v2ray】" "错误！！ $http_link 文件不存在！"
 else
-if [ -z  "$(echo "$http_link" | grep 'http:\/\/')""$(echo "$http_link" | grep 'https:\/\/')" ]  ; then
+if [ -z "$(echo "$http_link" | grep 'http:\/\/')""$(echo "$http_link" | grep 'https:\/\/')" ] ; then
 	logger -t "【v2ray】" "$http_link"
 	logger -t "【v2ray】" "错误！！vmess 服务器订阅文件下载地址不含http(s)://！请检查下载地址"
 	return
@@ -2071,12 +1933,7 @@ rm -rf /tmp/link/vmess/*
 
 v2ray_link_v2_matching(){
 
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
 json_jq_check
-if [[ "$(jq -h 2>&1 | wc -l)" -lt 2 ]] ; then
-	return 1
-fi
-fi
 # 排序节点
 mkdir -p /tmp/link/matching
 rm -f /tmp/link/matching/link_v2_matching_1.txt
@@ -2153,17 +2010,12 @@ link_get=""
 if [ "$app_74" == "0" ] ; then
 echo "不检测主程序版本"
 fi
-if [ "$app_74" == "1" ]; then
-nvram set app_74="3" ; app_74="3"
-link_get="v2ray-v2ray"
-logger -t "【v2ray】" "自动下载 V2ray-core 主程序"
-fi
-if [ "$app_74" == "2" ]; then
+if [ "$app_74" == "2" ] ; then
 nvram set app_74="4" ; app_74="4"
 link_get="v2ray"
 logger -t "【v2ray】" "自动下载 Xray-core 主程序"
 fi
-if [ "$app_74" == "5" ]; then
+if [ "$app_74" == "5" ] ; then
 nvram set app_74="6" ; app_74="6"
 link_get="v2ray-v2ray5"
 logger -t "【v2ray】" "自动下载 Xray-core v5 主程序"
@@ -2173,7 +2025,7 @@ wgetcurl_file "$v2ray_path""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
 killall v2ray v2ray_script.sh
 killall -9 v2ray v2ray_script.sh
-rm -rf $v2ray_path /opt/opt_backup/bin/v2ray
+rm -rf $v2ray_path
 mv -f "$v2ray_path""_file" "$v2ray_path"
 fi
 
@@ -2201,7 +2053,7 @@ v2raykeep)
 updatev2ray)
 	v2ray_restart o
 	[ "$v2ray_enable" = "1" ] && nvram set v2ray_status="updatev2ray" && logger -t "【v2ray】" "重启" && v2ray_restart
-	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path $geoip_path $geosite_path ; rm -rf /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
+	[ "$v2ray_enable" != "1" ] && [ -f "$v2ray_path" ] && nvram set v2ray_v="" && logger -t "【v2ray】" "更新" && { rm -rf $v2ray_path $geoip_path $geosite_path ; rm -rf /opt/bin/v2ray ; rm -rf /opt/opt_backup/bin/v2ray ; rm -f /opt/bin/v2ray_config.pb ; rm -f /opt/bin/geoip.dat /opt/opt_backup/bin/geoip.dat ; rm -f /opt/bin/geosite.dat /opt/opt_backup/bin/geosite.dat ; }
 	;;
 initconfig)
 	initconfig

@@ -13,7 +13,6 @@ if [ "$gocryptfs_key_enable" != "1" ] && [ ! -z "$gocryptfs_pass" ] ; then
 	nvram set app_135=""
 fi
 if [ "$gocryptfs_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep gocryptfs | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 gocryptfs_renum=`nvram get gocryptfs_renum`
 gocryptfs_renum=${gocryptfs_renum:-"0"}
@@ -29,62 +28,21 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep go_cryptfs)" ]  && [ ! -s /tmp/script/_app23 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep go_cryptfs)" ] && [ ! -s /tmp/script/_app23 ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app23
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app23
 	chmod 777 /tmp/script/_app23
 fi
 
 gocryptfs_restart () {
-
-relock="/var/lock/gocryptfs_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set gocryptfs_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【gocryptfs】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	gocryptfs_renum=${gocryptfs_renum:-"0"}
-	gocryptfs_renum=`expr $gocryptfs_renum + 1`
-	nvram set gocryptfs_renum="$gocryptfs_renum"
-	if [ "$gocryptfs_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【gocryptfs】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get gocryptfs_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-			get_tg_pass
-			[ "$gocryptfs_key_enable" = "2" ] && [ ! -z "$gocryptfs_pass" ] && break
-		done
-		nvram set gocryptfs_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set gocryptfs_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="gocryptfs"
 }
 
 gocryptfs_get_status () {
 
-A_restart=`nvram get gocryptfs_status`
 B_restart="$gocryptfs_enable$gocryptfs_key_enable$gocryptfs_pass$(cat /etc/storage/app_17.sh /etc/storage/app_32.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set gocryptfs_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="gocryptfs" -valb="$B_restart"
 }
 
 gocryptfs_check () {
@@ -92,7 +50,7 @@ gocryptfs_check () {
 gocryptfs_get_status
 if [ "$gocryptfs_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
 	nvram set gocryptfs_update_id=""
-	[ ! -z "$(ps -w | grep "gocryptfs" | grep -v grep )" ] && logger -t "【gocryptfs】" "停止 gocryptfs" && gocryptfs_close
+	[ ! -z "`pidof gocryptfs`" ] && logger -t "【gocryptfs】" "停止 gocryptfs" && gocryptfs_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
 if [ "$gocryptfs_enable" = "1" ] ; then
@@ -100,32 +58,16 @@ if [ "$gocryptfs_enable" = "1" ] ; then
 		gocryptfs_close
 		gocryptfs_start
 	else
-		[ "$gocryptfs_enable" = "1" ] && [ -z "$(ps -w | grep "gocryptfs" | grep -v grep )" ] && gocryptfs_restart
+		[ "$gocryptfs_enable" = "1" ] && [ -z "`pidof gocryptfs`" ] && gocryptfs_restart
 	fi
 fi
 }
 
 gocryptfs_keep () {
-logger -t "【gocryptfs】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【gocryptfs】|^$/d' /tmp/script/_opt_script_check
-if [ "$gocryptfs_enable" = "1" ] ; then
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof gocryptfs\`" ] || [ ! -s "/opt/bin/gocryptfs" ] && nvram set gocryptfs_status=00 && logger -t "【gocryptfs】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【gocryptfs】|^$/d' /tmp/script/_opt_script_check # 【gocryptfs】
-OSC
-fi
-return
-fi
-
-while true; do
-if [ "$gocryptfs_enable" = "1" ] ; then
-	if [ -z "`pidof gocryptfs`" ] || [ ! -s "`which gocryptfs`" ] ; then
-		logger -t "【gocryptfs】" "gocryptfs重新启动"
-		gocryptfs_restart
-	fi
-fi
-	sleep 205
-done
+i_app_keep -t -name="gocryptfs" -pidof="gocryptfs"
+[ "$gocryptfs_key_enable" != "1" ] && gocryptfs_pass=`nvram get app_135` && gocryptfs_get_status
+set_app_list_on
+i_app_keep -name="gocryptfs" -pidof="gocryptfs" &
 }
 
 gocryptfs_close () {
@@ -176,31 +118,22 @@ if [ -z "$upanPath" ] ; then
 	exit 0
 fi
 set_app_list_off
-SVC_PATH=/opt/bin/gocryptfs
-chmod 777 "$SVC_PATH"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【gocryptfs】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-fi
-for h_i in $(seq 1 2) ; do
-[[ "$(gocryptfs -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/gocryptfs
-wgetcurl_file "$SVC_PATH" "$hiboyfile/gocryptfs" "$hiboyfile2/gocryptfs"
-done
+i_app_get_cmd_file -name="gocryptfs" -cmd="gocryptfs" -cpath="/opt/bin/gocryptfs" -down1="$hiboyfile/gocryptfs" -down2="$hiboyfile2/gocryptfs"
 if [ ! -s "/opt/bin/fusermount" ] ; then
 	logger -t "【gocryptfs】" "找不到 /opt/bin/fusermount ，安装 opt mini 程序"
 	/etc/storage/script/Sh01_mountopt.sh opt_mini_wget
 fi
 if [ ! -s "/opt/bin/fusermount" ] ; then
-	logger -t "【gocryptfs】" "找不到 $SVC_PATH，正在尝试[opkg update; opkg install fuse-utils]安装"
+	logger -t "【gocryptfs】" "找不到 /opt/bin/fusermount，正在尝试[opkg update; opkg install fuse-utils]安装"
 	opkg update
 	opkg install fuse-utils
-	if [ ! -s "$SVC_PATH" ] ; then
-		logger -t "【gocryptfs】" "找不到 $SVC_PATH，安装 opt full 程序"
+	if [ ! -s "/opt/bin/fusermount" ] ; then
+		logger -t "【gocryptfs】" "找不到 /opt/bin/fusermount，安装 opt full 程序"
 		/etc/storage/script/Sh01_mountopt.sh opt_full_wget
 	fi
 fi
-if [ ! -s "$SVC_PATH" ] || [ ! -s "/opt/bin/fusermount" ] ; then
-	logger -t "【gocryptfs】" "找不到 $SVC_PATH，需要手动安装 opt 后输入[opkg update; opkg install fuse-utils]安装"
+if [ ! -s "/opt/bin/fusermount" ] ; then
+	logger -t "【gocryptfs】" "找不到 /opt/bin/fusermount，需要手动安装 opt 后输入[opkg update; opkg install fuse-utils]安装"
 	logger -t "【gocryptfs】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && gocryptfs_restart x
 fi
 get_tg_pass
@@ -220,21 +153,8 @@ fi
 logger -t "【gocryptfs】" "运行 /etc/storage/app_32.sh"
 eval "/etc/storage/app_32.sh $gocryptfs_pass $cmd_log"
 sleep 4
-[ -z "`pidof gocryptfs`" ] && logger -t "【gocryptfs】" "启动失败, 注意检查密码是否有错误,程序是否下载完整,30 秒后自动尝试重新启动" && sleep 30 && gocryptfs_restart x
-set_app_list_on
-[ ! -z "`pidof gocryptfs`" ] && logger -t "【gocryptfs】" "启动成功" && gocryptfs_restart o
-[ "$gocryptfs_key_enable" != "1" ] && gocryptfs_pass=`nvram get app_135` && gocryptfs_get_status
 eval "$scriptfilepath keep &"
 exit 0
-
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
 
 }
 
@@ -255,7 +175,7 @@ fi
 app_32="/etc/storage/app_32.sh"
 if [ ! -f "$app_32" ] || [ ! -s "$app_32" ] ; then
 	cat > "$app_32" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 mkdir -p /tmp/AiDisk_00/lockdir_gocryptfs /tmp/AiDisk_00/lockdir_gocryptfsdata

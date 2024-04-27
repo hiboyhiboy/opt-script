@@ -4,7 +4,6 @@ source /etc/storage/script/init.sh
 aliddns_enable=`nvram get aliddns_enable`
 [ -z $aliddns_enable ] && aliddns_enable=0 && nvram set aliddns_enable=0
 if [ "$aliddns_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep aliddns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 aliddns_interval=`nvram get aliddns_interval`
 aliddns_ak=`nvram get aliddns_ak`
@@ -44,60 +43,21 @@ aliddns_renum=`nvram get aliddns_renum`
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep aliddns)" ]  && [ ! -s /tmp/script/_aliddns ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep aliddns)" ] && [ ! -s /tmp/script/_aliddns ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_aliddns
 	chmod 777 /tmp/script/_aliddns
 fi
 
 aliddns_restart () {
-
-relock="/var/lock/aliddns_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set aliddns_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【aliddns】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	aliddns_renum=${aliddns_renum:-"0"}
-	aliddns_renum=`expr $aliddns_renum + 1`
-	nvram set aliddns_renum="$aliddns_renum"
-	if [ "$aliddns_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【aliddns】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get aliddns_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set aliddns_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set aliddns_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="aliddns"
 }
 
 aliddns_get_status () {
 
-A_restart=`nvram get aliddns_status`
 B_restart="$aliddns_enable$aliddns_interval$aliddns_ak$aliddns_sk$aliddns_domain$aliddns_name$aliddns_domain2$aliddns_name2$aliddns_domain6$aliddns_name6$aliddns_ttl$(cat /etc/storage/ddns_script.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set aliddns_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="aliddns" -valb="$B_restart"
 }
 
 aliddns_check () {
@@ -120,15 +80,11 @@ fi
 
 aliddns_keep () {
 aliddns_start
-logger -t "【AliDDNS动态域名】" "守护进程启动"
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof Sh42_aliddns.sh\`" ] && nvram set aliddns_status=00 && logger -t "【aliddns】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【aliddns】|^$/d' /tmp/script/_opt_script_check # 【aliddns】
-OSC
+i_app_keep -name="aliddns" -pidof="Sh42_aliddns.sh" &
 while true; do
 sleep 43
 sleep $aliddns_interval
 [ ! -s "`which curl`" ] && aliddns_restart
-#nvramshow=`nvram showall | grep '=' | grep aliddns | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 aliddns_enable=`nvram get aliddns_enable`
 [ "$aliddns_enable" = "0" ] && aliddns_close && exit 0;
 if [ "$aliddns_enable" = "1" ] ; then
@@ -280,7 +236,7 @@ case  $name  in
 		;;
 esac
 
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 		domain_type="AAAA"
 	else
 		domain_type="A"
@@ -294,7 +250,7 @@ esac
 	# 获得最后更新IP
 	recordIP=`query_recordInfo $aliddns_record_id | get_recordIP`
 	
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 	echo $recordIP
 	return 0
 	else
@@ -328,7 +284,7 @@ case  $name  in
 		name1=$name
 		;;
 esac
-	if [ "$IPv6" = "1" ]; then
+	if [ "$IPv6" = "1" ] ; then
 		domain_type="AAAA"
 	else
 		domain_type="A"
@@ -403,7 +359,7 @@ arDdnsCheck() {
 	echo "Updating Domain: $2.$1"
 	echo "hostIP: $hostIP"
 	lastIP=$(arDdnsInfo "$1 $2")
-	if [ $? -eq 1 ]; then
+	if [ $? -eq 1 ] ; then
 		[ "$IPv6" != "1" ] && lastIP=$(arNslookup "$2.$1")
 		[ "$IPv6" = "1" ] && lastIP=$(arNslookup6 "$2.$1")
 	fi
@@ -415,7 +371,7 @@ arDdnsCheck() {
 		aliddns_record_id=""
 		sleep 1
 		postRS=$(arDdnsUpdate "$1" "$2")
-		if [ $? -eq 0 ]; then
+		if [ $? -eq 0 ] ; then
 			echo "postRS: $postRS"
 			logger -t "【AliDDNS动态域名】" "更新动态DNS记录成功！"
 			return 0
@@ -433,15 +389,6 @@ arDdnsCheck() {
 	echo $lastIP
 	echo "Last IP is the same as current IP!"
 	return 1
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

@@ -1,11 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 maddy_enable=`nvram get app_145`
 [ -z $maddy_enable ] && maddy_enable=0 && nvram set app_145=0
 
 if [ "$maddy_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep maddy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 maddy_renum=`nvram get maddy_renum`
 maddy_renum=${maddy_renum:-"0"}
@@ -19,60 +18,21 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mad_dy)" ]  && [ ! -s /tmp/script/_app28 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep mad_dy)" ] && [ ! -s /tmp/script/_app28 ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app28
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app28
 	chmod 777 /tmp/script/_app28
 fi
 
 maddy_restart () {
-
-relock="/var/lock/maddy_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set maddy_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【maddy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	maddy_renum=${maddy_renum:-"0"}
-	maddy_renum=`expr $maddy_renum + 1`
-	nvram set maddy_renum="$maddy_renum"
-	if [ "$maddy_renum" -gt "2" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【maddy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get maddy_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set maddy_renum="0"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set maddy_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="maddy"
 }
 
 maddy_get_status () {
 
-A_restart=`nvram get maddy_status`
 B_restart="$maddy_enable$(cat /etc/storage/app_37.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set maddy_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="maddy" -valb="$B_restart"
 }
 
 maddy_check () {
@@ -93,26 +53,7 @@ fi
 }
 
 maddy_keep () {
-logger -t "【maddy】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【maddy】|^$/d' /tmp/script/_opt_script_check
-if [ "$maddy_enable" = "1" ] ; then
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof maddy\`" ] || [ ! -s "/opt/maddy/maddy" ] && nvram set maddy_status=00 && logger -t "【maddy】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【maddy】|^$/d' /tmp/script/_opt_script_check # 【maddy】
-OSC
-fi
-return
-fi
-
-while true; do
-if [ "$maddy_enable" = "1" ] ; then
-	if [ -z "`pidof maddy`" ] ; then
-		logger -t "【maddy】" "maddy重新启动"
-		maddy_restart
-	fi
-fi
-	sleep 230
-done
+i_app_keep -name="maddy" -pidof="maddy" -cpath="/opt/maddy/maddy" &
 }
 
 maddy_close () {
@@ -126,23 +67,9 @@ kill_ps "$scriptname"
 
 maddy_start () {
 check_webui_yes
-SVC_PATH="/opt/maddy/maddy"
-chmod 777 "$SVC_PATH"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【maddy】" "找不到 maddy，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-	initopt
-fi
-mkdir -p "/opt/maddy/certs/"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/maddy" "$hiboyfile2/maddy"
-[[ "$(/opt/maddy/maddy --help 2>&1 | wc -l)" -lt 2 ]] && rm -rf "$SVC_PATH"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/maddy" "$hiboyfile2/maddy"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【maddy】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【maddy】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && maddy_restart x
-fi
+i_app_get_cmd_file -name="maddy" -cmd="/opt/maddy/maddy" -cpath="/opt/maddy/maddy" -down1="$hiboyfile/maddy" -down2="$hiboyfile2/maddy" -runh="--help"
 maddy_v=`/opt/maddy/maddy version | awk -F ' ' '{print $1;}' | head -n1`
-nvram set maddy_v="$maddy_v"
+[ "$(nvram get maddy_v)" != "$maddy_v" ] && nvram set maddy_v="$maddy_v"
 chmod 777 "$SVC_PATH"
 logger -t "【maddy】" "设置域名证书"
 cp -f /etc/storage/https/server.crt /opt/maddy/certs/certificate.crt
@@ -167,21 +94,11 @@ su_cmd2="/opt/maddy/maddy --config /opt/maddy/maddy.conf  run" # --debug
 cd /opt/maddy
 eval "$su_cmd" '"cmd_name=maddy && '"$su_cmd2"' $cmd_log2"' &
 sleep 3
-[ ! -z "`pidof maddy`" ] && logger -t "【maddy】" "启动成功" && maddy_restart o
-[ -z "`pidof maddy`" ] && logger -t "【maddy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && maddy_restart x
+i_app_keep -t -name="maddy" -pidof="maddy" -cpath="/opt/maddy/maddy"
 
 #maddy_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

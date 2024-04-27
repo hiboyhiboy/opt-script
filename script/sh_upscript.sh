@@ -7,7 +7,7 @@ scriptt=`nvram get scriptt`
 scripto=`nvram get scripto`
 [ "$ACTION" = "upscript" ] && upscript_enable=1
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep _upscript)" ]  && [ ! -s /tmp/script/_upscript ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep _upscript)" ] && [ ! -s /tmp/script/_upscript ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_upscript
 	chmod 777 /tmp/script/_upscript
@@ -35,9 +35,10 @@ if [ ! -s /tmp/scriptsh.txt ] || [ -z "$(cat /tmp/scriptsh.txt | grep "sh_upscri
 	wgetcurl.sh "/tmp/scriptsh.txt" "$hiboyscript/scriptsh.txt" "$hiboyscript2/scriptsh.txt"
 fi
 if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
+	sed -Ei '/\s/d' /tmp/scriptsh.txt
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2024-04-04"
+	nvram set scripto="2024-04-13"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
@@ -75,6 +76,7 @@ fi
 }
 
 start_upscript () {
+[ "$upscript_enable" != "1" ] && return # 未启用自动更新
 logger -t "【script】" "脚本检查更新"
 file_t_check
 if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscript")" ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "scriptt")" ] ; then
@@ -91,18 +93,6 @@ else
 	[ "$upscript_enable" != "1" ] && return
 	logger -t "【script】" "脚本检查更新失败"
 fi
-}
-
-check_opt () {
-[ ! -d /opt/etc/init.d ] && return
-[ ! -f /tmp/scriptsh.txt ] && file_t_check
-for initopt in `ls -p /opt/etc/init.d`
-do
-if [ ! -z "$(cat /tmp/scriptsh.txt | grep "$(echo $initopt | sed 's/\.sh//g')")" ] ; then
-	cp -f /etc/storage/script/$initopt /opt/etc/init.d/$initopt 
-fi
-done
-
 }
 
 all_re_stop () {
@@ -165,9 +155,6 @@ sync;echo 3 > /proc/sys/vm/drop_caches
 }
 
 case $ACTION in
-check_opt)
-	check_opt
-	;;
 all_check)
 	all_check
 	;;
@@ -186,11 +173,9 @@ stop)
 	;;
 start)
 	start_upscript
-	check_opt
 	;;
 upweb)
 	all_up_web
-	check_opt
 	;;
 www_asp_re)
 	www_asp_re
@@ -198,11 +183,9 @@ www_asp_re)
 upscript)
 	upscript_enable=1
 	start_upscript
-	check_opt
 	;;
 *)
 	start_upscript
-	check_opt
 	;;
 esac
 

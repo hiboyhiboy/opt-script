@@ -1,11 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 caddy_enable=`nvram get app_139`
 [ -z $caddy_enable ] && caddy_enable=0 && nvram set app_139=0
 
 if [ "$caddy_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep caddy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 caddy_renum=`nvram get caddy_renum`
 caddy_renum=${caddy_renum:-"0"}
@@ -19,60 +18,21 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cad_dy)" ]  && [ ! -s /tmp/script/_app26 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep cad_dy)" ] && [ ! -s /tmp/script/_app26 ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app26
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app26
 	chmod 777 /tmp/script/_app26
 fi
 
 caddy_restart () {
-
-relock="/var/lock/caddy_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set caddy_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【caddy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	caddy_renum=${caddy_renum:-"0"}
-	caddy_renum=`expr $caddy_renum + 1`
-	nvram set caddy_renum="$caddy_renum"
-	if [ "$caddy_renum" -gt "2" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【caddy】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get caddy_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set caddy_renum="0"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set caddy_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="caddy"
 }
 
 caddy_get_status () {
 
-A_restart=`nvram get caddy_status`
 B_restart="$caddy_enable$(cat /etc/storage/app_11.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set caddy_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="caddy" -valb="$B_restart"
 }
 
 caddy_check () {
@@ -93,26 +53,7 @@ fi
 }
 
 caddy_keep () {
-logger -t "【caddy】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【caddy】|^$/d' /tmp/script/_opt_script_check
-if [ "$caddy_enable" = "1" ] ; then
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof caddy\`" ] || [ ! -s "/opt/caddy/caddy" ] && nvram set caddy_status=00 && logger -t "【caddy】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【caddy】|^$/d' /tmp/script/_opt_script_check # 【caddy】
-OSC
-fi
-return
-fi
-
-while true; do
-if [ "$caddy_enable" = "1" ] ; then
-	if [ -z "`pidof caddy`" ] || [ ! -s "/opt/caddy/caddy" ] ; then
-		logger -t "【caddy】" "caddy重新启动"
-		caddy_restart
-	fi
-fi
-	sleep 230
-done
+i_app_keep -name="caddy" -pidof="caddy" -cpath="/opt/caddy/caddy" &
 }
 
 caddy_close () {
@@ -126,45 +67,20 @@ kill_ps "$scriptname"
 
 caddy_start () {
 check_webui_yes
-SVC_PATH="/opt/caddy/caddy"
-chmod 777 "$SVC_PATH"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【caddy】" "找不到 caddy，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-	initopt
-fi
-mkdir -p "/opt/caddy/www/"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
-[[ "$(/opt/caddy/caddy help 2>&1 | wc -l)" -lt 2 ]] && rm -rf "$SVC_PATH"
-wgetcurl_file "$SVC_PATH" "$hiboyfile/caddy2" "$hiboyfile2/caddy2"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【caddy】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【caddy】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && caddy_restart x
-fi
+i_app_get_cmd_file -name="caddy" -cmd="/opt/caddy/caddy" -cpath="/opt/caddy/caddy" -down1="$hiboyfile/caddy2" -down2="$hiboyfile2/caddy2" -runh="help"
 caddy_v=`/opt/caddy/caddy version | awk -F ' ' '{print $1;}'`
-nvram set caddy_v="$caddy_v"
-chmod 777 "$SVC_PATH"
+[ "$(nvram get caddy_v)" != "$caddy_v" ] && nvram set caddy_v="$caddy_v"
 rm -f /opt/caddy/Caddyfile
 cat /etc/storage/app_11.sh >> /opt/caddy/Caddyfile
 echo "" >> /opt/caddy/Caddyfile
 logger -t "【caddy】" "运行 $SVC_PATH"
 eval "/opt/caddy/caddy run --config /opt/caddy/Caddyfile --adapter caddyfile $cmd_log" &
 sleep 3
-[ ! -z "`pidof caddy`" ] && logger -t "【caddy】" "启动成功" && caddy_restart o
-[ -z "`pidof caddy`" ] && logger -t "【caddy】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && caddy_restart x
+i_app_keep -t -name="caddy" -pidof="caddy" -cpath="/opt/caddy/caddy"
 
 #caddy_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

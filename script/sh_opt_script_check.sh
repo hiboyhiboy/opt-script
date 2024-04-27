@@ -18,7 +18,7 @@ if [ ! -z "$(grep "#cru\.sh#" $crond_f)" ] && [ "$crond_enable" != "1" ] ; then
 fi
 if [ -z "`pidof crond`" ] && [ "$crond_enable" == "1" ] ; then
 crond_log=`nvram get crond_log`
-if [ "$crond_log" == "1" ]; then
+if [ "$crond_log" == "1" ] ; then
 	crond -d8
 else
 	crond
@@ -99,6 +99,9 @@ if [ -f /tmp/top ] ; then
 rm -f /tmp/top
 else
 top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" | grep -v "mtd_write" | grep -v "/usr/sbin/httpd" | grep -v "/usr/sbin/dropbear" | sed -e "s@^@#@g" > /tmp/top
+
+top -n 1 | grep " S " | grep -v "top -n 1" | grep -v "grep" | grep -v "mtd_write" | grep -v "/usr/sbin/httpd" | grep -v "/usr/sbin/dropbear" | sed -e "s@^@#@g" >> /tmp/top
+
 if [ -s /tmp/top ] ; then
  #21445 21444 admin    R     1972  0.4   2 24.9 COMMAND
  #  810 30601 admin    R     1588  0.3   3  2.2 top -n 1
@@ -108,16 +111,18 @@ do
 if [ ! -z "$line" ] ; then
 top_PID="$(echo "$line" | awk '{print substr($0,2,5)}')"
 top_COMMAND="$(echo ${line: 47: 34})"
-top_CPU="$(echo ${line: 42: 2})"
+top_CPU=$(echo ${line: 42: 2})
 threads=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
 [ -z $threads ] && threads=1
-max_cpu=`expr 100 / $threads - 3 `
+max_cpu=`expr 100 / $threads - 6 `
 if [ $max_cpu -lt $top_CPU ] ; then
 if [ -z "$(cat /tmp/top_run | grep $top_PID©)" ] ; then
-logger -t "script_check" "检测到进程 PID【$top_PID】使用CPU $top_CPU% 进入防卡CPU检测序列 $top_COMMAND"
+#logger -t "script_check" "检测到进程 PID【$top_PID】使用CPU $top_CPU% 进入防卡CPU检测序列 $top_COMMAND"
 #©§
 echo "$top_PID©$top_CPU©§1§$top_COMMAND" >> /tmp/top_run
 fi
+else
+sed -Ei "/^[ \t]*$top_PID©/d" /tmp/top_run
 fi
 fi
 done < /tmp/top
@@ -131,6 +136,7 @@ top_PID="$(echo "$line" | awk -F '©' '{print $1}')"
 top_CPU="$(echo "$line" | awk -F '©' '{print $2}')"
 top_COMMAND="$(echo "$line" | awk -F '§' '{print $3}')"
 [ ! -f /tmp/top ] && top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" | sed -e "s@^@#@g" > /tmp/top
+[ ! -f /tmp/top ] && top -n 1 | grep " S " | grep -v "top -n 1" | grep -v "grep" | sed -e "s@^@#@g" >> /tmp/top
 if [ -z "$(cat /tmp/top | grep "$top_PID ")" ] ; then
 sed -Ei "/^[ \t]*$top_PID©/d" /tmp/top_run
 break
@@ -138,6 +144,9 @@ break
 fi
 top_i="$(echo "$line" | awk -F '§' '{print $2}')"
 top_2i=`expr $top_i + 1`
+if [ $top_2i -eq 9 ] ; then
+logger -t "script_check" "检测到进程 PID【$top_PID】使用CPU $top_CPU% 进入防卡CPU检测序列 $top_COMMAND"
+fi
 if [ $top_2i -gt 100 ] ; then
 kill $top_PID
 kill -9 $top_PID
@@ -154,7 +163,6 @@ fi
 fi
 fi
 
-rm -f /tmp/ps
 ps -w > /tmp/ps
 [ ! -f /tmp/webui_yes ] &&   exit 0
 

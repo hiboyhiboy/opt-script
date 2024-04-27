@@ -8,12 +8,15 @@ ad=`nvram get button_script_1_s`
 ss=`nvram get button_script_2_s`
 [ -z "$ss" ] && ss="SS" && nvram set button_script_2_s="SS"
 
+v2raya_enable=`nvram get app_146`
+[ -z $v2raya_enable ] && v2raya_enable=0 && nvram set app_146=0
+[ "$v2raya_enable" != "0" ] && [ "$ss" != "V2RayA" ] && ss="V2RayA" && nvram set button_script_2_s="V2RayA"
 ipt2socks_enable=`nvram get app_104`
 [ -z $ipt2socks_enable ] && ipt2socks_enable=0 && nvram set app_104=0
 transocks_enable=`nvram get app_27`
 [ -z $transocks_enable ] && transocks_enable=0 && nvram set app_27=0
 [ "$ipt2socks_enable" != "0" ] && [ "$ss" != "2socks" ] && ss="2socks" && nvram set button_script_2_s="2socks"
-if [ "$ss" != "2socks" ]  ; then
+if [ "$ss" != "2socks" ] ; then
 [ "$transocks_enable" != "0" ] && [ "$ss" != "Tsocks" ] && ss="Tsocks" && nvram set button_script_2_s="Tsocks"
 else
 [ "$ipt2socks_enable" == "0" ] && [ "$transocks_enable" != "0" ] && [ "$ss" != "Tsocks" ] && ss="Tsocks" && nvram set button_script_2_s="Tsocks"
@@ -33,19 +36,19 @@ v2ray_follow=`nvram get v2ray_follow`
 
 ss_enable=`nvram get ss_enable`
 [ -z $ss_enable ] && ss_enable=0 && nvram set ss_enable=0
-if [ "$ss_enable" != "0" ]  ; then
+if [ "$ss_enable" != "0" ] ; then
 	ss_mode_x=`nvram get ss_mode_x` #ss模式，0 为chnroute, 1 为 gfwlist, 2 为全局, 3为ss-local 建立本地 SOCKS 代理
 	[ -z $ss_mode_x ] && ss_mode_x=0 && nvram set ss_mode_x=$ss_mode_x
-	if [ "$ss_mode_x" != 3 ]  ; then
+	if [ "$ss_mode_x" != 3 ] ; then
 		ss_working_port=`nvram get ss_working_port`
 		[ $ss_working_port == 1090 ] && ss_info="SS"
 		[ ${ss_info:=SS} ] && [ "$ss" != "$ss_info" ] && { ss="$ss_info" ; nvram set button_script_2_s="$ss"; }
 	fi
-	if [ "$ss_mode_x" = 3 ]  ; then
+	if [ "$ss_mode_x" = 3 ] ; then
 		[ "$ss" != "SS" ] && [ "$ss" != "V2Ray" ] && [ "$ss" != "clash" ] && [ "$ss" != "Tsocks" ] && [ "$ss" != "2socks" ] && { ss="SS" ; nvram set button_script_2_s="$ss"; }
 	fi
 fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep _ezscript)" ]  && [ ! -s /tmp/script/_ezscript ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep _ezscript)" ] && [ ! -s /tmp/script/_ezscript ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ezscript
 	chmod 777 /tmp/script/_ezscript
@@ -200,6 +203,33 @@ if [ "$apply" = 1 ] ; then
 fi
 fi
 
+if [ "$ss" = "V2RayA" ] ; then
+if [ ! -s /tmp/script/_app29 ] ; then
+	logger -t "【按钮②】" "请稍等 v2rayA 脚本初始化！"
+	return
+fi
+# 按钮②状态0 执行以下命令
+if [ "$apply" = 0 ] ; then
+	#nvram set button_script_2="1"
+	logger -t "【按钮②】" "开启 v2rayA 进程"
+	nvram set v2raya_status=0
+	nvram set app_146=1
+	nvram commit
+	/tmp/script/_app29 &
+	sleep 1
+	nvram set button_script_2="1"
+fi
+# 按钮②状态1时执行以下命令
+if [ "$apply" = 1 ] ; then
+	logger -t "【按钮②】" "关闭 v2rayA 进程"
+	nvram set v2raya_status=1
+	nvram set app_146=0
+	nvram commit
+	/tmp/script/_app29 &
+	sleep 1
+	nvram set button_script_2="0"
+fi
+fi
 if [ "$ss" = "2socks" ] ; then
 if [ ! -s /tmp/script/_app20 ] ; then
 	logger -t "【按钮②】" "请稍等 ipt2socks 脚本初始化！"
@@ -307,6 +337,8 @@ elif [ "$ss" = "SS" ] ; then
 	PROCESS=$(ps -w | grep "ss-local" | grep -v "grep")
 elif [ "$ss" = "V2Ray" ] ; then
 	PROCESS=$(pidof v2ray)
+elif [ "$ss" = "V2RayA" ] ; then
+	PROCESS=$(pidof v2raya)
 elif [ "$ss" = "Tsocks" ] ; then
 	PROCESS=$(pidof transocks)
 elif [ "$ss" = "2socks" ] ; then
@@ -457,6 +489,11 @@ fi
 }
 
 connAPSite () {
+if [ ! -f /tmp/apc.lock ] ; then
+touch /tmp/apc.lock
+else
+return
+fi
 source /etc/storage/ap_script.sh
 logger -t "【连接 AP】" "10秒后, 自动搜寻 ap"
 sleep 10
@@ -466,14 +503,13 @@ radio2_apcli=`nvram get radio2_apcli`
 radio5_apcli=`nvram get radio5_apcli`
 [ -z $radio5_apcli ] && radio5_apcli="apclii0"
 cat /tmp/ap2g5g.txt | grep -v '^#'  | grep -v '^$' > /tmp/ap2g5g
-if [ ! -f /tmp/apc.lock ] && [ -s /tmp/ap2g5g ] ; then
-touch /tmp/apc.lock
+if [ -s /tmp/ap2g5g ] ; then
 a2=`iwconfig $radio2_apcli | awk -F'"' '/ESSID/ {print $2}'`
 a5=`iwconfig $radio5_apcli | awk -F'"' '/ESSID/ {print $2}'`
 [ "$a2" = "" -a "$a5" = "" ] && ap=1 || ap=0
 if [ "$ap" = "1" ] || [ "$1" = "scan" ] ; then
 #搜寻开始/tmp/ap2g5g
-	if [ ! -z "$(cat /tmp/ap2g5g | cut -d $ap_fenge -f1 | grep "2")" ]; then
+	if [ ! -z "$(cat /tmp/ap2g5g | cut -d $ap_fenge -f1 | grep "2")" ] ; then
 	radio_main="$(nvram get radio2_main)"
 	[ -z "$radio_main" ] && radio_main="ra0"
 	logger -t "【连接 AP】" "scan 2g $radio_main"
@@ -621,12 +657,12 @@ if [ "$ap" = "1" ] || [ "$1" = "scan" ] ; then
 		ap_black=`nvram get ap_black`
 		if [ "$ap_black" = "1" ] ; then
 			apblacktxt=$(grep "【SSID:$rtwlt_sta_bssid" /tmp/apblack.txt)
-			if [ ! -z $apblacktxt ] ; then
+			if [ ! -z "$apblacktxt" ] ; then
 			logger -t "【连接 AP】" "当前是黑名单 $rtwlt_sta_ssid, 跳过黑名单继续搜寻"
 			ap3=1
 			else
 			apblacktxt=$(grep "【SSID:$rtwlt_sta_ssid" /tmp/apblack.txt)
-			if [ ! -z $apblacktxt ] ; then
+			if [ ! -z "$apblacktxt" ] ; then
 			logger -t "【连接 AP】" "当前是黑名单 $rtwlt_sta_ssid, 跳过黑名单继续搜寻"
 			ap3=1
 			fi

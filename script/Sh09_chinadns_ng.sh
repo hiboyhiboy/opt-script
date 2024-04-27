@@ -2,32 +2,22 @@
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
+chinadns_ng_8953="`nvram get app_1`"
+[ -z $chinadns_ng_8953 ] && chinadns_ng_8953=0 && nvram set app_1=0
 chinadns_ng_enable="`nvram get app_102`"
 [ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
-chinadns_enable=`nvram get app_1`
-[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
 smartdns_enable="`nvram get app_106`"
 [ -z $smartdns_enable ] && smartdns_enable=0 && nvram set app_106=0
-#if [ "$chinadns_ng_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep chinadns_ng | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#fi
-if [ "$chinadns_ng_enable" == "0" ] && [ "$smartdns_enable" == "1" ] ; then
+if [ "$chinadns_ng_enable" = "2" ] && [ "$smartdns_enable" == "1" ] ; then
 logger -t "【chinadns_ng】" "由于开启 smartdns 时需要 ChinaDNS-NG ，自动开启 ChinaDNS-NG！！！"
-chinadns_ng_enable="1"
-nvram set app_102="1"
-fi
-if [ "$chinadns_ng_enable" == "1" ] && [ "$chinadns_enable" == "1" ] ; then
-if [ "$chinadns_enable" == "1" ] ; then
-logger -t "【chinadns_ng】" "由于已经开启 ChinaDNS-NG、smartdns ，自动关闭 ChinaDNS！！！"
-chinadns_enable="0"
-nvram set app_1="0"
-fi
+chinadns_ng_enable=3 && nvram set app_102=3
 fi
 
+chinadns_ng_2_usage=`nvram get app_2`
 chinadns_ng_usage=`nvram get app_103`
-[ -z "$chinadns_ng_usage" ] && chinadns_ng_usage=' -n -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 --chnlist-first -m /opt/app/chinadns_ng/chnlist.txt -g /opt/app/chinadns_ng/gfwlist.txt ' && nvram set app_103="$chinadns_ng_usage"
+[ -z "$chinadns_ng_usage" ] && chinadns_ng_usage='-N tag:gfw -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 --chnlist-first -m /opt/app/chinadns_ng/chnlist.txt -g /opt/app/chinadns_ng/gfwlist.txt ' && nvram set app_103="$chinadns_ng_usage"
 smartdns_usage=`nvram get app_107`
-[ -z "$smartdns_usage" ] && smartdns_usage=' -n -b 0.0.0.0 -c 127.0.0.1#8051 -t 127.0.0.1#8052 --chnlist-first -m /opt/app/chinadns_ng/chnlist.txt -g /opt/app/chinadns_ng/gfwlist.txt ' && nvram set app_107="$smartdns_usage"
+[ -z "$smartdns_usage" ] && smartdns_usage='-N tag:gfw -b 0.0.0.0 -c 127.0.0.1#8051 -t 127.0.0.1#8052 --chnlist-first -m /opt/app/chinadns_ng/chnlist.txt -g /opt/app/chinadns_ng/gfwlist.txt ' && nvram set app_107="$smartdns_usage"
 
 chinadns_ng_port=`nvram get app_6`
 [ -z $chinadns_ng_port ] && chinadns_ng_port=8053 && nvram set app_6=8053
@@ -42,161 +32,80 @@ if [ "$cmd_log_enable" = "1" ] || [ "$chinadns_ng_renum" -gt "0" ] ; then
 fi
 
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep chinadns_ng)" ]  && [ ! -s /tmp/script/_app19 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep chinadns_ng)" ] && [ ! -s /tmp/script/_app19 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app19
 	chmod 777 /tmp/script/_app19
 fi
 
 chinadns_ng_restart () {
-
-relock="/var/lock/chinadns_ng_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set chinadns_ng_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【chinadns_ng】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	chinadns_ng_renum=${chinadns_ng_renum:-"0"}
-	chinadns_ng_renum=`expr $chinadns_ng_renum + 1`
-	nvram set chinadns_ng_renum="$chinadns_ng_renum"
-	if [ "$chinadns_ng_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【chinadns_ng】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get chinadns_ng_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set chinadns_ng_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set chinadns_ng_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="chinadns_ng"
 }
 
 chinadns_ng_get_status () {
 
-#lan_ipaddr=`nvram get lan_ipaddr`
-A_restart=`nvram get chinadns_ng_status`
-B_restart="$chinadns_ng_enable$chinadns_ng_usage$smartdns_enable$smartdns_usage$(cat /etc/storage/app_23.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set chinadns_ng_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+B_restart="$chinadns_ng_8953$chinadns_ng_2_usage$chinadns_ng_enable$chinadns_ng_usage$smartdns_enable$smartdns_usage$(cat /etc/storage/app_23.sh | grep -v '^#' | grep -v '^$')"
+
+i_app_get_status -name="chinadns_ng" -valb="$B_restart"
 }
 
 chinadns_ng_check () {
 
 chinadns_ng_get_status
-if [ "$chinadns_ng_enable" != "1" ] && [ "$needed_restart" = "1" ] ; then
-	[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "停止 chinadns_ng" && chinadns_ng_close
+if [ "$chinadns_ng_enable" != "1" ] && [ "$chinadns_ng_enable" != "3" ] && [ "$needed_restart" = "1" ] ; then
+	[ ! -z "`pidof chinadns_ng`" ] && logger -t "【chinadns_ng】" "停止 chinadns_ng" && chinadns_ng_close
 	{ kill_ps "$scriptname" exit0; exit 0; }
 fi
-if [ "$chinadns_ng_enable" = "1" ] ; then
+if [ "$chinadns_ng_enable" = "1" ] || [ "$chinadns_ng_enable" = "3" ] ; then
 	if [ "$needed_restart" = "1" ] ; then
 		chinadns_ng_close
 		chinadns_ng_start
 	else
-		[ -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && chinadns_ng_restart
-		port=$(grep "server=127.0.0.1#$chinadns_ng_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-		if [ "$port" = 0 ] ; then
-			sleep 10
-			port=$(grep "server=127.0.0.1#$chinadns_ng_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-		fi
-		if [ "$port" = 0 ] ; then
-			logger -t "【chinadns_ng】" "检测:找不到 dnsmasq 转发规则, 重新添加"
-			# 写入dnsmasq配置
-			sed -Ei '/no-resolv|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
-			sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-			cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
-no-resolv #chinadns_ng
-server=127.0.0.1#$chinadns_ng_port #chinadns_ng
-dns-forward-max=1000 #chinadns_ng
-min-cache-ttl=1800 #chinadns_ng
-domain-needed #chinadns_ng
-EOF
-			restart_on_dhcpd
-		fi
+		[ -z "`pidof chinadns_ng`" ] && chinadns_ng_restart
+		chinadns_ng_set_dnsmasq
 	fi
 fi
 }
 
-chinadns_ng_keep () {
-logger -t "【chinadns_ng】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check
-if [ "$smartdns_enable" == "1" ] ; then
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "/opt/bin/smartdns" /tmp/ps | grep -v grep |wc -l\` # 【chinadns_ng】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/smartdns" ] ; then # 【chinadns_ng】
-		logger -t "【chinadns_ng】" "smartdns重新启动\$NUM" # 【chinadns_ng】
-		nvram set chinadns_ng_status=00 && eval "$scriptfilepath &" && sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check # 【chinadns_ng】
-	fi # 【chinadns_ng】
-	NUM=\`grep "/opt/bin/chinadns_ng" /tmp/ps | grep -v grep |wc -l\` # 【chinadns_ng】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/chinadns_ng" ] ; then # 【chinadns_ng】
-		logger -t "【chinadns_ng】" "chinadns_ng重新启动\$NUM" # 【chinadns_ng】
-		nvram set chinadns_ng_status=00 && eval "$scriptfilepath &" && sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check # 【chinadns_ng】
-	fi # 【chinadns_ng】
-OSC
-else
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "/opt/bin/dns2tcp" /tmp/ps | grep -v grep |wc -l\` # 【chinadns_ng】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/dns2tcp" ] ; then # 【chinadns_ng】
-		logger -t "【chinadns_ng】" "dns2tcp重新启动\$NUM" # 【chinadns_ng】
-		nvram set chinadns_ng_status=00 && eval "$scriptfilepath &" && sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check # 【chinadns_ng】
-	fi # 【chinadns_ng】
-	NUM=\`grep "/opt/bin/chinadns_ng" /tmp/ps | grep -v grep |wc -l\` # 【chinadns_ng】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/opt/bin/chinadns_ng" ] ; then # 【chinadns_ng】
-		logger -t "【chinadns_ng】" "chinadns_ng重新启动\$NUM" # 【chinadns_ng】
-		nvram set chinadns_ng_status=00 && eval "$scriptfilepath &" && sed -Ei '/【chinadns_ng】|^$/d' /tmp/script/_opt_script_check # 【chinadns_ng】
-	fi # 【chinadns_ng】
-OSC
-fi
-#return
-fi
-sleep 60
-chinadns_ng_enable=`nvram get app_102` #chinadns_ng_enable
-while [ "$chinadns_ng_enable" = "1" ]; do
-	NUM=`ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ ! -s "/opt/bin/chinadns_ng" ] ; then
-		logger -t "【chinadns_ng】" "重新启动$NUM"
-		chinadns_ng_restart
+chinadns_ng_set_dnsmasq () {
+	if [ "$chinadns_ng_enable" = "1" ] ; then
+		if [ "$chinadns_ng_8953" = "1" ] ; then
+			chinadns_ng_add_dnsmasq "8953"
+		else
+			chinadns_ng_add_dnsmasq "8053"
+		fi
 	fi
-	port=$(grep "server=127.0.0.1#$chinadns_ng_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
-	if [ "$port" = 0 ] ; then
-		sleep 10
-		port=$(grep "server=127.0.0.1#$chinadns_ng_port"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
+	if [ "$chinadns_ng_enable" = "3" ] ; then
+		chinadns_ng_add_dnsmasq "$chinadns_ng_port"
 	fi
+}
+chinadns_ng_add_dnsmasq () {
+	port=$(grep "server=127.0.0.1#$1"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)
 	if [ "$port" = 0 ] ; then
-		logger -t "【chinadns_ng】" "检测:找不到 dnsmasq 转发规则, 重新添加"
+		logger -t "【chinadns_ng】" "转发规则 server=127.0.0.1#$1 , 写入 dnsmasq 配置"
 		# 写入dnsmasq配置
 		sed -Ei '/no-resolv|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
 		sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 		cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
 no-resolv #chinadns_ng
-server=127.0.0.1#$chinadns_ng_port #chinadns_ng
+server=127.0.0.1#$1 #chinadns_ng
 dns-forward-max=1000 #chinadns_ng
 min-cache-ttl=1800 #chinadns_ng
 domain-needed #chinadns_ng
 EOF
 		restart_on_dhcpd
 	fi
+}
+
+chinadns_ng_keep () {
+if [ "$smartdns_enable" == "1" ] ; then
+i_app_keep -name="chinadns_ng" -pidof="smartdns" &
+fi
+i_app_keep -name="chinadns_ng" -pidof="chinadns_ng" &
+sleep 60
+while true; do
+	chinadns_ng_set_dnsmasq
 sleep 69
-chinadns_ng_enable=`nvram get app_102` #chinadns_ng_enable
 done
 }
 
@@ -215,68 +124,40 @@ kill_ps "$scriptname"
 
 chinadns_ng_start () {
 check_webui_yes
-SVC_PATH="$(which chinadns_ng)"
-[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/chinadns_ng"
-[[ "$("$SVC_PATH" -h | wc -l)" -lt 2 ]] && rm -rf "$SVC_PATH"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【chinadns_ng】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-fi
-for h_i in $(seq 1 2) ; do
-[[ "$(chinadns_ng -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/chinadns_ng
-wgetcurl_file "$SVC_PATH" "$hiboyfile/chinadns_ng" "$hiboyfile2/chinadns_ng"
-done
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【chinadns_ng】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【chinadns_ng】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
-else
+i_app_get_cmd_file -name="chinadns_ng" -cmd="chinadns_ng" -cpath="/opt/bin/chinadns_ng" -down1="$hiboyfile/chinadns_ng" -down2="$hiboyfile2/chinadns_ng"
 ln -sf /opt/bin/chinadns_ng /opt/bin/chinadns-ng
-fi
-
 if [ "$smartdns_enable" == "1" ] ; then
-for h_i in $(seq 1 2) ; do
-[[ "$(smartdns -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/smartdns
-wgetcurl_file /opt/bin/smartdns "$hiboyfile/smartdns" "$hiboyfile2/smartdns"
-done
-if [ ! -s "/opt/bin/smartdns" ] ; then
-	logger -t "【chinadns_ng】" "找不到 /opt/bin/smartdns ，需要手动安装 /opt/bin/smartdns"
-	logger -t "【chinadns_ng】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
-fi
+i_app_get_cmd_file -name="chinadns_ng" -cmd="smartdns" -cpath="/opt/bin/smartdns" -down1="$hiboyfile/smartdns" -down2="$hiboyfile2/smartdns"
 logger -t "【chinadns_ng】" "运行 /opt/bin/smartdns"
 smartdns_v=`smartdns -v`
 nvram set smartdns_v="$smartdns_v"
 eval "/opt/bin/smartdns -c /etc/storage/app_23.sh" &
-else
-for h_i in $(seq 1 2) ; do
-[[ "$(dns2tcp -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/dns2tcp
-wgetcurl_file /opt/bin/dns2tcp "$hiboyfile/dns2tcp" "$hiboyfile2/dns2tcp"
-done
-if [ ! -s "/opt/bin/dns2tcp" ] ; then
-	logger -t "【chinadns_ng】" "找不到 /opt/bin/dns2tcp ，需要手动安装 /opt/bin/dns2tcp"
-	logger -t "【chinadns_ng】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
 fi
-logger -t "【chinadns_ng】" "运行 /opt/bin/dns2tcp"
-cmd_name="dns2tcp"
-eval "/opt/bin/dns2tcp -L0.0.0.0#55353 -R8.8.8.8#53 $cmd_log" &
+# 配置参数 
+if [ "$chinadns_ng_enable" = "1" ] ; then
+
+usage="$chinadns_ng_2_usage"
+
 fi
-# 配置参数 '/opt/bin/chinadns_ng -l 8053  -n -b 0.0.0.0 -c 223.5.5.5 -t 127.0.0.1#55353 -g /opt/app/chinadns_ng/gfwlist.txt  '
+if [ "$chinadns_ng_enable" = "3" ] ; then
 usage=" -l $chinadns_ng_port "
 if [ "$smartdns_enable" == "1" ] ; then
 usage="$usage $smartdns_usage "
 else
 usage="$usage $chinadns_ng_usage "
 fi
-update_app
-chinadns_ng_v=`chinadns_ng -V | awk -F ' ' '{print $2;}'`
-nvram set chinadns_ng_v="$chinadns_ng_v"
-
 [ ! -f /opt/app/chinadns_ng/gfwlist.txt ] && update_gfwlist
 [ ! -f /opt/app/chinadns_ng/chnlist.txt ] && update_chnlist
 chnroute_Number=$(ipset list chnroute -t | awk -F: '/Number/{print $2}' | sed -e s/\ //g)
 [ "$chnroute_Number" == "0" ] || [ -z "$chnroute_Number" ] && update_chnroute
 chnroute6_Number=$(ipset list chnroute6 -t | awk -F: '/Number/{print $2}' | sed -e s/\ //g)
 [ "$chnroute6_Number" == "0" ] || [ -z "$chnroute6_Number" ] && update_chnroute6
-
+else
+usage="$chinadns_ng_2_usage"
+fi
+update_app
+chinadns_ng_v=`chinadns_ng -V | awk -F ' ' '{print $2;}'`
+nvram set chinadns_ng_v="$chinadns_ng_v"
 
 killall dnsproxy && killall -9 dnsproxy 2>/dev/null
 killall pdnsd && killall -9 pdnsd 2>/dev/null
@@ -286,29 +167,11 @@ cmd_name="chinadns_ng"
 eval "/opt/bin/chinadns_ng $usage $cmd_log" &
 sleep 2
 if [ "$smartdns_enable" == "1" ] ; then
-[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && [ ! -z "$(ps -w | grep "/opt/bin/smartdns" | grep -v grep )" ] && logger -t "【chinadns_ng】" "启动成功 $chinadns_ng_v " && chinadns_ng_restart o
-[ -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/chinadns_ng 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
-[ -z "$(ps -w | grep "/opt/bin/smartdns" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/smartdns 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
-else
-[ ! -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && [ ! -z "$(ps -w | grep "/opt/bin/dns2tcp" | grep -v grep )" ] && logger -t "【chinadns_ng】" "启动成功 $chinadns_ng_v " && chinadns_ng_restart o
-[ -z "$(ps -w | grep "/opt/bin/chinadns_ng" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/chinadns_ng 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
-[ -z "$(ps -w | grep "/opt/bin/dns2tcp" | grep -v grep )" ] && logger -t "【chinadns_ng】" "/opt/bin/dns2tcp 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && chinadns_ng_restart x
+
+i_app_keep -t -name="chinadns_ng" -pidof="smartdns"
 fi
-initopt
-
-# 写入dnsmasq配置
-sed -Ei '/no-resolv|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chinadns_ng/d' /etc/storage/dnsmasq/dnsmasq.conf
-sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
-	cat >> "/etc/storage/dnsmasq/dnsmasq.conf" <<-EOF
-no-resolv #chinadns_ng
-server=127.0.0.1#$chinadns_ng_port #chinadns_ng
-dns-forward-max=1000 #chinadns_ng
-min-cache-ttl=1800 #chinadns_ng
-domain-needed #chinadns_ng
-EOF
-
-restart_on_dhcpd
-
+i_app_keep -t -name="chinadns_ng" -pidof="chinadns_ng"
+chinadns_ng_set_dnsmasq
 chinadns_ng_get_status
 eval "$scriptfilepath keep &"
 exit 0
@@ -316,13 +179,26 @@ exit 0
 
 update_chnlist () {
 nvram set app_111=4 && Sh99_ss_tproxy.sh
-cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sed -e 's@^cn$@com.cn@g' | sort -u | grep -v '^$' > /opt/app/chinadns_ng/chnlist.txt
+echo "" > /opt/app/chinadns_ng/chnlist_tmp.txt
+cat /opt/app/ss_tproxy/rule/chnlist.txt | grep -v '^#' | sed -e 's@^cn$@com.cn@g' >> /opt/app/chinadns_ng/chnlist_tmp.txt
+cat /opt/app/ss_tproxy/rule/chnlist_mini.txt | grep -v '^#' | sed -e 's@^cn$@com.cn@g' >> /opt/app/chinadns_ng/chnlist_tmp.txt
+cat /opt/app/chinadns_ng/chnlist_tmp.txt |grep -v '^#' | sort -u | grep -v '^$' > /opt/app/chinadns_ng/chnlist.txt
+sed -e '/^$/d' -i /opt/app/chinadns_ng/chnlist.txt
+dos2unix /opt/app/chinadns_ng/chnlist.txt
+rm -f /opt/app/chinadns_ng/chnlist_tmp.txt
 
 }
 
 update_gfwlist () {
 nvram set app_111=3 && Sh99_ss_tproxy.sh
-cat /etc/storage/basedomain.txt | grep -v '^#' | sort -u | grep -v '^$' > /opt/app/chinadns_ng/gfwlist.txt
+echo "" > /opt/app/chinadns_ng/gfwlist_tmp.txt
+cat /etc/storage/basedomain.txt | grep -v '^#' >> /opt/app/chinadns_ng/gfwlist_tmp.txt
+cat /opt/app/ss_tproxy/rule/gfwlist.txt | grep -v '^#' >> /opt/app/chinadns_ng/gfwlist_tmp.txt
+cat /opt/app/chinadns_ng/gfwlist_tmp.txt |grep -v '^#' | sort -u | grep -v '^$' > /opt/app/chinadns_ng/gfwlist.txt
+sed -e '/^$/d' -i /opt/app/chinadns_ng/gfwlist.txt
+dos2unix /opt/app/chinadns_ng/gfwlist.txt
+rm -f /opt/app/chinadns_ng/gfwlist_tmp.txt
+
 
 }
 
@@ -340,16 +216,6 @@ nvram set app_111=26 && Sh99_ss_tproxy.sh
 ipset -! -N chnroute6 hash:net family inet6
 ipset -! create chnroute6 hash:net family inet6
 /opt/app/ss_tproxy/rule/chnroute6.txt | grep -v '^#' | sort -u | grep -v '^$' | sed -e "s/^/-A chnroute6 &/g" | ipset -! restore
-
-}
-
-initopt () {
-mkdir -p /opt/app/chinadns_ng
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
 
 }
 
@@ -604,8 +470,8 @@ keep)
 	;;
 updateapp19)
 	chinadns_ng_restart o
-	[ "$chinadns_ng_enable" = "1" ] && nvram set chinadns_ng_status="updatechinadns_ng" && logger -t "【chinadns_ng】" "更新规则" && { update_chnlist; update_gfwlist; update_chnroute; update_chnroute6; chinadns_ng_restart; }
-	[ "$chinadns_ng_enable" != "1" ] && nvram set chinadns_ng_v="" && logger -t "【chinadns_ng】" "更新" && update_app del
+	[ "$chinadns_ng_enable" = "3" ] && nvram set chinadns_ng_status="updatechinadns_ng" && logger -t "【chinadns_ng】" "更新规则" && { update_chnlist; update_gfwlist; update_chnroute; update_chnroute6; chinadns_ng_restart; }
+	[ "$chinadns_ng_enable" = "2" ] && nvram set chinadns_ng_v="" && logger -t "【chinadns_ng】" "更新" && update_app del
 	;;
 update_app)
 	update_app

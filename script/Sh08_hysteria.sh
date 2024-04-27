@@ -21,18 +21,6 @@ ss_tproxy_auser=`nvram get ss_tproxy_auser`
 	fi
 fi
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-#nvramshow=`nvram showall | grep '=' | grep hysteria | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-
-chinadns_enable=`nvram get app_1`
-[ -z $chinadns_enable ] && chinadns_enable=0 && nvram set app_1=0
-chinadns_ng_enable=`nvram get app_102`
-[ -z $chinadns_ng_enable ] && chinadns_ng_enable=0 && nvram set app_102=0
-chinadns_port=`nvram get app_6`
-[ -z $chinadns_port ] && chinadns_port=8053 && nvram set app_6=8053
-if [ "$chinadns_port" != "8053" ] ; then
-chinadns_enable=0
-chinadns_ng_enable=0
-fi
 
 LAN_AC_IP=`nvram get LAN_AC_IP`
 [ -z $LAN_AC_IP ] && LAN_AC_IP=0 && nvram set LAN_AC_IP=$LAN_AC_IP
@@ -49,61 +37,22 @@ fi
 
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep hysteria)" ]  && [ ! -s /tmp/script/_app24 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep hysteria)" ] && [ ! -s /tmp/script/_app24 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app24
 	chmod 777 /tmp/script/_app24
 fi
 
 hysteria_restart () {
-
-relock="/var/lock/hysteria_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set hysteria_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【hysteria】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	hysteria_renum=${hysteria_renum:-"0"}
-	hysteria_renum=`expr $hysteria_renum + 1`
-	nvram set hysteria_renum="$hysteria_renum"
-	if [ "$hysteria_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【hysteria】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get hysteria_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set hysteria_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set hysteria_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="hysteria"
 }
 
 hysteria_get_status () {
 
-A_restart=`nvram get hysteria_status`
-B_restart="$hysteria_enable$ss_ip46$chinadns_enable$chinadns_ng_enable$hysteria_follow$transocks_mode_x$ss_udp_enable$app_114"
+B_restart="$hysteria_enable$ss_ip46$hysteria_follow$transocks_mode_x$ss_udp_enable$app_114"
 B_restart="$B_restart""$(cat /etc/storage/app_34.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set hysteria_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="hysteria" -valb="$B_restart"
 }
 
 hysteria_check () {
@@ -127,31 +76,13 @@ fi
 }
 
 hysteria_keep () {
-logger -t "【hysteria】" "守护进程启动"
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-if [ -s /tmp/script/_opt_script_check ]; then
-SVC_PATH="$(which hysteria)"
-sed -Ei '/【hysteria】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	[ -z "\`pidof hysteria\`" ] || [ ! -s "$SVC_PATH" ] && nvram set hysteria_status=00 && logger -t "【hysteria】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【hysteria】|^$/d' /tmp/script/_opt_script_check # 【hysteria】
-OSC
-#return
-fi
-hysteria_enable=`nvram get app_136`
-while [ "$hysteria_enable" = "1" ]; do
-	hysteria_follow=`nvram get app_137`
-	if [ "$hysteria_follow" = "1" ] ; then
-		ss_internet="$(nvram get ss_internet)"
-		[ "$ss_internet" != "1" ] && nvram set ss_internet="1"
-	fi
-sleep 68
-hysteria_enable=`nvram get app_136`
-done
+i_app_keep -name="hysteria" -pidof="hysteria" &
 }
 
 hysteria_close () {
 kill_ps "$scriptname keep"
-nvram set ss_internet="0"
+[ "$(nvram get ss_internet)" != "0" ] && nvram set ss_internet="0"
 sed -Ei '/【hysteria】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh08_hysteria.sh"
 killall hysteria
@@ -165,26 +96,11 @@ kill_ps "$scriptname"
 
 hysteria_start () {
 check_webui_yes
-ss_internet="$(nvram get ss_internet)"
-[ "$ss_internet" != "2" ] && nvram set ss_internet="2"
-SVC_PATH="$(which hysteria)"
-[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/hysteria"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【hysteria】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-	initopt
-fi
-for h_i in $(seq 1 2) ; do
-[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $SVC_PATH ] && rm -rf $SVC_PATH
-wgetcurl_file "$SVC_PATH" "$hiboyfile/hysteria" "$hiboyfile2/hysteria"
-done
+[ "$(nvram get ss_internet)" != "2" ] && nvram set ss_internet="2"
+i_app_get_cmd_file -name="hysteria" -cmd="hysteria" -cpath="/opt/bin/hysteria" -down1="$hiboyfile/hysteria" -down2="$hiboyfile2/hysteria"
 hysteria_v=$($SVC_PATH version | grep Version | awk -F ' ' '{print $2;}')
 [ -z "$hysteria_v" ] && hysteria_v=$($SVC_PATH -v)
-nvram set hysteria_v="$hysteria_v"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【hysteria】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【hysteria】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && hysteria_restart x
-fi
+[ "$(nvram get hysteria_v)" != "$hysteria_v" ] && nvram set hysteria_v="$hysteria_v"
 Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
 size_tmpfs=`nvram get size_tmpfs`
 if [ "$size_tmpfs" = "0" ] && [[ "$Available_A" -lt 15 ]] ; then
@@ -227,12 +143,10 @@ fi
 fi
 logger -t "【hysteria】" "运行 $SVC_PATH"
 /etc/storage/app_34.sh
-su_cmd2="export QUIC_GO_DISABLE_ECN=true; $SVC_PATH -c /tmp/hysteria.json"
+su_cmd2="$SVC_PATH -c /tmp/hysteria.json"
 eval "$su_cmd" '"cmd_name=hysteria && '"$su_cmd2"' $cmd_log"' &
 sleep 4
-[ ! -z "`pidof hysteria`" ] && logger -t "【hysteria】" "启动成功" && hysteria_restart o
-[ -z "`pidof hysteria`" ] && logger -t "【hysteria】" "启动失败, 注意检hysteria是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && hysteria_restart x
-
+i_app_keep -t -name="hysteria" -pidof="hysteria" 
 if [ "$hysteria_follow" = "1" ] ; then
 Sh99_ss_tproxy.sh auser_check "Sh08_hysteria.sh"
 ss_tproxy_set "Sh08_hysteria.sh"
@@ -242,16 +156,13 @@ if [ "$app_114" = 0 ] ; then
 logger -t "【hysteria】" "同时将透明代理规则应用到 OUTPUT 链, 让路由自身流量走透明代理"
 fi
 logger -t "【hysteria】" "完成 透明代理 转发规则设置"
-if [ "$chinadns_enable" != "0" ] || [ "$chinadns_ng_enable" != "0" ] ; then
-logger -t "【hysteria】" "已经启动 chinadns 防止域名污染"
-fi
 restart_on_dhcpd
 logger -t "【hysteria】" "启动后若发现一些网站打不开, 估计是 DNS 被污染了. 解决 DNS 被污染方法："
 logger -t "【hysteria】" "①电脑设置 DNS 自动获取路由 ip。检查 hosts 是否有错误规则。"
 logger -t "【hysteria】" "②电脑运行 cmd 输入【ipconfig /flushdns】, 清理浏览器缓存。"
 # 透明代理
 fi
-nvram set ss_internet="1"
+[ "$(nvram get ss_internet)" != "1" ] && nvram set ss_internet="1"
 eval "$scriptfilepath keep &"
 
 exit 0
@@ -296,7 +207,9 @@ sstp_set proxy_udpport='18002'
 sstp_set proxy_startcmd='date'
 sstp_set proxy_stopcmd='date'
 ## dns
-DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+wan_dnsenable_x="$(nvram get wan_dnsenable_x)"
+[ "$wan_dnsenable_x" == "1" ] && DNS_china=`nvram get wan0_dns |cut -d ' ' -f1`
+[ "$wan_dnsenable_x" != "1" ] && DNS_china=`nvram get wan_dns1_x |cut -d ' ' -f1`
 [ -z "$DNS_china" ] && DNS_china="223.5.5.5"
 sstp_set dns_direct="$DNS_china"
 sstp_set dns_direct6='240C::6666'
@@ -363,15 +276,6 @@ ln -sf /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 [ ! -s /opt/app/ss_tproxy/wanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_wan.sh /opt/app/ss_tproxy/wanlist.ext
 [ ! -s /opt/app/ss_tproxy/lanlist.ext ] && cp -f /etc/storage/shadowsocks_ss_spec_lan.sh /opt/app/ss_tproxy/lanlist.ext
 logger -t "【hysteria】" "【自动】设置 ss_tproxy 配置文件，完成配置导入"
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {

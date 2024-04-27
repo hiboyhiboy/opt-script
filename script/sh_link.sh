@@ -328,7 +328,7 @@ vless_link_verify_cert="$(echo "$link" | jq -r .verify_cert)"
 
 vless_link_v="$(echo "$link" | jq -r .v)"
 [ "$vless_link_v" == "null" ] && vless_link_v="0"
-if [ "$vless_link_v" == "2" ]; then
+if [ "$vless_link_v" == "2" ] ; then
 # host: 伪装的域名
 vless_link_host="$(echo "$link" | jq -r .host)"
 case $vless_link_type in

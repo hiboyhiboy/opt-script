@@ -67,7 +67,7 @@ done
 [ -d /etc/storage/script ] && chmod 777 /etc/storage/script -R
 /etc/storage/script/Sh01_mountopt.sh upopt
 /etc/storage/script/sh_upscript.sh
-/etc/storage/www_sh/menu_title.sh upver &
+/etc/storage/www_sh/menu_title.sh &
 /etc/storage/script/Sh01_mountopt.sh libmd5_check
 /tmp/sh_theme.sh &
 stop_aria

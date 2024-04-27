@@ -5,10 +5,6 @@ TAG="AD_BYBY"		  # iptables tag
 adbyby_enable=`nvram get adbyby_enable`
 [ -z $adbyby_enable ] && adbyby_enable=0 && nvram set adbyby_enable=0
 if [ "$adbyby_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep ss | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#nvramshow=`nvram showall | grep '=' | grep adm | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#nvramshow=`nvram showall | grep '=' | grep koolproxy | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#nvramshow=`nvram showall | grep '=' | grep adbyby | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 adbyby_mode_x=`nvram get adbyby_mode_x`
 [ -z $adbyby_mode_x ] && adbyby_mode_x=0 && nvram set adbyby_mode_x=0
 adbyby_update=`nvram get adbyby_update`
@@ -56,7 +52,7 @@ confdir_x="$(echo -e $confdir | sed -e "s/\//"'\\'"\//g")"
 gfwlist="/r.gfwlist.conf"
 gfw_black_list="gfwlist"
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ad_byby)" ]  && [ ! -s /tmp/script/_ad_byby ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ad_byby)" ] && [ ! -s /tmp/script/_ad_byby ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ad_byby
 	chmod 777 /tmp/script/_ad_byby
@@ -137,54 +133,14 @@ fi
 }
 
 adbyby_restart () {
-
-relock="/var/lock/adbyby_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set adbyby_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	rm -rf /tmp/bin/*
-	if [ -f $relock ] ; then
-		logger -t "【adbyby】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	adbyby_renum=${adbyby_renum:-"0"}
-	adbyby_renum=`expr $adbyby_renum + 1`
-	nvram set adbyby_renum="$adbyby_renum"
-	if [ "$adbyby_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【adbyby】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get adbyby_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set adbyby_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set adbyby_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="adbyby"
 }
 
 adbyby_get_status () {
 
-A_restart=`nvram get adbyby_status`
 B_restart="$adbyby_enable$adbyby_update$adbyby_update_hour$adbyby_update_min$adbyby_mode_x$adbybyfile$adbybyfile2$adbyby_adblocks$adbyby_CPUAverages$adbyby_whitehost_x$adbyby_whitehost$lan_ipaddr$ss_DNS_Redirect$ss_DNS_Redirect_IP$(cat /etc/storage/ad_config_script.sh | grep -v '^$' | grep -v '^#')$(cat /etc/storage/adbyby_rules_script.sh | grep -v '^$' | grep -v "^!")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set adbyby_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="adbyby" -valb="$B_restart"
 }
 
 adbyby_check () {
@@ -213,7 +169,6 @@ fi
 }
 
 adbyby_keep () {
-
 adbybylazytime="`sed -n '1,10p' /tmp/bin/data/lazy.txt | grep "$(sed -n '1,10p' /tmp/bin/data/lazy.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+|201?.{1}' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g' | sed -r 's/[^0-9a-z: \-]//g' | sed -n '1p'`"
 adbybyvideotime="`sed -n '1,10p' /tmp/bin/data/video.txt | grep "$(sed -n '1,10p' /tmp/bin/data/video.txt | grep -Eo '[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+|201?.{1}' | sed -n '1p')" | sed 's/[x!]//g' | sed -r 's/-{2,}//g' | sed -r 's/\ {2}//g' | sed -r 's/\ {2}//g' | sed -r 's/[^0-9a-z: \-]//g' | sed -n '1p'`"
 adbybylazy_nu="`cat /tmp/bin/data/lazy.txt | grep -v ! | wc -l`"
@@ -222,49 +177,12 @@ nvram set adbybylazy="$ipsetstxt lazy规则更新时间 $adbybylazytime / 【 $a
 nvram set adbybyvideo="$ipsetstxt video规则更新时间 $adbybyvideotime / 【 $adbybyvideo_nu 】条"
 nvram set adbybyuser3="第三方规则行数:  `sed -n '$=' /tmp/bin/data/user3adblocks.txt | sed s/[[:space:]]//g ` 行"
 nvram set adbybyuser="自定义规则行数:  `sed -n '$=' /tmp/bin/data/user_rules.txt | sed s/[[:space:]]//g ` 行"
-cat > "/tmp/sh_ad_byby_keey_k.sh" <<-ADMK
-#!/bin/bash
-source /etc/storage/script/init.sh
-sleep 919
-adbyby_enable=\`nvram get adbyby_enable\`
-if [ ! -f /tmp/cron_adb.lock ] && [ "\$adbyby_enable" = "1" ] ; then
-kill_ps "$scriptname"
-eval "$scriptfilepath keep &"
-exit 0
-fi
-ADMK
-chmod 777 "/tmp/sh_ad_byby_keey_k.sh"
-killall sh_ad_byby_keey_k.sh
-killall -9 sh_ad_byby_keey_k.sh
-/tmp/sh_ad_byby_keey_k.sh &
-
 rm -f /tmp/cron_adb.lock
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
+i_app_keep -name="adbyby" -pidof="adbyby" &
 while true; do
-adbyby_enable=`nvram get adbyby_enable`
-[ "$adbyby_enable" != "1" ] && exit
-[ ! -s "/tmp/bin/adbyby" ] && logger -t "【Adbyby】" "重新启动" && adbyby_restart
 if [ ! -f /tmp/cron_adb.lock ] ; then
 	if [ ! -f /tmp/cron_adb.lock ] ; then
-		PIDS=$(ps -w | grep "/tmp/bin/adbyby" | grep -v "grep" | grep -v "adbybyupdate.sh" | grep -v "adbybyfirst.sh" | wc -l)
-		if [ "$PIDS" = 0 ] ; then 
-			logger -t "【Adbyby】" "找不到进程, 重启 adbyby"
-			adbyby_flush_rules
-			killall -15 adbyby
-			killall -9 adbyby
-			sleep 3
-			/tmp/bin/adbyby &
-			sleep 20
-		fi
-		if [ "$PIDS" -gt 2 ] ; then 
-			logger -t "【Adbyby】" "进程重复, 重启 adbyby"
-			adbyby_flush_rules
-			killall -15 adbyby
-			killall -9 adbyby
-			sleep 3
-			/tmp/bin/adbyby &
-			sleep 20
-		fi
 		port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
 			if [ "$port" -gt 1 ] && [ ! -f /tmp/cron_adb.lock ] ; then
 				logger -t "【Adbyby】" "有多个8118转发规则, 删除多余"
@@ -323,14 +241,14 @@ cru.sh d adm_update &
 cru.sh d koolproxy_update &
 port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
 [ "$port" != 0 ] && adbyby_flush_rules
-killall -15 adbyby sh_ad_byby_keey_k.sh
-killall -9 adbyby sh_ad_byby_keey_k.sh
+killall -15 adbyby
+killall -9 adbyby
 [ "$adm_enable" != "1" ] && killall -15 adm sh_ad_m_keey_k.sh
 [ "$adm_enable" != "1" ] && killall -9 adm sh_ad_m_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -15 koolproxy sh_ad_kp_keey_k.sh
 [ "$koolproxy_enable" != "1" ] && killall -9 koolproxy sh_ad_kp_keey_k.sh
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock /tmp/adbyby_host_backup.conf /tmp/sh_ad_byby_keey_k.sh
+rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock /tmp/adbyby_host_backup.conf
 kill_ps "/tmp/script/_ad_byby"
 kill_ps "_ad_byby.sh"
 kill_ps "$scriptname"
@@ -485,8 +403,7 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		sleep 10
 	fi
 fi
-[ ! -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "启动成功" && adbyby_restart o
-[ -z "`pidof adbyby`" ] && logger -t "【Adbyby】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && adbyby_restart x
+i_app_keep -t -name="adbyby" -pidof="adbyby"
 adbyby_add_rules
 rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock
 if [ "$adbyby_mode_x" = "1" ] ; then
@@ -803,14 +720,14 @@ adbyby_cron_job(){
 	[ -z $adbyby_update ] && adbyby_update=0 && nvram set adbyby_update=$adbyby_update
 	[ -z $adbyby_update_hour ] && adbyby_update_hour=23 && nvram set adbyby_update_hour=$adbyby_update_hour
 	[ -z $adbyby_update_min ] && adbyby_update_min=59 && nvram set adbyby_update_min=$adbyby_update_min
-	if [ "0" == "$adbyby_update" ]; then
+	if [ "0" == "$adbyby_update" ] ; then
 	[ $adbyby_update_hour -gt 23 ] && adbyby_update_hour=23 && nvram set adbyby_update_hour=$adbyby_update_hour
 	[ $adbyby_update_hour -lt 0 ] && adbyby_update_hour=0 && nvram set adbyby_update_hour=$adbyby_update_hour
 	[ $adbyby_update_min -gt 59 ] && adbyby_update_min=59 && nvram set adbyby_update_min=$adbyby_update_min
 	[ $adbyby_update_min -lt 0 ] && adbyby_update_min=0 && nvram set adbyby_update_min=$adbyby_update_min
 		logger -t "【Adbyby】" "开启规则定时更新，每天"$adbyby_update_hour"时"$adbyby_update_min"分，检查在线规则更新..."
 		cru.sh a adbyby_update "$adbyby_update_min $adbyby_update_hour * * * $scriptfilepath update &" &
-	elif [ "1" == "$adbyby_update" ]; then
+	elif [ "1" == "$adbyby_update" ] ; then
 	#[ $adbyby_update_hour -gt 23 ] && adbyby_update_hour=23 && nvram set adbyby_update_hour=$adbyby_update_hour
 	[ $adbyby_update_hour -lt 0 ] && adbyby_update_hour=0 && nvram set adbyby_update_hour=$adbyby_update_hour
 	[ $adbyby_update_min -gt 59 ] && adbyby_update_min=59 && nvram set adbyby_update_min=$adbyby_update_min
@@ -820,15 +737,6 @@ adbyby_cron_job(){
 	else
 		logger -t "【Adbyby】" "规则自动更新关闭状态，不启用自动更新..."
 	fi
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
@@ -989,8 +897,6 @@ C)
 	;;
 update)
 	[ "$adbyby_enable" != "1" ] && exit 0
-	killall sh_ad_byby_keey_k.sh
-	killall -9 sh_ad_byby_keey_k.sh
 	checka="/tmp/var/lazy.txt"
 	rm -f /tmp/var/lazy.txt
 	urla="https://opt.cn2qq.com/opt-file/lazy.txt"
@@ -1019,7 +925,6 @@ update)
 			logger -t "【Adbyby】" "更新检查:video 不需更新 $urla "
 		fi
 	fi
-	[ -s /tmp/sh_ad_byby_keey_k.sh ] && /tmp/sh_ad_byby_keey_k.sh &
 	;;
 update_ad)
 	adbyby_mount

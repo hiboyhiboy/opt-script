@@ -2,10 +2,8 @@
 #copyright by hiboy
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
-#export QUIC_GO_DISABLE_ECN=true;
-#export QUIC_GO_DISABLE_GSO=true;
-init_ver=2
-#set -x
+export QUIC_GO_DISABLE_ECN=true;
+export QUIC_GO_DISABLE_GSO=true;
 #hiboyfile="https://bitbucket.org/hiboyhiboy/opt-file/raw/master"
 #hiboyscript="https://bitbucket.org/hiboyhiboy/opt-script/raw/master"
 #hiboyfile2="https://gcore.jsdelivr.net/gh/HiboyHiboy/opt-file"
@@ -17,7 +15,7 @@ hiboyscript="https://opt.cn2qq.com/opt-script"
 hiboyfile2="https://testingcf.jsdelivr.net/gh/HiboyHiboy/opt-file"
 hiboyscript2="https://testingcf.jsdelivr.net/gh/HiboyHiboy/opt-script"
 # --user-agent
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 ACTION=$1
 scriptfilepath=$(cd "$(dirname "$0")"; pwd)/$(basename $0)
 #echo $scriptfilepath
@@ -140,7 +138,7 @@ fi
 
 kill_ps () {
 
-COMMAND="$1"
+local COMMAND="$1"
 if [ ! -z "$COMMAND" ] ; then
 	eval $(ps -w | grep "$COMMAND" | grep -v $$ | grep -v grep | awk '{print "kill "$1";";}')
 	eval $(ps -w | grep "$COMMAND" | grep -v $$ | grep -v grep | awk '{print "kill -9 "$1";";}')
@@ -153,7 +151,7 @@ fi
 if [ -z "$(cat /sbin/wgetcurl.sh | grep "/tmp/script/wgetcurl.sh")" ] ; then
 mkdir -p /tmp/script
 cat > "/tmp/script/wgetcurl.sh" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 source /etc/storage/script/init.sh
@@ -322,11 +320,11 @@ fi
 }
 
 wgetcurl_checkmd5 () {
-output="$1"
-url1="$2"
-url2="$3"
-check_n="$4"
-check_lines="$5"
+local output="$1"
+local url1="$2"
+local url2="$3"
+local check_n="$4"
+local check_lines="$5"
 [ -f "$output" ] && rm -f "$output"
 mkdir -p $(dirname "$output")
 wgetcurl.sh $output $url1 $url2 $check_n $check_lines
@@ -386,10 +384,6 @@ fi
 
 cut_B_re () {
 B_restart="$(echo ${B_restart:0:3}${B_restart:29:3})"
-}
-
-cut_C_re () {
-C_restart="$(echo ${C_restart:0:3}${C_restart:29:3})"
 }
 
 ip6_neighbor_get () {
@@ -477,23 +471,23 @@ rm -f /tmp/arNslookup/$$
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- --header 'accept: application/dns-json' 'https://1.0.0.2/dns-query?name='"$name_domain"'&type=A')"
-	if [ $? -eq 0 ]; then
+	if [ $? -eq 0 ] ; then
 	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' | grep -v '^$' > /tmp/arNslookup/$$
 	fi
 	if [ ! -s /tmp/arNslookup/$$ ] ; then
 	Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- 'http://119.29.29.29/d?dn='"$name_domain"'&type=A')"
-	if [ $? -eq 0 ]; then
+	if [ $? -eq 0 ] ; then
 	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' | grep -v '^$' > /tmp/arNslookup/$$
 	fi
 	fi
 else
 	Address="$(curl --user-agent "$user_agent" -s -H 'accept: application/dns-json' 'https://1.0.0.2/dns-query?name='"$name_domain"'&type=A')"
-	if [ $? -eq 0 ]; then
+	if [ $? -eq 0 ] ; then
 	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' | grep -v '^$' > /tmp/arNslookup/$$
 	fi
 	if [ ! -s /tmp/arNslookup/$$ ] ; then
 	Address="$(curl --user-agent "$user_agent" -s 'http://119.29.29.29/d?dn='"$name_domain"'&type=A')"
-	if [ $? -eq 0 ]; then
+	if [ $? -eq 0 ] ; then
 	echo "$Address" |  sed s/\;/"\n"/g | sed -n '1p' | grep -E -o '([0-9]+\.){3}[0-9]+' | grep -v '^$' > /tmp/arNslookup/$$
 	fi
 	fi
@@ -526,23 +520,23 @@ rm -f /tmp/arNslookup/$$
 curltest=`which curl`
 if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 	Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- --header 'accept: application/dns-json' 'https://1.0.0.2/dns-query?name='"$name_domain"'&type=AAAA')"
-	if [ $? -eq 0 ]; then
+	if [ $? -eq 0 ] ; then
 	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep  ':' | grep -v '^$' > /tmp/arNslookup/$$
 	fi
 	if [ ! -s /tmp/arNslookup/$$ ] ; then
 	Address="$(wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=- --header 'accept: application/dns-json' 'https://9.9.9.9:5053/dns-query?name='"$name_domain"'&type=AAAA')"
-	if [ $? -eq 0 ]; then
+	if [ $? -eq 0 ] ; then
 	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep  ':' | grep -v '^$' > /tmp/arNslookup/$$
 	fi
 	fi
 else
 	Address="$(curl --user-agent "$user_agent" -s -H 'accept: application/dns-json' 'https://1.0.0.2/dns-query?name='"$name_domain"'&type=AAAA')"
-	if [ $? -eq 0 ]; then
+	if [ $? -eq 0 ] ; then
 	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep  ':' | grep -v '^$' > /tmp/arNslookup/$$
 	fi
 	if [ ! -s /tmp/arNslookup/$$ ] ; then
 	Address="$(curl --user-agent "$user_agent" -s -H 'accept: application/dns-json' 'https://9.9.9.9:5053/dns-query?name='"$name_domain"'&type=AAAA')"
-	if [ $? -eq 0 ]; then
+	if [ $? -eq 0 ] ; then
 	echo "$Address" | grep -Eo "data\":\"[^\"]+" | sed "s/data\":\"//g" | sed -n '1p' | grep  ':' | grep -v '^$' > /tmp/arNslookup/$$
 	fi
 	fi
@@ -567,6 +561,228 @@ rm -f /tmp/arNslookup/$$
 }
 
 restart_on_dhcpd() {
-eval "sed \"/""$(cat /tmp/syslog.log | grep -Eo "dnsmasq\[[0-9]+\]: started" | grep -Eo "[0-9]+" | awk '{print "\\\["$1"\\\]";}'  | tr -d "\n" | sed -e "s#\]\\\#\]|\\\#g")""/d\" -Ei /tmp/syslog.log ; restart_dhcpd"
+local dhcpdpid
+dhcpdpid="$(cat /tmp/syslog.log | grep -Eo "dnsmasq\[[0-9]+\]: started" | grep -Eo "[0-9]+" | awk '{print "\\\["$1"\\\]";}'  | tr -d "\n" | sed -e "s#\]\\\#\]|\\\#g")"
+[ -n "$dhcpdpid" ] && eval "sed \"/""$dhcpdpid""/d\" -Ei /tmp/syslog.log ; restart_dhcpd"
+[ -z "$dhcpdpid" ] && eval "restart_dhcpd"
+}
+
+initopt () {
+optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
+[ ! -z "$optPath" ] && return
+if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
+fi
+}
+
+i_app_get_status () {
+local NAME="" VALA="" VALB=""
+for i in "$@"; do
+  case $i in
+    -name=*)
+      NAME="${i#*=}"
+      shift
+      ;;
+    -valb=*)
+      VALB="${i#*=}"
+      shift
+      ;;
+    *)
+      ;;
+  esac
+done
+VALA="$(nvram get ${NAME}_status)"
+VALB="$(echo -n "$VALB" | md5sum | sed s/[[:space:]]//g | sed s/-//g)"
+VALB="$(echo ${VALB:0:3}${VALB:29:3})"
+if [ "$VALA" != "$VALB" ] ; then
+	nvram set ${NAME}_status="$VALB"
+	needed_restart=1
+else
+	needed_restart=0
+fi
+}
+
+i_app_get_cmd_file () {
+local NAME="" CMDNAME="" CPATH="" D1PATH="" D2PATH="" RUNH="" MOPT="" TYPE1=""
+for i in "$@"; do
+  case $i in
+    -name=*)
+      NAME="${i#*=}"
+      shift
+      ;;
+    -cmd=*)
+      CMDNAME="${i#*=}"
+      shift
+      ;;
+    -cpath=*)
+      CPATH="${i#*=}"
+      shift
+      ;;
+    -down1=*)
+      D1PATH="${i#*=}"
+      shift
+      ;;
+    -down2=*)
+      D2PATH="${i#*=}"
+      shift
+      ;;
+    -runh=*)
+      RUNH="${i#*=}"
+      shift
+      ;;
+    -mopt=*)
+      MOPT="${i#*=}"
+      shift
+      ;;
+    -notrestart)
+      TYPE1="notrestart"
+      shift
+      ;;
+    *)
+      ;;
+  esac
+done
+[ -z "${RUNH}" ] && RUNH="-h"
+[ -z "${MOPT}" ] && MOPT="start"
+[ -f "${CMDNAME}" ] && chmod 777 "${CMDNAME}"
+SVC_PATH="$(which ${CMDNAME})"
+[ ! -s "${SVC_PATH}" ] && SVC_PATH="${CPATH}"
+if [ ! -s "${SVC_PATH}" ] ; then
+	logger -t "【${NAME}】" "找不到 ${CMDNAME}，安装 opt 程序"
+	/etc/storage/script/Sh01_mountopt.sh ${MOPT}
+	initopt
+	[ -f "${CMDNAME}" ] && chmod 777 "${CMDNAME}"
+	SVC_PATH="$(which ${CMDNAME})"
+	[ ! -s "${SVC_PATH}" ] && SVC_PATH="${CPATH}"
+fi
+mkdir -p "$(dirname $SVC_PATH)"
+wgetcurl_file "${SVC_PATH}" "${D1PATH}" "${D2PATH}"
+chmod 777 "${SVC_PATH}"
+[ "${RUNH}" != "x" ] && [[ "$(${SVC_PATH} ${RUNH} 2>&1 | wc -l)" -lt 2 ]] && rm -rf ${SVC_PATH}
+if [ ! -s "${SVC_PATH}" ] && [ "$TYPE1" != "notrestart" ] ; then
+	logger -t "【${NAME}】" "找不到 ${SVC_PATH} ，需要手动安装 ${SVC_PATH}"
+	logger -t "【${NAME}】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && eval "${NAME}_restart x"
+fi
+}
+
+i_app_keep () {
+local NAME="" PIDNAME="" PSNAME="" CPATH="" TYPE1=""
+for i in "$@"; do
+  case $i in
+    -name=*)
+      NAME="${i#*=}"
+      shift
+      ;;
+    -pidof=*)
+      PIDNAME="${i#*=}"
+      shift
+      ;;
+    -ps=*)
+      PSNAME="${i#*=}"
+      shift
+      ;;
+    -cpath=*)
+      CPATH="${i#*=}"
+      shift
+      ;;
+    -t)
+      TYPE1="test"
+      shift
+      ;;
+    *)
+      ;;
+  esac
+done
+local TMPSCRIPT="/tmp/script/_opt_script_check"
+local COMMAND=""
+COMMAND="[ -z \"\`pidof ${PIDNAME}\`\" ]"
+[ -z "${CPATH}" ] && CPATH="$(which ${PIDNAME})"
+[ ! -z "${CPATH}" ] && COMMAND="${COMMAND} || ""[ ! -s \"${CPATH}\" ]"
+[ ! -z "${PSNAME}" ] && COMMAND="${COMMAND} || ""[ \"\$(grep \"${PSNAME}\" /tmp/ps | grep -v grep |wc -l)\" -lt \"1\" ]"
+if [ "$TYPE1" = "test" ] ; then
+ps -w > /tmp/ps
+if $COMMAND; then
+	logger -t "【${NAME}】" "${PIDNAME} 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && eval "${NAME}_restart x"
+else
+	logger -t "【${NAME}】" "${PIDNAME} 启动成功" && eval "${NAME}_restart o"
+fi
+[ ! -z "$(ps -w | grep "$(pidof ${PIDNAME})" | grep /opt/)" ] && initopt
+return 0
+fi
+logger -t "【${NAME}】" "${PIDNAME} 守护进程启动"
+if [ -s "$TMPSCRIPT" ] ; then
+ps -w > /tmp/ps
+sed -Ei '/【'"${NAME}"'】|^$/d' "$TMPSCRIPT"
+cat >> "$TMPSCRIPT" <<-OSC
+if $COMMAND; then # 【${NAME}】
+ nvram set ${NAME}_status=00 && logger -t "【${NAME}】" "${PIDNAME} 重新启动！" && eval "$scriptfilepath &" && sed -Ei '/【${NAME}】|^$/d' ${TMPSCRIPT} # 【${NAME}】
+fi # 【${NAME}】
+OSC
+return 0
+else
+while true; do
+	if [ -z "$(pidof ${PIDNAME})" ] ; then
+		nvram set ${NAME}_status=00
+		logger -t "【${NAME}】" "${PIDNAME} 重新启动！！"
+		eval "$scriptfilepath &"
+		exit 0
+	fi
+sleep 123
+done
+fi
+}
+
+i_app_restart () {
+local NAME="" TYPE1=""
+for i in "$@"; do
+  case $i in
+    -name=*)
+      NAME="${i#*=}"
+      shift
+      ;;
+    o)
+      TYPE1="o"
+      shift
+      ;;
+    x)
+      TYPE1="x"
+      shift
+      ;;
+    *)
+      ;;
+  esac
+done
+relock="/var/lock/${NAME}_restart.lock"
+if [ "$TYPE1" = "o" ] ; then
+	nvram set ${NAME}_renum="0"
+	[ -f $relock ] && rm -f $relock
+	return 0
+fi
+if [ "$TYPE1" = "x" ] ; then
+	if [ -f $relock ] ; then
+		logger -t "【${NAME}】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		exit 0
+	fi
+	eval "${NAME}_renum=\${${NAME}_renum:-\"0\"}"
+	eval ${NAME}_renum=`eval "expr \$""${NAME}_renum + 1"`
+	eval "nvram set ${NAME}_renum=\"\$""${NAME}_renum\""
+	if [ "$(eval "echo \"$""${NAME}_renum\"")" -gt "3" ] ; then
+		I=19
+		echo $I > $relock
+		logger -t "【${NAME}】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
+		while [ $I -gt 0 ]; do
+			I=$(($I - 1))
+			echo $I > $relock
+			sleep 60
+			[ "$(nvram get ${NAME}_renum)" = "0" ] && exit 0
+			[ $I -lt 0 ] && break
+		done
+		nvram set ${NAME}_renum="1"
+	fi
+	[ -f $relock ] && rm -f $relock
+fi
+nvram set ${NAME}_status=0
+eval "$scriptfilepath &"
+exit 0
 }
 

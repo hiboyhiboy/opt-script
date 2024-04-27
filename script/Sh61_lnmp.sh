@@ -7,7 +7,6 @@ onmp_enable=`nvram get onmp_enable`
 [ -z $onmp_enable ] && onmp_enable=0 && nvram set onmp_enable=$onmp_enable
 nvram set onmp_1="更新 ONMP 脚本"
 if [ "$lnmp_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep lnmp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 default_enable=`nvram get default_enable`
 [ -z $default_enable ] && default_enable=0 && nvram set default_enable=$default_enable
@@ -72,60 +71,21 @@ if [ "$cmd_log_enable" = "1" ] || [ "$lnmp_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
 fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ]  && [ ! -s /tmp/script/_lnmp ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ] && [ ! -s /tmp/script/_lnmp ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_lnmp
 	chmod 777 /tmp/script/_lnmp
 fi
 
 lnmp_restart () {
-
-relock="/var/lock/lnmp_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set lnmp_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【lnmp】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	lnmp_renum=${lnmp_renum:-"0"}
-	lnmp_renum=`expr $lnmp_renum + 1`
-	nvram set lnmp_renum="$lnmp_renum"
-	if [ "$lnmp_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【lnmp】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get lnmp_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set lnmp_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set lnmp_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="lnmp"
 }
 
 lnmp_get_status () {
 
-A_restart=`nvram get lnmp_status`
 B_restart="$http_username$lnmp_enable$mysql_enable$default_enable$kodexplorer_enable$owncloud_enable$phpmyadmin_enable$wifidog_server_enable$default_port$kodexplorer_port$owncloud_port$phpmyadmin_port$wifidog_server_port$nextcloud_enable$nextcloud_port$wordpress_enable$wordpress_port$h5ai_enable$h5ai_port$lychee_enable$lychee_port$typecho_enable$typecho_port$zblog_enable$zblog_port$dzzoffice_enable$dzzoffice_port$redis_enable$onmp_enable"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set lnmp_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="lnmp" -valb="$B_restart"
 }
 
 lnmp_check () {
@@ -155,28 +115,10 @@ fi
 }
 
 lnmp_keep () {
-
-logger -t "【LNMP】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
+i_app_keep -name="lnmp" -pidof="nginx" &
 if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof mysqld\`" ] && nvram set lnmp_status=00 && logger -t "【LNMP】" "重新启动mysqld" && eval "$scriptfilepath &" && sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check # 【LNMP】
-OSC
+i_app_keep -name="lnmp" -pidof="mysqld" &
 fi
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof nginx\`" ] && nvram set lnmp_status=00 && logger -t "【LNMP】" "重新启动nginx" && eval "$scriptfilepath &" && sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check # 【LNMP】
-OSC
-return
-fi
-
-while true; do
-if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-	[ -z "`pidof mysqld`" ] || [ ! -s "`which mysqld`" ] && logger -t "【LNMP】" "mysqld 重新启动" && lnmp_restart
-fi
-	[ -z "`pidof nginx`" ] || [ ! -s "`which nginx`" ] && logger -t "【LNMP】" "nginx 重新启动" && lnmp_restart
-sleep 261
-done
 }
 
 lnmp_close () {
@@ -495,13 +437,10 @@ lnmp_Available
 
 sleep 5
 if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-	[ -z "`pidof mysqld`" ] && logger -t "【LNMP】" "mysqld启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
+	i_app_keep -t -name="lnmp" -pidof="mysqld"
 fi
-[ -z "`pidof nginx`" ] && logger -t "【LNMP】" "nginx启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
-[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "nginx启动成功" && lnmp_restart o
-[ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] && [ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "mysqld启动成功" && lnmp_restart o
+i_app_keep -t -name="lnmp" -pidof="nginx"
 lnmp_port_dpt
-initopt
 lnmp_get_status
 eval "$scriptfilepath keep &"
 exit 0
@@ -529,19 +468,6 @@ logger -t "【LNMP】" "/opt 剩余可用节点空间[Inodes] $Available_C/$Avai
 logger -t "【LNMP】" "/opt 已用数据空间[M] $Available_M/100%"
 logger -t "【LNMP】" "/opt 已用节点空间[Inodes] $Available_I/100%"
 logger -t "【LNMP】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 LNMP 运行，请重新正确格式化 U盘。"
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-optw_enable=`nvram get optw_enable`
-if [ "$optw_enable" != "2" ] ; then
-	nvram set optw_enable=2
-fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 lnmp_port_dpt () {

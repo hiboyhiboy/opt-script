@@ -7,7 +7,6 @@ tgbot_id=`nvram get app_47`
 tgbot_api=`nvram get app_87`
 [ -z $tgbot_api ] && tgbot_api="https://api.telegram.org" && nvram set app_87="$tgbot_api"
 if [ "$tgbot_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep tgbot | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 tgbot_sckey=`nvram get app_48`
 tgbot_notify_1=`nvram get app_49`
@@ -36,60 +35,21 @@ if [ ! -z "$tgbot_id" ] && [ ! -z "$tgbot_text" ] && [ ! -z "$tgbot_sckey" ] ; t
 	fi
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tg_bot)" ]  && [ ! -s /tmp/script/_app12 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep tg_bot)" ] && [ ! -s /tmp/script/_app12 ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app12
 	chmod 777 /tmp/script/_app12
 fi
 
 tgbot_restart () {
-
-relock="/var/lock/tgbot_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set tgbot_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【tgbot】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	tgbot_renum=${tgbot_renum:-"0"}
-	tgbot_renum=`expr $tgbot_renum + 1`
-	nvram set tgbot_renum="$tgbot_renum"
-	if [ "$tgbot_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【tgbot】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get tgbot_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set tgbot_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set tgbot_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="tgbot"
 }
 
 tgbot_get_status () {
 
-A_restart=`nvram get tgbot_status`
 B_restart="$tgbot_enable$tgbot_api$tgbot_id$tgbot_sckey$tgbot_notify_1$tgbot_notify_2$tgbot_notify_3$tgbot_notify_4$(cat /etc/storage/app_10.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set tgbot_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="tgbot" -valb="$B_restart"
 }
 
 tgbot_check () {
@@ -110,26 +70,10 @@ fi
 }
 
 tgbot_keep () {
+i_app_keep -name="tgbot" -pidof="app_10.sh" -cpath="$(which curl)" &
 logger -t "【tgbot推送】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【tgbot推送】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "/etc/storage/app_10.sh" /tmp/ps | grep -v grep |wc -l\` # 【tgbot推送】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "/etc/storage/app_10.sh" ] || [ ! -s "`which curl`" ] ; then # 【tgbot推送】
-		logger -t "【tgbot推送】" "重新启动\$NUM" # 【tgbot推送】
-		nvram set tgbot_status=04 && eval "$scriptfilepath &" && sed -Ei '/【tgbot推送】|^$/d' /tmp/script/_opt_script_check # 【tgbot推送】
-	fi # 【tgbot推送】
-OSC
-#return
-fi
 sleep 60
 while true; do
-	[ ! -s "`which curl`" ] && { logger -t "【tgbot推送】" "重新启动"; tgbot_restart ; }
-	if [ -z "$(ps -w | grep "app_10" | grep -v grep )" ] ; then
-		logger -t "【tgbot推送】" "重新启动"
-		tgbot_restart
-	fi
-	
 sleep 3600
 killall app_10.sh
 killall -9 app_10.sh
@@ -164,20 +108,10 @@ fi
 logger -t "【tgbot推送】" "运行 /etc/storage/app_10.sh"
 /etc/storage/app_10.sh &
 sleep 3
-[ ! -z "$(ps -w | grep "app_10" | grep -v grep )" ] && logger -t "【tgbot推送】" "启动成功" && tgbot_restart o
-[ -z "$(ps -w | grep "app_10" | grep -v grep )" ] && logger -t "【tgbot推送】" "启动失败, 注意检app_10.sh脚本和curl是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && tgbot_restart x
+i_app_keep -t -name="tgbot" -pidof="app_10.sh"
 #tgbot_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
@@ -201,7 +135,7 @@ tgbot_notify_3=`nvram get app_51`
 tgbot_notify_4=`nvram get app_52`
 tgbot_api=`nvram get app_87`
 [ -z $tgbot_api ] && tgbot_api="https://api.telegram.org" && nvram set app_87="$tgbot_api"
-user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 mkdir -p /tmp/var
 resub=1
 # 获得外网地址

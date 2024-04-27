@@ -5,7 +5,7 @@ kms_enable=`nvram get kms_enable`
 [ -z $kms_enable ] && kms_enable=0 && nvram set kms_enable=0
 #[ "$kms_enable" != "0" ] && nvramshow=`nvram showall | grep '=' | grep kms | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kms)" ]  && [ ! -s /tmp/script/_kms ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kms)" ] && [ ! -s /tmp/script/_kms ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kms
 	chmod 777 /tmp/script/_kms
@@ -25,21 +25,7 @@ fi
 }
 
 kms_keep () {
-logger -t "【kms】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof vlmcsd\`" ] && logger -t "【kms】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check # 【kms】
-OSC
-return
-fi
-while true; do
-	if [ -z "`pidof vlmcsd`" ] ; then
-		logger -t "【kms】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
-	fi
-sleep 992
-done
+i_app_keep -name="kms" -pidof="vlmcsd" &
 }
 
 kms_close () {
@@ -68,8 +54,8 @@ echo "srv-host=_vlmcs._tcp.lan,$computer_name.lan,1688,0,100" >> /etc/storage/dn
 /etc/storage/vlmcsdini_script.sh
 restart_on_dhcpd
 sleep 4
-[ ! -z "$(ps -w | grep "vlmcsd" | grep -v grep )" ] && logger -t "【kms】" "启动成功"
-[ -z "$(ps -w | grep "vlmcsd" | grep -v grep )" ] && logger -t "【kms】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
+[ ! -z "`pidof vlmcsd`" ] && logger -t "【kms】" "启动成功"
+[ -z "`pidof vlmcsd`" ] && logger -t "【kms】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
 eval "$scriptfilepath keep &"
 exit 0
 }

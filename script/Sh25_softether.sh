@@ -13,66 +13,22 @@ cmd_log=""
 if [ "$cmd_log_enable" = "1" ] || [ "$softether_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
-#if [ "$softether_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep softether | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-#fi
-
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep softether)" ]  && [ ! -s /tmp/script/_softether ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep softether)" ] && [ ! -s /tmp/script/_softether ] ; then
 	mkdir -p /tmp/script
 	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_softether
 	chmod 777 /tmp/script/_softether
 fi
 
 softether_restart () {
-
-relock="/var/lock/softether_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set softether_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【softether】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	softether_renum=${softether_renum:-"0"}
-	softether_renum=`expr $softether_renum + 1`
-	nvram set softether_renum="$softether_renum"
-	if [ "$softether_renum" -gt "3" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【softether】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get softether_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set softether_renum="1"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set softether_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="softether"
 }
 
 softether_get_status () {
 
-SVC_PATH="$softether_path"
-A_restart=`nvram get softether_status`
 B_restart="$softether_enable$softether_path$(cat /etc/storage/softether_script.sh | grep -v '^#' | grep -v '^$')"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-cut_B_re
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set softether_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="softether" -valb="$B_restart"
 }
 
 softether_check () {
@@ -94,27 +50,7 @@ fi
 }
 
 softether_keep () {
-logger -t "【softether】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【softether】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "$softether_path" /tmp/ps | grep -v grep |wc -l\` # 【softether】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "$softether_path" ] ; then # 【softether】
-		logger -t "【softether】" "重新启动\$NUM" # 【softether】
-		nvram set softether_status=00 && eval "$scriptfilepath &" && sed -Ei '/【softether】|^$/d' /tmp/script/_opt_script_check # 【softether】
-	fi # 【softether】
-OSC
-return
-fi
-
-while true; do
-	NUM=`ps -w | grep "$softether_path" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ ! -s "$softether_path" ] ; then
-		logger -t "【softether】" "重新启动$NUM"
-		softether_restart
-	fi
-sleep 225
-done
+i_app_keep -name="softether" -pidof="$(basename $softether_path)" -cpath="$softether_path" &
 }
 
 softether_close () {
@@ -137,52 +73,23 @@ kill_ps "$scriptname"
 
 softether_start () {
 check_webui_yes
-SVC_PATH="$softether_path"
-if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/softether/vpnserver"
-fi
-[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【softether】" "找不到 $SVC_PATH，安装 opt 程序"
-	/etc/storage/script/Sh01_mountopt.sh start
-fi
-mkdir -p /opt/softether
-for h_i in $(seq 1 2) ; do
-[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
-wgetcurl_file "$SVC_PATH" "$hiboyfile/vpnserver" "$hiboyfile2/vpnserver"
-[[ "$("$(dirname $SVC_PATH)"/vpncmd -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf "$(dirname $SVC_PATH)"/vpncmd
-wgetcurl_file "$(dirname $SVC_PATH)"/vpncmd "$hiboyfile/vpncmd" "$hiboyfile2/vpncmd"
-done
-if [ ! -s "$(dirname $SVC_PATH)"/hamcore.se2 ] ; then
-wgetcurl_checkmd5 "$(dirname $SVC_PATH)"/hamcore.se2 "$hiboyfile/hamcore.se2" "$hiboyfile2/hamcore.se2" N
-fi
-chmod 777 "$SVC_PATH"
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【softether】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【softether】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && softether_restart x
-fi
+i_app_get_cmd_file -name="softether" -cmd="$softether_path" -cpath="/opt/softether/vpnserver" -down1="$hiboyfile/vpnserver" -down2="$hiboyfile2/vpnserver"
 softether_path="$SVC_PATH"
+[ -s "$SVC_PATH" ] && [ "$(nvram get softether_path)" != "$SVC_PATH" ] && nvram set softether_path="$SVC_PATH"
+i_app_get_cmd_file -name="softether" -cmd="$(dirname $softether_path)/vpncmd" -cpath="/opt/softether/vpncmd" -down1="$hiboyfile/vpncmd" -down2="$hiboyfile2/vpncmd" -runh="x"
+if [ ! -s "$(dirname $softether_path)/hamcore.se2" ] ; then
+wgetcurl_checkmd5 "$(dirname $softether_path)/hamcore.se2" "$hiboyfile/hamcore.se2" "$hiboyfile2/hamcore.se2" N
+fi
 logger -t "【softether】" "运行 softether_script"
 $softether_path stop
 eval "/etc/storage/softether_script.sh $cmd_log" &
 sleep 4
-[ ! -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动成功" && softether_restart o
-[ -z "`pidof vpnserver`" ] && logger -t "【softether】" "启动失败, 注意检查hamcore.se2、vpncmd、vpnserver是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && { rm -f $softether_path ; softether_restart x ; }
+i_app_keep -t -name="softether" -pidof="$(basename $softether_path)" -cpath="$softether_path"
 
 softether_port_dpt
-initopt
 softether_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
