@@ -827,7 +827,6 @@ killall_ss_local
 ss_plugin_client_name="$(nvram get ss_plugin_client_name)"
 [ ! -z "$ss_plugin_client_name" ] && { kill_ps "$ss_plugin_client_name" ; ss_plugin_client_name="" ; nvram set ss_plugin_client_name="" ; }
 killall pdnsd dnsproxy
-killall -9 pdnsd dnsproxy
 rm -f /tmp/sh_sskeey_k.sh
 [ -f /opt/etc/init.d/S24chinadns ] && { rm -f /var/log/chinadns.lock; /opt/etc/init.d/S24chinadns stop& }
 [ -f /opt/etc/init.d/S26pdnsd ] && { rm -f /var/log/pdnsd.lock; /opt/etc/init.d/S26pdnsd stop& }

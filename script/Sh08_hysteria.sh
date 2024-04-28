@@ -86,7 +86,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【hysteria】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh08_hysteria.sh"
 killall hysteria
-killall -9 hysteria
 restart_on_dhcpd
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app24"

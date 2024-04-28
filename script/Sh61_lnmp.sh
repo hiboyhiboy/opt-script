@@ -131,7 +131,6 @@ sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
 /opt/etc/init.d/S80nginx stop > /dev/null 2>&1
 /opt/etc/init.d/S70redis stop > /dev/null 2>&1
 killall nginx mysqld php-fpm sh_onmp.sh sh_onmp8.sh php-cgi > /dev/null 2>&1
-killall -9 nginx mysqld php-fpm sh_onmp.sh sh_onmp8.sh php-cgi > /dev/null 2>&1
 iptables -t filter -D INPUT -p tcp --dport $default_port -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport 3306 -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $kodexplorer_port -j ACCEPT

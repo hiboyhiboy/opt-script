@@ -59,7 +59,6 @@ i_app_keep -name="caddy" -pidof="caddy" -cpath="/opt/caddy/caddy" &
 caddy_close () {
 sed -Ei '/【caddy】|^$/d' /tmp/script/_opt_script_check
 killall caddy
-killall -9 caddy
 kill_ps "/tmp/script/_app26"
 kill_ps "_cad_dy.sh"
 kill_ps "$scriptname"

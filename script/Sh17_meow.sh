@@ -67,7 +67,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【meow】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$meow_path" ] && kill_ps "$meow_path"
 killall meow meow_script.sh
-killall -9 meow meow_script.sh
 kill_ps "/tmp/script/_meow"
 kill_ps "_meow.sh"
 kill_ps "$scriptname"

@@ -74,7 +74,6 @@ syncthing_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check
 killall syncthing
-killall -9 syncthing
 sync;echo 3 > /proc/sys/vm/drop_caches
 iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT
 iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT

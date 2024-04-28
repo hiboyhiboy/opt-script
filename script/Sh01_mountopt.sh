@@ -138,6 +138,16 @@ fi
 # 6 >>安装到 远程共享
 # 不是ext4磁盘时用镜像生成opt
 
+func_stop_apps()
+{
+	stop_rstats
+}
+
+func_start_apps()
+{
+	start_rstats
+}
+
 mount_check_lock () {
 
 # 检查挂载异常设备
@@ -147,6 +157,7 @@ if [ ! -z "$dev_mount" ] && [ ! -z "$dev_full" ] ; then
 if mountpoint -q "$dev_mount" ; then
 	logger -t "【opt】" "发现挂载异常设备，尝试移除： $dev_full   $dev_mount"
 	/tmp/re_upan_storage.sh 0
+	func_stop_apps
 	mountres2=`losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}'`
 	[ ! -z "$mountres2" ] && /usr/bin/opt-umount.sh $dev_full   $dev_mount
 	mountres2=`losetup -a | grep $dev_mount | grep o_p_t.img | awk -F ':' '{print $1}'`
@@ -175,6 +186,7 @@ if mountpoint -q "$dev_mount" ; then
 	if mountpoint -q "$dev_mount" ; then
 		logger -t "【opt】" "挂载异常设备，尝试移除失败"
 	fi
+	func_start_apps
 fi
 fi
 ss_opt_x=`nvram get ss_opt_x`
@@ -186,11 +198,13 @@ if [ "$mountp" = "0" ] ; then
 	[ -z "$optPath" ] && optPath=$(grep ' /opt ' /proc/mounts | grep -v "^//" | awk '{print $1}' | grep -E "$(echo $(/usr/bin/find /dev/ -name '*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')")
 	[ -z "$optPath" ] && optPath="$(grep ' /opt ' /proc/mounts | grep " cifs "| awk '{print $1}')"
 	if [ -z "$optPath" ] ; then
+		func_stop_apps
 		logger -t "【opt】" "opt 选项[$ss_opt_x] 挂载异常，重新挂载：umount -l /opt"
 		/usr/bin/opt-umount.sh $(grep ' /opt ' /proc/mounts | awk '{print $1}')    $(df -m | grep "$(df -m | grep '% /opt' | awk 'NR==1' | awk '{print $1}')" | grep "/media"| awk '{print $NF}' | awk 'NR==1' )
 		mountpoint -q /opt && umount /opt
 		mountpoint -q /opt && umount -l /opt
 		mountpoint -q /opt && { fuser -m -k /opt 2>/dev/null ; umount -l /opt ; }
+		func_start_apps
 		mount_opt
 	else
 		logger -t "【opt】" "opt 挂载正常：$optPath"
@@ -358,6 +372,7 @@ if [ "$ss_opt_x" = "5" ] ; then
 	fi
 fi
 if [ ! -z "$upanPath" ] ; then
+	func_stop_apps
 	mkdir -p /tmp/AiDisk_opt
 	mountpoint -q /tmp/AiDisk_opt && umount /tmp/AiDisk_opt
 	mount -o bind "$upanPath" /tmp/AiDisk_opt
@@ -381,6 +396,7 @@ if [ ! -z "$upanPath" ] ; then
 	[ -d /tmp/AiDisk_00 ] || rm -rf /tmp/AiDisk_00
 	ln -sf "$upanPath" /tmp/AiDisk_00
 	sync
+	func_start_apps
 	# prepare ssh authorized_keys
 	prepare_authorized_keys
 	# 部署离线 opt 环境下载地址
@@ -931,6 +947,8 @@ done < /tmp/md5/libmd5f_opt_backup
 logger -t "【libmd5_恢复】" "/opt/lib|bin|sbin ，md5 对比完成！"
 # flush buffers
 sync;echo 3 > /proc/sys/vm/drop_caches
+func_stop_apps
+func_start_apps
 
 }
 
@@ -1025,49 +1043,62 @@ re_upan_storage () {
 initconfig () {
 
 cat > "/tmp/re_upan_storage.sh" <<-\EEE
-#!/bin/bash
+#!/bin/sh
+
+func_stop_apps()
+{
+	stop_rstats
+}
+
+func_start_apps()
+{
+	start_rstats
+}
 
 if [ ! -f /tmp/upan_storage_enable.lock ] ; then
 touch /tmp/upan_storage_enable.lock
 upan_storage_enable=`nvram get upan_storage_enable`
 if [ "$upan_storage_enable" = "1" ] && [ "$1" != "0" ] ; then
-if [ ! -s /etc/storage/start_script.sh ] ; then
-	sync
-	umount /etc/storage
-	sleep 1
-	umount -l /etc/storage
-	sleep 1
-	{ fuser -m -k /etc/storage 2>/dev/null ; umount -l /etc/storage ; }
-	sleep 1
-	mtd_storage.sh fill
-	sw_mode=`nvram get sw_mode`
-	[ "$sw_mode" != "3" ] && restart_firewall
-	[ "$sw_mode" == "3" ] && /etc/storage/crontabs_script.sh &
-	rm -f /tmp/upan_storage_enable.lock
-	exit
-fi
-if ! mountpoint -q /etc/storage ; then
-if [ ! -f /opt/storage/start_script.sh ] && [ -f /etc/storage/start_script.sh ] ; then
-	mkdir -p -m 755 /opt/storage
-	cp -af /etc/storage/* /opt/storage
+	if [ ! -s /etc/storage/start_script.sh ] ; then
+		func_stop_apps
+		sync
+		umount /etc/storage
+		sleep 1
+		umount -l /etc/storage
+		sleep 1
+		{ fuser -m -k /etc/storage 2>/dev/null ; umount -l /etc/storage ; }
+		sleep 1
+		mtd_storage.sh fill
+		sw_mode=`nvram get sw_mode`
+		[ "$sw_mode" != "3" ] && restart_firewall
+		[ "$sw_mode" == "3" ] && /etc/storage/crontabs_script.sh &
+		func_start_apps
+		rm -f /tmp/upan_storage_enable.lock
+		exit
+	fi
+	if ! mountpoint -q /etc/storage ; then
+		if [ ! -f /opt/storage/start_script.sh ] && [ -f /etc/storage/start_script.sh ] ; then
+			mkdir -p -m 755 /opt/storage
+			cp -af /etc/storage/* /opt/storage
+		else
+			#[ -f /opt/storage/start_script.sh ] && cp -af /opt/storage/* /etc/storage
+			[ -d /opt/storage/https ] && { mkdir -p -m 700 /opt/storage/https ; cp -af /opt/storage/https/* /etc/storage/https ; }
+			[ -d /opt/storage/openvpn ] && { mkdir -p /opt/storage/openvpn ; cp -af /opt/storage/openvpn/* /etc/storage/openvpn ; }
+			[ -d /opt/storage/inadyn ] && { mkdir -p /opt/storage/inadyn ; cp -af /opt/storage/inadyn/* /etc/storage/inadyn ; }
+			[ -d /opt/storage/dnsmasq ] && { mkdir -p /opt/storage/dnsmasq ; cp -af /opt/storage/dnsmasq/* /etc/storage/dnsmasq ; }
+		fi
+		logger -t "【外部存储storage】" "/etc/storage -> /opt/storage"
+		func_stop_apps
+		mount --bind /opt/storage /etc/storage
+		sync
+		mtd_storage.sh fill
+		func_start_apps
+	else
+		func_stop_apps
+		func_start_apps
+	fi
 else
-	#[ -f /opt/storage/start_script.sh ] && cp -af /opt/storage/* /etc/storage
-	[ -d /opt/storage/https ] && { mkdir -p -m 700 /opt/storage/https ; cp -af /opt/storage/https/* /etc/storage/https ; }
-	[ -d /opt/storage/openvpn ] && { mkdir -p /opt/storage/openvpn ; cp -af /opt/storage/openvpn/* /etc/storage/openvpn ; }
-	[ -d /opt/storage/inadyn ] && { mkdir -p /opt/storage/inadyn ; cp -af /opt/storage/inadyn/* /etc/storage/inadyn ; }
-	[ -d /opt/storage/dnsmasq ] && { mkdir -p /opt/storage/dnsmasq ; cp -af /opt/storage/dnsmasq/* /etc/storage/dnsmasq ; }
-fi
-	logger -t "【外部存储storage】" "/etc/storage -> /opt/storage"
-	killall rstats
-	sleep 1
-	mount --bind /opt/storage /etc/storage
-	sync
-	mtd_storage.sh fill
-	/sbin/rstats &
-fi
-else
-	killall rstats
-	sleep 1
+	func_stop_apps
 	sync
 	mountpoint -q /etc/storage && logger -t "【外部存储storage】" "停止外部存储storage！ umount /etc/storage"
 	mountpoint -q /etc/storage && umount /etc/storage
@@ -1077,13 +1108,13 @@ else
 	mountpoint -q /etc/storage && { fuser -m -k /etc/storage 2>/dev/null ; umount -l /etc/storage ; }
 	sleep 1
 	mtd_storage.sh fill
-	/sbin/rstats &
+	func_start_apps
 fi
 rm -f /tmp/upan_storage_enable.lock
 fi
 
 EEE
-chmod 755 "/tmp/re_upan_storage.sh"
+chmod 777 "/tmp/re_upan_storage.sh"
 
 cifs_script="/etc/storage/cifs_script.sh"
 if [ ! -f "$cifs_script" ] || [ ! -s "$cifs_script" ] ; then
@@ -1190,12 +1221,11 @@ opt_download_file)
 	opt_download &
 	;;
 re_upan_storage)
-	killall -q rstats
-	sleep 1
+	func_stop_apps
 	mount_check
 	rm -rf /opt/storage/*
 	mtd_storage.sh resetsh
-	/sbin/rstats &
+	func_start_apps
 	;;
 opt_force)
 	opt_force

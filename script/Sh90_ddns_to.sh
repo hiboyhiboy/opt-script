@@ -62,7 +62,6 @@ ddnsto_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【ddnsto】|^$/d' /tmp/script/_opt_script_check
 killall ddnsto
-killall -9 ddnsto
 kill_ps "/tmp/script/_app16"
 kill_ps "_ddns_to.sh"
 kill_ps "$scriptname"

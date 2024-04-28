@@ -29,7 +29,6 @@ if [ "$tailscale_enable" = "3" ] ; then
 logger -t "【tailscale】" "配置恢复初始化"
 iptables -D INPUT -i tailscale0 -j ACCEPT
 killall tailscaled tailscale
-killall -9 tailscaled tailscale
 rm -rf /opt/app/tailscale/lib/*
 rm -rf /etc/storage/tailscale/lib/*
 tailscale_enable=0 && nvram set app_82=0
@@ -100,7 +99,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【tailscale】|^$/d' /tmp/script/_opt_script_check
 iptables -D INPUT -i tailscale0 -j ACCEPT
 killall tailscaled tailscale
-killall -9 tailscaled tailscale
 tailscale_backup
 umount /opt/app/tailscale/lib/tailscaled.state
 umount /opt/app/tailscale/lib/cmd.log.conf

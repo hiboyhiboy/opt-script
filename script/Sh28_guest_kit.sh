@@ -57,7 +57,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【guestkit】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport 7575 -j ACCEPT
 killall guestkit
-killall -9 guestkit
 kill_ps "/tmp/script/_app9"
 kill_ps "_guest_kit.sh"
 kill_ps "$scriptname"
@@ -73,7 +72,6 @@ logger -t "【guestkit】" "运行 guestkit"
 
 #运行/opt/bin/guestkit
 cd $(dirname `which guestkit`)
-killall -9 guestkit
 eval "guestkit $cmd_log" &
 sleep 7
 i_app_keep -t -name="guestkit" -pidof="guestkit"

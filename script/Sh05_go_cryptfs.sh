@@ -76,7 +76,6 @@ sed -Ei '/【gocryptfs】|^$/d' /tmp/script/_opt_script_check
 set_app_list_stop
 killall gocryptfs app_32.sh
 sleep 3
-killall -9 app_32.sh
 sync;echo 3 > /proc/sys/vm/drop_caches
 kill_ps "/tmp/script/_app23"
 kill_ps "_go_cryptfs.sh"

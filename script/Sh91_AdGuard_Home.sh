@@ -148,7 +148,6 @@ fi
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 restart_on_dhcpd
 killall AdGuardHome
-killall -9 AdGuardHome
 kill_ps "/tmp/script/_app17"
 kill_ps "_AdGuard_Home.sh"
 kill_ps "$scriptname"

@@ -96,7 +96,6 @@ mentohust_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【mentohust】|^$/d' /tmp/script/_opt_script_check
 killall mentohust
-killall -9 mentohust
 kill_ps "/tmp/script/_mento_hust"
 kill_ps "_mento_hust.sh"
 kill_ps "$scriptname"
@@ -115,7 +114,7 @@ logger -t "【MentoHUST】" "运行 $mentohust_path"
 if [ ! -f "/etc/storage/mentohust.conf" ] ; then
 	$mentohust_path -u$mentohust_u -p$mentohust_p -n$mentohust_n -i$mentohust_i -m$mentohust_m -g$mentohust_g -s$mentohust_s -o$mentohust_o -t$mentohust_t -e$mentohust_e -r$mentohust_r -l$mentohust_l -a$mentohust_a -d$mentohust_d -b$mentohust_b -v$mentohust_v -f$mentohust_f  -c$mentohust_c -w 
 	sleep 2
-	pids=$(pidof process) && killall -9 $pids
+	pids=$(pidof process) && killall process
 fi
 mentohust_mode=`nvram get mentohust_mode`
 if [ "$mentohust_mode" = "0" ] ; then

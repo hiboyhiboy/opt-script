@@ -71,7 +71,6 @@ done
 FastDick_close () {
 kill_ps "$scriptname keep"
 killall FastDick_script.sh
-killall -9 FastDick_script.sh
 kill_ps "/opt/FastDick/swjsq"
 kill_ps "/tmp/script/_Fast_Dick"
 kill_ps "_Fast_Dick.sh"

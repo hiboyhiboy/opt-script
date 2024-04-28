@@ -279,7 +279,6 @@ sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh18_v2ray.sh"
 [ ! -z "$v2ray_path" ] && kill_ps "$v2ray_path"
 killall v2ray v2ray_script.sh
-killall -9 v2ray v2ray_script.sh
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_v2ray"
 kill_ps "_v2ray.sh"
@@ -329,7 +328,6 @@ if [ ! -s "$v2ray_path" ] ; then
 	/etc/storage/script/Sh01_mountopt.sh start
 fi
 killall v2ray v2ray_script.sh
-killall -9 v2ray v2ray_script.sh
 optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
 Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
 [ "$Mem_total" -lt 1024 ] && Mem_total="1024" || { [ "$Mem_total" -ge 1024 ] || Mem_total="1024" ; }
@@ -2024,7 +2022,6 @@ if [ ! -z "$link_get" ] ; then
 wgetcurl_file "$v2ray_path""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
 sed -Ei '/【v2ray】|^$/d' /tmp/script/_opt_script_check
 killall v2ray v2ray_script.sh
-killall -9 v2ray v2ray_script.sh
 rm -rf $v2ray_path
 mv -f "$v2ray_path""_file" "$v2ray_path"
 fi

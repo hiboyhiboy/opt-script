@@ -395,7 +395,6 @@ logger -t "【mkfs.ext4】" "格式化完成."
 
 reszUID () {
 killall oraynewph oraysl
-killall -9 oraynewph oraysl
 rm -f /tmp/oraysl.status /etc/PhMain.ini /etc/init.status /etc/storage/PhMain.ini /etc/storage/init.status
 ln -sf "/etc/storage/PhMain.ini" "/etc/PhMain.ini"
 ln -sf "/etc/storage/init.status" "/etc/init.status"

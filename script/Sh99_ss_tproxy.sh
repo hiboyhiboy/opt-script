@@ -202,7 +202,6 @@ ss_tproxy_run "stop"
 nvram set ss_tproxy_auser="$auser_a"
 restart_on_dhcpd
 killall ss_tproxy sh_ss_tproxy.sh
-killall -9 ss_tproxy sh_ss_tproxy.sh
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app21"
 kill_ps "_ss_tproxy.sh"

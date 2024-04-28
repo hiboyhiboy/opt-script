@@ -67,7 +67,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【cow】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$cow_path" ] && kill_ps "$cow_path"
 killall cow cow_script.sh
-killall -9 cow cow_script.sh
 kill_ps "/tmp/script/_cow"
 kill_ps "_cow.sh"
 kill_ps "$scriptname"

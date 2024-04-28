@@ -58,7 +58,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【virtualhere】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport 7575 -j ACCEPT
 killall virtualhere
-killall -9 virtualhere
 kill_ps "/tmp/script/_app8"
 kill_ps "_virtual_here.sh"
 kill_ps "$scriptname"
@@ -74,7 +73,6 @@ logger -t "【virtualhere】" "运行 virtualhere"
 
 #运行脚本启动/opt/bin/virtualhere
 cd $(dirname `which virtualhere`)
-killall -9 virtualhere
 ln -sf /etc/storage/app_8.sh ~/config.ini
 eval "virtualhere -b $cmd_log" &
 

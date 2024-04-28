@@ -215,8 +215,7 @@ if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		logger -t "【Adbyby】" "CPU 负载拥堵, 关闭 adbyby"
 		adbyby_flush_rules
 		/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-		killall -15 adbyby
-		killall -9 adbyby
+		killall adbyby
 		touch /tmp/cron_adb.lock
 		while [[ "$CPULoad" -gt "$processor" ]] 
 		do
@@ -241,12 +240,9 @@ cru.sh d adm_update &
 cru.sh d koolproxy_update &
 port=$(iptables -t nat -L | grep 'ports 8118' | wc -l)
 [ "$port" != 0 ] && adbyby_flush_rules
-killall -15 adbyby
-killall -9 adbyby
-[ "$adm_enable" != "1" ] && killall -15 adm sh_ad_m_keey_k.sh
-[ "$adm_enable" != "1" ] && killall -9 adm sh_ad_m_keey_k.sh
-[ "$koolproxy_enable" != "1" ] && killall -15 koolproxy sh_ad_kp_keey_k.sh
-[ "$koolproxy_enable" != "1" ] && killall -9 koolproxy sh_ad_kp_keey_k.sh
+killall adbyby
+[ "$adm_enable" != "1" ] && killall adm sh_ad_m_keey_k.sh
+[ "$koolproxy_enable" != "1" ] && killall koolproxy sh_ad_kp_keey_k.sh
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 rm -f /tmp/7620n.tar.gz /tmp/cron_adb.lock /tmp/adbyby_host_backup.conf
 kill_ps "/tmp/script/_ad_byby"
@@ -398,7 +394,6 @@ if [ -z "`pidof adbyby`" ] && [ "$adbyby_enable" = "1" ] && [ ! -f /tmp/cron_adb
 		logger -t "【Adbyby】" "错误！下载规则数 $rules_nu ，再次启用脚本手动下载更新。"
 		update_ad_rules
 		killall adbyby
-		killall -9 adbyby
 		eval "/tmp/bin/adbyby $cmd_log" &
 		sleep 10
 	fi

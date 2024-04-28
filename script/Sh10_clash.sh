@@ -165,7 +165,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh10_clash.sh"
 killall clash
-killall -9 clash
 restart_on_dhcpd
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app18"
@@ -943,7 +942,6 @@ logger -t "【clash】" "自动下载 clash 主程序"
 wgetcurl_file "$SVC_PATH""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
 sed -Ei '/【clash】|^$/d' /tmp/script/_opt_script_check
 killall clash
-killall -9 clash
 rm -rf "$SVC_PATH"
 mv -f "$SVC_PATH""_file" "$SVC_PATH"
 fi

@@ -92,7 +92,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【transocks】|【ipt2socks】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh39_ipt2socks.sh"
 killall transocks ipt2socks kumasocks
-killall -9 transocks ipt2socks kumasocks
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app10"
 kill_ps "_tran_socks.sh"

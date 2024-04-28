@@ -63,7 +63,6 @@ iptables -t filter -D INPUT -p udp --destination-port 1701 -j ACCEPT
 [ ! -z "$softether_path" ] && $softether_path stop
 [ ! -z "$softether_path" ] && kill_ps "$softether_path"
 killall vpnserver softether_script.sh
-killall -9 vpnserver softether_script.sh
 rm -f /etc/storage/dnsmasq/dnsmasq.d/softether.conf
 restart_on_dhcpd
 kill_ps "/tmp/script/_softether"

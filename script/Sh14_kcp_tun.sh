@@ -96,7 +96,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【kcptun】|^$/d' /tmp/script/_opt_script_check
 [ ! -z "$kcptun_path" ] && kill_ps "$kcptun_path"
 killall kcptun kcptun_script.sh sh_kcpkeep.sh
-killall -9 kcptun kcptun_script.sh sh_kcpkeep.sh
 kill_ps "/tmp/script/_kcp_tun"
 kill_ps "_kcp_tun.sh"
 kill_ps "$scriptname"

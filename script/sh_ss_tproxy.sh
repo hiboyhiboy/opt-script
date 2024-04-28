@@ -4,7 +4,7 @@ source /etc/storage/script/init.sh
 source /etc/storage/app_26.sh
 source /etc/storage/app_27.sh
 
-trap "exit 1" HUP INT QUIT TERM PIPE
+# trap "exit 1" HUP INT QUIT TERM PIPE
 
 # 载入iptables模块
 for module in ip_set ip_set_bitmap_ip ip_set_bitmap_ipmac ip_set_bitmap_port ip_set_hash_ip ip_set_hash_ipport ip_set_hash_ipportip ip_set_hash_ipportnet ip_set_hash_net ip_set_hash_netport ip_set_list_set xt_set xt_TPROXY
@@ -1708,8 +1708,8 @@ fi
 if [ "$ss_dnsproxy_x" = "0" ] ; then
 	i_app_get_cmd_file -name="dnsproxy" -cmd="dnsproxy" -cpath="/opt/bin/dnsproxy" -down1="$hiboyfile/dnsproxy" -down2="$hiboyfile2/dnsproxy" -notrestart
 	logger -t "【sh_ss_tproxy.sh】" "启动 dnsproxy 防止域名污染"
-	pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
-	pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
+	pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy
+	pidof pdnsd >/dev/null 2>&1 && killall pdnsd
 	if [ -s /sbin/dnsproxy ] ; then
 		/sbin/dnsproxy -d
 	else
@@ -1722,8 +1722,8 @@ fi
 if [ "$ss_dnsproxy_x" = "1" ] ; then
 i_app_get_cmd_file -name="pdnsd" -cmd="pdnsd" -cpath="/opt/bin/pdnsd" -down1="$hiboyfile/pdnsd" -down2="$hiboyfile2/pdnsd" -notrestart
 logger -t "【sh_ss_tproxy.sh】" "启动 pdnsd 防止域名污染"
-pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy && killall -9 dnsproxy 2>/dev/null
-pidof pdnsd >/dev/null 2>&1 && killall pdnsd && killall -9 pdnsd 2>/dev/null
+pidof dnsproxy >/dev/null 2>&1 && killall dnsproxy
+pidof pdnsd >/dev/null 2>&1 && killall pdnsd
 pdnsd_conf="/etc/storage/pdnsd.conf"
 if [ ! -f "$pdnsd_conf" ] || [ ! -s "$pdnsd_conf" ] ; then
 	cat > $pdnsd_conf <<-\END
@@ -1831,7 +1831,6 @@ if is_md5_not ; then
 update_dnsmasq_file
 fi
 killall pdnsd dnsproxy
-killall -9 pdnsd dnsproxy
 if [ "$chinadns_ng_enable" = "1" ] ; then
 	chinadns_ng_enable=0 && nvram set app_102=0
 	/etc/storage/script/Sh09_chinadns_ng.sh stop

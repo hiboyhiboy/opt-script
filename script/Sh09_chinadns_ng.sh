@@ -116,7 +116,6 @@ sed -Ei '/no-resolv|server=127.0.0.1|dns-forward-max=1000|min-cache-ttl=1800|chi
 sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
 restart_on_dhcpd
 killall  chinadns_ng dns2tcp smartdns
-killall -9  chinadns_ng dns2tcp smartdns
 kill_ps "/tmp/script/_app19"
 kill_ps "_chinadns_ng.sh"
 kill_ps "$scriptname"
@@ -158,9 +157,9 @@ update_app
 chinadns_ng_v=`chinadns_ng -V | awk -F ' ' '{print $2;}'`
 nvram set chinadns_ng_v="$chinadns_ng_v"
 
-killall dnsproxy && killall -9 dnsproxy 2>/dev/null
-killall pdnsd && killall -9 pdnsd 2>/dev/null
-killall chinadns && killall -9 chinadns 2>/dev/null
+killall dnsproxy
+killall pdnsd
+killall chinadns
 logger -t "【chinadns_ng】" "运行 $SVC_PATH"
 cmd_name="chinadns_ng"
 eval "chinadns_ng $usage $cmd_log" &

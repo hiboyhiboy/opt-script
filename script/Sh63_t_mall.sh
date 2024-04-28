@@ -26,8 +26,7 @@ if [ "$demoui_enable" == "0" ] && [ ! -z "$http_tmp_lanport" ] ; then
 	nvram set http_lanport=$http_tmp_lanport
 	sleep 2
 	killall httpd 
-	killall -9 httpd
-fi
+	fi
 if [ "$tmall_enable" != "0" ] ; then
 
 tmall_renum=`nvram get tmall_renum`
@@ -91,7 +90,6 @@ tmall_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【天猫精灵】|^$/d' /tmp/script/_opt_script_check
 killall caddy_tmall
-killall -9 caddy_tmall
 kill_ps "/tmp/script/_app13"
 kill_ps "_t_mall.sh"
 kill_ps "$scriptname"
@@ -149,8 +147,7 @@ if [ "$app_118" != "$http_lanport" ] ; then
 	nvram set http_lanport=$app_118
 	sleep 2
 	killall httpd 
-	killall -9 httpd
-fi
+	fi
 else
 logger -t "【demoui】" "停止 demoui "
 fi

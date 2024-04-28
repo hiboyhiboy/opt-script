@@ -76,7 +76,6 @@ sleep 60
 while true; do
 sleep 3600
 killall app_10.sh
-killall -9 app_10.sh
 /etc/storage/app_10.sh &
 done
 }
@@ -85,7 +84,6 @@ tgbot_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【tgbot推送】|^$/d' /tmp/script/_opt_script_check
 killall app_10.sh
-killall -9 app_10.sh
 kill_ps "/tmp/script/_app12"
 kill_ps "_tg_bot.sh"
 kill_ps "$scriptname"

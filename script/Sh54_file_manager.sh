@@ -77,7 +77,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【filemanager】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $filemanager_wan_port -j ACCEPT
 killall filemanager caddy_filebrowser filebrowser
-killall -9 filemanager caddy_filebrowser filebrowser
 kill_ps "/tmp/script/_app5"
 kill_ps "_file_manager.sh"
 kill_ps "$scriptname"

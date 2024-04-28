@@ -60,7 +60,6 @@ i_app_keep -name="ddnsgo" -pidof="ddnsgo" &
 ddnsgo_close () {
 sed -Ei '/【ddnsgo】|^$/d' /tmp/script/_opt_script_check
 killall ddnsgo
-killall -9 ddnsgo
 kill_ps "/tmp/script/_app25"
 kill_ps "_ddns_go.sh"
 kill_ps "$scriptname"

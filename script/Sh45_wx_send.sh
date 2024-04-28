@@ -74,7 +74,6 @@ sleep 60
 while true; do
 sleep 3600
 killall app_30.sh
-killall -9 app_30.sh
 /etc/storage/app_30.sh &
 done
 }
@@ -83,9 +82,7 @@ wxsend_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【wxsend推送】|^$/d' /tmp/script/_opt_script_check
 killall app_30.sh
-killall -9 app_30.sh
 [ "$tmall_enable" == "0" ] && killall caddy_tmall
-[ "$tmall_enable" == "0" ] && killall -9 caddy_tmall
 kill_ps "/tmp/script/_app22"
 kill_ps "_wx_send.sh"
 kill_ps "$scriptname"

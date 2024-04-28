@@ -89,7 +89,6 @@ frp_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【frp】|^$/d' /tmp/script/_opt_script_check
 killall frpc frps frp_script.sh
-killall -9 frpc frps frp_script.sh
 rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
 kill_ps "/tmp/script/_frp"
 kill_ps "_frp.sh"

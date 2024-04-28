@@ -33,7 +33,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf; restart_on_dhcpd;
 killall vlmcsd vlmcsdini_script.sh
-killall -9 vlmcsd vlmcsdini_script.sh
 kill_ps "/tmp/script/_kms"
 kill_ps "_kms.sh"
 kill_ps "$scriptname"

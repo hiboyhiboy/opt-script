@@ -86,7 +86,6 @@ rm -rf /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
 restart_on_dhcpd
 [ ! -z "$fakeincn_path" ] && eval $(ps -w | grep 'l 1008' | grep -v grep | awk '{print "kill "$1";";}')
 killall app_1.sh fakeincn
-killall -9 app_1.sh fakeincn
 kill_ps "/tmp/script/_app2"
 kill_ps "_fakeincn.sh"
 kill_ps "$scriptname"

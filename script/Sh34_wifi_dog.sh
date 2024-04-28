@@ -102,7 +102,6 @@ else
 fi
 $WD_DIR/wdctl stop
 killall wifidog wdctl
-killall -9 wifidog wdctl
 kill_ps "/tmp/script/_wifi_dog"
 kill_ps "_wifi_dog.sh"
 kill_ps "$scriptname"

@@ -36,7 +36,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/txt-record=_jetbrains-license-server.lan/d' /etc/storage/dnsmasq/dnsmasq.conf
 killall jblicsvr jbls_script.sh
-killall -9 jblicsvr jbls_script.sh
 kill_ps "/tmp/script/_jbls"
 kill_ps "_jbls.sh"
 kill_ps "$scriptname"

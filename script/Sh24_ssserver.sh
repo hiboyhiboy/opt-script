@@ -77,7 +77,6 @@ iptables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
 ip6tables -t filter -D INPUT -p tcp --dport $ssserver_port -j ACCEPT
 ip6tables -t filter -D INPUT -p udp --dport $ssserver_port -j ACCEPT
 killall ss-server obfs-server gq-server
-killall -9 ss-server obfs-server gq-server
 ss_plugin_server_name="$(nvram get ss_plugin_server_name)"
 [ ! -z "$ss_plugin_server_name" ] && { kill_ps "$ss_plugin_server_name" ; ss_plugin_server_name="" ; nvram set ss_plugin_server_name="" ; }
 kill_ps "/tmp/script/_ssserver"

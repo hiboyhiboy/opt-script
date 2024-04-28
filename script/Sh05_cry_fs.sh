@@ -72,7 +72,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【cryfs】|^$/d' /tmp/script/_opt_script_check
 set_app_list_stop
 killall cryfs app_18.sh
-killall -9 cryfs app_18.sh
 sync;echo 3 > /proc/sys/vm/drop_caches
 kill_ps "/tmp/script/_app15"
 kill_ps "_cry_fs.sh"

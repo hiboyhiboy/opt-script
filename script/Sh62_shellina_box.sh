@@ -81,7 +81,6 @@ sed -Ei '/【shellinabox】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/【ttyd】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport $shellinabox_port -j ACCEPT
 killall shellinaboxd ttyd
-killall -9 shellinaboxd ttyd
 kill_ps "/tmp/script/_shellina_box"
 kill_ps "_shellina_box.sh"
 kill_ps "$scriptname"

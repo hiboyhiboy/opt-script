@@ -101,7 +101,6 @@ v2raya_close () {
 sed -Ei '/【v2rayA】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh84_v2raya.sh"
 killall v2raya v2core tproxyhook.sh corehook.sh
-#killall -9 v2raya v2core tproxyhook.sh corehook.sh
 sleep 2
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app29"
@@ -529,7 +528,6 @@ if [ ! -z "$link_get" ] ; then
 wgetcurl_file "$v2ray_path""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
 sed -Ei '/【v2rayA】|^$/d' /tmp/script/_opt_script_check
 killall v2ray v2ray_script.sh
-killall -9 v2ray v2ray_script.sh
 rm -rf $v2ray_path
 mv -f "$v2ray_path""_file" "$v2ray_path"
 fi

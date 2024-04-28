@@ -105,7 +105,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【transocks】|【ipt2socks】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh58_tran_socks.sh"
 killall transocks ipt2socks kumasocks
-killall -9 transocks ipt2socks kumasocks
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 kill_ps "/tmp/script/_app10"
 kill_ps "_tran_socks.sh"
@@ -155,7 +154,7 @@ logger -t "【$tran_c_socks】" "运行 $tran_c_socks"
 #运行脚本启动/opt/bin/transocks
 /etc/storage/app_9.sh
 cd $(dirname `which $tran_c_socks`)
-killall -9 $tran_c_socks
+killall $tran_c_socks
 if [ "$kumasocks_enable" == "1" ] ; then
 su_cmd2="kumasocks -c /tmp/kumasocks.toml"
 else

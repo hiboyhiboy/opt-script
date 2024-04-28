@@ -108,8 +108,7 @@ while true; do
 		re_phddns=1
 		logger -t "【花生壳内网版】" "网络状态:【$orayslstatus 】，重新启动($NUM , $NUM2 , $online)"
 		killall oraynewph oraysl
-		killall -9 oraynewph oraysl
-		phddns_restart
+				phddns_restart
 	fi
 	sleep 66
 done
@@ -118,7 +117,6 @@ done
 phddns_close () {
 kill_ps "$scriptname keep"
 killall oraynewph oraysl
-killall -9 oraynewph oraysl
 nvram set phddns_st=""
 kill_ps "/tmp/script/_orayd"
 kill_ps "_orayd.sh"

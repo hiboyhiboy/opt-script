@@ -76,7 +76,6 @@ kill_ps "$scriptname keep"
 sed -Ei '/【nps】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/【npc】|^$/d' /tmp/script/_opt_script_check
 killall nps npc
-killall -9 nps npc
 kill_ps "/tmp/script/_app14"
 kill_ps "_np_s.sh"
 kill_ps "$scriptname"

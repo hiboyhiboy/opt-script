@@ -62,7 +62,6 @@ sed -Ei '/【mproxy】|^$/d' /tmp/script/_opt_script_check
 mproxyport=$(echo `cat /etc/storage/mproxy_script.sh | grep -v '^#' | grep "mproxy_port=" | sed 's/mproxy_port=//'`)
 [ ! -z "$mproxyport" ] && iptables -t filter -D INPUT -p tcp --dport $mproxyport -j ACCEPT
 killall mproxy mproxy_script.sh
-killall -9 mproxy mproxy_script.sh
 kill_ps "/tmp/script/_mproxy"
 kill_ps "_mproxy.sh"
 kill_ps "$scriptname"
@@ -88,7 +87,7 @@ config_mproxy="/etc/storage/mproxy_script.sh"
 if [ ! -f "$config_mproxy" ] || [ ! -s "$config_mproxy" ] ; then
 		cat > "$config_mproxy" <<-\END
 #!/bin/bash
-killall -9 mproxy
+killall mproxy
 logger -t "【mproxy】" "运行 mproxy"
 # 使用方法：https://github.com/examplecode/mproxy
 # 本地监听端口

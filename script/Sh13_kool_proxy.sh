@@ -221,8 +221,7 @@ if [ "$adbyby_CPUAverages" = "1" ] && [ ! -f /tmp/cron_adb.lock ] ; then
 		logger -t "【koolproxy】" "CPU 负载拥堵, 关闭 koolproxy"
 		koolproxy_flush_rules
 		/etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
-		killall -15 koolproxy
-		killall -9 koolproxy
+		killall koolproxy
 		touch /tmp/cron_adb.lock
 		while [[ "$CPULoad" -gt "$processor" ]] 
 		do
@@ -243,12 +242,9 @@ cru.sh d adm_update &
 cru.sh d koolproxy_update &
 port=$(iptables -t nat -L | grep 'ports 3000' | wc -l)
 [ "$port" != 0 ] && koolproxy_flush_rules
-[ "$adbyby_enable" != "1" ] && killall -15 adbyby sh_ad_byby_keey_k.sh
-[ "$adbyby_enable" != "1" ] && killall -9 adbyby sh_ad_byby_keey_k.sh
-[ "$adm_enable" != "1" ] && killall -15 adm sh_ad_m_keey_k.sh
-[ "$adm_enable" != "1" ] && killall -9 adm sh_ad_m_keey_k.sh
-killall -15 koolproxy
-killall -9 koolproxy
+[ "$adbyby_enable" != "1" ] && killall adbyby sh_ad_byby_keey_k.sh
+[ "$adm_enable" != "1" ] && killall adm sh_ad_m_keey_k.sh
+killall koolproxy
 /etc/storage/script/sh_ezscript.sh 3 & #更新按钮状态
 rm -f /tmp/adbyby_host.conf
 rm -f /tmp/7620koolproxy.tgz /tmp/cron_adb.lock /tmp/cp_rules.lock
