@@ -126,6 +126,7 @@ kill_ps "$scriptname keep"
 echo -n "" > /opt/etc/init.d/S79php-fpm
 echo -n "" > /opt/etc/init.d/S69pdcnlnmpinit
 sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【lnmp】|^$/d' /tmp/script/_opt_script_check
 /opt/etc/init.d/S70mysqld stop > /dev/null 2>&1
 /opt/etc/init.d/S79php8-fpm stop > /dev/null 2>&1
 /opt/etc/init.d/S80nginx stop > /dev/null 2>&1

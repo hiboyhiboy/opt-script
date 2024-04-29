@@ -89,6 +89,7 @@ done
 tmall_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【天猫精灵】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【tmall】|^$/d' /tmp/script/_opt_script_check
 killall caddy_tmall
 kill_ps "/tmp/script/_app13"
 kill_ps "_t_mall.sh"

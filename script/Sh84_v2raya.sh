@@ -98,7 +98,7 @@ done
 }
 
 v2raya_close () {
-sed -Ei '/【v2rayA】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【v2raya】|^$/d' /tmp/script/_opt_script_check
 Sh99_ss_tproxy.sh off_stop "Sh84_v2raya.sh"
 killall v2raya v2core tproxyhook.sh corehook.sh
 sleep 2
@@ -112,6 +112,61 @@ v2raya_start () {
 check_webui_yes
 i_app_get_cmd_file -name="v2raya" -cmd="v2raya" -cpath="/opt/bin/v2raya" -down1="$hiboyfile/v2raya" -down2="$hiboyfile2/v2raya" -runh="--help"
 v2raya_path="$SVC_PATH"
+
+mkdir -p /opt/app/v2raya/core
+mkdir -p /opt/app/v2raya/v2rayconfdir
+optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
+Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
+[ "$Mem_total" -lt 1024 ] && Mem_total="1024" || { [ "$Mem_total" -ge 1024 ] || Mem_total="1024" ; }
+Mem_M=$(($Mem_total / 1024 ))
+if [ ! -z "$optPath" ] || [ "$Mem_M" -lt "100" ] ; then
+	[ ! -z "$optPath" ] && logger -t "【v2rayA】" " /opt/ 在内存储存"
+	if [ "$Mem_M" -lt "200" ] ; then
+		logger -t "【v2rayA】" "内存不足256M ，v2raya 可能无法正常运行！！！"
+	fi
+fi
+
+[ ! -s /opt/app/v2raya/geoip.dat ] && wgetcurl_checkmd5 /opt/app/v2raya/geoip.dat "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat" "$hiboyfile/geoip_s.dat" N
+[ ! -s /opt/app/v2raya/geosite.dat ] && wgetcurl_checkmd5 /opt/app/v2raya/geosite.dat "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat" "$hiboyfile/geosite_s.dat" N
+[ -s /opt/app/v2raya/geosite.dat ] && ln -sf /opt/app/v2raya/geosite.dat /opt/app/v2raya/LoyalsoldierSite.dat
+
+if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+	mkdir -p /opt/app/ipk/
+	mkdir -p /opt/etc/ssl/certs
+	rm -f /etc/ssl/certs
+	ln -sf /opt/etc/ssl/certs  /etc/ssl/certs
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] && [ -s /etc_ro/certs.tgz ] ; then
+		tar -xzvf /etc_ro/certs.tgz -C /opt/etc/ssl/ ; cd /opt
+	fi
+	if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+		logger -t "【opt】" "已挂载,找不到ca-certificates证书"
+		logger -t "【opt】" "下载证书"
+		wgetcurl.sh /opt/app/ipk/certs.tgz "$hiboyfile/certs.tgz" "$hiboyfile2/certs.tgz"
+		[ -s /opt/app/ipk/certs.tgz ] && tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/ ; cd /opt
+		if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+			wgetcurl.sh /opt/app/ipk/certs.tgz "http://opt.cn2qq.com/opt-file/certs.tgz"
+			[ -s /opt/app/ipk/certs.tgz ] && tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/ ; cd /opt
+		fi
+		if [ ! -s "/etc/ssl/certs/ca-certificates.crt" ] ; then
+			wgetcurl.sh /opt/app/ipk/certs.tgz "$(echo -n "$hiboyfile/certs.tgz" | sed -e "s/https:/http:/g")" "$(echo -n "$hiboyfile2/certs.tgz" | sed -e "s/https:/http:/g")"
+		fi
+		logger -t "【opt】" "安装证书"
+		tar -xzvf /opt/app/ipk/certs.tgz -C /opt/etc/ssl/ ; cd /opt
+		rm -f /opt/app/ipk/certs.tgz
+	fi
+	chmod 644 /etc/ssl/certs -R
+	chmod 777 /etc/ssl/certs
+	chmod 644 /opt/etc/ssl/certs -R
+	chmod 777 /opt/etc/ssl/certs
+fi
+Available_A=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+size_tmpfs=`nvram get size_tmpfs`
+if [ "$size_tmpfs" = "0" ] && [[ "$Available_A" -lt 15 ]] ; then
+mount -o remount,size=60% tmpfs /tmp
+Available_B=$(df -m | grep "% /opt" | awk 'NR==1' | awk -F' ' '{print $4}')
+logger -t "【v2rayA】" "调整 /tmp 挂载分区的大小， /opt 可用空间： $Available_A → $Available_B M"
+fi
+
 v2ray_get_releases
 if [ "$app_74" == "5" ] || [ "$app_74" == "6" ] ; then
 	[[ "$($v2ray_path help 2>&1 | wc -l)" -lt 2 ]] && [ ! -z $v2ray_path ] && rm -rf $v2ray_path
@@ -130,16 +185,6 @@ if [ -s "$v2ray_path" ] ; then
 	chmod 777 $v2ray_path
 fi
 echo $($v2ray_path version 2>&1) > /opt/app/v2raya/core/v2core.version
-optPath="`grep ' /opt ' /proc/mounts | grep tmpfs`"
-Mem_total="$(free | sed -n '2p' | awk '{print $2;}')"
-[ "$Mem_total" -lt 1024 ] && Mem_total="1024" || { [ "$Mem_total" -ge 1024 ] || Mem_total="1024" ; }
-Mem_M=$(($Mem_total / 1024 ))
-if [ ! -z "$optPath" ] || [ "$Mem_M" -lt "100" ] ; then
-	[ ! -z "$optPath" ] && logger -t "【v2rayA】" " /opt/ 在内存储存"
-	if [ "$Mem_M" -lt "200" ] ; then
-		logger -t "【v2rayA】" "内存不足256M ，v2raya 可能无法正常运行！！！"
-	fi
-fi
 v2raya_v=`$v2raya_path --version | head -n1`
 nvram set v2raya_v="$v2raya_v"" 丨 ""$(cat /opt/app/v2raya/core/v2core.version | grep -Eo "^[^(]+" | sed -n '1p')"
 logger -t "【v2rayA】" "设置 v2ray core 文件"
@@ -320,15 +365,15 @@ logger -t "【v2rayA】" "②电脑运行 cmd 输入【ipconfig /flushdns】, �
 initconfig () {
 
 v2run="/opt/app/v2raya/core/v2run.sh"
-if [ -z "$(cat "$v2run" | grep "版本：2024-04-13")" ] ; then
+if [ -z "$(cat "$v2run" | grep "版本：2024-04-29")" ] ; then
 	rm -f "$v2run"
 fi
 if [ ! -f "$v2run" ] || [ ! -s "$v2run" ] ; then
 	cat > "$v2run" <<-\EEE
 #!/bin/sh
 # 此脚本路径：/opt/app/v2raya/core/v2run.sh
-# 版本：2024-04-13
-# logger -t "【v2rayA】" "v2run，启动参数： $1 $2 $3 $4 $5 $6"
+# 版本：2024-04-29
+# logger -t "【v2rayA】" "v2run，启动参数： $@"
 # cd /opt/app/v2raya
 if [ "$1" = "version" ] ; then
 	cat /opt/app/v2raya/core/v2core.version | head -n1
@@ -337,7 +382,7 @@ else
 	eval $(ps -w | grep "v2core" | grep -v $$ | grep -v grep | awk '{print "kill "$1";";}')
 	sleep 2
 	export V2RAY_CONF_GEOLOADER=memconservative
-	/opt/app/v2raya/core/v2core $1 $2 $3 $4 $5 $6 $7 $8
+	/opt/app/v2raya/core/v2core "$@"
 fi
 
 EEE
@@ -526,7 +571,7 @@ logger -t "【v2rayA】" "自动下载 Xray-core v5 主程序"
 fi
 if [ ! -z "$link_get" ] ; then
 wgetcurl_file "$v2ray_path""_file" "$hiboyfile/""$link_get" "$hiboyfile2/""$link_get"
-sed -Ei '/【v2rayA】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【v2raya】|^$/d' /tmp/script/_opt_script_check
 killall v2ray v2ray_script.sh
 rm -rf $v2ray_path
 mv -f "$v2ray_path""_file" "$v2ray_path"

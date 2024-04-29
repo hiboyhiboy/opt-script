@@ -113,6 +113,7 @@ fi
 gotify_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【gotify推送】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【gotify】|^$/d' /tmp/script/_opt_script_check
 killall gotifyserver app_36.sh
 kill_ps "/tmp/script/_app27"
 kill_ps "_go_tify.sh"
@@ -122,6 +123,7 @@ kill_ps "$scriptname"
 gotify_close2 () {
 kill_ps "$scriptname keep"
 sed -Ei '/【gotify推送】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【gotify】|^$/d' /tmp/script/_opt_script_check
 killall app_36.sh
 kill_ps "/tmp/script/_app27"
 kill_ps "_go_tify.sh"

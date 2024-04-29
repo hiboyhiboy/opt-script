@@ -98,6 +98,7 @@ done
 display_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【相框显示】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【display】|^$/d' /tmp/script/_opt_script_check
 killall lcd4linux getaqidata getweather displaykeep.sh
 kill_ps "/tmp/script/_display"
 kill_ps "_display.sh"

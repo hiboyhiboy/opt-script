@@ -81,6 +81,7 @@ done
 wxsend_close () {
 kill_ps "$scriptname keep"
 sed -Ei '/【wxsend推送】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【wxsend】|^$/d' /tmp/script/_opt_script_check
 killall app_30.sh
 [ "$tmall_enable" == "0" ] && killall caddy_tmall
 kill_ps "/tmp/script/_app22"
