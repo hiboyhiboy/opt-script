@@ -281,6 +281,16 @@ else
 		fi
 		yq w -i "$app_19" dns.port 5353
 	fi
+	if [ "$AdGuardHome_dns" = "1" ] ; then
+		if [ "$(grep "port=12353"  /etc/storage/dnsmasq/dnsmasq.conf | wc -l)" = 0 ] ; then
+			logger -t "【AdGuardHome】" "变更 dnsmasq 侦听端口规则 port=12353"
+			sed -Ei '/AdGuardHome/d' /etc/storage/dnsmasq/dnsmasq.conf
+			echo "port=12353 #AdGuardHome" >> /etc/storage/dnsmasq/dnsmasq.conf
+			sed ":a;N;s/\n\n\n/\n\n/g;ba" -i  /etc/storage/dnsmasq/dnsmasq.conf
+			restart_on_dhcpd
+			sleep 1
+		fi
+	fi
 	logger -t "【AdGuardHome】" "运行 /opt/AdGuardHome/AdGuardHome"
 	cd /opt/AdGuardHome
 	eval "/opt/AdGuardHome/AdGuardHome -c /etc/storage/app_19.sh -w /opt/AdGuardHome $cmd_log" &
