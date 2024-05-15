@@ -185,7 +185,7 @@ if [ "$frps_enable" = "1" ] ; then
 fi
 if [ "$frpc_enable" = "1" ] ; then
 	frpc_v="`frpc --version`"
-	[ "$(nvram get frps_v)" != "$frps_v" ] && nvram set frpc_v=$frpc_v
+	[ "$(nvram get frpc_v)" != "$frpc_v" ] && nvram set frpc_v=$frpc_v
 	logger -t "【frp】" "frpc-version: $frpc_v"
 fi
 rm -f /dev/null ; mknod /dev/null c 1 3 ; chmod 666 /dev/null;
