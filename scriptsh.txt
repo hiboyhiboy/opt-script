@@ -1,7 +1,7 @@
 sh_ss_tproxy=c619053978733522e99cb6dc52bee65b
 sh_opt_script_check=fd3eafc77e04d3f9ffe93625c4e19305
 sh_link=814f3e94d0f0cd8d2de538b709171a4e
-sh_ezscript=7ca306ebee19a88fe1f4136d06edc1d3
+sh_ezscript=fe3053c064bddf747a89ef9afc5b1eff
 sh_emi=3959da42c9da709a04e23110422b01b9
 sh_0_script=ac5c6fc2d7463e4f2c1bc28b3d8f350e
 init=1131e0aab8669ca796d94ece9cce3cde
@@ -73,5 +73,5 @@ Sh04_mento_hust=cc0cf04b1e20ce4f5e6d3d644896b721
 Sh03_jbls=76ab5d143c30e14051914a23fc9046a8
 Sh02_kms=84d2a502859e268cc41e6ef8ef4f0e2a
 Sh01_mountopt=adf28c65cd376b41b39a5ac8888b206c
-sh_upscript=f16f9ed37e1047b6b2cb6d9292c9afaf
-scriptt=2024-05-11
+sh_upscript=b152f9d178d7c723c7e46ce91c80dc4b
+scriptt=2024-05-16

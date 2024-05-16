@@ -387,7 +387,7 @@ sleep 2
 echo `fdisk -l | grep $3 | grep -v swap | grep -v Disk | cut -d' ' -f1` | while read line
 do	
 	logger -t "【mkfs.ext4】" "正在格式化 $line"
-	mkfs.ext4 -i 16384 $line
+	echo y | mkfs.ext4 -i 16384 $line
 done	
 logger -t "【mkfs.ext4】" "格式化完成."
 } &
