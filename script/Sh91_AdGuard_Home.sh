@@ -14,6 +14,7 @@ else
 fi
 if [ "$AdGuardHome_enable" != "0" ] ; then
 
+app_19="/etc/storage/app_19.sh"
 AdGuardHome_renum=`nvram get AdGuardHome_renum`
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="AdGuardHome"
