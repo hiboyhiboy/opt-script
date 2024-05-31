@@ -240,7 +240,7 @@ else
 		logger -t "【AdGuardHome】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && AdGuardHome_restart x
 	fi
 	# 不使用本路由系统提供的主机。
-	yq w -i "$app_19" clients.runtime_sources.hosts false
+	[ ! -z "$(yq r $app_19 clients.runtime_sources.hosts | grep true)" ] && yq w -i "$app_19" clients.runtime_sources.hosts false
 	logger -t "【AdGuardHome】" "启用本机 AdGuardHome 服务"
 	# 生成配置文件
 	if [ "$AdGuardHome_dns" = "1" ] ; then
