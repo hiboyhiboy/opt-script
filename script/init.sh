@@ -701,7 +701,7 @@ COMMAND="[ -z \"\`pidof ${PIDNAME}\`\" ]"
 [ ! -z "${PSNAME}" ] && COMMAND="${COMMAND} || ""[ \"\$(grep \"${PSNAME}\" /tmp/ps | grep -v grep |wc -l)\" -lt \"1\" ]"
 if [ "$TYPE1" = "test" ] ; then
 ps -w > /tmp/ps
-if $COMMAND; then
+if eval $COMMAND; then
 	logger -t "【${NAME}】" "${PIDNAME} 启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && eval "${NAME}_restart x"
 else
 	logger -t "【${NAME}】" "${PIDNAME} 启动成功" && eval "${NAME}_restart o"

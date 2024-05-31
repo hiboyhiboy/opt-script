@@ -1,0 +1,56 @@
+#!/bin/bash
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app30.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_148=0 #arozos_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set arozos_L2="$(($3 + 10))"
+nvram set arozos_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "arozos_L2"); %>,<% nvram_get_x("", "arozos_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/arozos
+if [ ! -f "/opt/app/arozos/Advanced_Extensions_arozos.asp" ] || [ ! -s "/opt/app/arozos/Advanced_Extensions_arozos.asp" ] ; then
+	wgetcurl.sh /opt/app/arozos/Advanced_Extensions_arozos.asp "$hiboyfile/Advanced_Extensions_arozosasp" "$hiboyfile2/Advanced_Extensions_arozosasp"
+fi
+umount /www/Advanced_Extensions_app30.asp
+if [ -f "/opt/app/arozos/Advanced_Extensions_arozos.asp" ] ; then
+	mount --bind /opt/app/arozos/Advanced_Extensions_arozos.asp /www/Advanced_Extensions_app30.asp
+	app30_ver=$(grep 'app30_ver=' /opt/app/arozos/Advanced_Extensions_arozos.asp | awk -F '=' '{print $2;}')
+	nvram set app30_ver=${app30_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh92_arozos.sh
+if [ ! -f "/etc/storage/script/Sh92_arozos.sh" ] || [ ! -s "/etc/storage/script/Sh92_arozos.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh92_arozos.sh "$hiboyscript/script/Sh92_arozos.sh" "$hiboyscript/script/Sh92_arozos.sh"
+fi
+chmod 777 /etc/storage/script -R
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+
