@@ -15,16 +15,16 @@ phpmod="php8-mod-calendar php8-mod-ctype php8-mod-curl php8-mod-dom php8-mod-exi
 
 # Web程序
 # (1) phpMyAdmin（数据库管理工具）
-url_phpMyAdmin="https://files.phpmyadmin.net/phpMyAdmin/4.8.3/phpMyAdmin-4.8.3-all-languages.zip"
+url_phpMyAdmin="https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip"
 
 # (2) WordPress（使用最广泛的CMS）
-url_WordPress="https://cn.wordpress.org/wordpress-4.9.4-zh_CN.zip"
+url_WordPress="https://cn.wordpress.org/wordpress-6.5.3-zh_CN.zip"
 
 # (3) Owncloud（经典的私有云）
-url_Owncloud="https://download.owncloud.org/community/owncloud-10.0.10.zip"
+url_Owncloud="https://download.owncloud.com/server/stable/owncloud-complete-20231213.zip"
 
 # (4) Nextcloud（Owncloud团队的新作，美观强大的个人云盘）
-url_Nextcloud="https://download.nextcloud.com/server/releases/nextcloud-13.0.6.zip"
+url_Nextcloud="https://download.nextcloud.com/server/releases/nextcloud-29.0.2.zip"
 
 # (5) h5ai（优秀的文件目录）
 url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.30.0.zip"
@@ -33,13 +33,13 @@ url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.30.0.zip"
 url_Lychee="https://github.com/electerious/Lychee/archive/master.zip"
 
 # (7) Kodexplorer（可道云aka芒果云在线文档管理器）
-url_Kodexplorer="https://static.kodcloud.com/update/download/kodexplorer4.52.zip"
+url_Kodexplorer="https://static.kodcloud.com/update/download/kodbox.1.50.zip"
 
 # (8) Typecho (流畅的轻量级开源博客程序)
-url_Typecho="http://typecho.org/downloads/1.1-17.10.30-release.tar.gz"
+url_Typecho="https://github.com/typecho/typecho/releases/latest/download/typecho.zip"
 
 # (9) Z-Blog (体积小，速度快的PHP博客程序)
-url_Zblog="https://update.zblogcn.com/zip/Z-BlogPHP_1_6_0_2090_Valyria.zip"
+url_Zblog="https://update.zblogcn.com/zip/Z-BlogPHP_1_7_3_3290_Finch.zip"
 
 # (10) DzzOffice (开源办公平台)
 url_DzzOffice="https://codeload.github.com/zyx0814/dzzoffice/zip/master"
@@ -1587,9 +1587,9 @@ install_h5ai()
     # 默认配置
     filelink=$url_h5ai
     name="h5ai"
-    dirname="_h5ai"
+    dirname="h5ai-master/src"
     port=85
-    hookdir=$dirname
+    hookdir=
 if [ "$1" = "stop" ] ; then
     rm -rf /opt/etc/nginx/vhost/$name.conf
     exit
@@ -1601,7 +1601,8 @@ fi
     # 运行安装程序
     web_installer $1 $name $2
     echo "正在配置$name..."
-    cp /opt/wwwroot/$webdir/_h5ai/README.md /opt/wwwroot/$webdir/
+    cp /opt/wwwroot/h5ai-master/README.md /opt/wwwroot/$webdir/
+    rm -rf /opt/wwwroot/h5ai-master
     chmod -R 777 /opt/wwwroot/$webdir/
 
     # 添加到虚拟主机
@@ -1752,9 +1753,9 @@ install_typecho()
     # 默认配置
     filelink=$url_Typecho
     name="Typecho"
-    dirname="build"
+    dirname="typecho_latest"
+    hookdir=$dirname
     port=90
-    istar=true
 if [ "$1" = "stop" ] ; then
     rm -rf /opt/etc/nginx/vhost/$name.conf
     exit
