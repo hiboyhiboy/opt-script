@@ -1587,7 +1587,7 @@ G,185.76.151.0/24
 @b,www.ipip.net
 @b,myip.ipip.net
 @b,alidns.aliyuncs.com
-@b,services.googleapis.cn
+# @b,services.googleapis.cn
 # 
 # 以下样板是四个网段分别对应BLZ的美/欧/韩/台服
 #G,24.105.0.0/18

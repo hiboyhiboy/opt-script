@@ -1667,7 +1667,7 @@ start_dnsserver() {
 
 start_dnsserver_dnsproxy() {
 
-# 尝试使用 chinadns_ng 实现 gfwliste 分流
+# 尝试使用 chinadns_ng 实现 gfwlist 分流
 if [ "$chinadns_ng_enable" = "0" ] || [ "$chinadns_ng_enable" = "1" ] ; then
 	chinadns_ng_enable=1 && nvram set app_102=1
 	if [ -z "$(chinadns_ng -h 2>&1 | grep "group-ipset")" ] ; then
@@ -1693,7 +1693,7 @@ fi
 
 [ ! -z "$ext_ss_dnsproxy_x" ] && ss_dnsproxy_x="$ext_ss_dnsproxy_x"
 if [ "$chinadns_ng_enable" == "1" ] && [ "$ss_dnsproxy_x" = "2" ] ; then
-	logger -t "【sh_ss_tproxy.sh】" "使用 chinadns_ng 实现 gfwliste 分流"
+	logger -t "【sh_ss_tproxy.sh】" "使用 chinadns_ng 实现 gfwlist 分流"
 	logger -t "【sh_ss_tproxy.sh】" "自动开启 ChinaDNS-NG 防止域名污染"
 	/etc/storage/script/Sh09_chinadns_ng.sh start
 	return 0
@@ -1777,7 +1777,7 @@ ss_dnsproxy_x=2 ; nvram set ss_dnsproxy_x=2
 fi
 if [ "$ss_dnsproxy_x" = "2" ] ; then
 	chinadns_ng_enable=3 && nvram set app_102=3
-	logger -t "【sh_ss_tproxy.sh】" "使用 chinadns_ng 实现 gfwliste 分流"
+	logger -t "【sh_ss_tproxy.sh】" "使用 chinadns_ng 实现 gfwlist 分流"
 	logger -t "【sh_ss_tproxy.sh】" "自动开启 ChinaDNS-NG 防止域名污染"
 	/etc/storage/script/Sh09_chinadns_ng.sh start
 	return 0

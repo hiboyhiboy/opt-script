@@ -71,6 +71,7 @@ maddy_v=`/opt/maddy/maddy version | awk -F ' ' '{print $1;}' | head -n1`
 [ "$(nvram get maddy_v)" != "$maddy_v" ] && nvram set maddy_v="$maddy_v"
 chmod 777 "$SVC_PATH"
 logger -t "【maddy】" "设置域名证书"
+[ -d /opt/maddy ] && mkdir -p /opt/maddy/certs/
 cp -f /etc/storage/https/server.crt /opt/maddy/certs/certificate.crt
 cp -f /etc/storage/https/server.key /opt/maddy/certs/private.key
 rm -f /opt/maddy/maddy.conf
