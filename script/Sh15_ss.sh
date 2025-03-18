@@ -1280,7 +1280,7 @@ if [ "$A_restart" != "$B_restart" ] ; then
 nvram set ss_link_status=$B_restart
 	if [ -z "$ss_link" ] ; then
 		cru.sh d ss_link_update
-		logger -t "【ss】" "停止 ss 服务器订阅"
+		#logger -t "【ss】" "停止 ss 服务器订阅"
 		return
 	else
 		if [ "$ss_link_up" != 1 ] ; then

@@ -1801,7 +1801,7 @@ if [ "$A_restart" != "$B_restart" ] ; then
 nvram set vmess_link_status=$B_restart
 	if [ -z "$vmess_link" ] ; then
 		cru.sh d vmess_link_update
-		logger -t "【v2ray】" "停止 vmess 服务器订阅"
+		#logger -t "【v2ray】" "停止 vmess 服务器订阅"
 		return
 	else
 		if [ "$vmess_link_up" != 1 ] ; then

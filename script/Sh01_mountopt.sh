@@ -145,7 +145,12 @@ func_stop_apps()
 
 func_start_apps()
 {
-	start_rstats
+	start_rstats &
+	run_c="$(ps -w | grep "/usr/sbin/httpd"| head -n1 | grep -v grep | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
+	if [ ! -z "$run_c" ] ; then
+		killall httpd
+		eval "$run_c" & 
+	fi
 }
 
 mount_check_lock () {
@@ -1052,7 +1057,13 @@ func_stop_apps()
 
 func_start_apps()
 {
-	start_rstats
+	start_rstats &
+	run_c="$(ps -w | grep "/usr/sbin/httpd"| head -n1 | grep -v grep | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
+	if [ ! -z "$run_c" ] ; then
+		killall httpd
+		eval "$run_c" & 
+	fi
+	
 }
 
 if [ ! -f /tmp/upan_storage_enable.lock ] ; then

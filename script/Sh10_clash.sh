@@ -110,7 +110,7 @@ i_app_get_status -name="clash" -valb="$B_restart"
 if [ "$needed_restart" = "1" ] ; then
 	if [ -z "$clash_wget_yml" ] ; then
 		cru.sh d clash_link_update
-		logger -t "【clash】" "停止 clash 服务器订阅"
+		#logger -t "【clash】" "停止 clash 服务器订阅"
 	else
 		if [ "$app_120" == "1" ] ; then
 			cru.sh a clash_link_update "24 */6 * * * $scriptfilepath wget_yml &" &
