@@ -25,7 +25,12 @@ if [ "$demoui_enable" == "0" ] && [ ! -z "$http_tmp_lanport" ] ; then
 	nvram set http_tmp_lanport=""
 	nvram set http_lanport=$http_tmp_lanport
 	sleep 2
-	killall httpd 
+	run_c="$(ps -w | grep "/usr/sbin/httpd" | grep -v grep | head -n1 | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
+	if [ ! -z "$run_c" ] ; then
+		killall httpd
+		sleep 1
+		eval "$run_c" & 
+	fi
 	fi
 if [ "$tmall_enable" != "0" ] ; then
 
@@ -147,7 +152,12 @@ if [ "$app_118" != "$http_lanport" ] ; then
 	nvram set http_tmp_lanport=$http_lanport
 	nvram set http_lanport=$app_118
 	sleep 2
-	killall httpd 
+	run_c="$(ps -w | grep "/usr/sbin/httpd" | grep -v grep | head -n1 | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
+	if [ ! -z "$run_c" ] ; then
+		killall httpd
+		sleep 1
+		eval "$run_c" & 
+	fi
 	fi
 else
 logger -t "【demoui】" "停止 demoui "

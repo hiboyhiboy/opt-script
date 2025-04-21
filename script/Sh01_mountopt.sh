@@ -146,9 +146,10 @@ func_stop_apps()
 func_start_apps()
 {
 	start_rstats &
-	run_c="$(ps -w | grep "/usr/sbin/httpd"| head -n1 | grep -v grep | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
+	run_c="$(ps -w | grep "/usr/sbin/httpd" | grep -v grep | head -n1 | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
 	if [ ! -z "$run_c" ] ; then
 		killall httpd
+		sleep 1
 		eval "$run_c" & 
 	fi
 }
@@ -1058,9 +1059,10 @@ func_stop_apps()
 func_start_apps()
 {
 	start_rstats &
-	run_c="$(ps -w | grep "/usr/sbin/httpd"| head -n1 | grep -v grep | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
+	run_c="$(ps -w | grep "/usr/sbin/httpd" | grep -v grep | head -n1 | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
 	if [ ! -z "$run_c" ] ; then
 		killall httpd
+		sleep 1
 		eval "$run_c" & 
 	fi
 	

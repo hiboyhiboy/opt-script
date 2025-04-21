@@ -38,7 +38,7 @@ if [ -s /tmp/scriptsh.txt ] && [ ! -z "$(cat /tmp/scriptsh.txt | grep "sh_upscri
 	sed -Ei '/\ /d' /tmp/scriptsh.txt
 	source /tmp/scriptsh.txt
 	nvram set scriptt="$scriptt"
-	nvram set scripto="2025-03-25"
+	nvram set scripto="2025-04-18"
 	scriptt=`nvram get scriptt`
 	scripto=`nvram get scripto`
 fi
