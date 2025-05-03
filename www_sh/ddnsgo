@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/ddnsgo
+if [ -f "/tmp/www_asp/Advanced_Extensions_ddnsgoasp" ] ; then
+if [ ! -f "/opt/app/ddnsgo/Advanced_Extensions_ddnsgo.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_ddnsgoasp /opt/app/ddnsgo/Advanced_Extensions_ddnsgo.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_ddnsgoasp
+fi
+fi
 if [ ! -f "/opt/app/ddnsgo/Advanced_Extensions_ddnsgo.asp" ] || [ ! -s "/opt/app/ddnsgo/Advanced_Extensions_ddnsgo.asp" ] ; then
 	wgetcurl.sh /opt/app/ddnsgo/Advanced_Extensions_ddnsgo.asp "$hiboyfile/Advanced_Extensions_ddnsgoasp" "$hiboyfile2/Advanced_Extensions_ddnsgoasp"
 fi

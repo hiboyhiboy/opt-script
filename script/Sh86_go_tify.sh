@@ -101,12 +101,15 @@ fi
 }
 
 gotify_keep () {
-sleep 10
+if [ ! -z "$gotify_url" ] && [ ! -z "$gotify_apptoken" ] ; then
+sleep 1
 logger -t "【gotify推送】" "运行 /etc/storage/app_36.sh"
 /etc/storage/app_36.sh &
+sleep 10
 i_app_keep -name="gotify" -pidof="app_36.sh" &
 if [ ! -z "$(echo "$gotify_url" | grep "$(nvram get lan_ipaddr):")" ] ; then
 i_app_keep -name="gotify" -pidof="gotifyserver" &
+fi
 fi
 }
 

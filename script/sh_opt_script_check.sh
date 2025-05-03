@@ -115,7 +115,7 @@ top_CPU=$(echo ${line: 42: 2})
 threads=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
 [ -z $threads ] && threads=1
 max_cpu=`expr 100 / $threads - 6 `
-if [ $max_cpu -lt $top_CPU ] ; then
+if [ $max_cpu -lt $top_CPU ] && [ "$top_CPU" != "0" ] ; then
 if [ -z "$(cat /tmp/top_run | grep $top_PID©)" ] ; then
 #logger -t "script_check" "检测到进程 PID【$top_PID】使用CPU $top_CPU% 进入防卡CPU检测序列 $top_COMMAND"
 #©§
@@ -148,8 +148,13 @@ if [ $top_2i -eq 9 ] ; then
 logger -t "script_check" "检测到进程 PID【$top_PID】使用CPU $top_CPU% 进入防卡CPU检测序列 $top_COMMAND"
 fi
 if [ $top_2i -gt 100 ] ; then
-kill $top_PID
-kill -9 $top_PID
+run_c="$(ps -w | grep "$top_PID " | grep "$top_COMMAND" | grep -v grep | head -n1 | awk -F " " '{for(i=5;i<=NF;++i) sum=sum" "$i}END{print sum}' )"
+if [ ! -z "$run_c" ] ; then
+	kill $top_PID
+	kill -9 $top_PID
+	sleep 1
+	eval "$run_c" & 
+fi
 logger -t "script_check" "检测到进程 PID【$top_PID】 $top_COMMAND"
 logger -t "script_check" "已经连续使用CPU $top_CPU% 大于33分钟，尝试 kill 进程防卡CPU"
 sed -Ei "/^[ \t]*$top_PID©/d" /tmp/top_run

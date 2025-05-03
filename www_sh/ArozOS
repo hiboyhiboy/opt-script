@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/arozos
+if [ -f "/tmp/www_asp/Advanced_Extensions_arozosasp" ] ; then
+if [ ! -f "/opt/app/arozos/Advanced_Extensions_arozos.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_arozosasp /opt/app/arozos/Advanced_Extensions_arozos.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_arozosasp
+fi
+fi
 if [ ! -f "/opt/app/arozos/Advanced_Extensions_arozos.asp" ] || [ ! -s "/opt/app/arozos/Advanced_Extensions_arozos.asp" ] ; then
 	wgetcurl.sh /opt/app/arozos/Advanced_Extensions_arozos.asp "$hiboyfile/Advanced_Extensions_arozosasp" "$hiboyfile2/Advanced_Extensions_arozosasp"
 fi

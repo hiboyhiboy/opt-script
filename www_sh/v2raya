@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/v2raya
+if [ -f "/tmp/www_asp/Advanced_Extensions_v2rayaasp" ] ; then
+if [ ! -f "/opt/app/v2raya/Advanced_Extensions_v2raya.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_v2rayaasp /opt/app/v2raya/Advanced_Extensions_v2raya.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_v2rayaasp
+fi
+fi
 if [ ! -f "/opt/app/v2raya/Advanced_Extensions_v2raya.asp" ] || [ ! -s "/opt/app/v2raya/Advanced_Extensions_v2raya.asp" ] ; then
 	wgetcurl.sh /opt/app/v2raya/Advanced_Extensions_v2raya.asp "$hiboyfile/Advanced_Extensions_v2rayaasp" "$hiboyfile2/Advanced_Extensions_v2rayaasp"
 fi

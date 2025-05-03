@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/maddy
+if [ -f "/tmp/www_asp/Advanced_Extensions_maddyasp" ] ; then
+if [ ! -f "/opt/app/maddy/Advanced_Extensions_maddy.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_maddyasp /opt/app/maddy/Advanced_Extensions_maddy.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_maddyasp
+fi
+fi
 if [ ! -f "/opt/app/maddy/Advanced_Extensions_maddy.asp" ] || [ ! -s "/opt/app/maddy/Advanced_Extensions_maddy.asp" ] ; then
 	wgetcurl.sh /opt/app/maddy/Advanced_Extensions_maddy.asp "$hiboyfile/Advanced_Extensions_maddyasp" "$hiboyfile2/Advanced_Extensions_maddyasp"
 fi

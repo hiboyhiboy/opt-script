@@ -165,6 +165,7 @@ fi
 mkdir -p "/opt/tmall/www/aligenie"
 cd /opt/tmall/www/aligenie
 echo -n $(echo "$tmall_id" | awk -F \  '{print $2}') > ./$(echo "$(echo "$tmall_id" | awk -F \  '{print $1}')" | awk -F . '{print $1}').txt
+chmod 777 /opt/tmall/*.sh
 chmod 444 /opt/tmall/www/aligenie/*
 
 logger -t "【天猫精灵】" "运行 /opt/tmall/caddy_tmall"
