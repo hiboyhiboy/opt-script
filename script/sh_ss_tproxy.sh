@@ -959,6 +959,7 @@ update_chinadns_ng_ipset() {
 		logger -t "【update_chinadns_ng_ipset】" "第三方 DNS 前套娃一个 chinadns_ng"
 		chinadns_ng_2_usage="$chinadns_ng_2_usage -b 0.0.0.0 -l 8953 "
 		chinadns_ng_trust_tcp_dns4="127.0.0.1#8053"
+		#chinadns_ng_trust_tcp_dns4="tcp://8.8.8.8#53"
 	else
 		chinadns_ng_2_usage="$chinadns_ng_2_usage -b 0.0.0.0 -l 8053 "
 		if [ "$smartdns_enable" == "1" ] && [ -s /etc/storage/app_23.sh ] ; then

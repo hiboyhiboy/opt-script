@@ -110,6 +110,7 @@ while read line
 do
 if [ ! -z "$line" ] ; then
 top_PID="$(echo "$line" | awk '{print substr($0,2,5)}')"
+top_PID="$(echo $top_PID)"
 top_COMMAND="$(echo ${line: 47: 34})"
 top_CPU=$(echo ${line: 42: 2})
 threads=$(cat /proc/cpuinfo | grep 'processor' | wc -l)
@@ -133,6 +134,7 @@ while read line
 do
 if [ ! -z "$line" ] ; then
 top_PID="$(echo "$line" | awk -F '©' '{print $1}')"
+top_PID="$(echo $top_PID)"
 top_CPU="$(echo "$line" | awk -F '©' '{print $2}')"
 top_COMMAND="$(echo "$line" | awk -F '§' '{print $3}')"
 [ ! -f /tmp/top ] && top -n 1 | grep " R " | grep -v "top -n 1" | grep -v "grep" | sed -e "s@^@#@g" > /tmp/top
@@ -153,7 +155,7 @@ if [ ! -z "$run_c" ] ; then
 	kill $top_PID
 	kill -9 $top_PID
 	sleep 1
-	eval "$run_c" & 
+	[ -z "$(echo "$top_COMMAND" | grep -E 'hysteria|clash|ss-redir|ss-local|v2ray|v2raya|transocks|kumasocks|ipt2socks|kcptun')" ] && eval "$run_c" & 
 fi
 logger -t "script_check" "检测到进程 PID【$top_PID】 $top_COMMAND"
 logger -t "script_check" "已经连续使用CPU $top_CPU% 大于33分钟，尝试 kill 进程防卡CPU"

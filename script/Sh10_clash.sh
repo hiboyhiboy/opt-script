@@ -1,5 +1,6 @@
 #!/bin/bash
 #copyright by hiboy
+#export SKIP_SAFE_PATH_CHECK=1;
 source /etc/storage/script/init.sh
 source /etc/storage/script/sh_link.sh
 TAG="SSTP"		  # iptables tag
@@ -534,11 +535,12 @@ app_21="/etc/storage/app_21.sh"
 if [ ! -f "$app_21" ] || [ ! -s "$app_21" ] ; then
 	cat > "$app_21" <<-\EEE
 dns:
+  cache-algorithm: arc
   enable: true
   ipv6: false
   listen: 0.0.0.0:8053
   default-nameserver :
-    - 8.8.8.8
+    - tcp://8.8.8.8:53
   enhanced-mode: fake-ip
   # enhanced-mode: redir-host # 或 fake-ip
   # # fake-ip-range: 198.18.0.1/16 # 如果你不知道这个参数的作用，请勿修改
@@ -555,6 +557,9 @@ dns:
   #   - '*.lan'
   #   - localhost.ptlogin2.qq.com
 
+  respect-rules: true
+  proxy-server-nameserver:
+    - tcp://8.8.8.8:53
   nameserver:
     - 223.5.5.5
     - 114.114.114.114
@@ -748,6 +753,16 @@ sed -Ei '/^$/d' $config_dns_yml
 [ -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] && rm -rf /opt/bin/yq /opt/opt_backup/bin/yq
 wgetcurl_file /opt/bin/yq "$hiboyfile/yq" "$hiboyfile2/yq"
 if [ ! -z "$(yq -V 2>&1 | grep 3\.4\.1)" ] ; then
+respect_rules_txt="$(yq r $config_dns_yml dns.respect-rules)"
+if [ "$respect_rules_txt" != "true" ] ; then
+yq w -i $config_dns_yml dns.respect-rules true
+echo '- command: delete
+  path: dns.proxy-server-nameserver(.==tcp://8.8.8.8:53)
+- command: update 
+  path: dns.proxy-server-nameserver[+]
+  value: tcp://8.8.8.8:53
+' | yq w -i -s - $config_dns_yml
+fi
 echo '- command: delete
   path: dns.fallback(.==https://dns.google/dns-query)
 - command: delete
@@ -863,7 +878,8 @@ cat $config_dns_yml >> $config_yml
 #merge_dns_ip
 yq w -i $config_yml external-controller $clash_ui
 rm_temp
-yq w -i $config_yml external-ui "/opt/app/clash/clash_webs/"
+ln -sf /opt/app/clash/clash_webs /opt/app/clash/config/clash_webs
+yq w -i $config_yml external-ui "/opt/app/clash/config/clash_webs/"
 rm_temp
 # 转换新参数兼容 1.0 或更高版本
 [ ! -z "$(cat $config_yml | grep "Proxy:" )" ] && sed -e 's@Proxy:@proxies:@g' -i $config_yml && logger -t "【clash】" "转换新参数: Proxy --> proxies"
