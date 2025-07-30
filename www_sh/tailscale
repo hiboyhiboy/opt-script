@@ -1,0 +1,63 @@
+#!/bin/bash
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app11.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_82=0 #tailscale_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set tailscale_L2="$(($3 + 10))"
+nvram set tailscale_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "tailscale_L2"); %>,<% nvram_get_x("", "tailscale_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/tailscale
+if [ -f "/tmp/www_asp/Advanced_Extensions_tailscaleasp" ] ; then
+if [ ! -f "/opt/app/tailscale/Advanced_Extensions_tailscale.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_tailscaleasp /opt/app/tailscale/Advanced_Extensions_tailscale.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_tailscaleasp
+fi
+fi
+if [ ! -f "/opt/app/tailscale/Advanced_Extensions_tailscale.asp" ] || [ ! -s "/opt/app/tailscale/Advanced_Extensions_tailscale.asp" ] ; then
+	wgetcurl.sh /opt/app/tailscale/Advanced_Extensions_tailscale.asp "$hiboyfile/Advanced_Extensions_tailscaleasp" "$hiboyfile2/Advanced_Extensions_tailscaleasp"
+fi
+umount /www/Advanced_Extensions_app11.asp
+if [ -f "/opt/app/tailscale/Advanced_Extensions_tailscale.asp" ] ; then
+	mount --bind /opt/app/tailscale/Advanced_Extensions_tailscale.asp /www/Advanced_Extensions_app11.asp
+	app11_ver=$(grep 'app11_ver=' /opt/app/tailscale/Advanced_Extensions_tailscale.asp | awk -F '=' '{print $2;}')
+	nvram set app11_ver=${app11_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh89_tailscale.sh
+if [ ! -f "/etc/storage/script/Sh89_tailscale.sh" ] || [ ! -s "/etc/storage/script/Sh89_tailscale.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh89_tailscale.sh "$hiboyscript/script/Sh89_tailscale.sh" "$hiboyscript/script/Sh89_tailscale.sh"
+fi
+chmod 777 /etc/storage/script -R
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+

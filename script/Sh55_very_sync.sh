@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 verysync_enable=`nvram get app_20`
@@ -8,9 +8,6 @@ verysync_wan_port=`nvram get app_21`
 verysync_wan=`nvram get app_22`
 [ -z $verysync_wan ] && verysync_wan=0 && nvram set app_22=0
 verysync_upanPath=`nvram get verysync_upanPath`
-#if [ "$verysync_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep verysync | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
-#fi
 
 verysync_renum=`nvram get verysync_renum`
 verysync_renum=${verysync_renum:-"0"}
@@ -20,61 +17,23 @@ cmd_log=""
 if [ "$cmd_log_enable" = "1" ] || [ "$verysync_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep very_sync)" ]  && [ ! -s /tmp/script/_app6 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep very_sync)" ] && [ ! -s /tmp/script/_app6 ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app6
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app6
 	chmod 777 /tmp/script/_app6
 fi
 
 upanPath=""
 
 verysync_restart () {
-
-relock="/var/lock/verysync_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set verysync_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【verysync】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	verysync_renum=${verysync_renum:-"0"}
-	verysync_renum=`expr $verysync_renum + 1`
-	nvram set verysync_renum="$verysync_renum"
-	if [ "$verysync_renum" -gt "2" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【verysync】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get verysync_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set verysync_renum="0"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set verysync_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="verysync"
 }
 
 verysync_get_status () {
 
-A_restart=`nvram get verysync_status`
 B_restart="$verysync_enable$verysync_wan$verysync_wan_port"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set verysync_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="verysync" -valb="$B_restart"
 }
 
 verysync_check () {
@@ -96,32 +55,18 @@ fi
 }
 
 verysync_keep () {
-logger -t "【verysync】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【verysync】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof verysync\`" ] || [ ! -s "$verysync_upanPath/verysync/verysync" ] && nvram set verysync_status=00 && logger -t "【verysync】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【verysync】|^$/d' /tmp/script/_opt_script_check # 【verysync】
-OSC
-return
-fi
-
-while true; do
-	if [ -z "`pidof verysync`" ] || [ ! -s "$verysync_upanPath/verysync/verysync" ] ; then
-		logger -t "【verysync】" "重新启动"
-		verysync_restart
-	fi
-sleep 252
-done
+i_app_keep -name="verysync" -pidof="verysync" -cpath="${verysync_upanPath}/verysync/verysync" &
 }
 
 verysync_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【verysync】|^$/d' /tmp/script/_opt_script_check
 iptables -t filter -D INPUT -p tcp --dport 22330 -j ACCEPT
 iptables -t filter -D INPUT -p udp --dport 22331 -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $verysync_wan_port -j ACCEPT
 killall verysync
-killall -9 verysync
+sync;echo 3 > /proc/sys/vm/drop_caches
 kill_ps "/tmp/script/_app6"
 kill_ps "_very_sync.sh"
 kill_ps "$scriptname"
@@ -129,6 +74,7 @@ kill_ps "$scriptname"
 
 verysync_start () {
 
+check_webui_yes
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
 [ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
@@ -162,16 +108,38 @@ if [ -z "$upanPath" ] ; then
 fi
 SVC_PATH="$upanPath/verysync/verysync"
 mkdir -p "$upanPath/verysync/.config"
-if [ ! -s "$SVC_PATH" ] && [ -d "$upanPath/verysync" ] ; then
-	logger -t "【verysync】" "找不到 $SVC_PATH ，安装 verysync 程序"
-	logger -t "【verysync】" "开始下载 verysync"
-	wgetcurl.sh "$upanPath/verysync/verysync" "$hiboyfile/verysync" "$hiboyfile2/verysync"
-fi
 chmod 777 "$SVC_PATH"
+[[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
+if [ ! -s "$SVC_PATH" ] ; then
+# 获取最新版本
+curltest=`which curl`
+if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
+	verysync_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  http://www.verysync.com/shell/latest )"
+	[ -z "$verysync_tag" ] && verysync_tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  http://www.verysync.com/shell/latest )"
+else
+	verysync_tag="$( curl --connect-timeout 3 --user-agent "$user_agent"  http://www.verysync.com/shell/latest )"
+	[ -z "$verysync_tag" ] && verysync_tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  http://www.verysync.com/shell/latest )"
+fi
+[ -z "$verysync_tag" ] && logger -t "【verysync】" "最新版本获取失败！！！"
+[ ! -z "$verysync_tag" ] && logger -t "【verysync】" "最新版本 $verysync_tag"
+[ -z "$verysync_tag" ] && verysync_tag="$verysync_version_2" && logger -t "【verysync】" "使用：$hiboyfile/verysync" && verysync_tag=""
+verysync_tag="$(echo "$verysync_tag" | tr -d 'v' | tr -d ' ')"
+if [ ! -z "$verysync_tag" ] ; then
+	# http://www.verysync.com 下载最新版本
+	wgetcurl.sh "$upanPath/verysync/verysync-linux-mipsle.tar.gz" "http://releases-cdn.verysync.com/releases/v""$verysync_tag""/verysync-linux-mipsle-v""$verysync_tag"".tar.gz"
+	tar -xzvf "$upanPath/verysync/verysync-linux-mipsle.tar.gz" -C $upanPath/verysync ; cd $upanPath/verysync
+	rm -f "$upanPath/verysync/verysync-linux-mipsle.tar.gz"
+	mv -f $upanPath/verysync/verysync-linux-mipsle-v* $upanPath/verysync/verysync-linux-mipsle
+	mv -f $upanPath/verysync/verysync-linux-mipsle/verysync $SVC_PATH
+	rm -rf $upanPath/verysync/verysync-linux-mipsle
+	chmod 777 "$SVC_PATH"
+fi
+wgetcurl_file "$SVC_PATH" "$hiboyfile/verysync" "$hiboyfile2/verysync"
 [[ "$($SVC_PATH -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf $SVC_PATH
 if [ ! -s "$SVC_PATH" ] ; then
 	logger -t "【verysync】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
 	logger -t "【verysync】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && verysync_restart x
+fi
 fi
 chmod 777 "$SVC_PATH"
 verysync_v=$($SVC_PATH -version | grep verysync | awk -F ' ' '{print $2;}')
@@ -188,23 +156,12 @@ nvram set verysync_upanPath="$upanPath"
 eval "$upanPath/verysync/verysync -no-restart -home $upanPath/verysync/.config -gui-address 0.0.0.0:$verysync_wan_port $cmd_log" &
 
 sleep 4
-[ ! -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动成功" && verysync_restart o
-[ -z "$(ps -w | grep "verysync" | grep -v grep )" ] && logger -t "【verysync】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && verysync_restart x
-initopt
+i_app_keep -t -name="verysync" -pidof="verysync" -cpath="${verysync_upanPath}/verysync/verysync"
 verysync_port_dpt
 
 #verysync_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 verysync_port_dpt () {
@@ -225,8 +182,10 @@ fi
 }
 
 update_app () {
-
 mkdir -p /opt/app/verysync
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/verysync/Advanced_Extensions_verysync.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /opt/app/verysync/Advanced_Extensions_verysync.asp
 	[ -f $verysync_upanPath/verysync/verysync ] && rm -f $verysync_upanPath/verysync/verysync
@@ -261,6 +220,9 @@ updateapp6)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 keep)
 	#verysync_check

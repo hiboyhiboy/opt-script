@@ -1,10 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 ngrok_enable=`nvram get ngrok_enable`
 [ -z $ngrok_enable ] && ngrok_enable=0 && nvram set ngrok_enable=0
 if [ "$ngrok_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep ngrok | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 ngrok_server=`nvram get ngrok_server`
 ngrok_port=`nvram get ngrok_port`
@@ -35,59 +34,21 @@ if [ "$cmd_log_enable" = "1" ] || [ "$ngrok_renum" -gt "0" ] ; then
 fi
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ngrok)" ]  && [ ! -s /tmp/script/_ngrok ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep ngrok)" ] && [ ! -s /tmp/script/_ngrok ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ngrok
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_ngrok
 	chmod 777 /tmp/script/_ngrok
 fi
 
 ngrok_restart () {
-
-relock="/var/lock/ngrok_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set ngrok_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【ngrok】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	ngrok_renum=${ngrok_renum:-"0"}
-	ngrok_renum=`expr $ngrok_renum + 1`
-	nvram set ngrok_renum="$ngrok_renum"
-	if [ "$ngrok_renum" -gt "2" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【ngrok】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get ngrok_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set ngrok_renum="0"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set ngrok_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="ngrok"
 }
 
 ngrok_get_status () {
 
-A_restart=`nvram get ngrok_status`
-B_restart="$ngrok_enable$ngrok_server$ngrok_port$ngrok_token$ngrok_domain$ngrok_domain_type$ngrok_domain_lhost$ngrok_domain_lport$ngrok_domain_sdname$ngrok_tcp$ngrok_tcp_type$ngrok_tcp_lhost$ngrok_tcp_lport$ngrok_tcp_rport$ngrok_custom$ngrok_custom_type$ngrok_custom_lhost$ngrok_custom_lport$ngrok_custom_hostname$(cat /etc/storage/ngrok_script.sh | grep -v '^#' | grep -v "^$")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set ngrok_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+B_restart="$ngrok_enable$ngrok_server$ngrok_port$ngrok_token$ngrok_domain$ngrok_domain_type$ngrok_domain_lhost$ngrok_domain_lport$ngrok_domain_sdname$ngrok_tcp$ngrok_tcp_type$ngrok_tcp_lhost$ngrok_tcp_lport$ngrok_tcp_rport$ngrok_custom$ngrok_custom_type$ngrok_custom_lhost$ngrok_custom_lport$ngrok_custom_hostname$(cat /etc/storage/ngrok_script.sh | grep -v '^#' | grep -v '^$')"
+
+i_app_get_status -name="ngrok" -valb="$B_restart"
 }
 
 ngrok_check () {
@@ -108,56 +69,21 @@ fi
 }
 
 ngrok_keep () {
-
-logger -t "【ngrok】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof ngrokc\`" ] || [ ! -s "`which ngrokc`" ] && nvram set ngrok_status=00 && logger -t "【ngrok】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check # 【ngrok】
-OSC
-return
-fi
-while true; do
-	if [ -z "`pidof ngrokc`" ] || [ ! -s "`which ngrokc`" ] ; then
-		logger -t "【ngrok】" "重新启动"
-		ngrok_restart
-	fi
-sleep 233
-done
+i_app_keep -name="ngrok" -pidof="ngrokc" &
 }
 
 ngrok_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【ngrok】|^$/d' /tmp/script/_opt_script_check
 killall ngrokc ngrok_script.sh
-killall -9 ngrokc ngrok_script.sh
 kill_ps "/tmp/script/_ngrok"
 kill_ps "_ngrok.sh"
 kill_ps "$scriptname"
 }
 
 ngrok_start () {
-SVC_PATH="/usr/bin/ngrokc"
-if [ ! -s "$SVC_PATH" ] ; then
-	SVC_PATH="/opt/bin/ngrokc"
-fi
-chmod 777 "$SVC_PATH"
-[[ "$(ngrokc 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ngrokc
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ngrok】" "找不到 $SVC_PATH，安装 opt 程序"
-	/tmp/script/_mountopt start
-	initopt
-fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ngrok】" "找不到 $SVC_PATH 下载程序"
-	wgetcurl.sh /opt/bin/ngrokc "$hiboyfile/ngrokc" "$hiboyfile2/ngrokc"
-	chmod 755 "/opt/bin/ngrokc"
-else
-	logger -t "【ngrok】" "找到 $SVC_PATH"
-fi
-if [ ! -s "$SVC_PATH" ] ; then
-	logger -t "【ngrok】" "找不到 $SVC_PATH ，需要手动安装 $SVC_PATH"
-	logger -t "【ngrok】" "启动失败, 10 秒后自动尝试重新启动" && sleep 10 && ngrok_restart x
-fi
+check_webui_yes
+i_app_get_cmd_file -name="ngrok" -cmd="ngrokc" -cpath="/opt/bin/ngrokc" -down1="$hiboyfile/ngrokc" -down2="$hiboyfile2/ngrokc" -runh=" "
 logger -t "【ngrokc】" "运行 ngrok_script"
 sed -Ei '/UI设置自动生成/d' /etc/storage/ngrok_script.sh
 sed -Ei '/^$/d' /etc/storage/ngrok_script.sh
@@ -180,22 +106,12 @@ ngrokc -SER[Shost:$ngrok_server,Sport:$ngrok_port,Atoken:$ngrok_token] -AddTun[T
 EUI
 fi
 eval "/etc/storage/ngrok_script.sh $cmd_log" &
-restart_dhcpd
+restart_on_dhcpd
 sleep 4
-[ ! -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "启动成功" && ngrok_restart o
-[ -z "`pidof ngrokc`" ] && logger -t "【ngrok】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && ngrok_restart x
+i_app_keep -t -name="ngrok" -pidof="ngrokc"
 ngrok_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
@@ -203,7 +119,7 @@ initconfig () {
 ngrok_script="/etc/storage/ngrok_script.sh"
 if [ ! -f "$ngrok_script" ] || [ ! -s "$ngrok_script" ] ; then
 	cat > "$ngrok_script" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 killall ngrokc

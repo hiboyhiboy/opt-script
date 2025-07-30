@@ -1,13 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 kms_enable=`nvram get kms_enable`
 [ -z $kms_enable ] && kms_enable=0 && nvram set kms_enable=0
 #[ "$kms_enable" != "0" ] && nvramshow=`nvram showall | grep '=' | grep kms | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kms)" ]  && [ ! -s /tmp/script/_kms ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep kms)" ] && [ ! -s /tmp/script/_kms ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kms
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_kms
 	chmod 777 /tmp/script/_kms
 fi
 
@@ -25,28 +25,14 @@ fi
 }
 
 kms_keep () {
-logger -t "【kms】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof vlmcsd\`" ] && logger -t "【kms】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check # 【kms】
-OSC
-return
-fi
-while true; do
-	if [ -z "`pidof vlmcsd`" ] ; then
-		logger -t "【kms】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
-	fi
-sleep 992
-done
+i_app_keep -name="kms" -pidof="vlmcsd" &
 }
 
 kms_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【kms】|^$/d' /tmp/script/_opt_script_check
-sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf; restart_dhcpd;
+sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf; restart_on_dhcpd;
 killall vlmcsd vlmcsdini_script.sh
-killall -9 vlmcsd vlmcsdini_script.sh
 kill_ps "/tmp/script/_kms"
 kill_ps "_kms.sh"
 kill_ps "$scriptname"
@@ -54,6 +40,7 @@ kill_ps "$scriptname"
 
 kms_start () {
 
+check_webui_yes
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_log=' -l /tmp/vlmcsd.log '
 [ "$cmd_log_enable" = "1" ] && cmd_log=' -v -l syslog '
@@ -64,10 +51,10 @@ sed -Ei '/_vlmcs._tcp/d' /etc/storage/dnsmasq/dnsmasq.conf
 nvram set lan_domain="lan"
 echo "srv-host=_vlmcs._tcp.lan,$computer_name.lan,1688,0,100" >> /etc/storage/dnsmasq/dnsmasq.conf
 /etc/storage/vlmcsdini_script.sh
-restart_dhcpd
+restart_on_dhcpd
 sleep 4
-[ ! -z "$(ps -w | grep "vlmcsd" | grep -v grep )" ] && logger -t "【kms】" "启动成功"
-[ -z "$(ps -w | grep "vlmcsd" | grep -v grep )" ] && logger -t "【kms】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
+[ ! -z "`pidof vlmcsd`" ] && logger -t "【kms】" "启动成功"
+[ -z "`pidof vlmcsd`" ] && logger -t "【kms】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
 eval "$scriptfilepath keep &"
 exit 0
 }

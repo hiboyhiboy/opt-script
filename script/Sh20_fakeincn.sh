@@ -1,11 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
 fakeincn_enable=`nvram get app_7`
 [ -z $fakeincn_enable ] && fakeincn_enable=0 && nvram set app_7=0
 if [ "$fakeincn_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep fakeincn | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 fakeincn_enable=`nvram get app_7`
 [ -z $fakeincn_enable ] && fakeincn_enable=0 && nvram set app_7=0
 fakeincn_renum=`nvram get fakeincn_renum`
@@ -20,9 +19,9 @@ fi
 fakeincn_path="/etc/storage/app_1.sh"
 
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep fakeincn)" ]  && [ ! -s /tmp/script/_app2 ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep fakeincn)" ] && [ ! -s /tmp/script/_app2 ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app2
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_app2
 	chmod 777 /tmp/script/_app2
 fi
 
@@ -31,53 +30,14 @@ fi
 [ -f /lib/libsodium.so.18 ] && libsodium_so=libsodium.so.18
 
 fakeincn_restart () {
-
-relock="/var/lock/fakeincn_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set fakeincn_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【fakeincn】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	fakeincn_renum=${fakeincn_renum:-"0"}
-	fakeincn_renum=`expr $fakeincn_renum + 1`
-	nvram set fakeincn_renum="$fakeincn_renum"
-	if [ "$fakeincn_renum" -gt "2" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【fakeincn】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get fakeincn_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set fakeincn_renum="0"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set fakeincn_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="fakeincn"
 }
 
 fakeincn_get_status () {
 
-#lan_ipaddr=`nvram get lan_ipaddr`
-A_restart=`nvram get fakeincn_status`
-B_restart="$fakeincn_enable$fakeincn_path$(cat /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh | grep -v '^#' | grep -v "^$")"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set fakeincn_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+B_restart="$fakeincn_enable$fakeincn_path$(cat /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh | grep -v '^#' | grep -v '^$')"
+
+i_app_get_status -name="fakeincn" -valb="$B_restart"
 }
 
 fakeincn_check () {
@@ -103,47 +63,29 @@ fi
 }
 
 fakeincn_keep () {
-logger -t "【fakeincn】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【fakeincn】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-	NUM=\`grep "$fakeincn_path" /tmp/ps | grep -v grep |wc -l\` # 【fakeincn】
-	if [ "\$NUM" -lt "1" ] || [ ! -s "$fakeincn_path" ] ; then # 【fakeincn】
-		logger -t "【fakeincn】" "重新启动\$NUM" # 【fakeincn】
-		nvram set fakeincn_status=00 && eval "$scriptfilepath &" && sed -Ei '/【fakeincn】|^$/d' /tmp/script/_opt_script_check # 【fakeincn】
-	fi # 【fakeincn】
-OSC
-#return
-fi
+i_app_keep -name="fakeincn" -pidof="$(basename $fakeincn_path)" -cpath="$fakeincn_path" &
 sleep 60
-fakeincn_enable=`nvram get app_7` #fakeincn_enable
-while [ "$fakeincn_enable" = "1" ]; do
-	NUM=`ps -w | grep "$fakeincn_path" | grep -v grep |wc -l`
-	if [ "$NUM" -lt "1" ] || [ ! -s "$fakeincn_path" ] ; then
-		logger -t "【fakeincn】" "重新启动$NUM"
-		fakeincn_restart
-	fi
+while true; do
 	port=$(iptables -t nat -L | grep 'redir ports 1008' | wc -l)
 	if [ "$port" = 0 ] ; then
 		logger -t "【fakeincn】" "检测:找不到 1008 转发规则, 重新添加"
 		eval "$scriptfilepath rules &"
 	fi
 sleep 69
-fakeincn_enable=`nvram get app_7` #fakeincn_enable
 done
 }
 
 fakeincn_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【fakeincn】|^$/d' /tmp/script/_opt_script_check
 iptables -t nat -D PREROUTING -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
 iptables -t nat -D OUTPUT -p tcp -m set --match-set rtocn dst -j REDIRECT --to-ports 1008
 iptables -t nat -D PREROUTING -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 iptables -t nat -D OUTPUT -p tcp -m set --match-set tocn dst -j REDIRECT --to-ports 1008
 rm -rf /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
-restart_dhcpd
+restart_on_dhcpd
 [ ! -z "$fakeincn_path" ] && eval $(ps -w | grep 'l 1008' | grep -v grep | awk '{print "kill "$1";";}')
 killall app_1.sh fakeincn
-killall -9 app_1.sh fakeincn
 kill_ps "/tmp/script/_app2"
 kill_ps "_fakeincn.sh"
 kill_ps "$scriptname"
@@ -151,6 +93,7 @@ kill_ps "$scriptname"
 
 fakeincn_start () {
 
+check_webui_yes
 optssredir="0"
 # SS
 chmod 777 "/usr/sbin/ss-redir"
@@ -159,22 +102,20 @@ hash ss-redir 2>/dev/null || optssredir="1"
 if [ "$optssredir" != "0" ] ; then
 	# 找不到ss-redir，安装opt
 	logger -t "【SS】" "找不到 ss-redir 、 ss-local 或 obfs-local ，挂载opt"
-	/tmp/script/_mountopt start
+	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 optssredir="0"
 hash ss-redir 2>/dev/null || optssredir="1"
 if [ "$optssredir" = "1" ] ; then
-	logger -t "【SS】" "找不到 ss-redir. opt下载程序"
-	[ ! -s /opt/bin/ss-redir ] && wgetcurl.sh "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
-	chmod 777 "/opt/bin/ss-redir"
+	[ ! -s /opt/bin/ss-redir ] && wgetcurl_file "/opt/bin/ss-redir" "$hiboyfile/$libsodium_so/ss-redir" "$hiboyfile2/$libsodium_so/ss-redir"
 	[[ "$(ss-redir -h | wc -l)" -lt 2 ]] && rm -rf /opt/bin/ss-redir
 	[ ! -s `which ss-redir` ] && { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; fakeincn_restart x ; }
 hash ss-redir 2>/dev/null || { logger -t "【SS】" "找不到 ss-redir, 请检查系统"; fakeincn_restart x ; }
 fi
 update_app
 
-fakeincn_v=$(grep 'fakeincn_v=' /etc/storage/app_1.sh | awk -F '=' '{print $2;}')
+fakeincn_v=$(cat /etc/storage/app_1.sh | grep 'fakeincn_v=' | awk -F '=' '{print $2;}')
 nvram set fakeincn_v="$fakeincn_v"
 logger -t "【fakeincn】" "运行 $fakeincn_path"
 eval "$fakeincn_path $cmd_log" &
@@ -227,20 +168,11 @@ sed -Ei '/^$|api.ip.sb/d' /etc/storage/dnsmasq/dnsmasq.d/r.tocn.conf
 ipset=/api.ip.sb/tocn
 _CONF
 
-restart_dhcpd
+restart_on_dhcpd
 
 fakeincn_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 initconfig () {
@@ -248,7 +180,7 @@ initconfig () {
 # 说明和SS参数
 if [ ! -f "/etc/storage/app_1.sh" ] || [ ! -s "/etc/storage/app_1.sh" ] ; then
 	cat >> "/etc/storage/app_1.sh" <<-\EOF
-#!/bin/sh
+#!/bin/bash
 # FakeInChina(假装在中国) 
 # 用途：与“由于版权限制，你所在的地区不能播放”告别，目前支持大多数主流的视音频app，包括：youku、iqiyi、qq（音乐、视频）、网易、乐视、CNTV等等，数量太多，不全部列出了。
 # 这个功能模块需要使用国内SS服务器，其实最早让 Hiboy 把ss-server集成到 PADAVAN 基础固件就是为了这一个模块，只是由于前一段时间基本上在国内，也就一直没有时间去调试这个模块，这段时间终于有时间和条件进行调试了。
@@ -270,9 +202,11 @@ server3=xxx3.dynu.com
 ss_router_port=1234   #服务器端口
 ss_passwd=xxxxxxxxx   #密码
 method=chacha20       #加密方式
+user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
 index=1
 ln -sf `which ss-redir` /opt/app/fakeincn/fakeincn
+[ ! -s /opt/app/fakeincn/fakeincn ] && cp -f `which ss-redir` /opt/app/fakeincn/fakeincn
 eval server="\$"server${index}
 logger -t "【fakeincn】" "ChinaServer：$server。"
 eval $(ps -w | grep '/opt/app/fakeincn/fakeincn' | grep -v grep | awk '{print "kill "$1";";}')
@@ -283,15 +217,15 @@ fakeincn_enable=`nvram get app_7` #fakeincn_enable
 while [ "$fakeincn_enable" = "1" ]; do
 	curltest=`which curl`
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
-		country=`wget -qO- https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
+		country=`wget -T 5 -t 3 -qO- https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	else
-		country=`curl -k -s https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
+		country=`curl -L --user-agent "$user_agent" -s https://api.ip.sb/geoip | sed 's/.*try_code":"\([A-Z]*\).*/\1/g'`
 	fi
-	if [ "$country" != "CN" ]; then
+	if [ "$country" != "CN" ] ; then
 		logger -t "【fakeincn】" "ChinaServer不正确：$country，尝试下一个服务器：$server。"
 		let index+=1
 		eval server="\$"server${index}
-		if [ -z "$server" ]; then
+		if [ -z "$server" ] ; then
 			index=0
 			logger -t "FIC:" "ChinaServer run over. Sleep 60sec."
 			sleep 60
@@ -556,7 +490,7 @@ if [ ! -f "/etc/storage/app_12.sh" ] || [ ! -s "/etc/storage/app_12.sh" ] ; then
 123.126.99.57
 123.59.122.104
 123.59.122.75
-123.59.122.75                
+123.59.122.75
 123.59.122.76
 123.59.122.77
 14.152.77.22
@@ -605,6 +539,9 @@ chmod 777 /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh
 initconfig
 
 update_app () {
+if [ "$1" = "update_asp" ] ; then
+	rm -rf /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
+fi
 if [ "$1" = "del" ] ; then
 	rm -rf /etc/storage/app_1.sh /etc/storage/app_2.sh /etc/storage/app_12.sh /opt/app/fakeincn/Advanced_Extensions_fakeincn.asp
 fi
@@ -645,6 +582,9 @@ updateapp2)
 	;;
 update_app)
 	update_app
+	;;
+update_asp)
+	update_app update_asp
 	;;
 *)
 	fakeincn_check

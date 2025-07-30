@@ -1,11 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 syncthing_wan_port=`nvram get syncthing_wan_port`
 syncthing_enable=`nvram get syncthing_enable`
 [ -z $syncthing_enable ] && syncthing_enable=0 && nvram set syncthing_enable=0
 if [ "$syncthing_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep syncthing | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 syncthing_wan=`nvram get syncthing_wan`
 syncthing_upanPath=`nvram get syncthing_upanPath`
@@ -20,62 +19,23 @@ if [ "$cmd_log_enable" = "1" ] || [ "$syncthing_renum" -gt "0" ] ; then
 fi
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep sync_thing)" ]  && [ ! -s /tmp/script/_sync_thing ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep sync_thing)" ] && [ ! -s /tmp/script/_sync_thing ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_sync_thing
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_sync_thing
 	chmod 777 /tmp/script/_sync_thing
 fi
 
 upanPath=""
 [ -z $syncthing_wan_port ] && syncthing_wan_port=8384 && nvram set syncthing_wan_port=$syncthing_wan_port
-
 syncthing_restart () {
-
-relock="/var/lock/syncthing_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set syncthing_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【syncthing】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	syncthing_renum=${syncthing_renum:-"0"}
-	syncthing_renum=`expr $syncthing_renum + 1`
-	nvram set syncthing_renum="$syncthing_renum"
-	if [ "$syncthing_renum" -gt "2" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【syncthing】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get syncthing_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set syncthing_renum="0"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set syncthing_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="syncthing"
 }
 
 syncthing_get_status () {
 
-A_restart=`nvram get syncthing_status`
 B_restart="$syncthing_enable$syncthing_wan$syncthing_wan_port"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set syncthing_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="syncthing" -valb="$B_restart"
 }
 
 syncthing_check () {
@@ -97,29 +57,24 @@ fi
 }
 
 syncthing_keep () {
-logger -t "【syncthing】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof syncthing\`" ] || [ ! -s "$syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing" ] && nvram set syncthing_status=00 && logger -t "【syncthing】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check # 【syncthing】
-OSC
-return
+i_app_keep -name="syncthing" -pidof="syncthing" -cpath="${syncthing_upanPath}/syncthing/syncthing-linux-mipsle/syncthing" &
+sleep 600
+syncthing_upanPath=`nvram get syncthing_upanPath`
+if [ ! -z "$syncthing_upanPath" ] ; then 
+	cd $syncthing_upanPath
+	rm -rf $syncthing_upanPath/syncthing/Downloads $syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing.old
+	logger -t "【syncthing】" "备份 $syncthing_upanPath/syncthing 文件夹到【$syncthing_upanPath/syncthing/syncthing_backup.tgz】"
+	tar -cz  -f ./syncthing/syncthing_backup.tgz ./syncthing
+	mkdir -p "$upanPath/syncthing/Downloads"
 fi
-
-while true; do
-	if [ -z "`pidof syncthing`" ] || [ ! -s "$syncthing_upanPath/syncthing/syncthing-linux-mipsle/syncthing" ] ; then
-		logger -t "【syncthing】" "重新启动"
-		syncthing_restart
-	fi
-sleep 252
-done
 }
 
 syncthing_close () {
 
+kill_ps "$scriptname keep"
 sed -Ei '/【syncthing】|^$/d' /tmp/script/_opt_script_check
 killall syncthing
-killall -9 syncthing
+sync;echo 3 > /proc/sys/vm/drop_caches
 iptables -t filter -D INPUT -p tcp --dport 22000 -j ACCEPT
 iptables -t filter -D INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT
@@ -129,6 +84,7 @@ kill_ps "$scriptname"
 }
 
 syncthing_start () {
+check_webui_yes
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
 [ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
@@ -185,22 +141,11 @@ nvram set syncthing_upanPath="$upanPath"
 eval "$upanPath/syncthing/syncthing-linux-mipsle/syncthing -home $upanPath/syncthing -gui-address 0.0.0.0:$syncthing_wan_port $cmd_log" &
 
 sleep 4
-[ ! -z "$(ps -w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动成功" && syncthing_restart o
-[ -z "$(ps -w | grep "syncthing" | grep -v grep )" ] && logger -t "【syncthing】" "启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && syncthing_restart x
+i_app_keep -t -name="syncthing" -pidof="syncthing" -cpath="${syncthing_upanPath}/syncthing/syncthing-linux-mipsle/syncthing"
 syncthing_port_dpt
-initopt
 #syncthing_get_status
 eval "$scriptfilepath keep &"
 exit 0
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 syncthing_port_dpt () {
@@ -212,7 +157,7 @@ if [ "$port" = 0 ] ; then
 	iptables -t filter -I INPUT -p udp -m multiport --dports 21025,21026,21027 -j ACCEPT
 fi
 if [ "$syncthing_wan" = "1" ] ; then
-	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:22000 | cut -d " " -f 1 | sort -nr | wc -l)
+	port=$(iptables -t filter -L INPUT -v -n --line-numbers | grep dpt:$syncthing_wan_port | cut -d " " -f 1 | sort -nr | wc -l)
 	if [ "$port" = 0 ] ; then
 		logger -t "【syncthing】" "WebGUI 允许 $syncthing_wan_port tcp端口通过防火墙"
 		iptables -t filter -I INPUT -p tcp --dport $syncthing_wan_port -j ACCEPT

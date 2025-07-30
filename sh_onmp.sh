@@ -1,8 +1,9 @@
 #!/bin/sh
 # @Author: xzhih
 # @Date:   2017-07-29 06:10:54
-# @Last Modified by:   xzhih
-# @Last Modified time: 2018-10-08 13:49:26
+# @Last Modified by:   Fangshing87
+# @Last Modified time: 2019-06-09 11:39:26
+# https://github.com/xzhih/ONMP/commits/master
 
 # 软件包列表
 pkglist="wget unzip grep sed tar ca-certificates coreutils-whoami php7 php7-cgi php7-cli php7-fastcgi php7-fpm php7-mod-mysqli php7-mod-pdo php7-mod-pdo-mysql nginx-extras mariadb-server mariadb-server-extra mariadb-client mariadb-client-extra"
@@ -26,19 +27,19 @@ url_Owncloud="https://download.owncloud.org/community/owncloud-10.0.10.zip"
 url_Nextcloud="https://download.nextcloud.com/server/releases/nextcloud-13.0.6.zip"
 
 # (5) h5ai（优秀的文件目录）
-url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.29.0.zip"
+url_h5ai="https://release.larsjung.de/h5ai/h5ai-0.29.2.zip"
 
 # (6) Lychee（一个很好看，易于使用的Web相册）
 url_Lychee="https://github.com/electerious/Lychee/archive/master.zip"
 
 # (7) Kodexplorer（可道云aka芒果云在线文档管理器）
-url_Kodexplorer="http://static.kodcloud.com/update/download/kodexplorer4.36.zip"
+url_Kodexplorer="http://static.kodcloud.com/update/download/kodexplorer4.40.zip"
 
 # (8) Typecho (流畅的轻量级开源博客程序)
 url_Typecho="http://typecho.org/downloads/1.1-17.10.30-release.tar.gz"
 
 # (9) Z-Blog (体积小，速度快的PHP博客程序)
-url_Zblog="https://update.zblogcn.com/zip/Z-BlogPHP_1_5_2_1935_Zero.zip"
+url_Zblog="https://update.zblogcn.com/zip/Z-BlogPHP_1_6_0_2090_Valyria.zip"
 
 # (10) DzzOffice (开源办公平台)
 url_DzzOffice="https://codeload.github.com/zyx0814/dzzoffice/zip/master"
@@ -180,7 +181,7 @@ events {
 
 http {
     charset utf-8;
-    include mime.types;
+    include /opt/etc/nginx/mime.types;
     default_type application/octet-stream;
     
     sendfile on;
@@ -189,6 +190,7 @@ http {
     keepalive_timeout 60;
     
     client_max_body_size 2000m;
+    types_hash_max_size 2048;
     client_body_temp_path /opt/tmp/;
     
     gzip on; 
@@ -217,7 +219,8 @@ nginx_special_conf()
 # php-fpm
 cat > "/opt/etc/nginx/conf/php-fpm.conf" <<-\OOO
 location ~ \.php(?:$|/) {
-    fastcgi_split_path_info ^(.+\.php)(/.+)$; 
+    fastcgi_split_path_info ^(.+?\.php)(/.*|)$;
+    try_files $fastcgi_script_name =404;
     fastcgi_pass unix:/opt/var/run/php7-fpm.sock;
     fastcgi_index index.php;
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
@@ -263,11 +266,13 @@ location ~ ^/(?:\.|autotest|occ|issue|indie|db_|console) {
     deny all;
 }
 
-location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|ocs-provider/.+)\.php(?:$|/) {
-    fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|oc[ms]-provider/.+)\.php(?:$|/) {
+    fastcgi_split_path_info ^(.+?\.php)(/.*|)$;
+    set $path_info $fastcgi_path_info;
+    try_files $fastcgi_script_name =404;
     include fastcgi_params;
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-    fastcgi_param PATH_INFO $fastcgi_path_info;
+    fastcgi_param PATH_INFO $path_info;
     fastcgi_param modHeadersAvailable true;
     fastcgi_param front_controller_active true;
     fastcgi_pass unix:/opt/var/run/php7-fpm.sock;
@@ -280,7 +285,7 @@ location ~ ^/(?:updater|ocs-provider)(?:$|/) {
     index index.php;
 }
 
-location ~ \.(?:css|js|woff|svg|gif)$ {
+location ~ \.(?:css|js|woff|woff2?|svg|gif|map)$ {
     try_files $uri /index.php$request_uri;
     add_header Cache-Control "public, max-age=15778463";
     add_header X-Content-Type-Options nosniff;
@@ -335,12 +340,14 @@ location ~ ^/(?:\.|autotest|occ|issue|indie|db_|console) {
     return 404;
 }
 
-location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|ocs-provider/.+|core/templates/40[34])\.php(?:$|/) {
-    fastcgi_split_path_info ^(.+\.php)(/.*)$;
+location ~ ^/(?:index|remote|public|cron|core/ajax/update|status|ocs/v[12]|updater/.+|oc[ms]-provider/.+|core/templates/40[34])\.php(?:$|/) {
+    fastcgi_split_path_info ^(.+?\.php)(/.*|)$;
+    set $path_info $fastcgi_path_info;
+    try_files $fastcgi_script_name =404;
     include fastcgi_params;
     fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     fastcgi_param SCRIPT_NAME $fastcgi_script_name;
-    fastcgi_param PATH_INFO $fastcgi_path_info;
+    fastcgi_param PATH_INFO $path_info;
     fastcgi_param modHeadersAvailable true;
     fastcgi_param front_controller_active true;
     fastcgi_read_timeout 180;
@@ -444,8 +451,9 @@ user               = theOne
 socket             = /opt/var/run/mysqld.sock
 pid-file           = /opt/var/run/mysqld.pid
 basedir            = /opt
-lc_messages_dir    = /opt/share/mysql
+lc_messages_dir    = /opt/share/mariadb
 lc_messages        = en_US
+innodb_use_native_aio = 0
 datadir            = /opt/var/mysql/
 tmpdir             = /opt/tmp/
 
@@ -491,6 +499,8 @@ sleep 70
 # 设置数据库密码
 mysqladmin -u root password 123456
 echo -e "\033[41;37m 数据库用户：root, 初始密码：123456 \033[0m"
+mysqladmin -u admin password 123456
+echo -e "\033[41;37m 数据库用户：admin, 初始密码：123456 \033[0m"
 onmp restart
 }
 
@@ -1093,8 +1103,10 @@ set_passwd()
 {
     /opt/etc/init.d/S70mysqld start
     sleep 3
-    echo -e "\033[41;37m 初始密码：123456 \033[0m"
+    echo -e "\033[41;37m root 初始密码：123456 \033[0m"
     mysqladmin -u root -p password
+    echo -e "\033[41;37m admin 初始密码：123456 \033[0m"
+    mysqladmin -u admin -p password
     onmp restart
 }
 
@@ -1631,7 +1643,7 @@ fi
     echo "$name安装完成"
     echo "浏览器地址栏输入：$localhost:$port 即可访问"
     echo "首次打开会要配置数据库信息"
-    echo "地址：127.0.0.1 用户、密码你自己设置的或者默认是root 123456"
+    echo "数据库地址默认 localhost 用户、密码默认是root 123456 或者 admin 123456 或者 你自己设置的"
     echo "下面的可以不配置，然后下一步创建个用户就可以用了"
 }
 
@@ -1665,7 +1677,7 @@ fi
     echo "$name安装完成"
     echo "浏览器地址栏输入：$localhost:$port 即可访问"
     echo "首次打开会要配置用户和数据库信息"
-    echo "地址默认 localhost 用户、密码你自己设置的或者默认是root 123456"
+    echo "数据库地址默认 localhost 用户、密码默认是root 123456 或者 admin 123456 或者 你自己设置的"
     echo "安装好之后可以点击左上角三条杠进入market安装丰富的插件，比如在线预览图片、视频等"
     echo "需要先在 web 界面配置完成后，才能使用 onmp open 的第 10 个选项开启 Redis"
 }
@@ -1700,7 +1712,7 @@ fi
     echo "$name安装完成"
     echo "浏览器地址栏输入：$localhost:$port 即可访问"
     echo "首次打开会要配置用户和数据库信息"
-    echo "地址默认 localhost 用户、密码你自己设置的或者默认是root 123456"
+    echo "数据库地址默认 localhost 用户、密码默认是root 123456 或者 admin 123456 或者 你自己设置的"
     echo "需要先在 web 界面配置完成后，才能使用 onmp open 的第 10 个选项开启 Redis"
 }
 
@@ -2093,7 +2105,8 @@ nvram set onmp_12=""
 onmp_enable=`nvram get onmp_enable`
 [ -z $onmp_enable ] && onmp_enable=0 && nvram set onmp_enable=$onmp_enable
 if [ "$onmp_enable" = "2" ] ; then
-[ ! -z "`pidof mysqld`" ] && mysqladmin -u root -p password 123456 ; logger -t "【ONMP】" "设置数据库密码123456"
+[ ! -z "`pidof mysqld`" ] && mysqladmin -u root -p password 123456 ; logger -t "【ONMP】" "设置数据库用户 root 密码123456"
+[ ! -z "`pidof mysqld`" ] && mysqladmin -u admin -p password 123456 ; logger -t "【ONMP】" "设置数据库用户 admin 密码123456"
 [ -z "`pidof mysqld`" ] && logger -t "【ONMP】" "mysqld暂未开启，重置数据库密码失败，请开启后重试"
 fi
 if [ "$onmp_enable" = "3" ] || [ "$onmp_enable" = "4" ] ; then
@@ -2213,3 +2226,4 @@ check)
 	start
 	;;
 esac
+

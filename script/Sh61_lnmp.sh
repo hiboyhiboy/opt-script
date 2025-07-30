@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 lnmp_enable=`nvram get lnmp_enable`
@@ -7,7 +7,6 @@ onmp_enable=`nvram get onmp_enable`
 [ -z $onmp_enable ] && onmp_enable=0 && nvram set onmp_enable=$onmp_enable
 nvram set onmp_1="更新 ONMP 脚本"
 if [ "$lnmp_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep lnmp | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 default_enable=`nvram get default_enable`
 [ -z $default_enable ] && default_enable=0 && nvram set default_enable=$default_enable
@@ -72,59 +71,21 @@ if [ "$cmd_log_enable" = "1" ] || [ "$lnmp_renum" -gt "0" ] ; then
 	cmd_log="$cmd_log2"
 fi
 fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ]  && [ ! -s /tmp/script/_lnmp ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep lnmp)" ] && [ ! -s /tmp/script/_lnmp ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_lnmp
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_lnmp
 	chmod 777 /tmp/script/_lnmp
 fi
 
 lnmp_restart () {
-
-relock="/var/lock/lnmp_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set lnmp_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【lnmp】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	lnmp_renum=${lnmp_renum:-"0"}
-	lnmp_renum=`expr $lnmp_renum + 1`
-	nvram set lnmp_renum="$lnmp_renum"
-	if [ "$lnmp_renum" -gt "2" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【lnmp】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get lnmp_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set lnmp_renum="0"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set lnmp_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="lnmp"
 }
 
 lnmp_get_status () {
 
-A_restart=`nvram get lnmp_status`
 B_restart="$http_username$lnmp_enable$mysql_enable$default_enable$kodexplorer_enable$owncloud_enable$phpmyadmin_enable$wifidog_server_enable$default_port$kodexplorer_port$owncloud_port$phpmyadmin_port$wifidog_server_port$nextcloud_enable$nextcloud_port$wordpress_enable$wordpress_port$h5ai_enable$h5ai_port$lychee_enable$lychee_port$typecho_enable$typecho_port$zblog_enable$zblog_port$dzzoffice_enable$dzzoffice_port$redis_enable$onmp_enable"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set lnmp_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="lnmp" -valb="$B_restart"
 }
 
 lnmp_check () {
@@ -154,40 +115,23 @@ fi
 }
 
 lnmp_keep () {
-
-logger -t "【LNMP】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
+i_app_keep -name="lnmp" -pidof="nginx" &
 if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof mysqld\`" ] && nvram set lnmp_status=00 && logger -t "【LNMP】" "重新启动mysqld" && eval "$scriptfilepath &" && sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check # 【LNMP】
-OSC
+i_app_keep -name="lnmp" -pidof="mysqld" &
 fi
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof nginx\`" ] && nvram set lnmp_status=00 && logger -t "【LNMP】" "重新启动nginx" && eval "$scriptfilepath &" && sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check # 【LNMP】
-OSC
-return
-fi
-
-while true; do
-if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-	[ -z "`pidof mysqld`" ] || [ ! -s "`which mysqld`" ] && logger -t "【LNMP】" "mysqld 重新启动" && lnmp_restart
-fi
-	[ -z "`pidof nginx`" ] || [ ! -s "`which nginx`" ] && logger -t "【LNMP】" "nginx 重新启动" && lnmp_restart
-sleep 261
-done
 }
 
 lnmp_close () {
-echo "" > /opt/etc/init.d/S79php-fpm
-echo "" > /opt/etc/init.d/S69pdcnlnmpinit
+kill_ps "$scriptname keep"
+echo -n "" > /opt/etc/init.d/S79php-fpm
+echo -n "" > /opt/etc/init.d/S69pdcnlnmpinit
 sed -Ei '/【LNMP】|^$/d' /tmp/script/_opt_script_check
+sed -Ei '/【lnmp】|^$/d' /tmp/script/_opt_script_check
 /opt/etc/init.d/S70mysqld stop > /dev/null 2>&1
-/opt/etc/init.d/S79php7-fpm stop > /dev/null 2>&1
+/opt/etc/init.d/S79php8-fpm stop > /dev/null 2>&1
 /opt/etc/init.d/S80nginx stop > /dev/null 2>&1
 /opt/etc/init.d/S70redis stop > /dev/null 2>&1
-killall nginx mysqld php-fpm sh_onmp.sh  php-cgi > /dev/null 2>&1
-killall -9 nginx mysqld php-fpm sh_onmp.sh  php-cgi > /dev/null 2>&1
+killall nginx mysqld php-fpm sh_onmp.sh sh_onmp8.sh php-cgi > /dev/null 2>&1
 iptables -t filter -D INPUT -p tcp --dport $default_port -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport 3306 -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $kodexplorer_port -j ACCEPT
@@ -201,6 +145,7 @@ iptables -t filter -D INPUT -p tcp --dport $lychee_port -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $typecho_port -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $zblog_port -j ACCEPT
 iptables -t filter -D INPUT -p tcp --dport $dzzoffice_port -j ACCEPT
+sync;echo 3 > /proc/sys/vm/drop_caches
 kill_ps "/tmp/script/_lnmp"
 kill_ps "_lnmp.sh"
 kill_ps "$scriptname"
@@ -208,7 +153,7 @@ kill_ps "$scriptname"
 
 lnmp_start () {
 
-
+check_webui_yes
 ss_opt_x=`nvram get ss_opt_x`
 upanPath=""
 [ "$ss_opt_x" = "3" ] && upanPath="`df -m | grep /dev/mmcb | grep -E "$(echo $(/usr/bin/find /dev/ -name 'mmcb*') | sed -e 's@/dev/ /dev/@/dev/@g' | sed -e 's@ @|@g')" | grep "/media" | awk '{print $NF}' | sort -u | awk 'NR==1' `"
@@ -243,7 +188,7 @@ fi
 
 SVC_PATH="/opt/opti.txt"
 if [ ! -f "$SVC_PATH" ] ; then
-	/tmp/script/_mountopt optwget
+	/etc/storage/script/Sh01_mountopt.sh opt_full_wget
 fi
 chmod 777 "/opt/sbin/nginx"
 [[ "$(nginx -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/lnmp.txt
@@ -287,11 +232,12 @@ lnmp_Available
 
 [ -f /opt/bin/onmp ] && sed -e 's/^#exit_tmp/exit #exit_tmp/g' -i /opt/bin/onmp # 外部控制启动
 ldconfig > /dev/null 2>&1
+ldconfig -f /etc/ld.so.conf -C /etc/ld.so.cache > /dev/null 2>&1
 if [ "$default_enable" = "5" ] ; then
 	logger -t "【LNMP】" "重置 所有网站+mysql 数据.初始化lnmp重新再来，需时3分钟左右"
 	mysql_enable_tmp=$mysql_enable ; nvram set mysql_enable=9 ; nvram commit ;
 	[ -f /opt/bin/onmp ] && sed -e 's/^exit #exit_tmp/#exit_tmp/g' -i /opt/bin/onmp # 内部控制启动
-	eval "sh_onmp.sh init_onmp $cmd_log2"
+	eval "sh_onmp8.sh init_onmp $cmd_log2"
 	[ -f /opt/bin/onmp ] && sed -e 's/^#exit_tmp/exit #exit_tmp/g' -i /opt/bin/onmp # 外部控制启动
 	mysql_enable=$mysql_enable_tmp ; nvram set mysql_enable=$mysql_enable ; nvram commit ;
 	down_tzphp
@@ -303,7 +249,7 @@ fi
 if [ ! -d "/opt/wwwroot/init_onmp_yes" ] ; then
 	logger -t "【LNMP】" "初始化onmp 环境，需时3分钟左右"
 	mysql_enable_tmp=$mysql_enable ; nvram set mysql_enable=9 ; nvram commit ;
-	eval "sh_onmp.sh init_onmp $cmd_log2"
+	eval "sh_onmp8.sh init_onmp $cmd_log2"
 	mysql_enable=$mysql_enable_tmp ; nvram set mysql_enable=$mysql_enable ; nvram commit ;
 	down_tzphp
 fi
@@ -316,7 +262,7 @@ if [ "$init_mysql" = "1" ] ; then
 	logger -t "【LNMP】" "重置 mysql 默认账号:root, 默认密码:123456, 请手动修改密码"
 	mysql_enable_tmp=$mysql_enable ; nvram set mysql_enable=9 ; nvram commit ;
 	[ -f /opt/bin/onmp ] && sed -e 's/^exit #exit_tmp/#exit_tmp/g' -i /opt/bin/onmp # 内部控制启动
-	eval "sh_onmp.sh init_sql $cmd_log2"
+	eval "sh_onmp8.sh init_sql $cmd_log2"
 	[ -f /opt/bin/onmp ] && sed -e 's/^#exit_tmp/exit #exit_tmp/g' -i /opt/bin/onmp # 外部控制启动
 	/opt/etc/init.d/S70mysqld stop > /dev/null 2>&1
 	mysql_enable=$mysql_enable_tmp ; nvram set mysql_enable=$mysql_enable ; nvram commit ;
@@ -324,7 +270,7 @@ if [ "$init_mysql" = "1" ] ; then
 fi
 if [ "$default_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 默认主页 数据."
-	eval "sh_onmp.sh install_default del $cmd_log2"
+	eval "sh_onmp8.sh install_default del $cmd_log2"
 	logger -t "【LNMP】" "重置 默认主页 数据完成。"
 	default_enable=0 && nvram set default_enable=$default_enable
 	nvram commit
@@ -332,105 +278,107 @@ if [ "$default_enable" = "4" ] ; then
 fi
 if [ "$kodexplorer_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 KodExplorer 芒果云 数据."
-	eval "sh_onmp.sh install_kodexplorer del $cmd_log2"
+	eval "sh_onmp8.sh install_kodexplorer del $cmd_log2"
 	logger -t "【LNMP】" "重置 KodExplorer 芒果云 数据完成."
 	kodexplorer_enable=0 && nvram set kodexplorer_enable=$kodexplorer_enable
 	nvram commit
 fi
 if [ "$owncloud_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 OwnCloud 私有云 数据."
-	eval "sh_onmp.sh install_owncloud del $cmd_log2"
+	eval "sh_onmp8.sh install_owncloud del $cmd_log2"
 	logger -t "【LNMP】" "重置 OwnCloud 私有云 数据完成."
 	owncloud_enable=0 && nvram set owncloud_enable=$owncloud_enable
 	nvram commit
 fi
 if [ "$nextcloud_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 Owncloud 私有云 数据."
-	eval "sh_onmp.sh install_nextcloud del $cmd_log2"
+	eval "sh_onmp8.sh install_nextcloud del $cmd_log2"
 	logger -t "【LNMP】" "重置 Owncloud 私有云 数据完成."
 	nextcloud_enable=0 && nvram set nextcloud_enable=$nextcloud_enable
 	nvram commit
 fi
 if [ "$phpmyadmin_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 phpMyAdmin 数据."
-	eval "sh_onmp.sh install_phpmyadmin del $cmd_log2"
+	eval "sh_onmp8.sh install_phpmyadmin del $cmd_log2"
 	logger -t "【LNMP】" "重置 phpMyAdmin 数据完成."
 	phpmyadmin_enable=0 && nvram set phpmyadmin_enable=$phpmyadmin_enable
 	nvram commit
 fi
 if [ "$wifidog_server_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 wifidog_server 数据."
-	eval "sh_onmp.sh install_wifidog_server del $cmd_log2"
+	eval "sh_onmp8.sh install_wifidog_server del $cmd_log2"
 	logger -t "【LNMP】" "重置 wifidog_server 数据完成."
 	wifidog_server_enable=0 && nvram set wifidog_server_enable=$wifidog_server_enable
 	nvram commit
 fi
 if [ "$wordpress_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 wordpress 数据."
-	eval "	sh_onmp.sh install_wordpress del $cmd_log2"
+	eval "	sh_onmp8.sh install_wordpress del $cmd_log2"
 	logger -t "【LNMP】" "重置 wordpress 数据完成."
 	wordpress_enable=0 && nvram set wordpress_enable=$wordpress_enable
 	nvram commit
 fi
 if [ "$h5ai_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 h5ai 数据."
-	eval "sh_onmp.sh install_h5ai del $cmd_log2"
+	eval "sh_onmp8.sh install_h5ai del $cmd_log2"
 	logger -t "【LNMP】" "重置 h5ai 数据完成."
 	h5ai_enable=0 && nvram set h5ai_enable=$h5ai_enable
 	nvram commit
 fi
 if [ "$lychee_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 lychee 数据."
-	eval "sh_onmp.sh install_lychee del $cmd_log2"
+	eval "sh_onmp8.sh install_lychee del $cmd_log2"
 	logger -t "【LNMP】" "重置 lychee 数据完成."
 	lychee_enable=0 && nvram set lychee_enable=$lychee_enable
 	nvram commit
 fi
 if [ "$typecho_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 typecho 数据."
-	eval "sh_onmp.sh install_typecho del $cmd_log2"
+	eval "sh_onmp8.sh install_typecho del $cmd_log2"
 	logger -t "【LNMP】" "重置 typecho 数据完成."
 	typecho_enable=0 && nvram set typecho_enable=$typecho_enable
 	nvram commit
 fi
 if [ "$zblog_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 zblog 数据."
-	eval "sh_onmp.sh install_zblog del $cmd_log2"
+	eval "sh_onmp8.sh install_zblog del $cmd_log2"
 	logger -t "【LNMP】" "重置 zblog 数据完成."
 	zblog_enable=0 && nvram set zblog_enable=$zblog_enable
 	nvram commit
 fi
 if [ "$dzzoffice_enable" = "4" ] ; then
 	logger -t "【LNMP】" "重置 dzzoffice 数据."
-	eval "sh_onmp.sh install_dzzoffice del $cmd_log2"
+	eval "sh_onmp8.sh install_dzzoffice del $cmd_log2"
 	logger -t "【LNMP】" "重置 dzzoffice 数据完成."
 	dzzoffice_enable=0 && nvram set dzzoffice_enable=$dzzoffice_enable
 	nvram commit
 fi
 
 [ -f /opt/bin/onmp ] && sed -e 's/^#exit_tmp/exit #exit_tmp/g' -i /opt/bin/onmp # 外部控制启动
-eval "sh_onmp.sh install_default stop $cmd_log2"
-eval "sh_onmp.sh install_wifidog_server stop $cmd_log2"
-eval "sh_onmp.sh install_phpmyadmin stop $cmd_log2"
-eval "sh_onmp.sh install_wordpress stop $cmd_log2"
-eval "sh_onmp.sh install_owncloud stop $cmd_log2"
-eval "sh_onmp.sh install_nextcloud stop $cmd_log2"
-eval "sh_onmp.sh install_h5ai stop $cmd_log2"
-eval "sh_onmp.sh install_lychee stop $cmd_log2"
-eval "sh_onmp.sh install_kodexplorer stop $cmd_log2"
-eval "sh_onmp.sh install_typecho stop $cmd_log2"
-eval "sh_onmp.sh install_zblog stop $cmd_log2"
-eval "sh_onmp.sh install_dzzoffice stop $cmd_log2"
+eval "sh_onmp8.sh install_default stop $cmd_log2"
+eval "sh_onmp8.sh install_wifidog_server stop $cmd_log2"
+eval "sh_onmp8.sh install_phpmyadmin stop $cmd_log2"
+eval "sh_onmp8.sh install_wordpress stop $cmd_log2"
+eval "sh_onmp8.sh install_owncloud stop $cmd_log2"
+eval "sh_onmp8.sh install_nextcloud stop $cmd_log2"
+eval "sh_onmp8.sh install_h5ai stop $cmd_log2"
+eval "sh_onmp8.sh install_lychee stop $cmd_log2"
+eval "sh_onmp8.sh install_kodexplorer stop $cmd_log2"
+eval "sh_onmp8.sh install_typecho stop $cmd_log2"
+eval "sh_onmp8.sh install_zblog stop $cmd_log2"
+eval "sh_onmp8.sh install_dzzoffice stop $cmd_log2"
+
+[ -d /opt/lib/php8 ] && { rm -rf /opt/lib/php /opt/opt_backup/lib/php ; ln -sf /opt/lib/php8 /opt/lib/php ; }
 
 logger -t "【LNMP】" "运行 nginx+php+mysql 环境"
 if [ "$default_enable" = "1" ] || [ "$default_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_default $default_port n $cmd_log2"
+	eval "sh_onmp8.sh install_default $default_port n $cmd_log2"
 fi
 if [ "$kodexplorer_enable" = "1" ] || [ "$kodexplorer_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_kodexplorer $kodexplorer_port n $cmd_log2"
+	eval "sh_onmp8.sh install_kodexplorer $kodexplorer_port n $cmd_log2"
 fi
 if [ "$phpmyadmin_enable" = "1" ] || [ "$phpmyadmin_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_phpmyadmin $phpmyadmin_port n $cmd_log2"
+	eval "sh_onmp8.sh install_phpmyadmin $phpmyadmin_port n $cmd_log2"
 fi
 if [ "$wifidog_server_enable" = "1" ] || [ "$wifidog_server_enable" = "2" ] ; then
 	if [ ! -d "/opt/wwwroot/wifidog_server/auth" ] ; then
@@ -446,42 +394,42 @@ if [ "$wifidog_server_enable" = "1" ] || [ "$wifidog_server_enable" = "2" ] ; th
 		logger -t "【LNMP】" "wifidog_server 停用, 因未找到 /opt/wwwroot/wifidog_server/auth"
 	else
 		chmod -R 777 /opt/wwwroot/wifidog_server/
-		eval "sh_onmp.sh install_wifidog_server $wifidog_server_port n $cmd_log2"
+		eval "sh_onmp8.sh install_wifidog_server $wifidog_server_port n $cmd_log2"
 		logger -t "【LNMP】" "wifidog_server:`nvram get lan_ipaddr`:"$wifidog_server_port
 	fi
 fi
 if [ "$owncloud_enable" = "1" ] || [ "$owncloud_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_owncloud $owncloud_port n $cmd_log2"
+	eval "sh_onmp8.sh install_owncloud $owncloud_port n $cmd_log2"
 fi
 if [ "$nextcloud_enable" = "1" ] || [ "$nextcloud_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_nextcloud $nextcloud_port n $cmd_log2"
+	eval "sh_onmp8.sh install_nextcloud $nextcloud_port n $cmd_log2"
 fi
 if [ "$wordpress_enable" = "1" ] || [ "$wordpress_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_wordpress $wordpress_port n $cmd_log2"
+	eval "sh_onmp8.sh install_wordpress $wordpress_port n $cmd_log2"
 fi
 if [ "$h5ai_enable" = "1" ] || [ "$h5ai_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_h5ai $h5ai_port n $cmd_log2"
+	eval "sh_onmp8.sh install_h5ai $h5ai_port n $cmd_log2"
 fi
 if [ "$lychee_enable" = "1" ] || [ "$lychee_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_lychee $lychee_port n $cmd_log2"
+	eval "sh_onmp8.sh install_lychee $lychee_port n $cmd_log2"
 fi
 if [ "$typecho_enable" = "1" ] || [ "$typecho_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_typecho $typecho_port n $cmd_log2"
+	eval "sh_onmp8.sh install_typecho $typecho_port n $cmd_log2"
 fi
 if [ "$zblog_enable" = "1" ] || [ "$zblog_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_zblog $zblog_port n $cmd_log2"
+	eval "sh_onmp8.sh install_zblog $zblog_port n $cmd_log2"
 fi
 if [ "$dzzoffice_enable" = "1" ] || [ "$dzzoffice_enable" = "2" ] ; then
-	eval "sh_onmp.sh install_dzzoffice $dzzoffice_port n $cmd_log2"
+	eval "sh_onmp8.sh install_dzzoffice $dzzoffice_port n $cmd_log2"
 fi
 
 /opt/etc/init.d/S70mysqld stop > /dev/null 2>&1
-/opt/etc/init.d/S79php7-fpm stop > /dev/null 2>&1
+/opt/etc/init.d/S79php8-fpm stop > /dev/null 2>&1
 /opt/etc/init.d/S80nginx stop > /dev/null 2>&1
 /opt/etc/init.d/S70redis stop > /dev/null 2>&1
 
 eval "/opt/etc/init.d/S70mysqld start $cmd_log2" 
-eval "/opt/etc/init.d/S79php7-fpm start $cmd_log2" 
+eval "/opt/etc/init.d/S79php8-fpm start $cmd_log2" 
 eval "/opt/etc/init.d/S80nginx start $cmd_log2" 
 eval "/opt/etc/init.d/S70redis start $cmd_log2" 
 
@@ -489,13 +437,10 @@ lnmp_Available
 
 sleep 5
 if [ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] ; then
-	[ -z "`pidof mysqld`" ] && logger -t "【LNMP】" "mysqld启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
+	i_app_keep -t -name="lnmp" -pidof="mysqld"
 fi
-[ -z "`pidof nginx`" ] && logger -t "【LNMP】" "nginx启动失败, 注意检查端口是否有冲突,程序是否下载完整,10 秒后自动尝试重新启动" && sleep 10 && lnmp_restart x
-[ ! -z "`pidof nginx`" ] && logger -t "【LNMP】" "nginx启动成功" && lnmp_restart o
-[ "$mysql_enable" != "4" ] && [ "$mysql_enable" != "0" ] && [ ! -z "`pidof mysqld`" ] && logger -t "【LNMP】" "mysqld启动成功" && lnmp_restart o
+i_app_keep -t -name="lnmp" -pidof="nginx"
 lnmp_port_dpt
-initopt
 lnmp_get_status
 eval "$scriptfilepath keep &"
 exit 0
@@ -523,19 +468,6 @@ logger -t "【LNMP】" "/opt 剩余可用节点空间[Inodes] $Available_C/$Avai
 logger -t "【LNMP】" "/opt 已用数据空间[M] $Available_M/100%"
 logger -t "【LNMP】" "/opt 已用节点空间[Inodes] $Available_I/100%"
 logger -t "【LNMP】" "以上两个数据如出现占用100%时，则 opt 数据空间 或 Inodes节点 爆满，会影响 LNMP 运行，请重新正确格式化 U盘。"
-}
-
-initopt () {
-optPath=`grep ' /opt ' /proc/mounts | grep tmpfs`
-[ ! -z "$optPath" ] && return
-optw_enable=`nvram get optw_enable`
-if [ "$optw_enable" != "2" ] ; then
-	nvram set optw_enable=2
-fi
-if [ ! -z "$(echo $scriptfilepath | grep -v "/opt/etc/init")" ] && [ -s "/opt/etc/init.d/rc.func" ] ; then
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /opt/etc/init.d/$scriptname && chmod 777  /opt/etc/init.d/$scriptname
-fi
-
 }
 
 lnmp_port_dpt () {
@@ -673,30 +605,44 @@ fi
 }
 
 sh_onmp_check () {
-if [ ! -f "/opt/bin/sh_onmp.sh" ] || [ "$onmp_enable" = "1" ] ; then
-	logger -t "【LNMP】" "更新 /opt/bin/sh_onmp.sh, 下载脚本: $hiboyscript/sh_onmp.sh"
-	wgetcurl.sh /tmp/sh_onmp.sh "$hiboyscript/sh_onmp.sh" "$hiboyscript2/sh_onmp.sh"
-	[[ "$(cat /tmp/sh_onmp.sh | wc -l)" -gt 1000 ]] && { rm -f /opt/bin/sh_onmp.sh ; mv -f /tmp/sh_onmp.sh /opt/bin/sh_onmp.sh ; }
+down_sh_onmp=0
+if [ "$onmp_enable" = "1" ] ; then
+	down_sh_onmp=1
 fi
-chmod 777 "/opt/bin/sh_onmp.sh"
+if [ ! -f "/opt/bin/sh_onmp8.sh" ] && [ "$lnmp_enable" = "1" ] ; then
+	down_sh_onmp=1
+fi
+if [ ! -f "/opt/bin/sh_onmp8.sh" ] && [ "$onmp_enable" != "0" ] ; then
+	down_sh_onmp=1
+fi
+if [ "$down_sh_onmp" = "1" ] ; then
+	logger -t "【LNMP】" "更新 /opt/bin/sh_onmp8.sh, 下载脚本: $hiboyscript/sh_onmp8.sh"
+	wgetcurl.sh /tmp/sh_onmp8.sh "$hiboyscript/sh_onmp8.sh" "$hiboyscript2/sh_onmp8.sh"
+	[[ "$(cat /tmp/sh_onmp8.sh | wc -l)" -gt 1000 ]] && [ ! -z "$(cat /tmp/sh_onmp8.sh | grep "kodexplorer")" ] && { rm -f /opt/bin/sh_onmp8.sh ; mv -f /tmp/sh_onmp8.sh /opt/bin/sh_onmp8.sh ; }
+fi
+[ -f /opt/bin/sh_onmp8.sh ] && chmod 777 "/opt/bin/sh_onmp8.sh"
 
 # 更换【通用环境变量获取】方式
-sed -e 's/localhost=.*/localhost=`nvram get lan_ipaddr`/g' -i $(which sh_onmp.sh)
+[ -f /opt/bin/sh_onmp8.sh ] && sed -e 's/localhost=.*/localhost=`nvram get lan_ipaddr`/g' -i /opt/bin/sh_onmp8.sh
 [ -f /opt/bin/onmp ] && sed  -e 's/localhost=.*/localhost=`nvram get lan_ipaddr`/g' -i /opt/bin/onmp
-sed -i '/get_env()/,/##### 软件包状态检测 #####/{/get_env()/n;/##### 软件包状态检测 #####/b;d;p}' $(which sh_onmp.sh)
+[ -f /opt/bin/sh_onmp8.sh ] && sed -i '/get_env()/,/##### 软件包状态检测 #####/{/get_env()/n;/##### 软件包状态检测 #####/b;d;p}' /opt/bin/sh_onmp8.sh
 
-sed -i '/^get_env()/a {\
+[ -f /opt/bin/sh_onmp8.sh ] && sed -i '/^get_env()/a {\
 \
 username=`nvram get http_username`\
 localhost=`nvram get lan_ipaddr`\
 \
 }\
-' $(which sh_onmp.sh)
+' /opt/bin/sh_onmp8.sh
 
 [ -f /opt/bin/onmp ] && sed -e 's/^exit #exit_tmp/#exit_tmp/g' -i /opt/bin/onmp # 内部控制启动
-sh_onmp.sh check
+sh_onmp8.sh check
 [ -f /opt/bin/onmp ] && sed -e 's/^#exit_tmp/exit #exit_tmp/g' -i /opt/bin/onmp # 外部控制启动
-[ -f /opt/lnmp.txt ] && nvram set lnmpo=`cat /opt/lnmp.txt`
+if [ -f /opt/lnmp.txt ] ; then
+[[ "$(cat /opt/lnmp.txt | wc -c)" -gt 11 ]] && echo "" > /opt/lnmp.txt
+[ ! -z "$(cat /opt/lnmp.txt | grep '<' | grep '>')" ] && echo "" > /opt/lnmp.txt
+nvram set lnmpo=`cat /opt/lnmp.txt`
+fi
 onmp_enable=0 && nvram set onmp_enable=$onmp_enable ; nvram commit ; 
 
 }

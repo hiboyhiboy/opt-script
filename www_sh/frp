@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -27,7 +27,7 @@ if [ ! -f "/etc/storage/script/Sh32_frp.sh" ] || [ ! -s "/etc/storage/script/Sh3
 fi
 chmod 777 /etc/storage/script -R
 if [ ! -f "/etc/storage/frp_script.sh" ] || [ ! -s "/etc/storage/frp_script.sh" ] ; then
-/etc/storage/script/Sh32_frp.sh updatefrp
+/etc/storage/script/Sh32_frp.sh update_app
 fi
 
 [ "$1" = "del" ] && exit

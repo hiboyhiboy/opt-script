@@ -1,0 +1,66 @@
+#!/bin/bash
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app21.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_109=0 #ss_tproxy_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set ss_tproxy_L2="$(($3 + 10))"
+nvram set ss_tproxy_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "ss_tproxy_L2"); %>,<% nvram_get_x("", "ss_tproxy_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/ss_tproxy
+if [ -f "/tmp/www_asp/Advanced_Extensions_ss_tproxyasp" ] ; then
+if [ ! -f "/opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_ss_tproxyasp /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_ss_tproxyasp
+fi
+fi
+if [ ! -f "/opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp" ] || [ ! -s "/opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp" ] ; then
+	wgetcurl.sh /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp "$hiboyfile/Advanced_Extensions_ss_tproxyasp" "$hiboyfile2/Advanced_Extensions_ss_tproxyasp"
+fi
+umount /www/Advanced_Extensions_app21.asp
+if [ -f "/opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp" ] ; then
+	mount --bind /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp /www/Advanced_Extensions_app21.asp
+	app21_ver=$(grep 'app21_ver=' /opt/app/ss_tproxy/Advanced_Extensions_ss_tproxy.asp | awk -F '=' '{print $2;}')
+	nvram set app21_ver=${app21_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh99_ss_tproxy.sh
+if [ ! -f "/etc/storage/script/Sh99_ss_tproxy.sh" ] || [ ! -s "/etc/storage/script/Sh99_ss_tproxy.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh99_ss_tproxy.sh "$hiboyscript/script/Sh99_ss_tproxy.sh" "$hiboyscript/script/Sh99_ss_tproxy.sh"
+fi
+chmod 777 /etc/storage/script -R
+if [ ! -f "/etc/storage/app_26.sh" ] || [ ! -s "/etc/storage/app_26.sh" ] || [ ! -f "/etc/storage/app_27.sh" ] || [ ! -s "/etc/storage/app_27.sh" ] ; then
+/etc/storage/script/Sh99_ss_tproxy.sh update_app
+fi
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+

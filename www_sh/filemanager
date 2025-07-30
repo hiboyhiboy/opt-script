@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/filemanager
+if [ -f "/tmp/www_asp/Advanced_Extensions_filemanagerasp" ] ; then
+if [ ! -f "/opt/app/filemanager/Advanced_Extensions_filemanager.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_filemanagerasp /opt/app/filemanager/Advanced_Extensions_filemanager.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_filemanagerasp
+fi
+fi
 if [ ! -f "/opt/app/filemanager/Advanced_Extensions_filemanager.asp" ] || [ ! -s "/opt/app/filemanager/Advanced_Extensions_filemanager.asp" ] ; then
 	wgetcurl.sh /opt/app/filemanager/Advanced_Extensions_filemanager.asp "$hiboyfile/Advanced_Extensions_filemanagerasp" "$hiboyfile2/Advanced_Extensions_filemanagerasp"
 fi
@@ -44,7 +51,7 @@ if [ ! -f "/etc/storage/script/Sh54_file_manager.sh" ] || [ ! -s "/etc/storage/s
 fi
 chmod 777 /etc/storage/script -R
 # 初始配置脚本
-if [ ! -f "/etc/storage/app_5.sh" ] || [ ! -s "/etc/storage/app_5.sh" ] || [ ! -f "/etc/storage/app_11.sh" ] || [ ! -s "/etc/storage/app_11.sh" ] ; then
+if [ ! -f "/etc/storage/app_5.sh" ] || [ ! -s "/etc/storage/app_5.sh" ] ; then
 	/etc/storage/script/Sh54_file_manager.sh update_app
 fi
 

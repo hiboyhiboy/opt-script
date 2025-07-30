@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/tmall
+if [ -f "/tmp/www_asp/Advanced_Extensions_tmallasp" ] ; then
+if [ ! -f "/opt/app/tmall/Advanced_Extensions_tmall.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_tmallasp /opt/app/tmall/Advanced_Extensions_tmall.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_tmallasp
+fi
+fi
 if [ ! -f "/opt/app/tmall/Advanced_Extensions_tmall.asp" ] || [ ! -s "/opt/app/tmall/Advanced_Extensions_tmall.asp" ] ; then
 	wgetcurl.sh /opt/app/tmall/Advanced_Extensions_tmall.asp "$hiboyfile/Advanced_Extensions_tmallasp" "$hiboyfile2/Advanced_Extensions_tmallasp"
 fi

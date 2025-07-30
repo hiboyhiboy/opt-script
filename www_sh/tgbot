@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 
@@ -22,6 +22,13 @@ get_www ()
 
 # 加载程序配置页面
 mkdir -p /opt/app/tgbot
+if [ -f "/tmp/www_asp/Advanced_Extensions_tgbotasp" ] ; then
+if [ ! -f "/opt/app/tgbot/Advanced_Extensions_tgbot.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_tgbotasp /opt/app/tgbot/Advanced_Extensions_tgbot.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_tgbotasp
+fi
+fi
 if [ ! -f "/opt/app/tgbot/Advanced_Extensions_tgbot.asp" ] || [ ! -s "/opt/app/tgbot/Advanced_Extensions_tgbot.asp" ] ; then
 	wgetcurl.sh /opt/app/tgbot/Advanced_Extensions_tgbot.asp "$hiboyfile/Advanced_Extensions_tgbotasp" "$hiboyfile2/Advanced_Extensions_tgbotasp"
 fi

@@ -3,6 +3,7 @@
 # This file is accessible as https://install.direct/go.sh
 # Original source is located at github.com/v2ray/v2ray-core/release/install-release.sh
 # https://github.com/v2ray/v2ray-core/blob/master/release/install-release.sh
+# https://github.com/v2fly/v2ray-core/releases
 
 # If not specify, default meaning of return value:
 # 0: Success
@@ -88,20 +89,25 @@ colorEcho(){
 
 sysArch(){
     ARCH=$(uname -m)
+    VDIS2=""
     if [[ "$ARCH" == "i686" ]] || [[ "$ARCH" == "i386" ]]; then
         VDIS="32"
     elif [[ "$ARCH" == *"armv7"* ]] || [[ "$ARCH" == "armv6l" ]]; then
-        VDIS="arm"
+        VDIS="arm32-v7a"
+        VDIS2="arm"
     elif [[ "$ARCH" == *"armv8"* ]] || [[ "$ARCH" == "aarch64" ]]; then
-        VDIS="arm64"
+        VDIS="arm64-v8a"
+        VDIS2="arm64"
     elif [[ "$ARCH" == *"mips64le"* ]]; then
         VDIS="mips64le"
     elif [[ "$ARCH" == *"mips64"* ]]; then
         VDIS="mips64"
     elif [[ "$ARCH" == *"mipsle"* ]]; then
-        VDIS="mipsle"
+        VDIS="mips32le"
+        VDIS2="mipsle"
     elif [[ "$ARCH" == *"mips"* ]]; then
-        VDIS="mips"
+        VDIS="mips32"
+        VDIS2="mips"
     elif [[ "$ARCH" == *"s390x"* ]]; then
         VDIS="s390x"
     elif [[ "$ARCH" == *"x86_64"* ]]; then
@@ -114,7 +120,21 @@ downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
     colorEcho ${BLUE} "Downloading V2Ray."
-    DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
+    #DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
+    DOWNLOAD_LINK="https://github.com/v2fly/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
+    check_code="$(curl -L -H "Cache-Control: no-cache" -w "%{http_code}" "$DOWNLOAD_LINK"".dgst" -o /dev/null)"
+    if [ "$check_code" != "200" ] ; then
+        colorEcho ${RED} "DOWNLOAD_LINK : $DOWNLOAD_LINK"
+        colorEcho ${RED} "Failed to download!"
+        DOWNLOAD_LINK="https://github.com/v2fly/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS2}.zip"
+        check_code="$(curl -L -H "Cache-Control: no-cache" -w "%{http_code}" "$DOWNLOAD_LINK"".dgst" -o /dev/null)"
+        if [ "$check_code" != "200" ] ; then
+            colorEcho ${RED} "DOWNLOAD_LINK : $DOWNLOAD_LINK"
+            colorEcho ${RED} "Failed to download! Please check your network or try again."
+            rm -f $ZIPFILE
+            return 3
+        fi
+    fi
     rm -f $ZIPFILE
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? != 0 ];then
@@ -123,6 +143,7 @@ downloadV2Ray(){
             wget -O $ZIPFILE $DOWNLOAD_LINK
         fi
         if [ $? != 0 ];then
+            colorEcho ${RED} "DOWNLOAD_LINK : $DOWNLOAD_LINK"
             colorEcho ${RED} "Failed to download! Please check your network or try again."
             rm -f $ZIPFILE
             return 3
@@ -208,7 +229,8 @@ getVersion(){
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
         CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
-        TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
+        #TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
+        TAG_URL="https://api.github.com/repos/v2fly/v2ray-core/releases/latest"
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
         if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
             colorEcho ${RED} "Failed to fetch release information. Please check your network or try again."

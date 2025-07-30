@@ -1,10 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
 source /etc/storage/script/init.sh
 FastDick_enable=`nvram get FastDick_enable`
 [ -z $FastDick_enable ] && FastDick_enable=0 && nvram set FastDick_enable=0
 if [ "$FastDick_enable" != "0" ] ; then
-#nvramshow=`nvram showall | grep '=' | grep FastDick | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
 FastDick_uid=`nvram get FastDick_uid`
 FastDick_pwd=`nvram get FastDick_pwd`
@@ -20,59 +19,21 @@ if [ "$cmd_log_enable" = "1" ] || [ "$FastDicks_renum" -gt "0" ] ; then
 fi
 fi
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ]  && [ ! -s /tmp/script/_Fast_Dick ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep Fast_Dick)" ] && [ ! -s /tmp/script/_Fast_Dick ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_Fast_Dick
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_Fast_Dick
 	chmod 777 /tmp/script/_Fast_Dick
 fi
 
 FastDicks_restart () {
-
-relock="/var/lock/FastDicks_restart.lock"
-if [ "$1" = "o" ] ; then
-	nvram set FastDicks_renum="0"
-	[ -f $relock ] && rm -f $relock
-	return 0
-fi
-if [ "$1" = "x" ] ; then
-	if [ -f $relock ] ; then
-		logger -t "【FastDicks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		exit 0
-	fi
-	FastDicks_renum=${FastDicks_renum:-"0"}
-	FastDicks_renum=`expr $FastDicks_renum + 1`
-	nvram set FastDicks_renum="$FastDicks_renum"
-	if [ "$FastDicks_renum" -gt "2" ] ; then
-		I=19
-		echo $I > $relock
-		logger -t "【FastDicks】" "多次尝试启动失败，等待【"`cat $relock`"分钟】后自动尝试重新启动"
-		while [ $I -gt 0 ]; do
-			I=$(($I - 1))
-			echo $I > $relock
-			sleep 60
-			[ "$(nvram get FastDicks_renum)" = "0" ] && exit 0
-			[ $I -lt 0 ] && break
-		done
-		nvram set FastDicks_renum="0"
-	fi
-	[ -f $relock ] && rm -f $relock
-fi
-nvram set FastDicks_status=0
-eval "$scriptfilepath &"
-exit 0
+i_app_restart "$@" -name="FastDicks"
 }
 
 FastDick_get_status () {
 
-A_restart=`nvram get FastDicks_status`
 B_restart="$FastDick_uid$FastDick_pwd$FastDick_enable$FastDicks"
-B_restart=`echo -n "$B_restart" | md5sum | sed s/[[:space:]]//g | sed s/-//g`
-if [ "$A_restart" != "$B_restart" ] ; then
-	nvram set FastDicks_status=$B_restart
-	needed_restart=1
-else
-	needed_restart=0
-fi
+
+i_app_get_status -name="FastDicks" -valb="$B_restart"
 }
 
 FastDick_check () {
@@ -108,8 +69,8 @@ done
 }
 
 FastDick_close () {
+kill_ps "$scriptname keep"
 killall FastDick_script.sh
-killall -9 FastDick_script.sh
 kill_ps "/opt/FastDick/swjsq"
 kill_ps "/tmp/script/_Fast_Dick"
 kill_ps "_Fast_Dick.sh"
@@ -118,6 +79,7 @@ kill_ps "$scriptname"
 
 
 FastDick_start () {
+check_webui_yes
 logger -t "【迅雷快鸟】" "迅雷快鸟(diǎo)路由器版:https://github.com/fffonion/Xunlei-FastDick"
 if [ "$FastDicks" = "2" ] ; then
 	logger -t "【迅雷快鸟】" "稍等几分钟，ssh 到路由，控制台输入【ps】命令查看[/etc/storage/FastDick_script.sh]进程是否存在，是否正常启动，提速是否成功。"
@@ -159,11 +121,12 @@ else
 
 	SVC_PATH=/opt/bin/python
 	chmod 777 "$SVC_PATH"
-	[[ "$(python -h 2>&1 | wc -l)" -lt 2 ]] && rm -rf /opt/bin/python /opt/opti.txt
 	if [ ! -s "$SVC_PATH" ] ; then
-		logger -t "【迅雷快鸟】" "找不到 $SVC_PATH，安装 opt 程序"
-		/tmp/script/_mountopt optwget
+		logger -t "【迅雷快鸟】" "找不到 $SVC_PATH，安装 opt full 程序"
+		/etc/storage/script/Sh01_mountopt.sh opt_full_wget
+		initopt
 	fi
+	[[ "$(python -h 2>&1 | wc -l)" -lt 2 ]] && /etc/storage/script/Sh01_mountopt.sh libmd5_check
 	if [ -s "$SVC_PATH" ] ; then
 		logger -t "【迅雷快鸟】" "找到 $SVC_PATH"
 	else
@@ -188,7 +151,7 @@ else
 	if [ -f /opt/FastDick/swjsq_wget.sh ] ; then
 		logger -t "【迅雷快鸟】" "自动备份 swjsq 文件到路由, 【写入内部存储】后下次重启可以免U盘启动了"
 		cat > "/etc/storage/FastDick_script.sh" <<-\EEF
-#!/bin/sh
+#!/bin/bash
 # 迅雷快鸟【2免U盘启动】功能需到【自定义脚本0】配置【FastDicks=2】，并在此输入swjsq_wget.sh文件内容
 #【2免U盘启动】需要填写在下方的【迅雷快鸟脚本】，生成脚本两种方法：
 # ①插入U盘，配置自定义脚本【1插U盘启动】启动快鸟一次即可自动生成
@@ -221,7 +184,7 @@ initconfig () {
 FastDick_script="/etc/storage/FastDick_script.sh"
 if [ ! -f "$FastDick_script" ] || [ ! -s "$FastDick_script" ] ; then
 	cat > "$FastDick_script" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 # 迅雷快鸟【免U盘启动】功能需在此输入swjsq_wget.sh文件内容
 # swjsq_wget.sh文件脚本两种方法：
 # ①插入U盘，配置自定义脚本【插U盘启动】启动快鸟一次即可自动生成

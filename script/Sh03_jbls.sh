@@ -1,13 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 #copyright by hiboy
+# 失效清理
+echo "Sh03_jbls.sh"
+exit
 source /etc/storage/script/init.sh
 jbls_enable=`nvram get jbls_enable`
 [ -z $jbls_enable ] && jbls_enable=0 && nvram set jbls_enable=0
 #[ "$jbls_enable" != "0" ] && nvramshow=`nvram showall | grep '=' | grep jbls | awk '{print gensub(/'"'"'/,"'"'"'\"'"'"'\"'"'"'","g",$0);}'| awk '{print gensub(/=/,"='\''",1,$0)"'\'';";}'` && eval $nvramshow
 
-if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep jbls)" ]  && [ ! -s /tmp/script/_jbls ]; then
+if [ ! -z "$(echo $scriptfilepath | grep -v "/tmp/script/" | grep jbls)" ] && [ ! -s /tmp/script/_jbls ] ; then
 	mkdir -p /tmp/script
-	{ echo '#!/bin/sh' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_jbls
+	{ echo '#!/bin/bash' ; echo $scriptfilepath '"$@"' '&' ; } > /tmp/script/_jbls
 	chmod 777 /tmp/script/_jbls
 fi
 
@@ -25,28 +28,14 @@ fi
 }
 
 jbls_keep () {
-logger -t "【jbls】" "守护进程启动"
-if [ -s /tmp/script/_opt_script_check ]; then
-sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check
-cat >> "/tmp/script/_opt_script_check" <<-OSC
-[ -z "\`pidof jblicsvr\`" ] && logger -t "【jbls】" "重新启动" && eval "$scriptfilepath &" && sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check # 【jbls】
-OSC
-return
-fi
-while true; do
-	if [ -z "`pidof jblicsvr`" ] ; then
-		logger -t "【jbls】" "重新启动"
-		{ eval "$scriptfilepath &" ; exit 0; }
-	fi
-sleep 993
-done
+i_app_keep -name="jbls" -pidof="jblicsvr" &
 }
 
 jbls_close () {
+kill_ps "$scriptname keep"
 sed -Ei '/【jbls】|^$/d' /tmp/script/_opt_script_check
 sed -Ei '/txt-record=_jetbrains-license-server.lan/d' /etc/storage/dnsmasq/dnsmasq.conf
 killall jblicsvr jbls_script.sh
-killall -9 jblicsvr jbls_script.sh
 kill_ps "/tmp/script/_jbls"
 kill_ps "_jbls.sh"
 kill_ps "$scriptname"
@@ -54,6 +43,7 @@ kill_ps "$scriptname"
 
 jbls_start () {
 
+check_webui_yes
 cmd_log_enable=`nvram get cmd_log_enable`
 cmd_name="jbls"
 cmd_log=""
@@ -61,8 +51,8 @@ cmd_log=""
 #jblicsvr -d -p 1027
 eval "/etc/storage/jbls_script.sh $cmd_log" &
 sleep 4
-[ ! -z "$(ps -w | grep "jblicsvr" | grep -v grep )" ] && logger -t "【jbls】" "启动成功"
-[ -z "$(ps -w | grep "jblicsvr" | grep -v grep )" ] && logger -t "【jbls】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
+[ ! -z "`pidof jblicsvr`" ] && logger -t "【jbls】" "启动成功"
+[ -z "`pidof jblicsvr`" ] && logger -t "【jbls】" "启动失败, 注意检查端口是否有冲突,10 秒后自动尝试重新启动" && sleep 10 && { eval "$scriptfilepath &"; exit 0; }
 eval "$scriptfilepath keep &"
 exit 0
 }
@@ -72,11 +62,11 @@ initconfig () {
 jbls_script="/etc/storage/jbls_script.sh"
 if [ ! -f "$jbls_script" ] || [ ! -s "$jbls_script" ] ; then
 	cat > "$jbls_script" <<-\EEE
-#!/bin/sh
+#!/bin/bash
 export PATH='/etc/storage/bin:/tmp/script:/etc/storage/script:/opt/usr/sbin:/opt/usr/bin:/opt/sbin:/opt/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin'
 export LD_LIBRARY_PATH=/lib:/opt/lib
 
-# 感谢bigandy编译和提供： http://www.right.com.cn/forum/forum.php?mod=viewthread&tid=161324&page=672#pid1640158
+# 感谢bigandy编译和提供：
 # jetbrains license server 。
 # 进展： Deamon 开发完成，通过了 IDEA， CLION 的验证测试。
 # 特点：纯C编写，编译后仅16K大小，不给路由存储增加压力，独立http 服务。
@@ -118,7 +108,7 @@ fi
 
 }
 
-initconfig
+#initconfig
 
 case $ACTION in
 start)
