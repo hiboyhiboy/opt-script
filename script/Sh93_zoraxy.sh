@@ -74,8 +74,9 @@ check_webui_yes
 
 SVC_PATH="/tmp/AiDisk_00/zoraxy/zoraxy"
 if [ ! -f $SVC_PATH ] ; then
-	logger -t "【clash】" "找不到 $SVC_PATH ，安装 opt 程序"
+	logger -t "【zoraxy】" "找不到 $SVC_PATH ，安装 opt 程序"
 	/etc/storage/script/Sh01_mountopt.sh start
+	initopt
 	mkdir -p /tmp/AiDisk_00/zoraxy
 fi
 mkdir -p /tmp/AiDisk_00/zoraxy

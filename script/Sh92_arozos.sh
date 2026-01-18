@@ -74,8 +74,9 @@ check_webui_yes
 
 SVC_PATH="/tmp/AiDisk_00/arozos/arozos"
 if [ ! -f $SVC_PATH ] ; then
-	logger -t "【clash】" "找不到 $SVC_PATH ，安装 opt 程序"
+	logger -t "【arozos】" "找不到 $SVC_PATH ，安装 opt 程序"
 	/etc/storage/script/Sh01_mountopt.sh start
+	initopt
 	mkdir -p /tmp/AiDisk_00/arozos
 fi
 mkdir -p /tmp/AiDisk_00/arozos

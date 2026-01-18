@@ -1,0 +1,63 @@
+#!/bin/bash
+#copyright by hiboy
+source /etc/storage/script/init.sh
+
+link="Advanced_Extensions_app32.asp"
+echo $1
+if [ "$1"x = "stop"x ] ; then
+    nvram set app_150=0 #netbird_enable
+    exit
+fi
+
+if [ "$1" != "del" ] ; then
+eval 'nvram set tablink'$1'='$link';'
+
+nvram set netbird_L2="$(($3 + 10))"
+nvram set netbird_L3="$2"
+#     show_menu(8,<% nvram_get_x("", "netbird_L2"); %>,<% nvram_get_x("", "netbird_L3"); %>);
+fi
+
+get_www ()
+{
+
+# 加载程序配置页面
+mkdir -p /opt/app/netbird
+if [ -f "/tmp/www_asp/Advanced_Extensions_netbirdasp" ] ; then
+if [ ! -f "/opt/app/netbird/Advanced_Extensions_netbird.asp" ] ; then
+	mv -f /tmp/www_asp/Advanced_Extensions_netbirdasp /opt/app/netbird/Advanced_Extensions_netbird.asp
+else
+	rm -f /tmp/www_asp/Advanced_Extensions_netbirdasp
+fi
+fi
+if [ ! -f "/opt/app/netbird/Advanced_Extensions_netbird.asp" ] || [ ! -s "/opt/app/netbird/Advanced_Extensions_netbird.asp" ] ; then
+	wgetcurl.sh /opt/app/netbird/Advanced_Extensions_netbird.asp "$hiboyfile/Advanced_Extensions_netbirdasp" "$hiboyfile2/Advanced_Extensions_netbirdasp"
+fi
+umount /www/Advanced_Extensions_app32.asp
+if [ -f "/opt/app/netbird/Advanced_Extensions_netbird.asp" ] ; then
+	mount --bind /opt/app/netbird/Advanced_Extensions_netbird.asp /www/Advanced_Extensions_app32.asp
+	app32_ver=$(grep 'app32_ver=' /opt/app/netbird/Advanced_Extensions_netbird.asp | awk -F '=' '{print $2;}')
+	nvram set app32_ver=${app32_ver}
+fi
+
+}
+
+get_app ()
+{
+
+# 更新程序启动脚本
+[ "$1" = "del" ] && rm -rf /etc/storage/script/Sh94_netbird.sh
+if [ ! -f "/etc/storage/script/Sh94_netbird.sh" ] || [ ! -s "/etc/storage/script/Sh94_netbird.sh" ] ; then
+	wgetcurl.sh /etc/storage/script/Sh94_netbird.sh "$hiboyscript/script/Sh94_netbird.sh" "$hiboyscript/script/Sh94_netbird.sh"
+fi
+chmod 777 /etc/storage/script -R
+
+[ "$1" = "del" ] && exit
+
+}
+
+if [ -f /tmp/webui_yes ] ; then
+get_www &
+get_app $1 &
+[ "$1" = "del" ] && exit
+fi
+

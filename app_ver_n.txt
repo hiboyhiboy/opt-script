@@ -31,3 +31,4 @@ nvram set app28_ver_n=2023-08-29
 nvram set app29_ver_n=2024-04-13
 nvram set app30_ver_n=2024-05-30
 nvram set app31_ver_n=2024-05-31
+nvram set app32_ver_n=2026-01-18

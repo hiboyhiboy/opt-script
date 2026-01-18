@@ -110,7 +110,7 @@ if [ "$ss_tproxy_enable" = "1" ] ; then
 		[ "$port"x == 0x ] && port=$(iptables -t mangle -L | grep 'SSTP' | wc -l)
 		if [ "$port"x == 0x ] ; then
 			logger -t "【ss_tproxy】" "检测2:找不到 SSTP 转发规则, 重新添加"
-			ss_tproxy_run "start_iptables"
+			ss_tproxy_run "restart"
 		fi
 		if [ "$chinadns_ng_enable" != "1" ] ; then
 		if [ "$mode" == "chnlist" ] ; then
@@ -159,7 +159,7 @@ while true; do
 	[ "$port"x == 0x ] && port=$(iptables -t mangle -L | grep 'SSTP' | wc -l)
 	if [ "$port"x == 0x ] ; then
 		logger -t "【ss_tproxy】" "检测2:找不到 SSTP 转发规则, 重新添加"
-		ss_tproxy_run "start_iptables"
+		ss_tproxy_run "restart"
 	fi
 	if [ "$chinadns_ng_enable" != "1" ] ; then
 	if [ "$mode" == "chnlist" ] ; then
