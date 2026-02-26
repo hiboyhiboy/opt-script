@@ -75,14 +75,16 @@ check_webui_yes
 
 SVC_PATH="$(which netbird)"
 [ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/netbird"
-if [ ! -f $SVC_PATH ] ; then
+if [ ! -f "$SVC_PATH" ] ; then
 	logger -t "【clash】" "找不到 $SVC_PATH ，安装 opt 程序"
 	/etc/storage/script/Sh01_mountopt.sh start
 	initopt
 fi
 mkdir -p /opt/app/netbird
 SVC_PATH="$(which netbird)"
-if [ ! -s "$SVC_PATH" ] ; then
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/netbird"
+if [ ! -f "$SVC_PATH" ] ; then
+	SVC_PATH="/opt/bin/netbird"
 	logger -t "【netbird】" "找不到 $SVC_PATH ，安装 netbird 程序"
 	block=$(check_disk_size /opt/app/netbird)
 	[ -z "$block" ] && block="0"
@@ -98,7 +100,8 @@ if [ ! -s "$SVC_PATH" ] ; then
 	fi
 fi
 SVC_PATH="$(which netbird)"
-if [ ! -s "$SVC_PATH" ] ; then
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/netbird"
+if [ ! -f "$SVC_PATH" ] ; then
 	if [ -z "$curltest" ] || [ ! -s "`which curl`" ] ; then
 		tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --max-redirect=0 --output-document=-  https://api.github.com/repos/netbirdio/netbird/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
 		[ -z "$tag" ] && tag="$( wget -T 5 -t 3 --user-agent "$user_agent" --quiet --output-document=-  https://api.github.com/repos/netbirdio/netbird/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
@@ -107,6 +110,13 @@ if [ ! -s "$SVC_PATH" ] ; then
 		[ -z "$tag" ] && tag="$( curl -L --connect-timeout 3 --user-agent "$user_agent" -s  https://api.github.com/repos/netbirdio/netbird/releases/latest  2>&1 | grep 'tag_name' | cut -d\" -f4 )"
 	fi
 	tag="$(echo "$tag" | tr -d 'v' | tr -d ' ')"
+fi
+if [ -z "$tag" ] ; then
+	i_app_get_cmd_file -name="netbird" -cmd="netbird" -cpath="/opt/bin/netbird" -down1="$hiboyfile/netbird" -down2="$hiboyfile2/netbird"
+fi
+SVC_PATH="$(which netbird)"
+[ ! -s "$SVC_PATH" ] && SVC_PATH="/opt/bin/netbird"
+if [ ! -f "$SVC_PATH" ] ; then
 	# 下载主程序
 	rm -rf /opt/bin/netbird
 	mkdir -p /opt/app/netbird/tmp
@@ -117,6 +127,7 @@ if [ ! -s "$SVC_PATH" ] ; then
 	tar -xz -C /opt/app/netbird/tmp -f /opt/app/netbird/tmp/netbird_linux_mipsle_softfloat.tar.gz
 	mv -f "/opt/app/netbird/tmp/netbird" /opt/bin/netbird
 	rm -rf /opt/app/netbird/tmp
+	SVC_PATH="$(which netbird)"
 	if [ ! -s "$SVC_PATH" ] ; then
 		logger -t "【netbird】" "最新版本获取失败！！！"
 		logger -t "【netbird】" "请打开 https://github.com/netbirdio/netbird/releases"

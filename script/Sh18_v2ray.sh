@@ -478,6 +478,14 @@ else
 	cat /tmp/vmess/mk_vmess.json | jq --raw-output 'setpath(["log"];{"access": "none","error":"/tmp/syslog.log","loglevel":"error"})' > /tmp/vmess/mk_vmess2.json
 	[ -s /tmp/vmess/mk_vmess2.json ] && cp -f /tmp/vmess/mk_vmess2.json /tmp/vmess/mk_vmess.json
 	rm -f /tmp/vmess/mk_vmess2.json
+	# 删除错误 mkcp header & seed
+	mkcp_header="$(cat /tmp/vmess/mk_vmess.json | jq --raw-output '.outbounds[].streamSettings.kcpSettings')"
+	if [ ! -z "$(echo "$mkcp_header" | grep "header")" ] || [ ! -z "$(echo "$mkcp_header" | grep "seed")" ] ; then
+		cat /tmp/vmess/mk_vmess.json | jq --raw-output 'del(.outbounds[].streamSettings.kcpSettings.header)' > /tmp/vmess/mk_vmess2.json
+		cat /tmp/vmess/mk_vmess2.json | jq --raw-output 'del(.outbounds[].streamSettings.kcpSettings.seed)' > /tmp/vmess/mk_vmess2.json
+		[ -s /tmp/vmess/mk_vmess2.json ] && cp -f /tmp/vmess/mk_vmess2.json /tmp/vmess/mk_vmess.json
+		rm -f /tmp/vmess/mk_vmess2.json
+	fi
 	fi
 	if [ ! -f "/tmp/vmess/mk_vmess.json" ] || [ ! -s "/tmp/vmess/mk_vmess.json" ] ; then
 	logger -t "【v2ray】" "错误！实际运行配置： /tmp/vmess/mk_vmess.json 文件内容为空"
@@ -1040,9 +1048,16 @@ mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["network"];"'$vless_link_t
 if [ "$vless_link_security" == "reality" ] ; then
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","fingerprint"];"'$vless_link_fp'")')
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","serverName"];"'$vless_link_sni'")')
-mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","publicKey"];"'$vless_link_pbk'")')
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","publicKey"];"'$vless_link_pbk'")') #旧称
+mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","password"];"'$vless_link_pbk'")')
+[ ! -z "$vless_link_pqv" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","mldsa65Verify"];"'$vless_link_pqv'")')
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","shortId"];"'$vless_link_sid'")')
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","spiderX"];"'$vless_link_spx'")')
+if [ ! -z "$vless_link_sni" ] ; then
+	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","serverNames",0];"'$vless_link_sni'")')
+else
+	mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["realitySettings","serverNames"]])')
+fi
 fi
 # 配置 realitySettings end
 # 配置 tlsSettings star
@@ -1071,6 +1086,9 @@ if [ ! -z "$vless_link_alpn" ] ; then
 else
 	mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["tlsSettings","alpn"]])')
 fi
+[ ! -z "$vless_link_ech" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","echConfigList"];"'$vless_link_ech'")')
+[ ! -z "$vless_link_pcs" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","pinnedPeerCertSha256"];"'$vless_link_pcs'")')
+[ ! -z "$vless_link_vcn" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tlsSettings","verifyPeerCertByName"];"'$vless_link_vcn'")')
 fi
 # 配置 tlsSettings end
 # 配置 xtlsSettings star
@@ -1099,6 +1117,7 @@ fi
 fi
 # 配置 xtlsSettings end
 # tcp star
+# v24.9.30 版本后，为了更贴近实际行为，TCP 传输方式已更名为 RAW。为了兼容性，"network": "raw" 和 "network": "tcp"，rawSettings 和 tcpSettings 互为别名。
 if [ "$vless_link_type" = "tcp" ] ; then
 [ ! -z "$vless_link_headerType" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["tcpSettings","header","type"];"'$vless_link_headerType'")')
 if [ "$vless_link_headerType" = "none" ] ; then
@@ -1129,10 +1148,11 @@ fi
 fi
 # tcp end
 # kcp star
-if [ "$vless_link_type" = "kcp" ] ; then
-[ ! -z "$vless_link_headerType" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["kcpSettings","header","type"];"'$vless_link_headerType'")')
-[ ! -z "$vless_link_seed" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["kcpSettings","seed"];"'$vless_link_headerType'")')
-fi
+# TIP header 和 seed 字段已被移除，请使用 FinalMask 进行配置。https://xtls.github.io/config/transports/mkcp.html
+# if [ "$vless_link_type" = "kcp" ] ; then
+# [ ! -z "$vless_link_headerType" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["kcpSettings","header","type"];"'$vless_link_headerType'")')
+# [ ! -z "$vless_link_seed" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["kcpSettings","seed"];"'$vless_link_headerType'")')
+# fi
 # kcp end
 # ws star
 if [ "$vless_link_type" = "ws" ] ; then
@@ -1178,6 +1198,7 @@ fi
 if [ "$vless_link_type" = "grpc" ] ; then
 [ ! -z "$vless_link_serviceName" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["grpcSettings","serviceName"];"'$vless_link_serviceName'")')
 [ ! -z "$vless_link_authority" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["grpcSettings","authority"];"'$vless_link_authority'")')
+[ -z "$vless_link_mode" ] && vless_link_mode="gun"
 if [ "$vless_link_mode" == "mutil" ] ; then
 	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["grpcSettings","multiMode"];"true")')
 else
@@ -1192,6 +1213,18 @@ if [ "$vless_link_type" = "httpupgrade" ] ; then
 [ ! -z "$vless_link_host" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["httpupgradeSettings","host"];"'$vless_link_host'")')
 fi
 # HTTPUpgrade end
+# XHTTP star
+if [ "$vless_link_type" = "xhttpSettings" ] ; then
+[ -z "$vless_link_path" ] && vless_link_path="/"
+[ ! -z "$vless_link_path" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["xhttpSettings","path"];"'$vless_link_path'")')
+[ ! -z "$vless_link_host" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["xhttpSettings","host"];"'$vless_link_host'")')
+[ -z "$vless_link_mode" ] && vless_link_mode="auto"
+[ ! -z "$vless_link_mode" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["xhttpSettings","mode"];"'$vless_link_mode'")')
+[ ! -z "$vless_link_extra" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["xhttpSettings","extra"];"'$vless_link_extra'")')
+fi
+# XHTTP end
+# finalmask https://xtls.github.io/config/transport.html#finalmaskobject
+[ ! -z "$vless_link_fm" ] && mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["finalmask"];"'$vless_link_fm'")')
 vmess_streamSettings=$mk_vmess
 
 }
@@ -1245,11 +1278,7 @@ echo '{
       }
     }
   },
-  "kcpSettings": {
-    "header": {
-      "type": "none"
-    }
-  },
+  "kcpSettings": {},
   "wsSettings": {
     "path": "/",
     "headers": {}
@@ -1278,7 +1307,10 @@ echo '{
   },
   "sockopt": {
     "mark": 255
-  }
+  },
+  "xhttpSettings": {},
+  "hysteriaSettings": {},
+  "finalmask": {}
 }
 '
 }
@@ -1451,7 +1483,10 @@ echo '{
         "httpupgradeSettings ": {},
         "sockopt": {
           "mark": 255
-        }
+        },
+        "xhttpSettings": {},
+        "hysteriaSettings": {},
+        "finalmask": {}
       }
     },
     {

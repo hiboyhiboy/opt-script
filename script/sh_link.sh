@@ -230,7 +230,6 @@ vless_link_authority="$(echo -n "$vless_link_specific" | grep -Eo "authority=[^&
 [ ! -z "$vless_link_authority" ] && vless_link_authority="$(printf $(echo -n $vless_link_authority | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
 
 vless_link_mode="$(echo -n "$vless_link_specific" | grep -Eo "mode=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
-[ -z "$vless_link_mode" ] && vless_link_mode="gun"
 
 vless_link_sni="$(echo -n "$vless_link_specific" | grep -Eo "sni=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 if [ -z "$vless_link_sni" ] ; then
@@ -255,6 +254,23 @@ vless_link_sid="$(echo -n "$vless_link_specific" | grep -Eo "sid=[^&]*"  | cut -
 vless_link_spx="$(echo -n "$vless_link_specific" | grep -Eo "spx=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
 [ ! -z "$vless_link_spx" ] && vless_link_spx="$(printf $(echo -n $vless_link_spx | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
 
+vless_link_extra="$(echo -n "$vless_link_specific" | grep -Eo "extra=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_extra" ] && vless_link_extra="$(printf $(echo -n $vless_link_extra | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
+vless_link_fm="$(echo -n "$vless_link_specific" | grep -Eo "fm=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_fm" ] && vless_link_fm="$(printf $(echo -n $vless_link_fm | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
+vless_link_ech="$(echo -n "$vless_link_specific" | grep -Eo "ech=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_ech" ] && vless_link_ech="$(printf $(echo -n $vless_link_ech | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
+vless_link_pcs="$(echo -n "$vless_link_specific" | grep -Eo "pcs=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_pcs" ] && vless_link_pcs="$(printf $(echo -n $vless_link_pcs | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
+vless_link_vcn="$(echo -n "$vless_link_specific" | grep -Eo "vcn=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_vcn" ] && vless_link_vcn="$(printf $(echo -n $vless_link_vcn | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
+
+vless_link_pqv="$(echo -n "$vless_link_specific" | grep -Eo "pqv=[^&]*"  | cut -d '=' -f2 | sed -n '1p')"
+[ ! -z "$vless_link_pqv" ] && vless_link_pqv="$(printf $(echo -n $vless_link_pqv | sed 's/\\/\\\\/g;s/\(%\)\([0-9a-fA-F][0-9a-fA-F]\)/\\x\2/g'))"
 fi
 link_tmp=""
 
@@ -471,6 +487,12 @@ vless_link_fp=""
 vless_link_pbk=""
 vless_link_sid=""
 vless_link_spx=""
+vless_link_extra=""
+vless_link_fm=""
+vless_link_ech=""
+vless_link_pcs=""
+vless_link_vcn=""
+vless_link_pqv=""
 
 vless_link_v=""
 [ -z "$vless_link_v" ] && vless_link_v="0"
