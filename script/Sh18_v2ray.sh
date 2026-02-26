@@ -1054,9 +1054,9 @@ mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","passwor
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","shortId"];"'$vless_link_sid'")')
 mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","spiderX"];"'$vless_link_spx'")')
 if [ ! -z "$vless_link_sni" ] ; then
-	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","serverNames",0];"'$vless_link_sni'")')
+	mk_vmess=$(echo $mk_vmess | jq --raw-output 'setpath(["realitySettings","serverName"];"'$vless_link_sni'")')
 else
-	mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["realitySettings","serverNames"]])')
+	mk_vmess=$(echo $mk_vmess | jq --raw-output 'delpaths([["realitySettings","serverName"]])')
 fi
 fi
 # 配置 realitySettings end
@@ -1309,7 +1309,6 @@ echo '{
     "mark": 255
   },
   "xhttpSettings": {},
-  "hysteriaSettings": {},
   "finalmask": {}
 }
 '
@@ -1485,7 +1484,6 @@ echo '{
           "mark": 255
         },
         "xhttpSettings": {},
-        "hysteriaSettings": {},
         "finalmask": {}
       }
     },
