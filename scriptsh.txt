@@ -76,5 +76,5 @@ Sh04_mento_hust=cc0cf04b1e20ce4f5e6d3d644896b721
 Sh03_jbls=76ab5d143c30e14051914a23fc9046a8
 Sh02_kms=84d2a502859e268cc41e6ef8ef4f0e2a
 Sh01_mountopt=3e80a3d7d3ae2083fe595bf4d9bb74eb
-sh_upscript=67de7a44f26e887141fe35ad3cecfac6
+sh_upscript=49ec17cf79f3fd5be6bfb29eb3790371
 scriptt=2026-02-27
