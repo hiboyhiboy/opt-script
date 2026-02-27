@@ -482,9 +482,10 @@ else
 	mkcp_header="$(cat /tmp/vmess/mk_vmess.json | jq --raw-output '.outbounds[].streamSettings.kcpSettings')"
 	if [ ! -z "$(echo "$mkcp_header" | grep "header")" ] || [ ! -z "$(echo "$mkcp_header" | grep "seed")" ] ; then
 		cat /tmp/vmess/mk_vmess.json | jq --raw-output 'del(.outbounds[].streamSettings.kcpSettings.header)' > /tmp/vmess/mk_vmess2.json
-		cat /tmp/vmess/mk_vmess2.json | jq --raw-output 'del(.outbounds[].streamSettings.kcpSettings.seed)' > /tmp/vmess/mk_vmess2.json
-		[ -s /tmp/vmess/mk_vmess2.json ] && cp -f /tmp/vmess/mk_vmess2.json /tmp/vmess/mk_vmess.json
+		cat /tmp/vmess/mk_vmess2.json | jq --raw-output 'del(.outbounds[].streamSettings.kcpSettings.seed)' > /tmp/vmess/mk_vmess3.json
 		rm -f /tmp/vmess/mk_vmess2.json
+		[ -s /tmp/vmess/mk_vmess3.json ] && cp -f /tmp/vmess/mk_vmess3.json /tmp/vmess/mk_vmess.json
+		rm -f /tmp/vmess/mk_vmess3.json
 	fi
 	fi
 	if [ ! -f "/tmp/vmess/mk_vmess.json" ] || [ ! -s "/tmp/vmess/mk_vmess.json" ] ; then
